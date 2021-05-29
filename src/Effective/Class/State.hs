@@ -1,0 +1,43 @@
+{-# LANGUAGE UndecidableInstances #-}
+module Effective.Class.State where
+
+import Control.Monad.Trans.Class
+
+import Effective.Internal.Has
+import Effective.Internal.Monad
+import qualified Effective.State.Dynamic as S
+
+-- | Compatiblity layer for a transition period from MTL-style effect handling
+-- to 'Effective.Eff'.
+class Monad m => MonadState s m where
+  {-# MINIMAL state | get, put #-}
+
+  get :: m s
+  get = state (\s -> (s, s))
+
+  put :: s -> m ()
+  put s = state (\_ -> ((), s))
+
+  state :: (s -> (a, s)) -> m a
+  state f = do
+    (a, s) <- f <$> get
+    s `seq` put s
+    pure a
+
+-- | Generic, overlappable instance.
+instance {-# OVERLAPPABLE #-}
+  ( MonadState s m
+  , MonadTrans t
+  , Monad (t m)
+  ) => MonadState s (t m) where
+  get   = lift get
+  put   = lift . put
+  state = lift . state
+
+instance S.State s :> es => MonadState s (Eff es) where
+  get   = S.get
+  put   = S.put
+  state = S.state
+
+modify :: MonadState s m => (s -> s) -> m ()
+modify f = state (\s -> ((), f s))

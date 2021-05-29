@@ -1,0 +1,110 @@
+cabal-version:      2.4
+build-type:         Simple
+name:               effective
+version:            0.1.0.0
+license:            BSD-3-Clause
+license-file:       LICENSE
+category:           Control
+maintainer:         andrzej@rybczak.net
+author:             Andrzej Rybczak
+synopsis:           An effect system based on the ReaderT design pattern.
+
+description: An effect system based on the ReaderT design pattern, combining
+  advantages of both.
+
+extra-source-files: CHANGELOG.md
+tested-with: GHC ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.4
+              || ==9.0.1 || ==9.2.0.20210422
+
+bug-reports:   https://github.com/arybczak/effective/issues
+source-repository head
+  type:     git
+  location: https://github.com/arybczak/effective.git
+
+common language
+    ghc-options:        -Wall
+
+    default-language:   Haskell2010
+
+    default-extensions: BangPatterns
+                        ConstraintKinds
+                        DataKinds
+                        DefaultSignatures
+                        DeriveFunctor
+                        FlexibleContexts
+                        FlexibleInstances
+                        FunctionalDependencies
+                        GADTs
+                        GeneralizedNewtypeDeriving
+                        InstanceSigs
+                        LambdaCase
+                        NamedFieldPuns
+                        RankNTypes
+                        RecordWildCards
+                        RoleAnnotations
+                        ScopedTypeVariables
+                        StandaloneDeriving
+                        StrictData
+                        TupleSections
+                        TypeApplications
+                        TypeInType
+                        TypeFamilies
+                        TypeOperators
+
+library
+    import:         language
+
+    build-depends:    base <5
+                    , exceptions
+                    , ghc-prim
+                    , monad-control
+                    , primitive
+                    , resourcet
+                    , transformers
+                    , transformers-base
+                    , unliftio-core
+
+    hs-source-dirs:  src
+
+    exposed-modules: Effective
+                     Effective.Class.Reader
+                     Effective.Class.State
+                     Effective.Class.Writer
+                     Effective.Coroutine
+                     Effective.Error
+                     Effective.Internal.Env
+                     Effective.Internal.Has
+                     Effective.Internal.Monad
+                     Effective.Internal.Utils
+                     Effective.Reader
+                     Effective.Resource
+                     Effective.State
+                     Effective.State.Dynamic
+                     Effective.State.MVar
+                     Effective.Writer
+
+benchmark bench
+    import:         language
+
+    ghc-options:    -threaded -rtsopts -with-rtsopts=-T
+
+    if impl(ghc >= 8.2 && < 9.2)
+       build-depends: fused-effects
+
+    if impl(ghc >= 8.4 && < 9)
+       build-depends: polysemy
+
+    if impl(ghc < 9)
+       build-depends: freer-simple
+
+    build-depends:    base <5
+                    , effective
+                    , mtl
+                    , tasty-bench
+
+    hs-source-dirs: bench
+
+    type:           exitcode-stdio-1.0
+    main-is:        Main.hs
+
+    other-modules:  Countdown

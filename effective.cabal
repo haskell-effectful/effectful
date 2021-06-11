@@ -85,19 +85,35 @@ library
                      Effective.State.MVar
                      Effective.Writer
 
+test-suite test
+    import:         language
+
+    ghc-options:    -threaded -rtsopts
+
+    build-depends:    base <5
+                    , effective
+                    , exceptions
+                    , tasty
+                    , tasty-hunit
+
+    hs-source-dirs: tests
+
+    type:           exitcode-stdio-1.0
+    main-is:        Main.hs
+
 benchmark bench
     import:         language
 
     ghc-options:    -threaded -rtsopts -with-rtsopts=-T
+
+    if impl(ghc < 9)
+       build-depends: freer-simple
 
     if impl(ghc >= 8.2 && < 9.2)
        build-depends: fused-effects
 
     if impl(ghc >= 8.4 && < 9)
        build-depends: polysemy
-
-    if impl(ghc < 9)
-       build-depends: freer-simple
 
     build-depends:    base <5
                     , effective

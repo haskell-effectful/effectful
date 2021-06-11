@@ -18,6 +18,8 @@ module Effective.State
   , put
   , state
   , modify
+  , stateM
+  , modifyM
   ) where
 
 import Data.Coerce
@@ -48,3 +50,9 @@ state f = stateEffect $ \(State s0) -> let (a, s) = f s0 in (a, State s)
 
 modify :: State s :> es => (s -> s) -> Eff es ()
 modify f = state (\s -> ((), f s))
+
+stateM :: State s :> es => (s -> Eff es (a, s)) -> Eff es a
+stateM f = stateEffectM $ \(State s0) -> coerce $ f s0
+
+modifyM :: State s :> es => (s -> Eff es s) -> Eff es ()
+modifyM f = stateM (\s -> ((), ) <$> f s)

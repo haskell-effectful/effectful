@@ -15,6 +15,8 @@ module Effective.State.MVar
   , put
   , state
   , modify
+  , stateM
+  , modifyM
   ) where
 
 import Control.Concurrent.MVar
@@ -57,3 +59,13 @@ state f = do
 
 modify :: State s :> es => (s -> s) -> Eff es ()
 modify f = state (\s -> ((), f s))
+
+stateM :: State s :> es => (s -> Eff es (a, s)) -> Eff es a
+stateM f = do
+  State v <- getEffect
+  impureEff $ \es -> modifyMVar v $ \s0 -> do
+    (a, s) <- unEff (f s0) es
+    s `seq` pure (s, a)
+
+modifyM :: State s :> es => (s -> Eff es s) -> Eff es ()
+modifyM f = stateM (\s -> ((), ) <$> f s)

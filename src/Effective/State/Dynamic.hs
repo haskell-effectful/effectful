@@ -28,6 +28,8 @@ module Effective.State.Dynamic
   , put
   , state
   , modify
+  , stateM
+  , modifyM
   ) where
 
 import Control.Concurrent.MVar
@@ -43,7 +45,7 @@ data State s = forall ref. State
   { _ref     :: ref
   , _get     :: forall es.   ref -> Eff es s
   , _put     :: forall es.   ref -> s -> Eff es ref
-  , _state   :: forall es a. ref -> (s -> (a, s)) -> Eff es (a, ref)
+  , _state   :: forall es a. ref -> (s -> Eff es (a, s)) -> Eff es (a, ref)
   }
 
 ----------------------------------------
@@ -63,7 +65,7 @@ statePure s0 = State
   { _ref     = s0
   , _get     = pure
   , _put     = \_ -> pure
-  , _state   = \s f -> pure $ f s
+  , _state   = \s f -> f s
   }
 
 ----------------------------------------
@@ -90,8 +92,9 @@ stateMVar v0 = State
   , _get     = impureEff_ . readMVar
   , _put     = \v s -> impureEff_ . modifyMVar v $ \_ ->
       s `seq` pure (s, v)
-  , _state   = \v f -> impureEff_ . modifyMVar v $ \s0 ->
-      let (a, s) = f s0 in s `seq` pure (s, (a, v))
+  , _state   = \v f -> impureEff $ \es -> modifyMVar v $ \s0 -> do
+      (a, s) <- unEff (f s0) es
+      s `seq` pure (s, (a, v))
   }
 
 ----------------------------------------
@@ -107,8 +110,16 @@ put s = stateEffectM $ \State{..} -> do
 
 state :: State s :> es => (s -> (a, s)) -> Eff es a
 state f = stateEffectM $ \State{..} -> do
-  (a, ref) <- _state _ref f
+  (a, ref) <- _state _ref $ pure . f
   pure (a, State { _ref = ref, .. })
 
 modify :: State s :> es => (s -> s) -> Eff es ()
 modify f = state (\s -> ((), f s))
+
+stateM :: State s :> es => (s -> Eff es (a, s)) -> Eff es a
+stateM f = stateEffectM $ \State{..} -> do
+  (a, ref) <- _state _ref f
+  pure (a, State { _ref = ref, .. })
+
+modifyM :: State s :> es => (s -> Eff es s) -> Eff es ()
+modifyM f = stateM (\s -> ((), ) <$> f s)

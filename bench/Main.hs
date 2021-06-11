@@ -10,8 +10,10 @@ main = defaultMain
   [ bgroup "countdown"
     [ bgroup "reference"       $ mkCountdown nf      countdownRef
     , bgroup "shallow"
-      [ bgroup "effective (S)" $ mkCountdown nfAppIO countdownEffectiveStatic
-      , bgroup "effective (D)" $ mkCountdown nfAppIO countdownEffectiveDynamic
+      [ bgroup "effective (SP)" $ mkCountdown nfAppIO countdownEffectiveStatic
+      , bgroup "effective (SM)" $ mkCountdown nfAppIO countdownEffectiveMVar
+      , bgroup "effective (DP)" $ mkCountdown nfAppIO countdownEffectiveDynPure
+      , bgroup "effective (DM)" $ mkCountdown nfAppIO countdownEffectiveDynMVar
 #ifdef VERSION_freer_simple
       , bgroup "freer-simple"  $ mkCountdown nf      countdownFreerSimple
 #endif
@@ -27,8 +29,10 @@ main = defaultMain
 #endif
       ]
     , bgroup "deep"
-      [ bgroup "effective (S)" $ mkCountdown nfAppIO countdownEffectiveStaticDeep
-      , bgroup "effective (D)" $ mkCountdown nfAppIO countdownEffectiveDynamicDeep
+      [ bgroup "effective (SP)" $ mkCountdown nfAppIO countdownEffectiveStaticDeep
+      , bgroup "effective (SM)" $ mkCountdown nfAppIO countdownEffectiveMVarDeep
+      , bgroup "effective (DP)" $ mkCountdown nfAppIO countdownEffectiveDynPureDeep
+      , bgroup "effective (DM)" $ mkCountdown nfAppIO countdownEffectiveDynMVarDeep
 #ifdef VERSION_eff
       , bgroup "eff"           $ mkCountdown nf      countdownEffDeep
 #endif

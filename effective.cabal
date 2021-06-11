@@ -7,12 +7,13 @@ license-file:       LICENSE
 category:           Control
 maintainer:         andrzej@rybczak.net
 author:             Andrzej Rybczak
-synopsis:           An effect system based on the ReaderT design pattern.
+synopsis:           A simple, yet powerful extensible effects library.
 
-description: An effect system based on the ReaderT design pattern, combining
-  advantages of both.
+description: A simple, yet powerful extensible effects library with seamless
+             integration with the Haskell ecosystem.
 
 extra-source-files: CHANGELOG.md
+
 tested-with: GHC ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.4
               || ==9.0.1 || ==9.2.0.20210422
 
@@ -55,6 +56,7 @@ library
     import:         language
 
     build-depends:    base <5
+                    , containers
                     , exceptions
                     , ghc-prim
                     , monad-control

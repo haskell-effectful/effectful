@@ -32,14 +32,14 @@ instance Exception FsError
 -- Operations
 
 -- | Read contents of a file.
-readFile :: (FileSystem :> es, Error FsError :> es) => FilePath -> String -> Eff es ()
-readFile path contents = stateEffectM $ \FileSystem{..} -> do
-  fs <- _writeFile _fs path contents
-  pure ((), FileSystem { _fs = fs, .. })
+readFile :: (FileSystem :> es, Error FsError :> es) => FilePath -> Eff es String
+readFile path = readerEffectM $ \FileSystem{..} -> _readFile _fs path
 
 -- | Write contents to a file.
-writeFile :: (FileSystem :> es, Error FsError :> es) => FilePath -> Eff es String
-writeFile path = readerEffectM $ \FileSystem{..} -> _readFile _fs path
+writeFile :: (FileSystem :> es, Error FsError :> es) => FilePath -> String -> Eff es ()
+writeFile path contents = stateEffectM $ \FileSystem{..} -> do
+  fs <- _writeFile _fs path contents
+  pure ((), FileSystem { _fs = fs, .. })
 
 ----------------------------------------
 -- Handlers

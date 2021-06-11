@@ -8,24 +8,24 @@ import Countdown
 main :: IO ()
 main = defaultMain
   [ bgroup "countdown"
-    [ bgroup "reference"       $ mkCountdown nf      countdownRef
+    [ bgroup "reference"        $ mkCountdown nf      countdownRef
     , bgroup "shallow"
       [ bgroup "effective (SP)" $ mkCountdown nfAppIO countdownEffectiveStatic
       , bgroup "effective (SM)" $ mkCountdown nfAppIO countdownEffectiveMVar
       , bgroup "effective (DP)" $ mkCountdown nfAppIO countdownEffectiveDynPure
       , bgroup "effective (DM)" $ mkCountdown nfAppIO countdownEffectiveDynMVar
 #ifdef VERSION_freer_simple
-      , bgroup "freer-simple"  $ mkCountdown nf      countdownFreerSimple
+      , bgroup "freer-simple"   $ mkCountdown nf      countdownFreerSimple
 #endif
 #ifdef VERSION_eff
-      , bgroup "eff"           $ mkCountdown nf      countdownEff
+      , bgroup "eff"            $ mkCountdown nf      countdownEff
 #endif
-      , bgroup "mtl"           $ mkCountdown nf      countdownMtl
+      , bgroup "mtl"            $ mkCountdown nf      countdownMtl
 #ifdef VERSION_fused_effects
-      , bgroup "fused-effects" $ mkCountdown nf      countdownFusedEffects
+      , bgroup "fused-effects"  $ mkCountdown nf      countdownFusedEffects
 #endif
 #ifdef VERSION_polysemy
-      , bgroup "polysemy"      $ mkCountdown nf      countdownPolysemy
+      , bgroup "polysemy"       $ mkCountdown nf      countdownPolysemy
 #endif
       ]
     , bgroup "deep"
@@ -34,17 +34,17 @@ main = defaultMain
       , bgroup "effective (DP)" $ mkCountdown nfAppIO countdownEffectiveDynPureDeep
       , bgroup "effective (DM)" $ mkCountdown nfAppIO countdownEffectiveDynMVarDeep
 #ifdef VERSION_eff
-      , bgroup "eff"           $ mkCountdown nf      countdownEffDeep
+      , bgroup "eff"            $ mkCountdown nf      countdownEffDeep
 #endif
 #ifdef VERSION_freer_simple
-      , bgroup "freer-simple"  $ mkCountdown nf      countdownFreerSimpleDeep
+      , bgroup "freer-simple"   $ mkCountdown nf      countdownFreerSimpleDeep
 #endif
 #ifdef VERSION_polysemy
-      , bgroup "polysemy"      $ mkCountdown nf      countdownPolysemyDeep
+      , bgroup "polysemy"       $ mkCountdown nf      countdownPolysemyDeep
 #endif
-      , bgroup "mtl"           $ mkCountdown nf      countdownMtlDeep
+      , bgroup "mtl"            $ mkCountdown nf      countdownMtlDeep
 #ifdef VERSION_fused_effects
-      , bgroup "fused-effects" $ mkCountdown nf      countdownFusedEffectsDeep
+      , bgroup "fused-effects"  $ mkCountdown nf      countdownFusedEffectsDeep
 #endif
       ]
     ]

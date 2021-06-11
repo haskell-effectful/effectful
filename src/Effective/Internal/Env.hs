@@ -92,16 +92,16 @@ unsafeReplaceEnv (Env ref0) (Env ref1) = writeIORef ref0 =<< readIORef ref1
 unsafeConsEnv :: HasCallStack => e -> Env es -> IO (Env (e : es))
 unsafeConsEnv e (Env ref) = do
   EnvRef n es0 <- readIORef ref
-  let len = sizeofSmallMutableArray es0
-  case n `compare` len of
-    GT -> error $ "n (" ++ show n ++ ") > len (" ++ show len ++ ")"
+  let len0 = sizeofSmallMutableArray es0
+  case n `compare` len0 of
+    GT -> error $ "n (" ++ show n ++ ") > len0 (" ++ show len0 ++ ")"
     LT -> do
       e `seq` writeSmallArray es0 n (toAny e)
       writeIORef ref $! EnvRef (n + 1) es0
     EQ -> do
-      let newLen = max 1 len * 2
-      es <- newSmallArray newLen (error "undefined field")
-      copySmallMutableArray es 0 es0 0 len
+      let len = doubleCapacity len0
+      es <- newSmallArray len (error "undefined field")
+      copySmallMutableArray es 0 es0 0 len0
       e `seq` writeSmallArray es n (toAny e)
       writeIORef ref $! EnvRef (n + 1) es
   pure $ Env ref
@@ -183,6 +183,9 @@ unsafeStateEnv f (Env ref) = do
 
 ----------------------------------------
 -- Internal helpers
+
+doubleCapacity :: Int -> Int
+doubleCapacity n = max 1 n * 2
 
 toAny :: a -> Any
 toAny = unsafeCoerce

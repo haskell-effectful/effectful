@@ -1,8 +1,12 @@
 # effective
 
 [![Build Status](https://github.com/arybczak/effective/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/arybczak/effective/actions?query=branch%3Amaster)
+[![Hackage](https://img.shields.io/hackage/v/effective.svg)](https://hackage.haskell.org/package/effective)
 
-A simple, yet powerful extensible effects library (in the making).
+*Note:* this is a pre-release.
+
+A performant, easy to reason about extensible effects library with seamless
+integration with the existing Haskell ecosystem.
 
 Main features:
 
@@ -13,7 +17,7 @@ Main features:
 3. Correct semantics in presence of runtime exceptions (no more lost or
    discarded state).
 
-4. Seamless integration with existing Haskell ecosystem (`exceptions`,
+4. Seamless integration with the existing ecosystem (`exceptions`,
    `monad-control`, `unliftio-core`, `resourcet`).
 
 5. Effects can be defined for either
@@ -26,8 +30,7 @@ Main features:
 
 ## Motivation
 
-Let's address the elephant in the room. Do we really need yet another library
-for handling effects? There's
+Do we really need yet another library for handling effects? There's
 [freer-simple](https://hackage.haskell.org/package/freer-simple),
 [fused-effects](https://hackage.haskell.org/package/fused-effects),
 [polysemy](https://hackage.haskell.org/package/polysemy),
@@ -36,7 +39,7 @@ for handling effects? There's
 Unfortunately, of all of them only `eff` is a promising proposition because
 of reasonable performance characteristics (see the talk "Effects for Less"
 linked below for more information) and potential for good interoperability with
-existing ecosystem.
+the existing ecosystem.
 
 The second point is arguably the most important, because it allows focusing on
 things that matter instead of reinventing all kinds of wheels and is crucial for
@@ -59,7 +62,7 @@ support for them has been accepted).
 
 On the other hand, if support for continuations is excluded from the handler
 monad, then the ability to define effects with non-linear control flow (such as
-`NonDet`) is lost. I'll argue it's a small price to pay for predictability,
+`NonDet`) is lost. Arguably it's a small price to pay for predictability,
 because such specialized effects are needed rarely and locally, at which point a
 dedicated, well established solution such as
 [conduit](https://hackage.haskell.org/package/conduit),

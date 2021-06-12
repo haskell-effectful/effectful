@@ -1,7 +1,7 @@
 cabal-version:      2.4
 build-type:         Simple
 name:               effective
-version:            0.1.0.0
+version:            0.0.0.0
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control
@@ -9,8 +9,8 @@ maintainer:         andrzej@rybczak.net
 author:             Andrzej Rybczak
 synopsis:           A simple, yet powerful extensible effects library.
 
-description: A simple, yet powerful extensible effects library with seamless
-             integration with the Haskell ecosystem.
+description: A performant, easy to reason about extensible effects library with
+             seamless integration with the existing Haskell ecosystem.
 
 extra-source-files: CHANGELOG.md
 

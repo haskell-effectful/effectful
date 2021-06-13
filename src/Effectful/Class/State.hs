@@ -1,11 +1,11 @@
 {-# LANGUAGE UndecidableInstances #-}
-module Effective.Class.State where
+module Effectful.Class.State where
 
 import Control.Monad.Trans.Class
 
-import Effective.Internal.Has
-import Effective.Internal.Monad
-import qualified Effective.State.Dynamic as S
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
+import qualified Effectful.State.Dynamic as S
 
 -- | Compatiblity layer for a transition period from MTL-style effect handling
 -- to 'Effective.Eff'.

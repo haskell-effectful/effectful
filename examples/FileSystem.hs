@@ -13,8 +13,8 @@ import qualified Control.Exception as E
 import qualified Data.Map.Strict as M
 import qualified System.IO as IO
 
-import Effective
-import Effective.Error
+import Effectful
+import Effectful.Error
 
 -- | Effect for reading and writing files.
 data FileSystem = forall fs. FileSystem

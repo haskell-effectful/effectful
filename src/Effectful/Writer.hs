@@ -1,5 +1,5 @@
 -- | The 'Writer' as an effect.
-module Effective.Writer
+module Effectful.Writer
   ( Writer
   , runWriter
   , execWriter
@@ -12,8 +12,8 @@ module Effective.Writer
 import Data.Coerce
 import qualified Data.Semigroup as S
 
-import Effective.Internal.Has
-import Effective.Internal.Monad
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
 
 -- | Provide access to a write only value of type @w@.
 newtype Writer w = Writer w

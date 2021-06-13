@@ -1,7 +1,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 -- | Resource management via 'R.MonadResource'.
-module Effective.Resource
+module Effectful.Resource
   ( Resource
   , runResource
 
@@ -17,9 +17,9 @@ import Control.Exception
 import qualified Control.Monad.Trans.Resource as R
 import qualified Control.Monad.Trans.Resource.Internal as RI
 
-import Effective.Internal.Env
-import Effective.Internal.Has
-import Effective.Internal.Monad
+import Effectful.Internal.Env
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
 
 -- | Data tag for a resource effect.
 newtype Resource = Resource R.InternalState

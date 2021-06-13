@@ -1,5 +1,5 @@
 -- | Support for checked exceptions.
-module Effective.Error
+module Effectful.Error
  ( Error
  , runError
  , throwError
@@ -11,10 +11,10 @@ import Control.Exception
 import Data.Typeable
 import GHC.Stack
 
-import Effective.Internal.Env
-import Effective.Internal.Has
-import Effective.Internal.Monad
-import Effective.Internal.Utils
+import Effectful.Internal.Env
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
+import Effectful.Internal.Utils
 
 type role Error nominal
 data Error e = Error

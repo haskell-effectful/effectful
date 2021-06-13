@@ -1,12 +1,12 @@
-# effective
+# effectful
 
-[![Build Status](https://github.com/arybczak/effective/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/arybczak/effective/actions?query=branch%3Amaster)
-[![Hackage](https://img.shields.io/hackage/v/effective.svg)](https://hackage.haskell.org/package/effective)
+[![Build Status](https://github.com/arybczak/effectful/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/arybczak/effectful/actions?query=branch%3Amaster)
+[![Hackage](https://img.shields.io/hackage/v/effectful.svg)](https://hackage.haskell.org/package/effectful)
 
 *Note:* this is a pre-release.
 
-A performant, easy to reason about extensible effects library with seamless
-integration with the existing Haskell ecosystem.
+A simple, performant extensible effects library with seamless integration with
+the existing ecosystem.
 
 Main features:
 
@@ -36,10 +36,10 @@ Do we really need yet another library for handling effects? There's
 [polysemy](https://hackage.haskell.org/package/polysemy),
 [eff](https://github.com/hasura/eff) and probably a few more.
 
-Unfortunately, of all of them only `eff` is a promising proposition because
-of reasonable performance characteristics (see the talk "Effects for Less"
-linked below for more information) and potential for good interoperability with
-the existing ecosystem.
+Unfortunately, of all of them only `eff` is a promising proposition because of
+reasonable performance characteristics (see the talk "Effects for Less" linked
+below for more information) and potential for good interoperability with the
+existing ecosystem.
 
 The second point is arguably the most important, because it allows focusing on
 things that matter instead of reinventing all kinds of wheels and is crucial for
@@ -69,7 +69,7 @@ dedicated, well established solution such as
 [list-t](https://hackage.haskell.org/package/list-t) or
 [logict](https://hackage.haskell.org/package/logict) can be used.
 
-This is where `effective` comes in. The `Eff` monad it uses is essentially a
+This is where `effectful` comes in. The `Eff` monad it uses is essentially a
 `ReaderT` over `IO` on steroids, allowing us to dynamically extend its
 environment with data types that represent effects.
 
@@ -93,7 +93,7 @@ What is more:
 - If an advanced effect with non-linear control flow is needed, you can always
   stick a transformer that implements it on top of `Eff` in a local context.
 
-In conclusion, `effective` aims to reduce duplication and bring back performance
+In conclusion, `effectful` aims to reduce duplication and bring back performance
 to "boring" transformer stacks, most of which are a dozen of newtype'd `StateT`
 or `ReaderT` transformers, each with a few associated operations (usually tied
 to a type class), not to replace monad transformers altogether.
@@ -102,7 +102,7 @@ to a type class), not to replace monad transformers altogether.
 
 A `Filesystem` effect with two handlers, one that runs in `IO` and another that
 uses an in-memory virtual file system can be found
-[here](https://github.com/arybczak/effective/blob/master/examples/FileSystem.hs).
+[here](https://github.com/arybczak/effectful/blob/master/examples/FileSystem.hs).
 
 ## Resources
 

@@ -10,7 +10,7 @@
 --
 -- However, let's include this for now.
 --
-module Effective.State.Dynamic
+module Effectful.State.Dynamic
   ( State
 
   -- * Pure
@@ -34,8 +34,8 @@ module Effective.State.Dynamic
 
 import Control.Concurrent.MVar
 
-import Effective.Internal.Has
-import Effective.Internal.Monad
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
 
 -- | Provide access to a mutable state of type @s@.
 --

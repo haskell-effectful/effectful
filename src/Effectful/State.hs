@@ -9,7 +9,7 @@
 -- If you plan to do the latter, have a look at "Effective.State.MVar" or
 -- "Effective.State.Dynamic".
 --
-module Effective.State
+module Effectful.State
   ( State
   , runState
   , evalState
@@ -24,8 +24,8 @@ module Effective.State
 
 import Data.Coerce
 
-import Effective.Internal.Has
-import Effective.Internal.Monad
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
 
 -- | Provide access to a pure, mutable state of type @s@.
 newtype State s = State { unState :: s }

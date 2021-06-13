@@ -1,5 +1,5 @@
 {-# LANGUAGE UndecidableInstances #-}
-module Effective.Class.Reader
+module Effectful.Class.Reader
   ( MonadReader(..)
   , asks
   ) where
@@ -7,9 +7,9 @@ module Effective.Class.Reader
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Control
 
-import Effective.Internal.Has
-import Effective.Internal.Monad
-import qualified Effective.Reader as R
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
+import qualified Effectful.Reader as R
 
 -- | Compatiblity layer for a transition period from MTL-style effect handling
 -- to 'Effective.Eff'.

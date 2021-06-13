@@ -3,7 +3,7 @@
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
-module Effective.Internal.Env
+module Effectful.Internal.Env
   ( Env
 
   -- * Safe operations
@@ -34,7 +34,7 @@ import GHC.Exts (Any)
 import GHC.Stack
 import Unsafe.Coerce
 
-import Effective.Internal.Has
+import Effectful.Internal.Has
 
 type role Env nominal
 

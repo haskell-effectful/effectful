@@ -1,5 +1,5 @@
 -- | Experimental support for coroutines.
-module Effective.Coroutine
+module Effectful.Coroutine
   ( Coroutine
   , Status(..)
   , runCoroutine
@@ -11,9 +11,9 @@ import Control.Exception
 import Data.Function
 import qualified Control.Concurrent as C
 
-import Effective.Internal.Env
-import Effective.Internal.Has
-import Effective.Internal.Monad
+import Effectful.Internal.Env
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
 
 data Coroutine o i = forall es r. Coroutine
   { crInput         :: MVar (i, Env es)

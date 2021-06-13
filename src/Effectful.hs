@@ -1,4 +1,4 @@
-module Effective
+module Effectful
   ( -- * The 'Eff' monad
     Eff
   , runEff
@@ -30,5 +30,5 @@ module Effective
   , stateEffectM
   ) where
 
-import Effective.Internal.Has
-import Effective.Internal.Monad
+import Effectful.Internal.Has
+import Effectful.Internal.Monad

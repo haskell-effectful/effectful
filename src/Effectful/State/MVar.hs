@@ -6,7 +6,7 @@
 --
 -- - suitable for sharing between multiple threads.
 --
-module Effective.State.MVar
+module Effectful.State.MVar
   ( State
   , runState
   , evalState
@@ -21,8 +21,8 @@ module Effective.State.MVar
 
 import Control.Concurrent.MVar
 
-import Effective.Internal.Has
-import Effective.Internal.Monad
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
 
 -- | Provide access to a synchronized, mutable state of type @s@.
 newtype State s = State (MVar s)

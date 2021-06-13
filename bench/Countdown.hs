@@ -8,12 +8,12 @@ import Data.Functor.Identity
 import qualified Control.Effect as L
 #endif
 
--- effective
-import qualified Effective as E
-import qualified Effective.Reader as E
-import qualified Effective.State as E
-import qualified Effective.State.MVar as ME
-import qualified Effective.State.Dynamic as DE
+-- effectful
+import qualified Effectful as E
+import qualified Effectful.Reader as E
+import qualified Effectful.State as E
+import qualified Effectful.State.MVar as ME
+import qualified Effectful.State.Dynamic as DE
 
 -- freer-simple
 #ifdef VERSION_freer_simple
@@ -73,89 +73,89 @@ countdownMtlDeep n = runIdentity
     runR = flip M.runReaderT ()
 
 ----------------------------------------
--- effective (pure)
+-- effectful (pure)
 
-programEffectiveStatic :: E.State Integer E.:> es => E.Eff es Integer
-programEffectiveStatic = do
+programEffectfulStatic :: E.State Integer E.:> es => E.Eff es Integer
+programEffectfulStatic = do
   n <- E.get @Integer
   if n <= 0
     then pure n
     else do
       E.put (n - 1)
-      programEffectiveStatic
-{-# NOINLINE programEffectiveStatic #-}
+      programEffectfulStatic
+{-# NOINLINE programEffectfulStatic #-}
 
-countdownEffectiveStatic :: Integer -> IO (Integer, Integer)
-countdownEffectiveStatic n = E.runEff . E.runState n $ programEffectiveStatic
+countdownEffectfulStatic :: Integer -> IO (Integer, Integer)
+countdownEffectfulStatic n = E.runEff . E.runState n $ programEffectfulStatic
 
-countdownEffectiveStaticDeep :: Integer -> IO (Integer, Integer)
-countdownEffectiveStaticDeep n = E.runEff
+countdownEffectfulStaticDeep :: Integer -> IO (Integer, Integer)
+countdownEffectfulStaticDeep n = E.runEff
   . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
   . E.runState n
   . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
-  $ programEffectiveStatic
+  $ programEffectfulStatic
   where
     runR = E.runReader ()
 
 ----------------------------------------
--- effective (mvar)
+-- effectful (mvar)
 
-programEffectiveMVar :: ME.State Integer E.:> es => E.Eff es Integer
-programEffectiveMVar = do
+programEffectfulMVar :: ME.State Integer E.:> es => E.Eff es Integer
+programEffectfulMVar = do
   n <- ME.get @Integer
   if n <= 0
     then pure n
     else do
       ME.put (n - 1)
-      programEffectiveMVar
-{-# NOINLINE programEffectiveMVar #-}
+      programEffectfulMVar
+{-# NOINLINE programEffectfulMVar #-}
 
-countdownEffectiveMVar :: Integer -> IO (Integer, Integer)
-countdownEffectiveMVar n = E.runEff . ME.runState n $ programEffectiveMVar
+countdownEffectfulMVar :: Integer -> IO (Integer, Integer)
+countdownEffectfulMVar n = E.runEff . ME.runState n $ programEffectfulMVar
 
-countdownEffectiveMVarDeep :: Integer -> IO (Integer, Integer)
-countdownEffectiveMVarDeep n = E.runEff
+countdownEffectfulMVarDeep :: Integer -> IO (Integer, Integer)
+countdownEffectfulMVarDeep n = E.runEff
   . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
   . ME.runState n
   . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
-  $ programEffectiveMVar
+  $ programEffectfulMVar
   where
     runR = E.runReader ()
 
 ----------------------------------------
--- effective (dynamic)
+-- effectful (dynamic)
 
-programEffectiveDynamic :: DE.State Integer E.:> es => E.Eff es Integer
-programEffectiveDynamic = do
+programEffectfulDynamic :: DE.State Integer E.:> es => E.Eff es Integer
+programEffectfulDynamic = do
   n <- DE.get @Integer
   if n <= 0
     then pure n
     else do
       DE.put (n - 1)
-      programEffectiveDynamic
-{-# NOINLINE programEffectiveDynamic #-}
+      programEffectfulDynamic
+{-# NOINLINE programEffectfulDynamic #-}
 
-countdownEffectiveDynPure :: Integer -> IO (Integer, Integer)
-countdownEffectiveDynPure n = E.runEff . DE.runState n $ programEffectiveDynamic
+countdownEffectfulDynPure :: Integer -> IO (Integer, Integer)
+countdownEffectfulDynPure n = E.runEff . DE.runState n $ programEffectfulDynamic
 
-countdownEffectiveDynMVar :: Integer -> IO (Integer, Integer)
-countdownEffectiveDynMVar n = E.runEff . DE.runStateMVar n $ programEffectiveDynamic
+countdownEffectfulDynMVar :: Integer -> IO (Integer, Integer)
+countdownEffectfulDynMVar n = E.runEff . DE.runStateMVar n $ programEffectfulDynamic
 
-countdownEffectiveDynPureDeep :: Integer -> IO (Integer, Integer)
-countdownEffectiveDynPureDeep n = E.runEff
+countdownEffectfulDynPureDeep :: Integer -> IO (Integer, Integer)
+countdownEffectfulDynPureDeep n = E.runEff
   . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
   . DE.runState n
   . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
-  $ programEffectiveDynamic
+  $ programEffectfulDynamic
   where
     runR = E.runReader ()
 
-countdownEffectiveDynMVarDeep :: Integer -> IO (Integer, Integer)
-countdownEffectiveDynMVarDeep n = E.runEff
+countdownEffectfulDynMVarDeep :: Integer -> IO (Integer, Integer)
+countdownEffectfulDynMVarDeep n = E.runEff
   . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
   . DE.runStateMVar n
   . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
-  $ programEffectiveDynamic
+  $ programEffectfulDynamic
   where
     runR = E.runReader ()
 

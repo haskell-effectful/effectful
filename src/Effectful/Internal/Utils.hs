@@ -3,7 +3,7 @@
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
-module Effective.Internal.Utils
+module Effectful.Internal.Utils
   ( ppCallStack
   ) where
 

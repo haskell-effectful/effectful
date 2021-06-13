@@ -1,5 +1,5 @@
 -- | The 'Reader' as an effect.
-module Effective.Reader
+module Effectful.Reader
   ( Reader
   , runReader
   , ask
@@ -8,8 +8,8 @@ module Effective.Reader
   , asks
   ) where
 
-import Effective.Internal.Has
-import Effective.Internal.Monad
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
 
 -- | Provide access to a read only value of type @r@.
 newtype Reader r = Reader { unReader :: r }

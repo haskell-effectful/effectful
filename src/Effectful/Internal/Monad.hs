@@ -4,7 +4,7 @@
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
-module Effective.Internal.Monad
+module Effectful.Internal.Monad
   ( -- * Monad
     Eff(..)
   , runEff
@@ -36,8 +36,8 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Control
 import GHC.Magic (oneShot)
 
-import Effective.Internal.Env
-import Effective.Internal.Has
+import Effectful.Internal.Env
+import Effectful.Internal.Has
 
 type role Eff nominal representational
 

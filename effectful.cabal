@@ -1,6 +1,6 @@
 cabal-version:      2.4
 build-type:         Simple
-name:               effective
+name:               effectful
 version:            0.0.0.0
 license:            BSD-3-Clause
 license-file:       LICENSE
@@ -9,18 +9,18 @@ maintainer:         andrzej@rybczak.net
 author:             Andrzej Rybczak
 synopsis:           A simple, yet powerful extensible effects library.
 
-description: A performant, easy to reason about extensible effects library with
-             seamless integration with the existing Haskell ecosystem.
+description: A simple, performant extensible effects library with seamless
+             integration with the existing Haskell ecosystem.
 
 extra-source-files: CHANGELOG.md
 
 tested-with: GHC ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.4
               || ==9.0.1 || ==9.2.0.20210422
 
-bug-reports:   https://github.com/arybczak/effective/issues
+bug-reports:   https://github.com/arybczak/effectful/issues
 source-repository head
   type:     git
-  location: https://github.com/arybczak/effective.git
+  location: https://github.com/arybczak/effectful.git
 
 common language
     ghc-options:        -Wall
@@ -34,17 +34,15 @@ common language
                         DeriveFunctor
                         FlexibleContexts
                         FlexibleInstances
-                        FunctionalDependencies
                         GADTs
                         GeneralizedNewtypeDeriving
-                        InstanceSigs
                         LambdaCase
                         NamedFieldPuns
+                        MultiParamTypeClasses
                         RankNTypes
                         RecordWildCards
                         RoleAnnotations
                         ScopedTypeVariables
-                        StandaloneDeriving
                         StrictData
                         TupleSections
                         TypeApplications
@@ -68,22 +66,22 @@ library
 
     hs-source-dirs:  src
 
-    exposed-modules: Effective
-                     Effective.Class.Reader
-                     Effective.Class.State
-                     Effective.Class.Writer
-                     Effective.Coroutine
-                     Effective.Error
-                     Effective.Internal.Env
-                     Effective.Internal.Has
-                     Effective.Internal.Monad
-                     Effective.Internal.Utils
-                     Effective.Reader
-                     Effective.Resource
-                     Effective.State
-                     Effective.State.Dynamic
-                     Effective.State.MVar
-                     Effective.Writer
+    exposed-modules: Effectful
+                     Effectful.Class.Reader
+                     Effectful.Class.State
+                     Effectful.Class.Writer
+                     Effectful.Coroutine
+                     Effectful.Error
+                     Effectful.Internal.Env
+                     Effectful.Internal.Has
+                     Effectful.Internal.Monad
+                     Effectful.Internal.Utils
+                     Effectful.Reader
+                     Effectful.Resource
+                     Effectful.State
+                     Effectful.State.Dynamic
+                     Effectful.State.MVar
+                     Effectful.Writer
 
 test-suite test
     import:         language
@@ -91,7 +89,7 @@ test-suite test
     ghc-options:    -threaded -rtsopts
 
     build-depends:    base <5
-                    , effective
+                    , effectful
                     , exceptions
                     , lifted-async
                     , lifted-base
@@ -119,7 +117,7 @@ benchmark bench
        build-depends: polysemy
 
     build-depends:    base <5
-                    , effective
+                    , effectful
                     , mtl
                     , tasty-bench
 

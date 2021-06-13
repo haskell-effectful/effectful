@@ -8,11 +8,11 @@ import qualified Control.Monad.Catch as E
 import qualified Control.Exception.Lifted as LE
 import qualified UnliftIO.Exception as UE
 
-import Effective
-import Effective.State
+import Effectful
+import Effectful.State
 
 main :: IO ()
-main = defaultMain $ testGroup "effective"
+main = defaultMain $ testGroup "effectful"
   [ testGroup "state"
     [ testCase "runState & execState" test_runState
     , testCase "evalState" test_evalState

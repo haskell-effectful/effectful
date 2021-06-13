@@ -1,12 +1,12 @@
 {-# LANGUAGE UndecidableInstances #-}
-module Effective.Class.Writer where
+module Effectful.Class.Writer where
 
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Control
 
-import Effective.Internal.Has
-import Effective.Internal.Monad
-import qualified Effective.Writer as W
+import Effectful.Internal.Has
+import Effectful.Internal.Monad
+import qualified Effectful.Writer as W
 
 -- | Compatiblity layer for a transition period from MTL-style effect handling
 -- to 'Effective.Eff'.

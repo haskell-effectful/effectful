@@ -93,8 +93,11 @@ test-suite test
     build-depends:    base <5
                     , effective
                     , exceptions
+                    , lifted-async
+                    , lifted-base
                     , tasty
                     , tasty-hunit
+                    , unliftio
 
     hs-source-dirs: tests
 

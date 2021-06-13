@@ -1,9 +1,12 @@
 module Main (main) where
 
-import Control.Monad.Catch
+import Control.Concurrent.Async.Lifted
 import Control.Monad.IO.Class
 import Test.Tasty
 import Test.Tasty.HUnit
+import qualified Control.Monad.Catch as E
+import qualified Control.Exception.Lifted as LE
+import qualified UnliftIO.Exception as UE
 
 import Effective
 import Effective.State
@@ -16,6 +19,7 @@ main = defaultMain $ testGroup "effective"
     , testCase "stateM" test_stateM
     , testCase "deep stack" test_deepStack
     , testCase "exceptions" test_exceptions
+    , testCase "concurrency" test_concurrentState
     ]
   ]
 
@@ -50,28 +54,60 @@ test_deepStack = runEffIO $ do
 
 test_exceptions :: Assertion
 test_exceptions = runEffIO $ do
-  e <- try @_ @Ex $ runState (0::Int) action
-  assertEqual_ "exception caught" e (Left Ex)
-
-  s1 <- execState (0::Int) $ try @_ @Ex action
-  assertEqual_ "state partially updated" s1 1
-
-  s2 <- execState (0::Int) $ do
-    evalState () action `catch` \Ex -> modify @Int (+4)
-    modify @Int (+8)
-  assertEqual_ "state correctly updated" s2 13
+  testTry   "exceptions"  E.try
+  testCatch "exceptions"  E.catch
+  testTry   "lifted-base" LE.try
+  testCatch "lifted-base" LE.catch
+  testTry   "unliftio"    UE.try
+  testCatch "unliftio"    UE.catch
   where
+    testTry
+      :: String
+      -> (forall a es. IOE :> es => Eff es a -> Eff es (Either Ex a))
+      -> Eff '[IOE] ()
+    testTry lib tryImpl = do
+      e <- tryImpl $ runState (0::Int) action
+      assertEqual_ (lib ++ " - exception caught") e (Left Ex)
+      s <- execState (0::Int) $ tryImpl action
+      assertEqual_ (lib ++ " - state partially updated") s 1
+
+    testCatch
+      :: String
+      -> (forall a es. IOE :> es => Eff es a -> (Ex -> Eff es a) -> Eff es a)
+      -> Eff '[IOE] ()
+    testCatch lib catchImpl = do
+      s <- execState (0::Int) $ do
+        _ <- (evalState () action) `catchImpl` \Ex -> modify @Int (+4)
+        modify @Int (+8)
+      assertEqual_ (lib ++ " - state correctly updated") s 13
+
     action :: State Int :> es => Eff es ()
     action = do
       modify @Int (+1)
-      _ <- throwM Ex
+      _ <- E.throwM Ex
       modify @Int (+2)
+
+test_concurrentState :: Assertion
+test_concurrentState = runEffIO . evalState x $ do
+  replicateConcurrently_ 2 $ do
+    r <- goDownward 0
+    assertEqual_ "x = n" x r
+  where
+    x :: Int
+    x = 1000000
+
+    goDownward :: State Int :> es => Int -> Eff es Int
+    goDownward acc = get @Int >>= \case
+      0 -> pure acc
+      n -> do
+        put $ n - 1
+        goDownward $ acc + 1
 
 ----------------------------------------
 -- Helpers
 
 data Ex = Ex deriving (Eq, Show)
-instance Exception Ex
+instance E.Exception Ex
 
 runEffIO :: Eff '[IOE] a -> IO a
 runEffIO = runEff . runIOE

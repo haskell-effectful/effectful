@@ -28,6 +28,7 @@ module Effective.Internal.Monad
   , stateEffectM
   ) where
 
+import Control.Concurrent (myThreadId)
 import Control.Monad.Base
 import Control.Monad.Catch
 import Control.Monad.IO.Class
@@ -113,12 +114,24 @@ instance IOE :> es => MonadBase IO (Eff es) where
 
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
-  liftBaseWith f = impureEff $ \es -> f $ \(Eff m) -> m es
+  liftBaseWith = runInIO
   restoreM = pure
 
 instance IOE :> es => MonadUnliftIO (Eff es) where
-  withRunInIO k = impureEff $ \es ->
-    withRunInIO $ \run -> k (\(Eff m) -> run $ m es)
+  withRunInIO = runInIO
+
+-- | Run 'Eff' computations in 'IO'.
+runInIO :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
+runInIO f = impureEff $ \es -> do
+  tid0 <- myThreadId
+  f $ \(Eff m) -> do
+    tid <- myThreadId
+    -- If the lifting function is called from a different thread, we need to
+    -- clone the environment, otherwise multiple threads will attempt to modify
+    -- it in different ways and things will break horribly.
+    if tid0 == tid
+      then m es
+      else m =<< cloneEnv es
 
 ----------------------------------------
 -- Helpers

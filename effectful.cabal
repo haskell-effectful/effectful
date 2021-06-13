@@ -13,6 +13,7 @@ description: A simple, performant extensible effects library with seamless
              integration with the existing Haskell ecosystem.
 
 extra-source-files: CHANGELOG.md
+                    README.md
 
 tested-with: GHC ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.4
               || ==9.0.1 || ==9.2.0.20210422

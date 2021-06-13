@@ -82,10 +82,10 @@ instance MonadCatch (Eff es) where
 
 instance MonadMask (Eff es) where
   mask k = impureEff $ \es -> mask $ \restore ->
-    unEff (k $ (\f (Eff m) -> impureEff $ f . m) restore) es
+    unEff (k $ \(Eff m) -> impureEff $ restore . m) es
 
   uninterruptibleMask k = impureEff $ \es -> uninterruptibleMask $ \restore ->
-    unEff (k $ (\f (Eff m) -> impureEff $ f . m) restore) es
+    unEff (k $ \(Eff m) -> impureEff $ restore . m) es
 
   generalBracket acquire release use = impureEff $ \es -> mask $ \restore -> do
     size <- sizeEnv es

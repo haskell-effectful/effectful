@@ -9,7 +9,7 @@ import Effectful.Internal.Monad
 import qualified Effectful.Writer as W
 
 -- | Compatiblity layer for a transition period from MTL-style effect handling
--- to 'Effective.Eff'.
+-- to 'Effectful.Eff'.
 class Monad m => MonadWriter w m where
   {-# MINIMAL (writer | tell), listen #-}
 

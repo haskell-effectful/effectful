@@ -1,5 +1,5 @@
 {-# OPTIONS_HADDOCK not-home #-}
--- | The enviroment for 'Effective.Internal.Monad.Eff'.
+-- | The enviroment for 'Effectful.Internal.Monad.Eff'.
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.

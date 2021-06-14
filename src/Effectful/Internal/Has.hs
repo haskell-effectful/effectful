@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_HADDOCK not-home #-}
--- | Type-safe indexing for 'Effective.Internal.Monad.Env'.
+-- | Type-safe indexing for 'Effectful.Internal.Monad.Env'.
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
@@ -30,6 +30,6 @@ instance {-# OVERLAPPING #-} e :> (e : es) where
 instance e :> es => e :> (x : es) where
   ixOf = 1 + ixOf @e @es
 
--- | Get position of @e@ in the 'Effective.Internal.Env.Env'.
+-- | Get position of @e@ in the 'Effectful.Internal.Env.Env'.
 ixEnv :: forall e es. e :> es => Int -> Int
 ixEnv n = n - ixOf @e @es - 1

@@ -1,7 +1,7 @@
 -- | The 'State' as an effect with dynamic dispatch.
 --
 -- It's not clear in which situation it's beneficial to use this instead of
--- "Effective.State" or "Effective.State.MVar" as you either:
+-- "Effectful.State" or "Effectful.State.MVar" as you either:
 --
 -- - Share state between threads and need the synchonized version.
 --

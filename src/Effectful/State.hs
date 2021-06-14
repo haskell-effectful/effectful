@@ -6,8 +6,8 @@
 --
 -- - not suitable for sharing between multiple threads.
 --
--- If you plan to do the latter, have a look at "Effective.State.MVar" or
--- "Effective.State.Dynamic".
+-- If you plan to do the latter, have a look at "Effectful.State.MVar" or
+-- "Effectful.State.Dynamic".
 --
 module Effectful.State
   ( State

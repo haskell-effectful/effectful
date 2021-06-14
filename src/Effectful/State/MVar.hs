@@ -2,7 +2,7 @@
 --
 -- Represented as an MVar underneath, therefore:
 --
--- - slower than "Effective.State"
+-- - slower than "Effectful.State"
 --
 -- - suitable for sharing between multiple threads.
 --

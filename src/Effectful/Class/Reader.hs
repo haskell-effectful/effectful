@@ -12,7 +12,7 @@ import Effectful.Internal.Monad
 import qualified Effectful.Reader as R
 
 -- | Compatiblity layer for a transition period from MTL-style effect handling
--- to 'Effective.Eff'.
+-- to 'Effectful.Eff'.
 class Monad m => MonadReader r m where
   {-# MINIMAL (ask | reader), local #-}
   ask :: m r

@@ -71,7 +71,7 @@ instance Monad (Eff es) where
 -- Exception
 
 instance MonadThrow (Eff es) where
-  throwM e = impureEff_ $ throwM e
+  throwM = impureEff_ . throwM
 
 instance MonadCatch (Eff es) where
   catch (Eff m) handler = impureEff $ \es -> do
@@ -127,7 +127,7 @@ runInIO f = impureEff $ \es -> do
   f $ \(Eff m) -> do
     tid <- myThreadId
     -- If the lifting function is called from a different thread, we need to
-    -- clone the environment, otherwise multiple threads will attempt to modify
+    -- clone the environment. Otherwise multiple threads will attempt to modify
     -- it in different ways and things will break horribly.
     if tid0 == tid
       then m es

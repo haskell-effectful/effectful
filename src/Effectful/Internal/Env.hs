@@ -35,7 +35,19 @@ import Effectful.Internal.Has
 
 type role Env nominal
 
--- | A mutable, extensible record indexed by effect data types.
+-- | A mutable, strict (elements are kept in weak head normal form), extensible
+-- record indexed by effect data types.
+--
+-- Offers pretty much perfect performance characteristics:
+--
+-- - Extending: /O(1)/ (amortized).
+--
+-- - Shrinking: /O(1)/.
+--
+-- - Indexing via '(:>)': /O(1)/ (amortized).
+--
+-- - Modification of a specific element: /O(1)/.
+--
 newtype Env (es :: [Effect]) = Env (IORef EnvRef)
 
 data EnvRef = EnvRef Int (SmallMutableArray RealWorld Any)
@@ -90,6 +102,9 @@ unsafeConsEnv e (Env ref) = do
       e `seq` writeSmallArray es n (toAny e)
       writeIORef ref $! EnvRef (n + 1) es
   pure $ Env ref
+  where
+    doubleCapacity :: Int -> Int
+    doubleCapacity n = max 1 n * 2
 {-# NOINLINE unsafeConsEnv #-}
 
 -- | Shrink the environment by one data type (in place). Makes sure the size of
@@ -144,9 +159,6 @@ unsafeStateEnv f (Env ref) = do
 
 ----------------------------------------
 -- Internal helpers
-
-doubleCapacity :: Int -> Int
-doubleCapacity n = max 1 n * 2
 
 toAny :: a -> Any
 toAny = unsafeCoerce

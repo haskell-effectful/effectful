@@ -138,23 +138,23 @@ runInIO f = impureEff $ \es -> do
 
 runEffect :: e -> Eff (e : es) a -> Eff es (a, e)
 runEffect e0 (Eff m) = impureEff $ \es0 -> do
-  size <- sizeEnv es0
+  size0 <- sizeEnv es0
   bracket (unsafeConsEnv e0 es0)
-          (unsafeTrimEnv size)
+          (unsafeTailEnv size0)
           (\es -> (,) <$> m es <*> getEnv es)
 
 evalEffect :: e -> Eff (e : es) a -> Eff es a
 evalEffect e (Eff m) = impureEff $ \es0 -> do
-  size <- sizeEnv es0
+  size0 <- sizeEnv es0
   bracket (unsafeConsEnv e es0)
-          (unsafeTrimEnv size)
+          (unsafeTailEnv size0)
           (\es -> m es)
 
 execEffect :: e -> Eff (e : es) a -> Eff es e
 execEffect e0 (Eff m) = impureEff $ \es0 -> do
-  size <- sizeEnv es0
+  size0 <- sizeEnv es0
   bracket (unsafeConsEnv e0 es0)
-          (unsafeTrimEnv size)
+          (unsafeTailEnv size0)
           (\es -> m es *> getEnv es)
 
 getEffect :: e :> es => Eff es e

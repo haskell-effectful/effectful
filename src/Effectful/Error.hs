@@ -24,11 +24,11 @@ runError
   => Eff (Error e : es) a
   -> Eff es (Either ([String], e) a)
 runError (Eff m) = impureEff $ \es0 -> mask $ \release -> do
-  size <- sizeEnv es0
+  size0 <- sizeEnv es0
   es <- unsafeConsEnv (Error @e) es0
   try (release $ m es) >>= \case
-    Right a           -> Right a      <$ unsafeTrimEnv size es
-    Left (WrapE cs e) -> Left (cs, e) <$ unsafeTrimEnv size es
+    Right a           -> Right a      <$ unsafeTailEnv size0 es
+    Left (WrapE cs e) -> Left (cs, e) <$ unsafeTailEnv size0 es
 
 throwError
   :: (HasCallStack, Exception e, Error e :> es)

@@ -71,7 +71,6 @@ library
                      Effectful.Class.Reader
                      Effectful.Class.State
                      Effectful.Class.Writer
-                     Effectful.Coroutine
                      Effectful.Error
                      Effectful.Internal.Env
                      Effectful.Internal.Has

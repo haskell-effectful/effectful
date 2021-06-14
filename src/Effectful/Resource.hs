@@ -32,10 +32,10 @@ runResource (Eff m) = impureEff $ \es0 -> do
   mask $ \restore -> do
     es <- unsafeConsEnv (Resource istate) es0
     a <- restore (m es) `catch` \e -> do
-      _ <- unsafeTrimEnv size0 es
+      _ <- unsafeTailEnv size0 es
       RI.stateCleanupChecked (Just e) istate
       throwIO e
-    _ <- unsafeTrimEnv size0 es
+    _ <- unsafeTailEnv size0 es
     RI.stateCleanupChecked Nothing istate
     pure a
 

@@ -59,9 +59,9 @@ impureUnliftEff f = impureEff $ \es -> do
   tid0 <- myThreadId
   f $ \(Eff m) -> do
     tid <- myThreadId
-    -- If the lifting function is called from a different thread, we need to
-    -- clone the environment. Otherwise multiple threads will attempt to modify
-    -- it in different ways and things will break horribly.
+    -- If the unlifting function is called from another thread, we need to clone
+    -- the environment. Otherwise multiple threads will attempt to modify it in
+    -- different ways and things will break horribly.
     if tid0 == tid
       then m es
       else m =<< cloneEnv es

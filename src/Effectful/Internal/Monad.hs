@@ -10,6 +10,7 @@ module Effectful.Internal.Monad
   , runEff
   , impureEff
   , impureEff_
+  , impureUnliftEff
 
   -- * IO
   , IOE
@@ -51,6 +52,19 @@ impureEff m = Eff (oneShot m)
 
 impureEff_ :: IO a -> Eff es a
 impureEff_ m = impureEff $ \_ -> m
+
+-- | Run 'Eff' computations in 'IO'.
+impureUnliftEff :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
+impureUnliftEff f = impureEff $ \es -> do
+  tid0 <- myThreadId
+  f $ \(Eff m) -> do
+    tid <- myThreadId
+    -- If the lifting function is called from a different thread, we need to
+    -- clone the environment. Otherwise multiple threads will attempt to modify
+    -- it in different ways and things will break horribly.
+    if tid0 == tid
+      then m es
+      else m =<< cloneEnv es
 
 ----------------------------------------
 -- Base
@@ -114,24 +128,11 @@ instance IOE :> es => MonadBase IO (Eff es) where
 
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
-  liftBaseWith = runInIO
+  liftBaseWith = impureUnliftEff
   restoreM = pure
 
 instance IOE :> es => MonadUnliftIO (Eff es) where
-  withRunInIO = runInIO
-
--- | Run 'Eff' computations in 'IO'.
-runInIO :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
-runInIO f = impureEff $ \es -> do
-  tid0 <- myThreadId
-  f $ \(Eff m) -> do
-    tid <- myThreadId
-    -- If the lifting function is called from a different thread, we need to
-    -- clone the environment. Otherwise multiple threads will attempt to modify
-    -- it in different ways and things will break horribly.
-    if tid0 == tid
-      then m es
-      else m =<< cloneEnv es
+  withRunInIO = impureUnliftEff
 
 ----------------------------------------
 -- Helpers

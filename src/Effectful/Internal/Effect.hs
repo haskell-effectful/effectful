@@ -5,31 +5,31 @@
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
-module Effectful.Internal.Has
+module Effectful.Internal.Effect
   ( Effect
-  , (:>)
-  , ixEnv
+  , (:>)(..)
+  , IdE(..)
   ) where
 
 import Data.Kind
 
-type Effect = Type
+type Effect = (Type -> Type) -> Type -> Type
+
+-- | Adapter for statically dispatched effects.
+newtype IdE (e :: Effect) where
+  IdE :: (forall m r. e m r) -> IdE e
 
 class (e :: Effect) :> (es :: [Effect]) where
   -- | Get position of @e@ in @es@.
   --
   -- /Note:/ GHC is kind enough to cache these values as they're top level CAFs,
   -- so the lookup is amortized @O(1)@ without any language level tricks.
-  ixOf :: Int
-  ixOf = -- Don't show "minimal complete definition" in haddock.
-         error "unimplemented"
+  reifyIndex :: Int
+  reifyIndex = -- Don't show "minimal complete definition" in haddock.
+               error "unimplemented"
 
 instance {-# OVERLAPPING #-} e :> (e : es) where
-  ixOf = 0
+  reifyIndex = 0
 
 instance e :> es => e :> (x : es) where
-  ixOf = 1 + ixOf @e @es
-
--- | Get position of @e@ in the 'Effectful.Internal.Env.Env'.
-ixEnv :: forall e es. e :> es => Int -> Int
-ixEnv n = n - ixOf @e @es - 1
+  reifyIndex = 1 + reifyIndex @e @es

@@ -8,23 +8,28 @@ module Effectful.Reader
   , asks
   ) where
 
-import Effectful.Internal.Has
+import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 
 -- | Provide access to a read only value of type @r@.
-newtype Reader r = Reader { unReader :: r }
+newtype Reader r :: Effect where
+  Reader :: r -> Reader r m a
 
 runReader :: r -> Eff (Reader r : es) a -> Eff es a
-runReader r = evalEffect (Reader r)
+runReader r = evalEffect (IdE (Reader r))
 
 ask :: Reader r :> es => Eff es r
-ask = unReader <$> getEffect
+ask = do
+  IdE (Reader r) <- getEffect
+  pure r
 
 local :: Reader r :> es => (r -> r) -> Eff es a -> Eff es a
-local f = localEffect (Reader . f . unReader)
+local f = localEffect $ \(IdE (Reader r)) -> IdE (Reader (f r))
 
 reader :: Reader r :> es => (r -> a) -> Eff es a
-reader f = f . unReader <$> getEffect
+reader f = do
+  IdE (Reader r) <- getEffect
+  pure $ f r
 
 asks :: Reader r :> es => (r -> a) -> Eff es a
 asks = reader

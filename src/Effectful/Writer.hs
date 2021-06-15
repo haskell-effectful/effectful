@@ -9,33 +9,43 @@ module Effectful.Writer
   , listens
   ) where
 
-import Data.Coerce
-import qualified Data.Semigroup as S
+import Control.Monad.Catch
 
-import Effectful.Internal.Has
+import Effectful.Internal.Effect
+import Effectful.Internal.Env
 import Effectful.Internal.Monad
 
 -- | Provide access to a write only value of type @w@.
-newtype Writer w = Writer w
-  deriving (S.Semigroup, Monoid)
+newtype Writer w :: Effect where
+  Writer :: w -> Writer w m r
 
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runWriter = fmap coerce . runEffect mempty
+runWriter m = do
+  (a, IdE (Writer w)) <- runEffect (IdE (Writer mempty)) m
+  pure (a, w)
 
 execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execWriter = fmap coerce . execEffect mempty
+execWriter m = do
+  IdE (Writer w) <- execEffect (IdE (Writer mempty)) m
+  pure w
 
 writer :: (Writer w :> es, Monoid w) => (a, w) -> Eff es a
-writer (a, w) = stateEffect $ \w0 -> (a, w0 `mappend` Writer w)
+writer (a, w) = stateEffect $ \(IdE (Writer w0)) -> (a, IdE (Writer (w0 `mappend` w)))
 
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
-tell w = stateEffect $ \w0 -> ((), w0 `mappend` Writer w)
+tell w = stateEffect $ \(IdE (Writer w0)) -> ((), IdE (Writer (w0 `mappend` w)))
 
 listen
-  :: (Writer w :> es, Monoid w)
+  :: forall w es a. (Writer w :> es, Monoid w)
   => Eff es a
   -> Eff es (a, w)
-listen = fmap (\(a, Writer w) -> (a, w)) . listenEffect
+listen (Eff m) = unsafeEff $ \es -> mask $ \restore -> do
+  w0 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer mempty))) es
+  -- If an exception is thrown, restore e0 and keep parts of e1.
+  a <- restore (m es) `onException`
+    unsafeModifyEnv (\(IdE (Writer w)) -> IdE (Writer (w0 `mappend` w))) es
+  w1 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer (w0 `mappend` w)))) es
+  pure (a, w1)
 
 listens
   :: (Writer w :> es, Monoid w)

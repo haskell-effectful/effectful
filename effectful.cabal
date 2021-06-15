@@ -15,8 +15,7 @@ description: A simple, performant extensible effects library with seamless
 extra-source-files: CHANGELOG.md
                     README.md
 
-tested-with: GHC ==8.0.2 || ==8.2.2 || ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.4
-              || ==9.0.1 || ==9.2.0.20210422
+tested-with: GHC ==8.6.5 || ==8.8.4 || ==8.10.4 || ==9.0.1 || ==9.2.0.20210422
 
 bug-reports:   https://github.com/arybczak/effectful/issues
 source-repository head
@@ -31,14 +30,10 @@ common language
     default-extensions: BangPatterns
                         ConstraintKinds
                         DataKinds
-                        DefaultSignatures
-                        DeriveFunctor
                         FlexibleContexts
                         FlexibleInstances
                         GADTs
-                        GeneralizedNewtypeDeriving
                         LambdaCase
-                        NamedFieldPuns
                         MultiParamTypeClasses
                         RankNTypes
                         RecordWildCards
@@ -47,14 +42,13 @@ common language
                         StrictData
                         TupleSections
                         TypeApplications
-                        TypeInType
                         TypeFamilies
                         TypeOperators
 
 library
     import:         language
 
-    build-depends:    base <5
+    build-depends:    base >= 4.12 && <5
                     , containers
                     , exceptions
                     , ghc-prim
@@ -67,15 +61,16 @@ library
 
     hs-source-dirs:  src
 
-    exposed-modules: Effectful
-                     Effectful.Class.Reader
+    exposed-modules: Effectful.Class.Reader
                      Effectful.Class.State
                      Effectful.Class.Writer
                      Effectful.Error
+                     Effectful.Internal.Effect
                      Effectful.Internal.Env
-                     Effectful.Internal.Has
                      Effectful.Internal.Monad
                      Effectful.Internal.Utils
+                     Effectful.Interpreter
+                     Effectful.Monad
                      Effectful.Reader
                      Effectful.Resource
                      Effectful.State

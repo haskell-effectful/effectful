@@ -8,8 +8,9 @@ import qualified Control.Monad.Catch as E
 import qualified Control.Exception.Lifted as LE
 import qualified UnliftIO.Exception as UE
 
-import Effectful
-import Effectful.State
+import Effectful.Interpreter
+import Effectful.State.Dynamic
+import Effectful.Monad
 
 main :: IO ()
 main = defaultMain $ testGroup "effectful"
@@ -20,6 +21,7 @@ main = defaultMain $ testGroup "effectful"
     , testCase "deep stack" test_deepStack
     , testCase "exceptions" test_exceptions
     , testCase "concurrency" test_concurrentState
+    , testCase "local effects" test_localEffects
     ]
   ]
 
@@ -88,7 +90,7 @@ test_exceptions = runEffIO $ do
       modify @Int (+2)
 
 test_concurrentState :: Assertion
-test_concurrentState = runEffIO . evalState x $ do
+test_concurrentState = runEffIO . runHasInt x $ do
   replicateConcurrently_ 2 $ do
     r <- goDownward 0
     assertEqual_ "x = n" x r
@@ -96,12 +98,40 @@ test_concurrentState = runEffIO . evalState x $ do
     x :: Int
     x = 1000000
 
-    goDownward :: State Int :> es => Int -> Eff es Int
-    goDownward acc = get @Int >>= \case
+    goDownward :: HasInt :> es => Int -> Eff es Int
+    goDownward acc = getInt >>= \case
       0 -> pure acc
       n -> do
-        put $ n - 1
+        putInt $ n - 1
         goDownward $ acc + 1
+
+test_localEffects :: Assertion
+test_localEffects = runEffIO $ do
+  x <- runHasInt 0 $ do
+    putInt 1
+    execState () $ do
+      putInt 2
+      execState () $ do
+        putInt 4
+    getInt
+  assertEqual_ "correct x" 4 x
+
+runHasInt :: Int -> Eff (HasInt : es) a -> Eff es a
+runHasInt n =
+  -- reinterpret with redundant local effects
+  reinterpret (evalState () . evalState n . evalState True) $ \case
+    GetInt   -> get
+    PutInt i -> put i
+
+data HasInt :: Effect where
+  GetInt :: HasInt m Int
+  PutInt :: Int -> HasInt m ()
+
+getInt :: HasInt :> es => Eff es Int
+getInt = send GetInt
+
+putInt :: HasInt :> es => Int -> Eff es ()
+putInt = send . PutInt
 
 ----------------------------------------
 -- Helpers

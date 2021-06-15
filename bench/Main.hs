@@ -1,54 +1,61 @@
 {-# LANGUAGE CPP #-}
 module Main (main) where
 
+#ifdef VERSION_criterion
+import Criterion
+import Criterion.Main
+#endif
+
+#ifdef VERSION_tasty_bench
 import Test.Tasty.Bench
+#endif
 
 import Countdown
 
 main :: IO ()
 main = defaultMain
-  [ bgroup "countdown"
-    [ bgroup "reference"        $ mkCountdown nf      countdownRef
-    , bgroup "shallow"
-      [ bgroup "efectful (SP)"  $ mkCountdown nfAppIO countdownEffectfulStatic
-      , bgroup "efectful (SM)"  $ mkCountdown nfAppIO countdownEffectfulMVar
-      , bgroup "efectful (DP)"  $ mkCountdown nfAppIO countdownEffectfulDynPure
-      , bgroup "efectful (DM)"  $ mkCountdown nfAppIO countdownEffectfulDynMVar
-#ifdef VERSION_freer_simple
-      , bgroup "freer-simple"   $ mkCountdown nf      countdownFreerSimple
-#endif
-#ifdef VERSION_eff
-      , bgroup "eff"            $ mkCountdown nf      countdownEff
-#endif
-      , bgroup "mtl"            $ mkCountdown nf      countdownMtl
-#ifdef VERSION_fused_effects
-      , bgroup "fused-effects"  $ mkCountdown nf      countdownFusedEffects
-#endif
-#ifdef VERSION_polysemy
-      , bgroup "polysemy"       $ mkCountdown nf      countdownPolysemy
-#endif
-      ]
-    , bgroup "deep"
-      [ bgroup "efectful (SP)"  $ mkCountdown nfAppIO countdownEffectfulStaticDeep
-      , bgroup "efectful (SM)"  $ mkCountdown nfAppIO countdownEffectfulMVarDeep
-      , bgroup "efectful (DP)"  $ mkCountdown nfAppIO countdownEffectfulDynPureDeep
-      , bgroup "efectful (DM)"  $ mkCountdown nfAppIO countdownEffectfulDynMVarDeep
-#ifdef VERSION_eff
-      , bgroup "eff"            $ mkCountdown nf      countdownEffDeep
-#endif
-#ifdef VERSION_freer_simple
-      , bgroup "freer-simple"   $ mkCountdown nf      countdownFreerSimpleDeep
-#endif
-#ifdef VERSION_polysemy
-      , bgroup "polysemy"       $ mkCountdown nf      countdownPolysemyDeep
-#endif
-      , bgroup "mtl"            $ mkCountdown nf      countdownMtlDeep
-#ifdef VERSION_fused_effects
-      , bgroup "fused-effects"  $ mkCountdown nf      countdownFusedEffectsDeep
-#endif
-      ]
-    ]
+  [ bgroup "countdown" $ map countdown [1000, 10000]
   ]
 
-mkCountdown :: (nf -> Integer -> Benchmarkable) -> nf -> [Benchmark]
-mkCountdown f g = map (\n -> bench (show n) $ f g n) [100, 1000, 10000]
+countdown :: Integer -> Benchmark
+countdown n = bgroup (show n)
+  [ bgroup "shallow"
+    [ bench "reference"      $ nf countdownRef n
+    , bench "effectful (PS)" $ nfAppIO countdownEffectfulStatic n
+    , bench "effectful (PD)" $ nfAppIO countdownEffectfulDynPure n
+    , bench "effectful (MS)" $ nfAppIO countdownEffectfulMVar n
+    , bench "effectful (MD)" $ nfAppIO countdownEffectfulDynMVar n
+#ifdef VERSION_freer_simple
+    , bench "freer-simple"   $ nf countdownFreerSimple n
+#endif
+#ifdef VERSION_eff
+    , bench "eff"            $ nf countdownEff n
+#endif
+    , bench "mtl"            $ nf countdownMtl n
+#ifdef VERSION_fused_effects
+    , bench "fused-effects"  $ nf countdownFusedEffects n
+#endif
+#ifdef VERSION_polysemy
+    , bench "polysemy"       $ nf countdownPolysemy n
+#endif
+    ]
+  , bgroup "deep"
+    [ bench "effectful (PS)" $ nfAppIO countdownEffectfulStaticDeep n
+    , bench "effectful (PD)" $ nfAppIO countdownEffectfulDynPureDeep n
+    , bench "effectful (MS)" $ nfAppIO countdownEffectfulMVarDeep n
+    , bench "effectful (MD)" $ nfAppIO countdownEffectfulDynMVarDeep n
+#ifdef VERSION_freer_simple
+    , bench "freer-simple"   $ nf countdownFreerSimpleDeep n
+#endif
+#ifdef VERSION_eff
+    , bench "eff"            $ nf countdownEffDeep n
+#endif
+#ifdef VERSION_polysemy
+    , bench "polysemy"       $ nf countdownPolysemyDeep n
+#endif
+    , bench "mtl"            $ nf countdownMtlDeep n
+#ifdef VERSION_fused_effects
+    , bench "fused-effects"  $ nf countdownFusedEffectsDeep n
+#endif
+    ]
+  ]

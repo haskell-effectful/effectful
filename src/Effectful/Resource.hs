@@ -17,20 +17,21 @@ import Control.Exception
 import qualified Control.Monad.Trans.Resource as R
 import qualified Control.Monad.Trans.Resource.Internal as RI
 
+import Effectful.Internal.Effect
 import Effectful.Internal.Env
-import Effectful.Internal.Has
 import Effectful.Internal.Monad
 
 -- | Data tag for a resource effect.
-newtype Resource = Resource R.InternalState
+newtype Resource :: Effect where
+  Resource :: R.InternalState -> Resource m r
 
 -- | Run the resource effect.
 runResource :: Eff (Resource : es) a -> Eff es a
-runResource (Eff m) = impureEff $ \es0 -> do
+runResource (Eff m) = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   istate <- R.createInternalState
   mask $ \restore -> do
-    es <- unsafeConsEnv (Resource istate) es0
+    es <- unsafeConsEnv (IdE (Resource istate)) noRelinker es0
     a <- restore (m es) `catch` \e -> do
       _ <- unsafeTailEnv size0 es
       RI.stateCleanupChecked (Just e) istate
@@ -40,5 +41,5 @@ runResource (Eff m) = impureEff $ \es0 -> do
     pure a
 
 instance (IOE :> es, Resource :> es) => R.MonadResource (Eff es) where
-  liftResourceT (RI.ResourceT m) = impureEff $ \es -> do
-    getEnv es >>= \(Resource istate) -> m istate
+  liftResourceT (RI.ResourceT m) = unsafeEff $ \es -> do
+    getEnv es >>= \(IdE (Resource istate)) -> m istate

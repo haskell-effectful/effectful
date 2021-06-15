@@ -3,9 +3,9 @@ module Effectful.Class.State where
 
 import Control.Monad.Trans.Class
 
-import Effectful.Internal.Has
+import Effectful.Internal.Effect
 import Effectful.Internal.Monad
-import qualified Effectful.State.Dynamic as S
+import qualified Effectful.State as S
 
 -- | Compatiblity layer for a transition period from MTL-style effect handling
 -- to 'Effectful.Eff'.
@@ -38,6 +38,9 @@ instance S.State s :> es => MonadState s (Eff es) where
   get   = S.get
   put   = S.put
   state = S.state
+
+gets :: MonadState s m => (s -> a) -> m a
+gets f = f <$> get
 
 modify :: MonadState s m => (s -> s) -> m ()
 modify f = state (\s -> ((), f s))

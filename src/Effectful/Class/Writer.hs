@@ -4,7 +4,7 @@ module Effectful.Class.Writer where
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Control
 
-import Effectful.Internal.Has
+import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 import qualified Effectful.Writer as W
 

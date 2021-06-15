@@ -9,11 +9,11 @@ import qualified Control.Effect as L
 #endif
 
 -- effectful
-import qualified Effectful as E
+import qualified Effectful.Monad as E
 import qualified Effectful.Reader as E
 import qualified Effectful.State as E
-import qualified Effectful.State.MVar as ME
 import qualified Effectful.State.Dynamic as DE
+import qualified Effectful.State.MVar as ME
 
 -- freer-simple
 #ifdef VERSION_freer_simple

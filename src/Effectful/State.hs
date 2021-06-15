@@ -2,12 +2,9 @@
 --
 -- Represented as a pure value underneath, therefore:
 --
--- - very fast
+-- - very fast,
 --
--- - not suitable for sharing between multiple threads.
---
--- If you plan to do the latter, have a look at "Effectful.State.MVar" or
--- "Effectful.State.Dynamic".
+-- - thread local (if you need sharing, have a look at "Effectful.State.MVar").
 --
 module Effectful.State
   ( State
@@ -15,6 +12,7 @@ module Effectful.State
   , evalState
   , execState
   , get
+  , gets
   , put
   , state
   , modify
@@ -22,37 +20,47 @@ module Effectful.State
   , modifyM
   ) where
 
-import Data.Coerce
-
-import Effectful.Internal.Has
+import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 
 -- | Provide access to a pure, mutable state of type @s@.
-newtype State s = State { unState :: s }
+newtype State s :: Effect where
+  State :: s -> State s m r
 
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runState s = coerce . runEffect (State s)
+runState s0 m = do
+  (a, IdE (State s)) <- runEffect (IdE (State s0)) m
+  pure (a, s)
 
 evalState :: s -> Eff (State s : es) a -> Eff es a
-evalState s = evalEffect (State s)
+evalState s = evalEffect (IdE (State s))
 
 execState :: s -> Eff (State s : es) a -> Eff es s
-execState s = coerce . execEffect (State s)
+execState s0 m = do
+  IdE (State s) <- execEffect (IdE (State s0)) m
+  pure s
 
 get :: State s :> es => Eff es s
-get = unState <$> getEffect
+get = do
+  IdE (State s) <- getEffect
+  pure s
+
+gets :: State s :> es => (s -> a) -> Eff es a
+gets f = f <$> get
 
 put :: State s :> es => s -> Eff es ()
-put = putEffect . State
+put s = putEffect (IdE (State s))
 
 state :: State s :> es => (s -> (a, s)) -> Eff es a
-state f = stateEffect $ \(State s0) -> let (a, s) = f s0 in (a, State s)
+state f = stateEffect $ \(IdE (State s0)) -> let (a, s) = f s0 in (a, IdE (State s))
 
 modify :: State s :> es => (s -> s) -> Eff es ()
 modify f = state (\s -> ((), f s))
 
 stateM :: State s :> es => (s -> Eff es (a, s)) -> Eff es a
-stateM f = stateEffectM $ \(State s0) -> coerce $ f s0
+stateM f = stateEffectM $ \(IdE (State s0)) -> do
+  (a, s) <- f s0
+  pure (a, IdE (State s))
 
 modifyM :: State s :> es => (s -> Eff es s) -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)

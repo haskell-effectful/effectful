@@ -5,13 +5,13 @@
 --
 -- - Share state between threads and need the synchonized version.
 --
--- - Don't share state between threads and are free to use the faster, pure
---   version.
+-- - Don't share state between threads (or need them to be thread local) and are
+--   free to use the faster, pure version.
 --
 -- However, let's include this for now.
 --
 module Effectful.State.Dynamic
-  ( State
+  ( State(..)
 
   -- * Pure
   , runState
@@ -25,6 +25,7 @@ module Effectful.State.Dynamic
 
   -- * Operations
   , get
+  , gets
   , put
   , state
   , modify
@@ -32,94 +33,89 @@ module Effectful.State.Dynamic
   , modifyM
   ) where
 
-import Control.Concurrent.MVar
-
-import Effectful.Internal.Has
+import Effectful.Internal.Effect
 import Effectful.Internal.Monad
+import Effectful.Interpreter
+
+import qualified Effectful.State as SP
+import qualified Effectful.State.MVar as SM
 
 -- | Provide access to a mutable state of type @s@.
 --
--- Whether the state is represented as a pure value or an 'MVar' depends on the
--- interpretation.
-data State s = forall ref. State
-  { _ref     :: ref
-  , _get     :: forall es.   ref -> Eff es s
-  , _put     :: forall es.   ref -> s -> Eff es ref
-  , _state   :: forall es a. ref -> (s -> Eff es (a, s)) -> Eff es (a, ref)
-  }
+-- Whether the state is represented as a pure value or an 'MVar' underneath
+-- depends on the interpretation.
+data State s :: Effect where
+  Get    :: State s m s
+  Put    :: s -> State s m ()
+  State  :: (s ->   (a, s)) -> State s m a
+  StateM :: (s -> m (a, s)) -> State s m a
 
 ----------------------------------------
 -- Pure
 
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runState s m = evalEffect (statePure s) $ (,) <$> m <*> get
+runState s0 = reinterpretM (SP.runState s0) statePure
 
 evalState :: s -> Eff (State s : es) a -> Eff es a
-evalState s = evalEffect (statePure s)
+evalState s0 = reinterpretM (SP.evalState s0) statePure
 
 execState :: s -> Eff (State s : es) a -> Eff es s
-execState s m = evalEffect (statePure s) $ m *> get
+execState s0 = reinterpretM (SP.execState s0) statePure
 
-statePure :: s -> State s
-statePure s0 = State
-  { _ref     = s0
-  , _get     = pure
-  , _put     = \_ -> pure
-  , _state   = \s f -> f s
-  }
+statePure
+  :: SP.State s :> es
+  => (forall r. Eff es0 r -> Eff es r)
+  -> State s (Eff es0) a
+  -> Eff es a
+statePure run = \case
+  Get      -> SP.get
+  Put s    -> SP.put s
+  State f  -> SP.state f
+  StateM f -> SP.stateM (run . f)
 
 ----------------------------------------
 -- MVar
 
 runStateMVar :: s -> Eff (State s : es) a -> Eff es (a, s)
-runStateMVar s m = do
-  v <- impureEff_ $ newMVar s
-  evalEffect (stateMVar v) $ (,) <$> m <*> get
+runStateMVar s0 = reinterpretM (SM.runState s0) stateMVar
 
 evalStateMVar :: s -> Eff (State s : es) a -> Eff es a
-evalStateMVar s m = do
-  v <- impureEff_ $ newMVar s
-  evalEffect (stateMVar v) m
+evalStateMVar s0 = reinterpretM (SM.evalState s0) stateMVar
 
 execStateMVar :: s -> Eff (State s : es) a -> Eff es s
-execStateMVar s m = do
-  v <- impureEff_ $ newMVar s
-  evalEffect (stateMVar v) $ m *> get
+execStateMVar s0 = reinterpretM (SM.execState s0) stateMVar
 
-stateMVar :: MVar s -> State s
-stateMVar v0 = State
-  { _ref     = v0
-  , _get     = impureEff_ . readMVar
-  , _put     = \v s -> impureEff_ . modifyMVar v $ \_ ->
-      s `seq` pure (s, v)
-  , _state   = \v f -> impureEff $ \es -> modifyMVar v $ \s0 -> do
-      (a, s) <- unEff (f s0) es
-      s `seq` pure (s, (a, v))
-  }
+stateMVar
+  :: SM.State s :> es
+  => (forall r. Eff es0 r -> Eff es r)
+  -> State s (Eff es0) a
+  -> Eff es a
+stateMVar run = \case
+  Get      -> SM.get
+  Put s    -> SM.put s
+  State f  -> SM.state f
+  StateM f -> SM.stateM (run . f)
 
 ----------------------------------------
 -- Operations
 
 get :: State s :> es => Eff es s
-get = readerEffectM $ \State{..} -> _get _ref
+get = send Get
+
+gets :: State s :> es => (s -> a) -> Eff es a
+gets f = f <$> get
 
 put :: State s :> es => s -> Eff es ()
-put s = stateEffectM $ \State{..} -> do
-  ref <- _put _ref s
-  pure ((), State { _ref = ref, .. })
+put = send . Put
 
-state :: State s :> es => (s -> (a, s)) -> Eff es a
-state f = stateEffectM $ \State{..} -> do
-  (a, ref) <- _state _ref $ pure . f
-  pure (a, State { _ref = ref, .. })
+state :: (State s :> es) => (s -> (a, s)) -> Eff es a
+state = send . State
 
 modify :: State s :> es => (s -> s) -> Eff es ()
 modify f = state (\s -> ((), f s))
 
 stateM :: State s :> es => (s -> Eff es (a, s)) -> Eff es a
-stateM f = stateEffectM $ \State{..} -> do
-  (a, ref) <- _state _ref f
-  pure (a, State { _ref = ref, .. })
+stateM = send . StateM
 
 modifyM :: State s :> es => (s -> Eff es s) -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)

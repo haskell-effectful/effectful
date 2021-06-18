@@ -66,7 +66,7 @@ globalFid :: ForkId
 globalFid = ForkId 0 0
 
 -- | Local forks of the environment.
-data Forks = Forks ForkId (IORef EnvRef) Forks | NoFork
+data Forks = Forks {-# UNPACK #-} ForkId (IORef EnvRef) Forks | NoFork
 
 data EnvRef = EnvRef
   { _capacity  :: Int

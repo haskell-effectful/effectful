@@ -48,6 +48,8 @@ common language
 library
     import:         language
 
+    ghc-options:    -O2
+
     build-depends:    base >= 4.12 && <5
                     , containers
                     , exceptions

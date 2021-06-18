@@ -12,7 +12,7 @@ Main features:
 
 1. Very fast.
 
-2. Internals of the library are easy to reason about.
+2. Internals of the library are reasonably easy to reason about.
 
 3. Correct semantics in presence of runtime exceptions (no more lost or
    discarded state).
@@ -24,7 +24,7 @@ Main features:
 
    - static dispatch (as fast as it gets, single interpretation) or
 
-   - dynamic dispatch (slower, multiple interpretations are possible),
+   - dynamic dispatch (a bit slower, with multiple interpretations),
 
    depending on your needs.
 
@@ -51,14 +51,13 @@ However, `eff` uses delimited continuations underneath, which:
 proposal](https://github.com/ghc-proposals/ghc-proposals/pull/313) for including
 support for them has been accepted).
 
-- Are somewhat hard to understand.
+- Are quite hard to understand.
 
-- Make the space of possible effects "too big", i.e. some of their interactions
-  might no longer make sense. For example, there is no `MonadWriter` instance
-  for the `ContT` transformer in the `mtl` library, because [it can't be
-  properly
-  implemented](https://www.reddit.com/r/haskell/comments/hai9kb/why_is_there_no_monadwriter_for_contt_in_mtl/). It's
-  not clear how `eff` can detect and prevent such interactions.
+- Make the library "too powerful" in a sense as it faces
+  [a](https://github.com/hasura/eff/issues/13)
+  [few](https://github.com/hasura/eff/issues/7)
+  [issues](https://github.com/hasura/eff/issues/12) with no clear path towards
+  their resolution.
 
 On the other hand, if support for continuations is excluded from the handler
 monad, then the ability to define effects with non-linear control flow (such as
@@ -71,7 +70,7 @@ dedicated, well established solution such as
 
 This is where `effectful` comes in. The `Eff` monad it uses is essentially a
 `ReaderT` over `IO` on steroids, allowing us to dynamically extend its
-environment with data types that represent effects.
+environment with data types that represent effects or their interpreters.
 
 Because this concept is so simple:
 

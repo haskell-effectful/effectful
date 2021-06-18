@@ -40,10 +40,10 @@ countdown n = bgroup (show n)
 #endif
     ]
   , bgroup "deep"
-    [ bench "effectful (PS)"           $ nfAppIO countdownEffectfulStaticDeep n
-    , bench "effectful (PD)"           $ nfAppIO countdownEffectfulDynPureDeep n
-    , bench "effectful (MS)"           $ nfAppIO countdownEffectfulMVarDeep n
-    , bench "effectful (MD)"           $ nfAppIO countdownEffectfulDynMVarDeep n
+    [ bench "effectful (pure-static)"  $ nfAppIO countdownEffectfulStaticDeep n
+    , bench "effectful (pure-dynamic)" $ nfAppIO countdownEffectfulDynPureDeep n
+    , bench "effectful (MVar-static)"  $ nfAppIO countdownEffectfulMVarDeep n
+    , bench "effectful (MVar-dynamic)" $ nfAppIO countdownEffectfulDynMVarDeep n
 #ifdef VERSION_freer_simple
     , bench "freer-simple"             $ nf countdownFreerSimpleDeep n
 #endif

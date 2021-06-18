@@ -3,7 +3,8 @@
 [![Build Status](https://github.com/arybczak/effectful/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/arybczak/effectful/actions?query=branch%3Amaster)
 [![Hackage](https://img.shields.io/hackage/v/effectful.svg)](https://hackage.haskell.org/package/effectful)
 
-*Note:* this is a pre-release.
+*Note:* this is a pre-release. Benchmark results (using GHC 8.8.4) can be found
+[here](https://rybczak.net/files/countdown.html).
 
 A simple, performant extensible effects library with seamless integration with
 the existing ecosystem.

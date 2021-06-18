@@ -20,42 +20,42 @@ main = defaultMain
 countdown :: Integer -> Benchmark
 countdown n = bgroup (show n)
   [ bgroup "shallow"
-    [ bench "reference"      $ nf countdownRef n
-    , bench "effectful (PS)" $ nfAppIO countdownEffectfulStatic n
-    , bench "effectful (PD)" $ nfAppIO countdownEffectfulDynPure n
-    , bench "effectful (MS)" $ nfAppIO countdownEffectfulMVar n
-    , bench "effectful (MD)" $ nfAppIO countdownEffectfulDynMVar n
+    [ bench "reference"                $ nf countdownRef n
+    , bench "effectful (pure-static)"  $ nfAppIO countdownEffectfulStatic n
+    , bench "effectful (pure-dynamic)" $ nfAppIO countdownEffectfulDynPure n
+    , bench "effectful (MVar-static)"  $ nfAppIO countdownEffectfulMVar n
+    , bench "effectful (MVar-dynamic)" $ nfAppIO countdownEffectfulDynMVar n
 #ifdef VERSION_freer_simple
-    , bench "freer-simple"   $ nf countdownFreerSimple n
+    , bench "freer-simple"             $ nf countdownFreerSimple n
 #endif
 #ifdef VERSION_eff
-    , bench "eff"            $ nf countdownEff n
+    , bench "eff"                      $ nf countdownEff n
 #endif
-    , bench "mtl"            $ nf countdownMtl n
+    , bench "mtl"                      $ nf countdownMtl n
 #ifdef VERSION_fused_effects
-    , bench "fused-effects"  $ nf countdownFusedEffects n
+    , bench "fused-effects"            $ nf countdownFusedEffects n
 #endif
 #ifdef VERSION_polysemy
-    , bench "polysemy"       $ nf countdownPolysemy n
+    , bench "polysemy"                 $ nf countdownPolysemy n
 #endif
     ]
   , bgroup "deep"
-    [ bench "effectful (PS)" $ nfAppIO countdownEffectfulStaticDeep n
-    , bench "effectful (PD)" $ nfAppIO countdownEffectfulDynPureDeep n
-    , bench "effectful (MS)" $ nfAppIO countdownEffectfulMVarDeep n
-    , bench "effectful (MD)" $ nfAppIO countdownEffectfulDynMVarDeep n
+    [ bench "effectful (PS)"           $ nfAppIO countdownEffectfulStaticDeep n
+    , bench "effectful (PD)"           $ nfAppIO countdownEffectfulDynPureDeep n
+    , bench "effectful (MS)"           $ nfAppIO countdownEffectfulMVarDeep n
+    , bench "effectful (MD)"           $ nfAppIO countdownEffectfulDynMVarDeep n
 #ifdef VERSION_freer_simple
-    , bench "freer-simple"   $ nf countdownFreerSimpleDeep n
+    , bench "freer-simple"             $ nf countdownFreerSimpleDeep n
 #endif
 #ifdef VERSION_eff
-    , bench "eff"            $ nf countdownEffDeep n
+    , bench "eff"                      $ nf countdownEffDeep n
 #endif
 #ifdef VERSION_polysemy
-    , bench "polysemy"       $ nf countdownPolysemyDeep n
+    , bench "polysemy"                 $ nf countdownPolysemyDeep n
 #endif
-    , bench "mtl"            $ nf countdownMtlDeep n
+    , bench "mtl"                      $ nf countdownMtlDeep n
 #ifdef VERSION_fused_effects
-    , bench "fused-effects"  $ nf countdownFusedEffectsDeep n
+    , bench "fused-effects"            $ nf countdownFusedEffectsDeep n
 #endif
     ]
   ]

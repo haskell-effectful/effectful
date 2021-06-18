@@ -111,9 +111,9 @@ design.
 
 Talks:
 
-* [Monad Transformer State](https://www.youtube.com/watch?v=KZIN9f9rI34) by Michael Snoyman.
-
 * [Effects for Less](https://www.youtube.com/watch?v=0jI-AlWEwYI) by Alexis King.
+
+* [Monad Transformer State](https://www.youtube.com/watch?v=KZIN9f9rI34) by Michael Snoyman.
 
 Blog posts:
 

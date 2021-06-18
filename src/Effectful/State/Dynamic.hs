@@ -46,7 +46,7 @@ import qualified Effectful.State.MVar as SM
 -- depends on the interpretation.
 data State s :: Effect where
   Get    :: State s m s
-  Put    :: s -> State s m ()
+  Put    :: ~s -> State s m ()
   State  :: (s ->   (a, s)) -> State s m a
   StateM :: (s -> m (a, s)) -> State s m a
 

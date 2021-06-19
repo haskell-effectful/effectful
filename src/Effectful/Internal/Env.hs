@@ -43,6 +43,9 @@ type role Env nominal
 -- | A mutable, strict (elements are kept in weak head normal form), extensible
 -- record indexed by effect data types.
 --
+-- Supports forking, i.e. introducing branches for encapsulation of
+-- interpreter-local data.
+--
 -- Offers very good performance characteristics:
 --
 -- - Extending: /O(1)/ (amortized).

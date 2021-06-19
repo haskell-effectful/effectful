@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -- | The 'Writer' as an effect.
 module Effectful.Writer
   ( Writer
@@ -40,12 +41,17 @@ listen
   => Eff es a
   -> Eff es (a, w)
 listen (Eff m) = unsafeEff $ \es -> mask $ \restore -> do
+#if __GLASGOW_HASKELL__ >= 900
+  error "'listen' temporarily doesn't compile with released GHC 9.* versions \
+        \due to a GHC bug. If you want to use 'listen', please use GHC 8.*"
+#else
   w0 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer mempty))) es
   -- If an exception is thrown, restore e0 and keep parts of e1.
   a <- restore (m es) `onException`
     unsafeModifyEnv (\(IdE (Writer w)) -> IdE (Writer (w0 `mappend` w))) es
   w1 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer (w0 `mappend` w)))) es
   pure (a, w1)
+#endif
 
 listens
   :: (Writer w :> es, Monoid w)

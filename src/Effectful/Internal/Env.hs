@@ -43,15 +43,15 @@ type role Env nominal
 -- | A mutable, strict (elements are kept in weak head normal form), extensible
 -- record indexed by effect data types.
 --
--- Offers pretty much perfect performance characteristics:
+-- Offers very good performance characteristics:
 --
 -- - Extending: /O(1)/ (amortized).
 --
 -- - Shrinking: /O(1)/.
 --
--- - Indexing via '(:>)': /O(1)/ (amortized).
+-- - Indexing via '(:>)': /O(forks)/, usually /O(1)/ (amortized).
 --
--- - Modification of a specific element: /O(1)/.
+-- - Modification of a specific element: /O(forks)/, usually /O(1)/.
 --
 data Env (es :: [Effect]) = Env Forks (IORef EnvRef)
 

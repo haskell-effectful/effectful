@@ -43,8 +43,8 @@ type role Env nominal
 -- | A mutable, strict (elements are kept in weak head normal form), extensible
 -- record indexed by effect data types.
 --
--- Supports forking, i.e. introducing branches for encapsulation of
--- interpreter-local data.
+-- Supports forking, i.e. introduction of local branches for encapsulation of
+-- data specific to effect interpreters.
 --
 -- Offers very good performance characteristics:
 --

@@ -16,7 +16,6 @@ import Effectful.Internal.Env
 import Effectful.Internal.Monad
 import Effectful.Internal.Utils
 
-type role Error nominal phantom phantom
 data Error e :: Effect where
   Error :: Error e m r
 

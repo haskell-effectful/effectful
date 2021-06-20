@@ -6,8 +6,8 @@
 *Note:* this is a pre-release. Benchmark results (using GHC 8.8.4) can be found
 [here](https://rybczak.net/files/countdown.html).
 
-A simple, performant extensible effects library with seamless integration with
-the existing ecosystem.
+An easy to use, performant extensible effects library with seamless integration
+with the existing Haskell ecosystem.
 
 Main features:
 
@@ -19,13 +19,13 @@ Main features:
    discarded state).
 
 4. Seamless integration with the existing ecosystem (`exceptions`,
-   `monad-control`, `unliftio-core`, `resourcet`).
+   `monad-control`, `unliftio-core`, `resourcet` etc.).
 
 5. Effects can be defined for either
 
    - static dispatch (as fast as it gets, single interpretation) or
 
-   - dynamic dispatch (a bit slower, with multiple interpretations),
+   - dynamic dispatch (a bit slower, multiple interpretations),
 
    depending on your needs.
 

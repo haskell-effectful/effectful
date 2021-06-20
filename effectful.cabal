@@ -7,9 +7,9 @@ license-file:       LICENSE
 category:           Control
 maintainer:         andrzej@rybczak.net
 author:             Andrzej Rybczak
-synopsis:           A simple, yet powerful extensible effects library.
+synopsis:           An easy to use, performant extensible effects library.
 
-description: A simple, performant extensible effects library with seamless
+description: An easy to use, performant extensible effects library with seamless
              integration with the existing Haskell ecosystem.
 
 extra-source-files: CHANGELOG.md

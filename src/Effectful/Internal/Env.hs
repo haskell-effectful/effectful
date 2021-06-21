@@ -57,7 +57,11 @@ type role Env nominal
 --
 -- - Modification of a specific element: /O(forks)/, usually /O(1)/.
 --
-data Env (es :: [Effect]) = Env Forks (IORef EnvRef) UniqueGen
+data Env (es :: [Effect]) = Env
+  { _forks     :: Forks
+  , _globalRef :: IORef EnvRef
+  , _uniqueGen :: UniqueGen
+  }
 
 -- | Local forks of the environment.
 data Forks = Forks {-# UNPACK #-} ForkId (IORef EnvRef) Forks | NoFork

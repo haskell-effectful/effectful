@@ -5,6 +5,9 @@ module Effectful.Error
  , throwError
  , catchError
  , tryError
+
+ -- * Re-exports
+ , Exception
  ) where
 
 import Control.Exception

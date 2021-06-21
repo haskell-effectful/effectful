@@ -160,24 +160,30 @@ execEffect e0 (Eff m) = unsafeEff $ \es0 -> do
 
 getEffect :: e :> es => Eff es (i e)
 getEffect = unsafeEff $ \es -> getEnv es
+{-# INLINE getEffect #-}
 
 putEffect :: e :> es => i e -> Eff es ()
 putEffect e = unsafeEff $ \es -> unsafePutEnv e es
+{-# INLINE putEffect #-}
 
 stateEffect :: e :> es => (i e -> (a, i e)) -> Eff es a
 stateEffect f = unsafeEff $ \es -> unsafeStateEnv f es
+{-# INLINE stateEffect #-}
 
 localEffect :: e :> es => (i e -> i e) -> Eff es a -> Eff es a
 localEffect f (Eff m) = unsafeEff $ \es -> do
   bracket (unsafeStateEnv (\e -> (e, f e)) es)
           (\e -> unsafePutEnv e es)
           (\_ -> m es)
+{-# INLINE localEffect #-}
 
 readerEffectM :: e :> es => (i e -> Eff es a) -> Eff es a
 readerEffectM f = unsafeEff $ \es -> getEnv es >>= \e -> unEff (f e) es
+{-# INLINE readerEffectM #-}
 
 stateEffectM :: e :> es => (i e -> Eff es (a, i e)) -> Eff es a
 stateEffectM f = unsafeEff $ \es -> do
   (a, e) <- (\e -> unEff (f e) es) =<< getEnv es
   unsafePutEnv e es
   pure a
+{-# INLINE stateEffectM #-}

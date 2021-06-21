@@ -168,15 +168,15 @@ cloneEnv (Env forks@(Forks fid lref0 _) gref0 ug0) = do
 --
 -- We start with len: 12, we subtract baseIx: 10 and get n: 2, the number of
 -- elements to copy from the fork. We copy them, then call recursively with
--- len-n (10).
+-- baseIx (10).
 --
 -- Then len: 10, we subtract baseIx: 6 and get n: 4. the number of elements to
 -- copy from the fork (note that we can't use the capacity from EnvRef, because
 -- it might be longer than 4 if the fork was locally extended). We copy them,
--- then call recursively with len-n (6).
+-- then call recursively with baseIx (6).
 --
 -- Then len: 6, we subtract baseIx: 2 and get n: 4. We copy the elements, then
--- call recursively with len-n (2).
+-- call recursively with baseIx (2).
 --
 -- Now len: 2, but there are no more forks left, so we return len (2), the
 -- number of elements to copy from the global environment.
@@ -193,7 +193,7 @@ copyForks es fs len = \case
     let n = len - baseIx fid
     copySmallMutableArray es (baseIx fid) es0 0 n
     copySmallMutableArray fs (baseIx fid) fs0 0 n
-    copyForks es fs (len - n) forks
+    copyForks es fs (baseIx fid) forks
 
 type EnvRefCache = IORef (M.Map ForkId (IORef EnvRef))
 

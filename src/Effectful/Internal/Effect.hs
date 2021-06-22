@@ -20,7 +20,7 @@ newtype IdE (e :: Effect) where
   IdE :: (forall m r. e m r) -> IdE e
 
 class (e :: Effect) :> (es :: [Effect]) where
-  -- | Get position of @e@ in @es@.
+  -- | Get the position of @e@ in @es@.
   --
   -- /Note:/ GHC is kind enough to cache these values as they're top level CAFs,
   -- so the lookup is amortized @O(1)@ without any language level tricks.

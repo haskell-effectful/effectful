@@ -2,12 +2,15 @@ module Effectful.Interpreter
   ( -- * Sending commands
     send
 
-  -- * Interpretation
+  -- * Handling effects
+  , RunIn
+
+  -- ** Interpretation
   , interpret
   , interpretM
   , interpretIO
 
-  -- * Reinterpretation
+  -- ** Reinterpretation
   , reinterpret
   , reinterpretM
   , reinterpretIO
@@ -54,29 +57,36 @@ send op = readerEffectM $ \Interpreter{..} -> do
 ----------------------------------------
 -- Interpretation
 
+-- | A function that runs 'Eff' computations in @m@ (usually a local 'Eff'
+-- environment or 'IO').
+type RunIn es m = forall r. Eff es r -> m r
+
 -- | Interpret a first order effect.
 interpret
   :: (forall r es. HasCallStack => e (Eff es) r -> Eff baseEs r)
+  -- ^ The effect handler
   -> Eff (e : baseEs) a
   -> Eff      baseEs  a
 interpret interpreter m = unsafeEff $ \es -> do
   les <- forkEnv es
   runInterpreter es (Interpreter les $ \_ -> interpreter) m
 
--- | Interpret a higher order effect with help of a natural transformation from
--- 'Eff' to 'Eff'.
+-- | Interpret a higher order effect with help of a function running 'Eff'
+-- computations in the local 'Eff' of an effect handler.
 interpretM
-  :: (forall r es. HasCallStack => (forall t. Eff es t -> Eff baseEs t) -> e (Eff es) r -> Eff baseEs r)
+  :: (forall r es. HasCallStack => RunIn es (Eff baseEs) -> e (Eff es) r -> Eff baseEs r)
+  -- ^ The effect handler
   -> Eff (e : baseEs) a
   -> Eff      baseEs  a
 interpretM interpreter m = unsafeEff $ \es -> do
   les <- forkEnv es
   runInterpreter es (Interpreter les $ \k -> interpreter $ unsafeEff_ . k) m
 
--- | Interpret a higher order effect with help of a natural transformation from
--- 'Eff' to 'IO'.
+-- | Interpret a higher order effect with help of a function running 'Eff'
+-- computations in 'IO'.
 interpretIO
-  :: (forall r es. HasCallStack => (forall t. Eff es t -> IO t) -> e (Eff es) r -> Eff baseEs r)
+  :: (forall r es. HasCallStack => RunIn es IO -> e (Eff es) r -> Eff baseEs r)
+  -- ^ The effect handler
   -> Eff (e : baseEs) a
   -> Eff      baseEs  a
 interpretIO interpreter m = unsafeEff $ \es -> do
@@ -86,10 +96,12 @@ interpretIO interpreter m = unsafeEff $ \es -> do
 ----------------------------------------
 -- Reinterpretation
 
--- | Reinterpret local effects as a first order effect.
+-- | Interpret a first order effect using local effects.
 reinterpret
   :: (Eff localEs a -> Eff baseEs b)
+  -- ^ Introduction of local effects
   -> (forall r es. HasCallStack => e (Eff es) r -> Eff localEs r)
+  -- ^ The efect handler
   -> Eff (e : baseEs) a
   -> Eff      baseEs  b
 reinterpret runLocal interpreter m = unsafeEff $ \es -> do
@@ -97,11 +109,13 @@ reinterpret runLocal interpreter m = unsafeEff $ \es -> do
   (`unEff` les0) . runLocal . unsafeEff $ \les -> do
     runInterpreter es (Interpreter les $ \_ -> interpreter) m
 
--- | Reinterpret local effects as a higher order effect with help of a natural
--- transformation from 'Eff' to 'Eff'.
+-- | Interpret a higher order effect using local effects with help of a function
+-- running 'Eff' computations in the local 'Eff' of an effect handler.
 reinterpretM
   :: (Eff localEs a -> Eff baseEs b)
-  -> (forall r es. HasCallStack => (forall t. Eff es t -> Eff localEs t) -> e (Eff es) r -> Eff localEs r)
+  -- ^ Introduction of local effects
+  -> (forall r es. HasCallStack => RunIn es (Eff localEs) -> e (Eff es) r -> Eff localEs r)
+  -- ^ The effect handler
   -> Eff (e : baseEs) a
   -> Eff      baseEs  b
 reinterpretM runLocal interpreter m = unsafeEff $ \es -> do
@@ -109,11 +123,13 @@ reinterpretM runLocal interpreter m = unsafeEff $ \es -> do
   (`unEff` les0) . runLocal . unsafeEff $ \les -> do
     runInterpreter es (Interpreter les $ \k -> interpreter $ unsafeEff_ . k) m
 
--- | Reinterpret local effects as a higher order effect with help of a natural
--- transformation from 'Eff' to 'IO'.
+-- | Interpret a higher order effect using local effects with help of a function
+-- running 'Eff' computations in 'IO'.
 reinterpretIO
   :: (Eff localEs a -> Eff baseEs b)
-  -> (forall r es. HasCallStack => (forall t. Eff es t -> IO t) -> e (Eff es) r -> Eff localEs r)
+  -- ^ Introduction of local effects
+  -> (forall r es. HasCallStack => RunIn es IO -> e (Eff es) r -> Eff localEs r)
+  -- ^ The effect handler
   -> Eff (e : baseEs) a
   -> Eff      baseEs  b
 reinterpretIO runLocal interpreter m = unsafeEff $ \es -> do

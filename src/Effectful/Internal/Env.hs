@@ -160,11 +160,11 @@ cloneEnv (Env forks@(Forks fid lref0 _) gref0 ug0) = do
 -- Then forks will look like this:
 --
 -- Fork (baseIx: 10, unique: ...) [10,11]
---   (Fork (baseIx: 6, unique: ...) [6,7,8,9]
---     (Fork (baseIx: 2, unique: ...) [2,3,4,5]
+--   (Fork (baseIx: 6, unique: ...) [6,7,8,9,..]
+--     (Fork (baseIx: 2, unique: ...) [2,3,4,5,..]
 --       NoFork))
 --
--- and elements [0,1] are taken from the global environment.
+-- and elements [0,1] are taken from the global environment ([0,1,..]).
 --
 -- We start with len: 12, we subtract baseIx: 10 and get n: 2, the number of
 -- elements to copy from the fork. We copy them, then call recursively with

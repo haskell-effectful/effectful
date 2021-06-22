@@ -13,7 +13,7 @@ Main features:
 
 1. Very fast.
 
-2. Internals of the library are reasonably easy to reason about.
+2. Easy to use API (no boilerplate code and dealing with arcane types).
 
 3. Correct semantics in presence of runtime exceptions (no more lost or
    discarded state).

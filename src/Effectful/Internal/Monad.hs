@@ -1,4 +1,6 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-noncanonical-monad-instances #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- | The 'Eff' monad.
 --
@@ -28,6 +30,7 @@ module Effectful.Internal.Monad
   , stateEffectM
   ) where
 
+import Control.Applicative (liftA2)
 import Control.Concurrent (myThreadId)
 import Control.Monad.Base
 import Control.Monad.Catch
@@ -70,15 +73,24 @@ unsafeUnliftEff f = unsafeEff $ \es -> do
 
 instance Functor (Eff es) where
   fmap f (Eff m) = unsafeEff $ \es -> f <$> m es
+  a <$ Eff fb = unsafeEff $ \es -> a <$ fb es
 
 instance Applicative (Eff es) where
   pure = unsafeEff_ . pure
   Eff mf <*> Eff mx = unsafeEff $ \es -> mf es <*> mx es
+  Eff ma  *> Eff mb = unsafeEff $ \es -> ma es  *> mb es
+  Eff ma <*  Eff mb = unsafeEff $ \es -> ma es <*  mb es
+  liftA2 f (Eff ma) (Eff mb) = unsafeEff $ \es -> liftA2 f (ma es) (mb es)
 
 instance Monad (Eff es) where
-  Eff m >>= k = unsafeEff $ \es -> do
-    a <- m es
-    unEff (k a) es
+  return = unsafeEff_ . pure
+  Eff m >>= k = unsafeEff $ \es -> m es >>= \a -> unEff (k a) es
+  -- https://gitlab.haskell.org/ghc/ghc/-/issues/20008
+  Eff ma >> Eff mb = unsafeEff $ \es -> ma es >> mb es
+
+#if __GLASGOW_HASKELL__ < 808
+  fail = unsafeEff_ . fail
+#endif
 
 ----------------------------------------
 -- Exception

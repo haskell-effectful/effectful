@@ -65,9 +65,9 @@ countdownMtl n = flip M.runState n $ programMtl
 
 countdownMtlDeep :: Integer -> (Integer, Integer)
 countdownMtlDeep n = runIdentity
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . flip M.runStateT n
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   $ programMtl
   where
     runR = flip M.runReaderT ()
@@ -90,9 +90,9 @@ countdownEffectfulStatic n = E.runEff . E.runState n $ programEffectfulStatic
 
 countdownEffectfulStaticDeep :: Integer -> IO (Integer, Integer)
 countdownEffectfulStaticDeep n = E.runEff
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . E.runState n
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   $ programEffectfulStatic
   where
     runR = E.runReader ()
@@ -115,9 +115,9 @@ countdownEffectfulMVar n = E.runEff . ME.runState n $ programEffectfulMVar
 
 countdownEffectfulMVarDeep :: Integer -> IO (Integer, Integer)
 countdownEffectfulMVarDeep n = E.runEff
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . ME.runState n
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   $ programEffectfulMVar
   where
     runR = E.runReader ()
@@ -143,18 +143,18 @@ countdownEffectfulDynMVar n = E.runEff . DE.runStateMVar n $ programEffectfulDyn
 
 countdownEffectfulDynPureDeep :: Integer -> IO (Integer, Integer)
 countdownEffectfulDynPureDeep n = E.runEff
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . DE.runState n
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where
     runR = E.runReader ()
 
 countdownEffectfulDynMVarDeep :: Integer -> IO (Integer, Integer)
 countdownEffectfulDynMVarDeep n = E.runEff
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . DE.runStateMVar n
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where
     runR = E.runReader ()
@@ -179,9 +179,9 @@ countdownFusedEffects n = FE.run . FE.runState n $ programFusedEffects
 
 countdownFusedEffectsDeep :: Integer -> (Integer, Integer)
 countdownFusedEffectsDeep n = FE.run
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . FE.runState n
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   $ programFusedEffects
   where
     runR = FE.runReader ()
@@ -208,9 +208,9 @@ countdownPolysemy n = P.run . P.runState n $ programPolysemy
 
 countdownPolysemyDeep :: Integer -> (Integer, Integer)
 countdownPolysemyDeep n = P.run
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . P.runState n
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   $ programPolysemy
   where
     runR = P.runReader ()
@@ -237,9 +237,9 @@ countdownEff n = L.run . L.runState n $ programEff
 
 countdownEffDeep :: Integer -> (Integer, Integer)
 countdownEffDeep n = L.run
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . L.runState n
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   $ programEff
   where
     runR = L.runReader ()
@@ -266,9 +266,9 @@ countdownFreerSimple n = FS.run . FS.runState n $ programFreerSimple
 
 countdownFreerSimpleDeep :: Integer -> (Integer, Integer)
 countdownFreerSimpleDeep n = FS.run
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . FS.runState n
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   $ programFreerSimple
   where
     runR = FS.runReader ()

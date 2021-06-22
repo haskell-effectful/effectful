@@ -124,9 +124,9 @@ effectful_calculateFileSizes =
 
 effectful_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
 effectful_calculateFileSizesDeep = E.runEff . E.runIOE
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . effectful_runFile . effectful_runLogging
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . effectful_program
   where
     runR = E.runReader ()
@@ -188,9 +188,9 @@ eff_calculateFileSizes =
 
 eff_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
 eff_calculateFileSizesDeep = L.runIO
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . eff_runFile . eff_runLogging
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . eff_program
   where
     runR = L.runReader ()
@@ -250,9 +250,9 @@ fs_calculateFileSizes =
 
 fs_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
 fs_calculateFileSizesDeep = FS.runM
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . fs_runFile . fs_runLogging
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . fs_program
   where
     runR = FS.runReader ()
@@ -319,9 +319,9 @@ mtl_calculateFileSizes = runFileT . runLoggingT . mtl_program
 
 mtl_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
 mtl_calculateFileSizesDeep
-  = runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  = runR . runR . runR . runR . runR
   . runFileT . runLoggingT
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . mtl_program
   where
     runR = flip M.runReaderT ()
@@ -379,9 +379,9 @@ poly_calculateFileSizes =
 
 poly_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
 poly_calculateFileSizesDeep = P.runM
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . poly_runFile . poly_runLogging
-  . runR . runR . runR . runR . runR . runR . runR . runR . runR . runR
+  . runR . runR . runR . runR . runR
   . poly_program
   where
     runR = P.runReader ()

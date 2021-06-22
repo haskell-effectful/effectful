@@ -33,7 +33,6 @@ import Data.IORef
 import Data.Primitive.SmallArray
 import Data.Word
 import GHC.Exts (Any)
-import GHC.Stack
 import Unsafe.Coerce
 import qualified Data.Map.Strict as M
 
@@ -127,7 +126,7 @@ emptyEnv :: IO (Env '[])
 emptyEnv = Env NoFork <$> emptyEnvRef <*> newUniqueGen
 
 -- | Clone the environment.
-cloneEnv :: HasCallStack => Env es -> IO (Env es)
+cloneEnv :: Env es -> IO (Env es)
 cloneEnv (Env NoFork gref0 ug0) = do
   ug <- cloneUniqueGen ug0
   cache <- newIORef M.empty
@@ -249,7 +248,7 @@ relinkForks ug cache = \case
 ----------------------------------------
 
 -- | Create a local fork of the environment for interpreters.
-forkEnv :: HasCallStack => Env es -> IO (Env es)
+forkEnv :: Env es -> IO (Env es)
 forkEnv env@(Env NoFork gref ug) = do
   size <- sizeEnv env
   uniq <- getUnique ug
@@ -290,13 +289,13 @@ sizeEnv (Env (Forks fid lref _) _ _) = do
 {-# NOINLINE sizeEnv #-}
 
 -- | Extract a specific data type from the environment.
-getEnv :: forall e es i. (HasCallStack, e :> es) => Env es -> IO (i e)
+getEnv :: forall e es i. e :> es => Env es -> IO (i e)
 getEnv env = do
   (i, es) <- getLocation @e env
   fromAny <$> readSmallArray es i
 
 -- | Check that the size of the environment is the same as the expected value.
-checkSizeEnv :: HasCallStack => Int -> Env es -> IO ()
+checkSizeEnv :: Int -> Env es -> IO ()
 checkSizeEnv k (Env NoFork ref _) = do
   EnvRef n _ _ <- readIORef ref
   when (k /= n) $ do
@@ -312,7 +311,7 @@ checkSizeEnv k (Env (Forks fid lref _) _ _) = do
 -- Extending and shrinking
 
 -- | Extend the environment with a new data type (in place).
-unsafeConsEnv :: HasCallStack => i e -> Relinker i e -> Env es -> IO (Env (e : es))
+unsafeConsEnv :: i e -> Relinker i e -> Env es -> IO (Env (e : es))
 unsafeConsEnv e f (Env fork gref ug) = case fork of
   NoFork -> do
     extendEnvRef gref
@@ -347,7 +346,7 @@ unsafeConsEnv e f (Env fork gref ug) = case fork of
 
 -- | Shrink the environment by one data type (in place). Makes sure the size of
 -- the environment is as expected.
-unsafeTailEnv :: HasCallStack => Int -> Env (e : es) -> IO (Env es)
+unsafeTailEnv :: Int -> Env (e : es) -> IO (Env es)
 unsafeTailEnv len (Env fork gref ug) = case fork of
   NoFork -> do
     shrinkEnvRef len gref
@@ -371,31 +370,20 @@ unsafeTailEnv len (Env fork gref ug) = case fork of
 -- Data retrieval and update
 
 -- | Replace the data type in the environment with a new value (in place).
-unsafePutEnv
-  :: forall e es i. (HasCallStack, e :> es)
-  => i e
-  -> Env es
-  -> IO ()
+unsafePutEnv :: forall e es i. e :> es => i e -> Env es -> IO ()
 unsafePutEnv e env = do
   (i, es) <- getLocation @e env
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place).
-unsafeModifyEnv
-  :: forall e es i. (HasCallStack, e :> es)
-  => (i e -> i e)
-  -> Env es
-  -> IO ()
+unsafeModifyEnv :: forall e es i. e :> es => (i e -> i e) -> Env es -> IO ()
 unsafeModifyEnv f env = do
   (i, es) <- getLocation @e env
   e <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place) and return a value.
-unsafeStateEnv
-  :: forall e es i a. (HasCallStack, e :> es)
-  => (i e -> (a, i e))
-  -> Env es -> IO a
+unsafeStateEnv :: forall e es i a. e :> es => (i e -> (a, i e)) -> Env es -> IO a
 unsafeStateEnv f env = do
   (i, es) <- getLocation @e env
   (a, e) <- f . fromAny <$> readSmallArray es i

@@ -26,24 +26,24 @@ main = defaultMain $ testGroup "effectful"
   ]
 
 test_runState :: Assertion
-test_runState = runEffIO $ do
+test_runState = runIOE $ do
   (end, len) <- runState (0::Int) . execState collatzStart $ collatz
   assertEqual_ "correct end" 1 end
   assertEqual_ "correct len" collatzLength len
 
 test_evalState :: Assertion
-test_evalState = runEffIO $ do
+test_evalState = runIOE $ do
   len <- evalState (0::Int) . evalState collatzStart $ collatz *> get @Int
   assertEqual_ "correct len" collatzLength len
 
 test_stateM :: Assertion
-test_stateM = runEffIO $ do
+test_stateM = runIOE $ do
   (a, b) <- runState "hi" . stateM $ \s -> pure (s, s ++ "!!!")
   assertEqual_ "correct a" "hi"    a
   assertEqual_ "correct b" "hi!!!" b
 
 test_deepStack :: Assertion
-test_deepStack = runEffIO $ do
+test_deepStack = runIOE $ do
   n <- evalState () . execState (0::Int) $ do
     evalState () . evalState () $ do
       evalState () $ do
@@ -55,7 +55,7 @@ test_deepStack = runEffIO $ do
   assertEqual_ "n" 15 n
 
 test_exceptions :: Assertion
-test_exceptions = runEffIO $ do
+test_exceptions = runIOE $ do
   testTry   "exceptions"  E.try
   testCatch "exceptions"  E.catch
   testTry   "lifted-base" LE.try
@@ -90,7 +90,7 @@ test_exceptions = runEffIO $ do
       modify @Int (+2)
 
 test_concurrentState :: Assertion
-test_concurrentState = runEffIO . runHasInt x $ do
+test_concurrentState = runIOE . runHasInt x $ do
   replicateConcurrently_ 2 $ do
     r <- goDownward 0
     assertEqual_ "x = n" x r
@@ -106,7 +106,7 @@ test_concurrentState = runEffIO . runHasInt x $ do
         goDownward $ acc + 1
 
 test_localEffects :: Assertion
-test_localEffects = runEffIO $ do
+test_localEffects = runIOE $ do
   x <- runHasInt 0 $ do
     putInt 1
     execState () $ do
@@ -138,9 +138,6 @@ putInt = send . PutInt
 
 data Ex = Ex deriving (Eq, Show)
 instance E.Exception Ex
-
-runEffIO :: Eff '[IOE] a -> IO a
-runEffIO = runEff . runIOE
 
 assertEqual_ :: (Eq a, Show a, IOE :> es) => String -> a -> a -> Eff es ()
 assertEqual_ msg expected given = liftIO $ assertEqual msg expected given

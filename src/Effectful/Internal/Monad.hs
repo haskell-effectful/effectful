@@ -129,8 +129,8 @@ instance MonadMask (Eff es) where
 data IOE :: Effect where
   IOE :: IOE m r
 
-runIOE :: Eff '[IOE] a -> Eff '[] a
-runIOE = evalEffect (IdE IOE)
+runIOE :: Eff '[IOE] a -> IO a
+runIOE = runEff . evalEffect (IdE IOE)
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_

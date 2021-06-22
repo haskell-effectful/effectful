@@ -120,10 +120,10 @@ effectful_program files = do
 
 effectful_calculateFileSizes :: [FilePath] -> IO (Int, [String])
 effectful_calculateFileSizes =
-  E.runEff . E.runIOE . effectful_runFile . effectful_runLogging . effectful_program
+  E.runIOE . effectful_runFile . effectful_runLogging . effectful_program
 
 effectful_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
-effectful_calculateFileSizesDeep = E.runEff . E.runIOE
+effectful_calculateFileSizesDeep = E.runIOE
   . runR . runR . runR . runR . runR
   . effectful_runFile . effectful_runLogging
   . runR . runR . runR . runR . runR
@@ -200,6 +200,8 @@ eff_calculateFileSizesDeep = L.runIO
 ----------------------------------------
 -- freer-simple
 
+#ifdef VERSION_freer_simple
+
 data FS_File r where
   FS_tryFileSize :: FilePath -> FS_File (Maybe Int)
 
@@ -256,6 +258,8 @@ fs_calculateFileSizesDeep = FS.runM
   . fs_program
   where
     runR = FS.runReader ()
+
+#endif
 
 ----------------------------------------
 -- mtl

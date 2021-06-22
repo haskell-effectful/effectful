@@ -11,10 +11,12 @@ import Test.Tasty.Bench
 #endif
 
 import Countdown
+import FileSizes
 
 main :: IO ()
 main = defaultMain
   [ bgroup "countdown" $ map countdown [1000, 10000]
+  , bgroup "filesize"  $ map filesize [100, 1000]
   ]
 
 countdown :: Integer -> Benchmark
@@ -59,3 +61,37 @@ countdown n = bgroup (show n)
 #endif
     ]
   ]
+
+filesize :: Int -> Benchmark
+filesize n = bgroup (show n)
+  [ bgroup "shallow"
+    [ bench "reference"    $ nfAppIO ref_calculateFileSizes (take n files)
+    , bench "effectful"    $ nfAppIO effectful_calculateFileSizes (take n files)
+#ifdef VERSION_freer_simple
+    , bench "freer-simple" $ nfAppIO fs_calculateFileSizes (take n files)
+#endif
+    , bench "mtl"          $ nfAppIO mtl_calculateFileSizes (take n files)
+#ifdef VERSION_eff
+    , bench "eff"          $ nfAppIO eff_calculateFileSizes (take n files)
+#endif
+#ifdef VERSION_polysemy
+    , bench "polysemy"     $ nfAppIO poly_calculateFileSizes (take n files)
+#endif
+    ]
+  , bgroup "deep"
+    [ bench "effectful"    $ nfAppIO effectful_calculateFileSizesDeep (take n files)
+#ifdef VERSION_freer_simple
+    , bench "freer-simple" $ nfAppIO fs_calculateFileSizesDeep (take n files)
+#endif
+#ifdef VERSION_eff
+    , bench "eff"          $ nfAppIO eff_calculateFileSizesDeep (take n files)
+#endif
+#ifdef VERSION_polysemy
+    , bench "polysemy"     $ nfAppIO poly_calculateFileSizesDeep (take n files)
+#endif
+    , bench "mtl"          $ nfAppIO mtl_calculateFileSizesDeep (take n files)
+    ]
+  ]
+  where
+    files :: [FilePath]
+    files = repeat "effectful.cabal"

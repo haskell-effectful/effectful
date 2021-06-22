@@ -33,6 +33,7 @@ common language
                         FlexibleContexts
                         FlexibleInstances
                         GADTs
+                        GeneralizedNewtypeDeriving
                         LambdaCase
                         MultiParamTypeClasses
                         RankNTypes
@@ -117,6 +118,8 @@ benchmark bench
                     , effectful
                     , mtl
                     , tasty-bench
+                    , transformers
+                    , unix
 
     hs-source-dirs: bench
 
@@ -124,3 +127,4 @@ benchmark bench
     main-is:        Main.hs
 
     other-modules:  Countdown
+                    FileSizes

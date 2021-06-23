@@ -3,15 +3,16 @@
 [![Build Status](https://github.com/arybczak/effectful/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/arybczak/effectful/actions?query=branch%3Amaster)
 [![Hackage](https://img.shields.io/hackage/v/effectful.svg)](https://hackage.haskell.org/package/effectful)
 
-*Note:* this is a pre-release. Benchmark results (using GHC 8.8.4) can be found
-[here](https://rybczak.net/files/countdown.html).
+*Note:* this is a pre-release.
 
 An easy to use, performant extensible effects library with seamless integration
 with the existing Haskell ecosystem.
 
 Main features:
 
-1. Very fast.
+1. Very fast (benchmark results with GHC 8.8.4:
+   [countdown](https://rybczak.net/files/effectful/countdown.html),
+   [filesize](https://rybczak.net/files/effectful/filesize.html)).
 
 2. Easy to use API (no boilerplate code and dealing with arcane types).
 

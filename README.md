@@ -12,7 +12,8 @@ Main features:
 
 1. Very fast (benchmark results with GHC 8.8.4:
    [countdown](https://rybczak.net/files/effectful/countdown.html),
-   [filesize](https://rybczak.net/files/effectful/filesize.html)).
+   [filesize](https://rybczak.net/files/effectful/filesize.html), [comparison
+   with eff](https://rybczak.net/files/effectful/eff_comparison.html)).
 
 2. Easy to use API (no boilerplate code and dealing with arcane types).
 

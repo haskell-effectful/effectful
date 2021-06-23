@@ -89,7 +89,6 @@ test-suite test
     build-depends:    base <5
                     , effectful
                     , exceptions
-                    , lifted-async
                     , lifted-base
                     , tasty
                     , tasty-hunit

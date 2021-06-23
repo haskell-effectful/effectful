@@ -60,13 +60,25 @@ unsafeUnliftEff :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
 unsafeUnliftEff f = unsafeEff $ \es -> do
   tid0 <- myThreadId
   f $ \(Eff m) -> do
+    -- The unlifting function can't be safely called from another thread.
+    --
+    -- Consider the following:
+    --
+    -- runState 'x' $ do
+    --   liftBaseWith $ \run -> forkIO $ do
+    --     threadDelay 1000000
+    --     run $ ... (1)
+    --   ... (2)
+    -- ...
+    --
+    -- If (1) runs after (2) completed, the State Char effect is no longer in
+    -- scope, but (1) assumes otherwise and things break horribly.
     tid <- myThreadId
-    -- If the unlifting function is called from another thread, we need to clone
-    -- the environment. Otherwise multiple threads will attempt to modify it in
-    -- different ways and things will break horribly.
-    if tid0 == tid
+    if tid == tid0
       then m es
-      else m =<< cloneEnv es
+      else do
+        -- TODO: Add Fork and Async effect.
+        error "Running computations in a different thread is not supported yet"
 
 ----------------------------------------
 -- Base

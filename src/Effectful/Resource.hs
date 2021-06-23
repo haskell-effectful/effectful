@@ -26,7 +26,7 @@ newtype Resource :: Effect where
   Resource :: R.InternalState -> Resource m r
 
 -- | Run the resource effect.
-runResource :: Eff (Resource : es) a -> Eff es a
+runResource :: IOE :> es => Eff (Resource : es) a -> Eff es a
 runResource (Eff m) = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   istate <- R.createInternalState

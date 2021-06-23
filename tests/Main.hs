@@ -1,5 +1,6 @@
 module Main (main) where
 
+import Control.Concurrent.Async
 import Control.Monad.IO.Class
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -19,6 +20,7 @@ main = defaultMain $ testGroup "effectful"
     , testCase "stateM" test_stateM
     , testCase "deep stack" test_deepStack
     , testCase "exceptions" test_exceptions
+    , testCase "concurrency" test_concurrentState
     , testCase "local effects" test_localEffects
     ]
   ]
@@ -86,6 +88,22 @@ test_exceptions = runIOE $ do
       modify @Int (+1)
       _ <- E.throwM Ex
       modify @Int (+2)
+
+test_concurrentState :: Assertion
+test_concurrentState =
+  replicateConcurrently_ 2 . runIOE . runState x $ do
+    r <- goDownward 0
+    assertEqual_ "x = n" x r
+  where
+    x :: Int
+    x = 1000000
+
+    goDownward :: State Int :> es => Int -> Eff es Int
+    goDownward acc = get @Int >>= \case
+      0 -> pure acc
+      n -> do
+        put @Int $ n - 1
+        goDownward $ acc + 1
 
 test_localEffects :: Assertion
 test_localEffects = runIOE $ do

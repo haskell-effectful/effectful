@@ -38,6 +38,7 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Control
 import GHC.Magic (oneShot)
+import System.IO.Unsafe (unsafePerformIO)
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
@@ -46,8 +47,15 @@ type role Eff nominal representational
 
 newtype Eff (es :: [Effect]) a = Eff { unEff :: Env es -> IO a }
 
-runEff :: Eff '[] a -> IO a
-runEff (Eff m) = m =<< emptyEnv
+-- | Run a pure 'Eff' computation.
+--
+-- For the impure version see 'runIOE'.
+runEff :: Eff '[] a -> a
+runEff (Eff m) =
+  -- unsafePerformIO is safe here since IOE was not on the stack, so no IO with
+  -- side effects was performed (unless someone sneakily introduced side effects
+  -- with unsafeEff, but then all bets are off).
+  unsafePerformIO $ m =<< emptyEnv
 
 unsafeEff :: (Env es -> IO a) -> Eff es a
 unsafeEff m = Eff (oneShot m)
@@ -141,8 +149,11 @@ instance MonadMask (Eff es) where
 data IOE :: Effect where
   IOE :: IOE m r
 
+-- | Run an impure 'Eff' computation.
+--
+-- For the pure version see 'runEff'.
 runIOE :: Eff '[IOE] a -> IO a
-runIOE = runEff . evalEffect (IdE IOE)
+runIOE m = unEff (evalEffect (IdE IOE) m) =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_

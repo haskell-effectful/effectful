@@ -84,9 +84,10 @@ library
 test-suite test
     import:         language
 
-    ghc-options:    -threaded -rtsopts
+    ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
 
     build-depends:    base <5
+                    , async
                     , effectful
                     , exceptions
                     , lifted-base

@@ -23,10 +23,10 @@ countdown :: Integer -> Benchmark
 countdown n = bgroup (show n)
   [ bgroup "shallow"
     [ bench "reference"                $ nf countdownRef n
-    , bench "effectful (pure-static)"  $ nfAppIO countdownEffectfulStatic n
-    , bench "effectful (pure-dynamic)" $ nfAppIO countdownEffectfulDynPure n
-    , bench "effectful (MVar-static)"  $ nfAppIO countdownEffectfulMVar n
-    , bench "effectful (MVar-dynamic)" $ nfAppIO countdownEffectfulDynMVar n
+    , bench "effectful (pure-static)"  $ nf countdownEffectfulStatic n
+    , bench "effectful (pure-dynamic)" $ nf countdownEffectfulDynPure n
+    , bench "effectful (MVar-static)"  $ nf countdownEffectfulMVar n
+    , bench "effectful (MVar-dynamic)" $ nf countdownEffectfulDynMVar n
 #ifdef VERSION_freer_simple
     , bench "freer-simple"             $ nf countdownFreerSimple n
 #endif
@@ -42,10 +42,10 @@ countdown n = bgroup (show n)
 #endif
     ]
   , bgroup "deep"
-    [ bench "effectful (pure-static)"  $ nfAppIO countdownEffectfulStaticDeep n
-    , bench "effectful (pure-dynamic)" $ nfAppIO countdownEffectfulDynPureDeep n
-    , bench "effectful (MVar-static)"  $ nfAppIO countdownEffectfulMVarDeep n
-    , bench "effectful (MVar-dynamic)" $ nfAppIO countdownEffectfulDynMVarDeep n
+    [ bench "effectful (pure-static)"  $ nf countdownEffectfulStaticDeep n
+    , bench "effectful (pure-dynamic)" $ nf countdownEffectfulDynPureDeep n
+    , bench "effectful (MVar-static)"  $ nf countdownEffectfulMVarDeep n
+    , bench "effectful (MVar-dynamic)" $ nf countdownEffectfulDynMVarDeep n
 #ifdef VERSION_freer_simple
     , bench "freer-simple"             $ nf countdownFreerSimpleDeep n
 #endif

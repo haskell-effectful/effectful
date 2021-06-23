@@ -1,6 +1,5 @@
 module Main (main) where
 
-import Control.Concurrent.Async
 import Control.Monad.IO.Class
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -8,6 +7,7 @@ import qualified Control.Monad.Catch as E
 import qualified Control.Exception.Lifted as LE
 import qualified UnliftIO.Exception as UE
 
+import Effectful.Async
 import Effectful.Interpreter
 import Effectful.State.Dynamic
 import Effectful.Monad
@@ -90,8 +90,8 @@ test_exceptions = runIOE $ do
       modify @Int (+2)
 
 test_concurrentState :: Assertion
-test_concurrentState =
-  replicateConcurrently_ 2 . runIOE . runState x $ do
+test_concurrentState = runIOE . evalState x $ do
+  runAsyncE . replicateConcurrently_ 2 $ do
     r <- goDownward 0
     assertEqual_ "x = n" x r
   where
@@ -99,11 +99,13 @@ test_concurrentState =
     x = 1000000
 
     goDownward :: State Int :> es => Int -> Eff es Int
-    goDownward acc = get @Int >>= \case
-      0 -> pure acc
-      n -> do
-        put @Int $ n - 1
-        goDownward $ acc + 1
+    goDownward acc = do
+      end <- state @Int $ \case
+        0 -> (True,  0)
+        n -> (False, n - 1)
+      if end
+        then pure acc
+        else goDownward $ acc + 1
 
 test_localEffects :: Assertion
 test_localEffects = runIOE $ do

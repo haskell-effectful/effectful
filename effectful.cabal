@@ -52,6 +52,7 @@ library
     ghc-options:    -O2
 
     build-depends:    base >= 4.12 && <5
+                    , async
                     , containers
                     , exceptions
                     , ghc-prim
@@ -64,7 +65,8 @@ library
 
     hs-source-dirs:  src
 
-    exposed-modules: Effectful.Class.Reader
+    exposed-modules: Effectful.Async
+                     Effectful.Class.Reader
                      Effectful.Class.State
                      Effectful.Class.Writer
                      Effectful.Error
@@ -87,7 +89,6 @@ test-suite test
     ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
 
     build-depends:    base <5
-                    , async
                     , effectful
                     , exceptions
                     , lifted-base

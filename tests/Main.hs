@@ -1,6 +1,7 @@
 module Main (main) where
 
 import Control.Monad.IO.Class
+import Data.List (isPrefixOf)
 import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Control.Monad.Catch as E
@@ -8,6 +9,7 @@ import qualified Control.Exception.Lifted as LE
 import qualified UnliftIO.Exception as UE
 
 import Effectful.Async
+import Effectful.Error
 import Effectful.Interpreter
 import Effectful.State.Dynamic
 import Effectful.Monad
@@ -22,6 +24,7 @@ main = defaultMain $ testGroup "effectful"
     , testCase "exceptions" test_exceptions
     , testCase "concurrency" test_concurrentState
     , testCase "local effects" test_localEffects
+    , testCase "error from interpret" test_errorFromInterpret
     ]
   ]
 
@@ -118,12 +121,28 @@ test_localEffects = runIOE $ do
     getInt
   assertEqual_ "correct x" 4 x
 
-runHasInt :: Int -> Eff (HasInt : es) a -> Eff es a
-runHasInt n =
-  -- reinterpret with redundant local effects
-  reinterpret (evalState () . evalState n . evalState True) $ \case
-    GetInt   -> get
-    PutInt i -> put i
+test_errorFromInterpret :: Assertion
+test_errorFromInterpret = runIOE $ do
+  result <- runError @String . runNestedErr $ do
+    runError @String nestedErr
+  liftIO $ case result of
+    Left (cs, _) -> assertBool "stack trace points to the correct action" $
+      "nestedErr" `isPrefixOf` last cs
+    Right _ -> assertFailure "error caught by the wrong (inner) handler"
+
+----------------------------------------
+-- Helpers
+
+data NestedErr :: Effect where
+  NestedErr :: NestedErr m ()
+
+nestedErr :: (HasCallStack, NestedErr :> es) => Eff es ()
+nestedErr = send NestedErr
+
+runNestedErr :: Error String :> es => Eff (NestedErr : es) a -> Eff es a
+runNestedErr = interpret $ \NestedErr -> throwError "nested error"
+
+----------------------------------------
 
 data HasInt :: Effect where
   GetInt :: HasInt m Int
@@ -135,8 +154,14 @@ getInt = send GetInt
 putInt :: HasInt :> es => Int -> Eff es ()
 putInt = send . PutInt
 
+runHasInt :: Int -> Eff (HasInt : es) a -> Eff es a
+runHasInt n =
+  -- reinterpret with redundant local effects
+  reinterpret (evalState () . evalState n . evalState True) $ \case
+    GetInt   -> get
+    PutInt i -> put i
+
 ----------------------------------------
--- Helpers
 
 data Ex = Ex deriving (Eq, Show)
 instance E.Exception Ex

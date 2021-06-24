@@ -59,6 +59,7 @@ library
                     , monad-control
                     , primitive
                     , resourcet
+                    , stm
                     , transformers
                     , transformers-base
                     , unliftio-core
@@ -81,6 +82,7 @@ library
                      Effectful.State
                      Effectful.State.Dynamic
                      Effectful.State.MVar
+                     Effectful.STM
                      Effectful.Writer
 
 test-suite test

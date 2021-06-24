@@ -239,6 +239,9 @@ relinkForks :: UniqueGen -> EnvRefCache -> Forks -> IO Forks
 relinkForks ug cache = \case
   NoFork -> pure NoFork
   Forks fid lref0 forks -> do
+    -- A specific IORef EnvRef can be held by more than one local environment
+    -- and we need to replace all its occurences with the same, new value
+    -- containing its clone.
     readIORef cache >>= pure . M.lookup fid >>= \case
       Just lref -> Forks fid <$> pure lref
                              <*> relinkForks ug cache forks

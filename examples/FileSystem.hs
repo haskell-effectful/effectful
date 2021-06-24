@@ -26,8 +26,6 @@ data FileSystem :: Effect where
 
 --- | File system error.
 newtype FsError = FsError String
-  deriving Show
-instance Exception FsError
 
 ----------------------------------------
 -- Operations

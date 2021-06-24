@@ -23,7 +23,7 @@ data Error e :: Effect where
   Error :: Error e m r
 
 runError
-  :: forall e es a. Exception e
+  :: forall e es a. Typeable e
   => Eff (Error e : es) a
   -> Eff es (Either ([String], e) a)
 runError (Eff m) = unsafeEff $ \es0 -> mask $ \release -> do
@@ -34,14 +34,14 @@ runError (Eff m) = unsafeEff $ \es0 -> mask $ \release -> do
     Left (WrapErr cs e) -> Left (cs, e) <$ unsafeTailEnv size0 es
 
 throwError
-  :: (HasCallStack, Exception e, Error e :> es)
+  :: (HasCallStack, Typeable e, Error e :> es)
   => e
   -> Eff es a
 throwError e = unsafeEff_ $ do
   throwIO $ WrapErr (ppCallStack <$> getCallStack callStack) e
 
 catchError
-  :: (Exception e, Error e :> es)
+  :: (Typeable e, Error e :> es)
   => Eff es a
   -> ([String] -> e -> Eff es a)
   -> Eff es a
@@ -52,7 +52,7 @@ catchError (Eff m) handler = unsafeEff $ \es -> do
     unEff (handler e cs) es
 
 tryError
-  :: (Exception e, Error e :> es)
+  :: (Typeable e, Error e :> es)
   => Eff es a
   -> Eff es (Either ([String], e) a)
 tryError m = (Right <$> m) `catchError` \es e -> pure (Left (es, e))
@@ -61,5 +61,7 @@ tryError m = (Right <$> m) `catchError` \es e -> pure (Left (es, e))
 -- WrapE
 
 data WrapErr e = WrapErr [String] e
-  deriving Show
-instance (Show e, Typeable e) => Exception (WrapErr e)
+
+instance Typeable e => Show (WrapErr e) where
+  show (WrapErr _ e) = "WrapErr " ++ show (typeOf e)
+instance Typeable e => Exception (WrapErr e)

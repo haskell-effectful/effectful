@@ -67,8 +67,8 @@ import Effectful.Internal.Monad
 
 -- | Run 'Eff' computations asynchronously using the @async@ library.
 --
--- /Note:/ Thread-local state changes in 'Eff' computations lifted into an
--- 'Async' will not affect the thread that spawned them.
+-- /Note:/ thread local state changes in 'Eff' computations lifted into an
+-- 'Async' will not affect the parent thread.
 data AsyncE :: Effect where
   AsyncE :: AsyncE m r
 

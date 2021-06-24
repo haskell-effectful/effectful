@@ -5,52 +5,51 @@ module Effectful.Async
   , runAsyncE
 
     -- * Asynchronous actions
-  , A.Async
-    -- ** Spawning
-  , async, asyncBound, asyncOn
-  , asyncWithUnmask, asyncOnWithUnmask
+  , Async
+
+    -- * High-level API
 
     -- ** Spawning with automatic 'cancel'ation
-  , withAsync, withAsyncBound, withAsyncOn
-  , withAsyncWithUnmask, withAsyncOnWithUnmask
+  , withAsync, withAsyncBound, withAsyncOn, withAsyncWithUnmask
+  , withAsyncOnWithUnmask
 
-    -- ** Quering 'Async's
-  , wait, poll, waitCatch
-  , cancel
-  , uninterruptibleCancel
-  , cancelWith
-  , A.asyncThreadId
-  , A.AsyncCancelled(..)
+    -- ** Querying 'Async's
+  , wait, poll, waitCatch, A.asyncThreadId
+  , cancel, uninterruptibleCancel, cancelWith, A.AsyncCancelled(..)
 
-    -- ** STM operations
+    -- ** #high-level-utilities# High-level utilities
+  , race, race_
+  , concurrently, concurrently_
+  , mapConcurrently, forConcurrently
+  , mapConcurrently_, forConcurrently_
+  , replicateConcurrently, replicateConcurrently_
+  , Concurrently(..)
+  , A.compareAsyncs
+
+    -- ** Specialised operations
+
+    -- *** STM operations
   , A.waitSTM, A.pollSTM, A.waitCatchSTM
 
-    -- ** Waiting for multiple 'Async's
+    -- *** Waiting for multiple 'Async's
   , waitAny, waitAnyCatch, waitAnyCancel, waitAnyCatchCancel
   , waitEither, waitEitherCatch, waitEitherCancel, waitEitherCatchCancel
   , waitEither_
   , waitBoth
 
-    -- ** Waiting for multiple 'Async's in STM
-  , A.waitAnySTM
-  , A.waitAnyCatchSTM
-  , A.waitEitherSTM
-  , A.waitEitherCatchSTM
+    -- *** Waiting for multiple 'Async's in STM
+  , A.waitAnySTM, A.waitAnyCatchSTM
+  , A.waitEitherSTM, A.waitEitherCatchSTM
   , A.waitEitherSTM_
   , A.waitBothSTM
 
+    -- * Low-level API
+
+    -- ** Spawning (low-level API)
+  , async, asyncBound, asyncOn, asyncWithUnmask, asyncOnWithUnmask
+
     -- ** Linking
-  , link, link2
-  , A.ExceptionInLinkedThread(..)
-
-    -- * Convenient utilities
-  , race, race_, concurrently, concurrently_
-  , mapConcurrently, mapConcurrently_
-  , forConcurrently, forConcurrently_
-  , replicateConcurrently, replicateConcurrently_
-  , Concurrently(..)
-
-  , A.compareAsyncs
+  , link, linkOnly, link2, link2Only, A.ExceptionInLinkedThread(..)
   ) where
 
 import Control.Applicative
@@ -240,9 +239,17 @@ waitBoth a b = unsafeEff_ $ A.waitBoth a b
 link :: AsyncE :> es => Async a -> Eff es ()
 link = unsafeEff_ . A.link
 
+-- | Generalized version of 'A.linkOnly'.
+linkOnly :: AsyncE :> es => (SomeException -> Bool) -> Async a -> Eff es ()
+linkOnly f = unsafeEff_ . A.linkOnly f
+
 -- | Generalized version of 'A.link2'.
 link2 :: AsyncE :> es => Async a -> Async b -> Eff es ()
 link2 a b = unsafeEff_ $ A.link2 a b
+
+-- | Generalized version of 'A.link2Only'.
+link2Only :: AsyncE :> es => (SomeException -> Bool) -> Async a -> Async b -> Eff es ()
+link2Only f a b = unsafeEff_ $ A.link2Only f a b
 
 -- | Generalized version of 'A.race'.
 race :: AsyncE :> es => Eff es a -> Eff es b -> Eff es (Either a b)

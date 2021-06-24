@@ -5,7 +5,7 @@
 --
 -- - Share state between threads and need the synchonized version.
 --
--- - Don't share state between threads (or need them to be thread local) and are
+-- - Don't share state between threads (or want it to be thread local) and are
 --   free to use the faster, pure version.
 --
 -- However, let's include this for now.

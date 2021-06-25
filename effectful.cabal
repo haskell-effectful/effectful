@@ -85,7 +85,23 @@ library
                      Effectful.STM
                      Effectful.Writer
 
-test-suite test
+test-suite doctest
+    import:         language
+
+    ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
+
+    build-depends:    base <5
+                    , directory
+                    , doctest >= 0.8
+                    , effectful
+                    , filepath
+
+    hs-source-dirs: tests/doctest
+
+    type:           exitcode-stdio-1.0
+    main-is:        Main.hs
+
+test-suite tasty
     import:         language
 
     ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
@@ -98,7 +114,7 @@ test-suite test
                     , tasty-hunit
                     , unliftio
 
-    hs-source-dirs: tests
+    hs-source-dirs: tests/tasty
 
     type:           exitcode-stdio-1.0
     main-is:        Main.hs

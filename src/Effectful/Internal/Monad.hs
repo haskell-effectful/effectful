@@ -84,9 +84,8 @@ unsafeUnliftEff f = unsafeEff $ \es -> do
     tid <- myThreadId
     if tid == tid0
       then m es
-      else do
-        -- TODO: Add Fork and Async effect.
-        error "Running computations in a different thread is not supported yet"
+      else error $ "Running Eff computations in a different thread is "
+                ++ "currently only possible via the AsyncE effect"
 
 ----------------------------------------
 -- Base

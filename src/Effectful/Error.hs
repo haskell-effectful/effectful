@@ -1,10 +1,16 @@
 -- | Support for checked exceptions.
 module Effectful.Error
  ( Error
+ , ErrorIO
+ , ErrorSome
  , runError
  , throwError
  , catchError
+ , catchErrorAny
+ , catchErrorIO
  , tryError
+ , tryErrorAny
+ , tryErrorIO
 
  -- * Re-exports
  , Exception
@@ -19,6 +25,9 @@ import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
 import Effectful.Internal.Utils
+
+type ErrorIO = Error IOError
+type ErrorSome = Error SomeException
 
 data Error e :: Effect where
   Error :: Unique -> Error e m r
@@ -35,7 +44,7 @@ runError (Eff m) = unsafeEff $ \es0 -> mask $ \release -> do
   tag <- newUnique
   size0 <- sizeEnv es0
   es <- unsafeConsEnv (IdE (Error @e tag)) noRelinker es0
-  r <- tryErrorIO tag (release $ m es) `onException` unsafeTailEnv size0 es
+  r <- tryErrorHelper tag (release $ m es) `onException` unsafeTailEnv size0 es
   _ <- unsafeTailEnv size0 es
   pure r
 
@@ -54,15 +63,41 @@ catchError
 catchError (Eff m) handler = do
   readerEffectM @(Error e) $ \(IdE (Error tag)) -> unsafeEff $ \es -> do
     size <- sizeEnv es
-    catchErrorIO tag (m es) $ \cs e -> do
+    catchErrorHelper tag (m es) $ \cs e -> do
       checkSizeEnv size es
       unEff (handler cs e) es
+
+catchErrorAny
+  :: forall es a. ErrorSome :> es
+  => Eff es a
+  -> ([String] -> SomeException -> Eff es a)
+  -> Eff es a
+catchErrorAny = catchError
+
+catchErrorIO
+  :: forall es a. ErrorIO :> es
+  => Eff es a
+  -> ([String] -> IOError -> Eff es a)
+  -> Eff es a
+catchErrorIO = catchError
 
 tryError
   :: forall e es a. (Typeable e, Error e :> es)
   => Eff es a
   -> Eff es (Either ([String], e) a)
 tryError m = (Right <$> m) `catchError` \es e -> pure $ Left (es, e)
+
+tryErrorAny
+  :: forall es a. ErrorSome :> es
+  => Eff es a
+  -> Eff es (Either ([String], SomeException) a)
+tryErrorAny = tryError
+
+tryErrorIO
+  :: forall es a. ErrorIO :> es
+  => Eff es a
+  -> Eff es (Either ([String], IOError) a)
+tryErrorIO = tryError
 
 ----------------------------------------
 -- Helpers
@@ -77,12 +112,12 @@ instance Typeable e => Show (WrapErr e) where
     . showsPrec p cs
 instance Typeable e => Exception (WrapErr e)
 
-catchErrorIO :: Typeable e => Unique -> IO a -> ([String] -> e -> IO a) -> IO a
-catchErrorIO tag m handler = do
+catchErrorHelper :: Typeable e => Unique -> IO a -> ([String] -> e -> IO a) -> IO a
+catchErrorHelper tag m handler = do
   m `catch` \err@(WrapErr etag e cs) -> do
     if tag == etag
       then handler e cs
       else throwIO err
 
-tryErrorIO :: Typeable e => Unique -> IO a -> IO (Either ([String], e) a)
-tryErrorIO tag m = catchErrorIO tag (Right <$> m) $ \es e -> pure $ Left (es, e)
+tryErrorHelper :: Typeable e => Unique -> IO a -> IO (Either ([String], e) a)
+tryErrorHelper tag m = catchErrorHelper tag (Right <$> m) $ \es e -> pure $ Left (es, e)

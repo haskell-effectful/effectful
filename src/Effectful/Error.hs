@@ -10,7 +10,7 @@
      let boom :: Eff '[IOE] String
          boom = error "BOOM!"
      in
-     runIOE $ boom `Control.Monad.Catch.catch` \(e :: SomeException) ->
+     runIOE $ boom `Control.Monad.Catch.catch` \(e :: ErrorCall) ->
        return "caught some error"
    :}
    "caught some error"

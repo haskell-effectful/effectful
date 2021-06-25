@@ -74,7 +74,6 @@ library
                      Effectful.Internal.Effect
                      Effectful.Internal.Env
                      Effectful.Internal.Monad
-                     Effectful.Internal.Utils
                      Effectful.Interpreter
                      Effectful.Monad
                      Effectful.Reader

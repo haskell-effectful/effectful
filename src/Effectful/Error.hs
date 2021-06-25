@@ -18,7 +18,6 @@ import GHC.Stack
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
-import Effectful.Internal.Utils
 
 data Error e :: Effect where
   Error :: Unique -> Error e m r
@@ -28,7 +27,7 @@ data Error e :: Effect where
 runError
   :: forall e es a. Typeable e
   => Eff (Error e : es) a
-  -> Eff es (Either ([String], e) a)
+  -> Eff es (Either (CallStack, e) a)
 runError (Eff m) = unsafeEff $ \es0 -> mask $ \release -> do
   -- A unique tag is picked so that different runError handlers for the same
   -- type don't catch each other's exceptions.
@@ -44,12 +43,12 @@ throwError
   => e
   -> Eff es a
 throwError e = readerEffectM @(Error e) $ \(IdE (Error tag)) -> unsafeEff_ $ do
-  throwIO $ WrapErr tag (ppCallStack <$> getCallStack callStack) e
+  throwIO $ WrapErr tag callStack e
 
 catchError
   :: forall e es a. (Typeable e, Error e :> es)
   => Eff es a
-  -> ([String] -> e -> Eff es a)
+  -> (CallStack -> e -> Eff es a)
   -> Eff es a
 catchError (Eff m) handler = do
   readerEffectM @(Error e) $ \(IdE (Error tag)) -> unsafeEff $ \es -> do
@@ -61,13 +60,13 @@ catchError (Eff m) handler = do
 tryError
   :: forall e es a. (Typeable e, Error e :> es)
   => Eff es a
-  -> Eff es (Either ([String], e) a)
+  -> Eff es (Either (CallStack, e) a)
 tryError m = (Right <$> m) `catchError` \es e -> pure $ Left (es, e)
 
 ----------------------------------------
 -- Helpers
 
-data WrapErr e = WrapErr Unique [String] e
+data WrapErr e = WrapErr Unique CallStack e
 
 instance Typeable e => Show (WrapErr e) where
   showsPrec p (WrapErr _ cs e)
@@ -77,12 +76,12 @@ instance Typeable e => Show (WrapErr e) where
     . showsPrec p cs
 instance Typeable e => Exception (WrapErr e)
 
-catchErrorIO :: Typeable e => Unique -> IO a -> ([String] -> e -> IO a) -> IO a
+catchErrorIO :: Typeable e => Unique -> IO a -> (CallStack -> e -> IO a) -> IO a
 catchErrorIO tag m handler = do
   m `catch` \err@(WrapErr etag e cs) -> do
     if tag == etag
       then handler e cs
       else throwIO err
 
-tryErrorIO :: Typeable e => Unique -> IO a -> IO (Either ([String], e) a)
+tryErrorIO :: Typeable e => Unique -> IO a -> IO (Either (CallStack, e) a)
 tryErrorIO tag m = catchErrorIO tag (Right <$> m) $ \es e -> pure $ Left (es, e)

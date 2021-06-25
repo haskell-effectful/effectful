@@ -1,11 +1,11 @@
 module Main (main) where
 
 import Control.Monad.IO.Class
-import Data.List (isPrefixOf)
 import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Control.Monad.Catch as E
 import qualified Control.Exception.Lifted as LE
+import GHC.Stack (getCallStack)
 import qualified UnliftIO.Exception as UE
 
 import Effectful.Async
@@ -127,7 +127,7 @@ test_errorFromInterpret = runIOE $ do
     runError @String nestedErr
   liftIO $ case result of
     Left (cs, _) -> assertBool "stack trace points to the correct action" $
-      "nestedErr" `isPrefixOf` last cs
+      "nestedErr" == fst (last $ getCallStack cs)
     Right _ -> assertFailure "error caught by the wrong (inner) handler"
 
 ----------------------------------------

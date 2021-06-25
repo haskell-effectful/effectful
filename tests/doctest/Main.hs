@@ -9,8 +9,8 @@ main :: IO ()
 main = do
     ms <- findModules "src"
     doctest $
-        -- [ "--fast"
-        [ "-XBangPatterns"
+        [ "--fast"
+        , "-XBangPatterns"
         , "-XConstraintKinds"
         , "-XDataKinds"
         , "-XFlexibleContexts"

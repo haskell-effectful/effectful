@@ -9,7 +9,7 @@ import qualified UnliftIO.Exception as UE
 import Effectful.Interpreter
 import Effectful.State.Dynamic
 import Effectful.Monad
-import Utils
+import qualified Utils as U
 
 stateTests :: TestTree
 stateTests = testGroup "State"
@@ -24,19 +24,19 @@ stateTests = testGroup "State"
 test_runState :: Assertion
 test_runState = runIOE $ do
   (end, len) <- runState (0::Int) . execState collatzStart $ collatz
-  assertEqual_ "correct end" 1 end
-  assertEqual_ "correct len" collatzLength len
+  U.assertEqual "correct end" 1 end
+  U.assertEqual "correct len" collatzLength len
 
 test_evalState :: Assertion
 test_evalState = runIOE $ do
   len <- evalState (0::Int) . evalState collatzStart $ collatz *> get @Int
-  assertEqual_ "correct len" collatzLength len
+  U.assertEqual "correct len" collatzLength len
 
 test_stateM :: Assertion
 test_stateM = runIOE $ do
   (a, b) <- runState "hi" . stateM $ \s -> pure (s, s ++ "!!!")
-  assertEqual_ "correct a" "hi"    a
-  assertEqual_ "correct b" "hi!!!" b
+  U.assertEqual "correct a" "hi"    a
+  U.assertEqual "correct b" "hi!!!" b
 
 test_deepStack :: Assertion
 test_deepStack = runIOE $ do
@@ -48,7 +48,7 @@ test_deepStack = runIOE $ do
         modify @Int (+2)
       modify @Int (+4)
     modify @Int (+8)
-  assertEqual_ "n" 15 n
+  U.assertEqual "n" 15 n
 
 test_exceptions :: Assertion
 test_exceptions = runIOE $ do
@@ -61,28 +61,28 @@ test_exceptions = runIOE $ do
   where
     testTry
       :: String
-      -> (forall a es. IOE :> es => Eff es a -> Eff es (Either Ex a))
+      -> (forall a es. IOE :> es => Eff es a -> Eff es (Either U.Ex a))
       -> Eff '[IOE] ()
     testTry lib tryImpl = do
       e <- tryImpl $ runState (0::Int) action
-      assertEqual_ (lib ++ " - exception caught") e (Left Ex)
+      U.assertEqual (lib ++ " - exception caught") e (Left U.Ex)
       s <- execState (0::Int) $ tryImpl action
-      assertEqual_ (lib ++ " - state partially updated") s 1
+      U.assertEqual (lib ++ " - state partially updated") s 1
 
     testCatch
       :: String
-      -> (forall a es. IOE :> es => Eff es a -> (Ex -> Eff es a) -> Eff es a)
+      -> (forall a es. IOE :> es => Eff es a -> (U.Ex -> Eff es a) -> Eff es a)
       -> Eff '[IOE] ()
     testCatch lib catchImpl = do
       s <- execState (0::Int) $ do
-        _ <- (evalState () action) `catchImpl` \Ex -> modify @Int (+4)
+        _ <- (evalState () action) `catchImpl` \U.Ex -> modify @Int (+4)
         modify @Int (+8)
-      assertEqual_ (lib ++ " - state correctly updated") s 13
+      U.assertEqual (lib ++ " - state correctly updated") s 13
 
     action :: State Int :> es => Eff es ()
     action = do
       modify @Int (+1)
-      _ <- E.throwM Ex
+      _ <- E.throwM U.Ex
       modify @Int (+2)
 
 test_localEffects :: Assertion
@@ -94,7 +94,7 @@ test_localEffects = runIOE $ do
       execState () $ do
         putInt expected
     getInt
-  assertEqual_ "correct x" expected x
+  U.assertEqual "correct x" expected x
   where
     expected :: Int
     expected = 4

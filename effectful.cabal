@@ -92,6 +92,7 @@ test-suite test
     ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
 
     build-depends:    base <5
+                    , containers
                     , effectful
                     , exceptions
                     , lifted-base

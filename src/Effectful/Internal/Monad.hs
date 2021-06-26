@@ -40,7 +40,7 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Control
 import GHC.Magic (oneShot)
-import System.IO.Unsafe (unsafePerformIO)
+import System.IO.Unsafe (unsafeDupablePerformIO)
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
@@ -57,7 +57,10 @@ runEff (Eff m) =
   -- unsafePerformIO is safe here since IOE was not on the stack, so no IO with
   -- side effects was performed (unless someone sneakily introduced side effects
   -- with unsafeEff, but then all bets are off).
-  unsafePerformIO $ m =<< emptyEnv
+  --
+  -- Moreover, internals don't allocate any resources that require explicit
+  -- cleanup actions to run, so the "Dupable" part should also be just fine.
+  unsafeDupablePerformIO $ m =<< emptyEnv
 
 unsafeEff :: (Env es -> IO a) -> Eff es a
 unsafeEff m = Eff (oneShot m)

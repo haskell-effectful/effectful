@@ -33,12 +33,12 @@ execWriter m = do
 writer :: (Writer w :> es, Monoid w) => (a, w) -> Eff es a
 writer (a, w1) = do
   IdE (Writer v) <- getEffect
-  unsafeEff_ . modifyMVar v $ \w0 -> let w = w0 `mappend` w1 in w `seq` pure (w, a)
+  unsafeEff_ . modifyMVar v $ \w0 -> let w = w0 <> w1 in w `seq` pure (w, a)
 
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
 tell w1 = do
   IdE (Writer v) <- getEffect
-  unsafeEff_ . modifyMVar_ v $ \w0 -> let w = w0 `mappend` w1 in w `seq` pure w
+  unsafeEff_ . modifyMVar_ v $ \w0 -> let w = w0 <> w1 in w `seq` pure w
 
 listen
   :: forall w es a. (Writer w :> es, Monoid w)
@@ -58,7 +58,7 @@ listen (Eff m) = unsafeEff $ \es -> uninterruptibleMask $ \restore -> do
       w1 <- readMVar v1
       -- The mask is uninterruptible because modifyMVar_ v0 might block and if
       -- we get an async exception while waiting, w1 will be lost.
-      modifyMVar_ v0 $ \w0 -> let w = w0 `mappend` w1 in w `seq` pure w
+      modifyMVar_ v0 $ \w0 -> let w = w0 <> w1 in w `seq` pure w
       pure w1
 
 listens

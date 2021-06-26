@@ -38,7 +38,7 @@ execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriter = reinterpretM WP.execWriter writerPure
 
 writerPure
-  :: (Monoid w, WP.Writer w :> localEs)
+  :: (WP.Writer w :> localEs, Monoid w)
   => RunIn es (Eff localEs)
   -> Writer w (Eff es) a
   -> Eff localEs a
@@ -57,7 +57,7 @@ execWriterMVar :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriterMVar = reinterpretM WM.execWriter writerMVar
 
 writerMVar
-  :: (Monoid w, WM.Writer w :> localEs)
+  :: (WM.Writer w :> localEs, Monoid w)
   => RunIn es (Eff localEs)
   -> Writer w (Eff es) a
   -> Eff localEs a

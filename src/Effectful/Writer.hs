@@ -30,10 +30,10 @@ execWriter m = do
   pure w
 
 writer :: (Writer w :> es, Monoid w) => (a, w) -> Eff es a
-writer (a, w) = stateEffect $ \(IdE (Writer w0)) -> (a, IdE (Writer (w0 `mappend` w)))
+writer (a, w) = stateEffect $ \(IdE (Writer w0)) -> (a, IdE (Writer (w0 <> w)))
 
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
-tell w = stateEffect $ \(IdE (Writer w0)) -> ((), IdE (Writer (w0 `mappend` w)))
+tell w = stateEffect $ \(IdE (Writer w0)) -> ((), IdE (Writer (w0 <> w)))
 
 listen
   :: forall w es a. (Writer w :> es, Monoid w)
@@ -43,8 +43,8 @@ listen (Eff m) = unsafeEff $ \es -> mask $ \restore -> do
   w0 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer mempty))) es
   -- If an exception is thrown, restore e0 and keep parts of e1.
   a <- restore (m es) `onException`
-    unsafeModifyEnv (\(IdE (Writer w)) -> IdE (Writer (w0 `mappend` w))) es
-  w1 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer (w0 `mappend` w)))) es
+    unsafeModifyEnv (\(IdE (Writer w)) -> IdE (Writer (w0 <> w))) es
+  w1 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer (w0 <> w)))) es
   pure (a, w1)
 
 listens

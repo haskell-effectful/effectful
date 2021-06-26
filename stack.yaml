@@ -1,0 +1,5 @@
+resolver: lts-18.0
+packages:
+- .
+extra-deps:
+- fused-effects-1.1.1.1@sha256:c029c5fb0b2154281221a71ff25709d2a11347fe061fa8c2398e7fe52a16008d,4932

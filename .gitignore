@@ -3,4 +3,5 @@
 dist-*
 dist
 .ghc.environment.*
+.stack-work/
 cabal.project.local

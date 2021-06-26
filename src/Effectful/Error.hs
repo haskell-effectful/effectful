@@ -3,7 +3,7 @@
    The `Error` effect provided by this module is a suitable replacement for the
    `Control.Monad.Except.ExceptT` monad transformer found in the mtl library.
    It is __not__ intended to be a general mechanism for catching errors like
-   the functions of the 'exceptions' package. For example, if you want to
+   the functions of the 'exceptions' package. For example, if you want to catch
    a `Control.Exception.SomeException` you could rely on `Control.Monad.catch`:
 
    >>> :{

@@ -63,10 +63,10 @@ execState :: s -> Eff (State s : es) a -> Eff es s
 execState s0 = reinterpretM (SP.execState s0) statePure
 
 statePure
-  :: SP.State s :> es
-  => (forall r. Eff es0 r -> Eff es r)
-  -> State s (Eff es0) a
-  -> Eff es a
+  :: SP.State s :> localEs
+  => RunIn es (Eff localEs)
+  -> State s (Eff es) a
+  -> Eff localEs a
 statePure run = \case
   Get      -> SP.get
   Put s    -> SP.put s
@@ -86,10 +86,10 @@ execStateMVar :: s -> Eff (State s : es) a -> Eff es s
 execStateMVar s0 = reinterpretM (SM.execState s0) stateMVar
 
 stateMVar
-  :: SM.State s :> es
-  => (forall r. Eff es0 r -> Eff es r)
-  -> State s (Eff es0) a
-  -> Eff es a
+  :: SM.State s :> localEs
+  => (forall r. Eff es r -> Eff localEs r)
+  -> State s (Eff es) a
+  -> Eff localEs a
 stateMVar run = \case
   Get      -> SM.get
   Put s    -> SM.put s

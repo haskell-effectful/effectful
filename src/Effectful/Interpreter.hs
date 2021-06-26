@@ -29,7 +29,7 @@ import Effectful.Internal.Monad
 data Interpreter (e :: Effect) = forall localEs. Interpreter
   { _env       :: Env localEs
   , _interpret :: forall a es. HasCallStack
-               => (forall r. Eff es r -> IO r)
+               => RunIn es IO
                -> e (Eff es) a
                -> Eff localEs a
   }
@@ -56,10 +56,6 @@ send op = readerEffectM $ \Interpreter{..} -> do
 
 ----------------------------------------
 -- Interpretation
-
--- | A function that runs 'Eff' computations in @m@ (usually a local 'Eff'
--- environment or 'IO').
-type RunIn es m = forall r. Eff es r -> m r
 
 -- | Interpret a first order effect.
 interpret
@@ -101,7 +97,7 @@ reinterpret
   :: (Eff localEs a -> Eff baseEs b)
   -- ^ Introduction of local effects
   -> (forall r es. HasCallStack => e (Eff es) r -> Eff localEs r)
-  -- ^ The efect handler
+  -- ^ The effect handler
   -> Eff (e : baseEs) a
   -> Eff      baseEs  b
 reinterpret runLocal interpreter m = unsafeEff $ \es -> do

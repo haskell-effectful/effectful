@@ -12,6 +12,9 @@ module Effectful.Internal.Monad
   , runEff
   , unsafeEff
   , unsafeEff_
+
+  -- ** Running in 'IO'
+  , RunIn
   , unsafeUnliftEff
 
   -- * IO
@@ -63,8 +66,14 @@ unsafeEff m = Eff (oneShot m)
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
 
+----------------------------------------
+
+-- | A function that runs 'Eff' computations in @m@ (usually a local 'Eff'
+-- environment or 'IO').
+type RunIn es m = forall r. Eff es r -> m r
+
 -- | Lower 'Eff' computations into 'IO'.
-unsafeUnliftEff :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
+unsafeUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
 unsafeUnliftEff f = unsafeEff $ \es -> do
   tid0 <- myThreadId
   f $ \(Eff m) -> do

@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# OPTIONS_HADDOCK not-home #-}
--- | The environment for 'Effectful.Internal.Monad.Eff'.
+-- | The environment for the 'Effectful.Internal.Monad.Eff' monad.
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
@@ -40,8 +40,8 @@ import Effectful.Internal.Effect
 
 type role Env nominal
 
--- | A mutable, strict (elements are kept in weak head normal form), extensible
--- record indexed by effect data types.
+-- | A thread local, mutable, strict (elements are kept in weak head normal
+-- form), extensible record indexed by data types of kind 'Effect'.
 --
 -- Supports forking, i.e. introduction of local branches for encapsulation of
 -- data specific to effect interpreters.
@@ -54,7 +54,7 @@ type role Env nominal
 --
 -- - Indexing via '(:>)': /O(forks)/, usually /O(1)/ (amortized).
 --
--- - Modification of a specific element: /O(forks)/, usually /O(1)/.
+-- - Modification of a specific element: /O(1)/.
 --
 data Env (es :: [Effect]) = Env
   { _forks     :: Forks

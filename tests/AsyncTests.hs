@@ -11,6 +11,7 @@ import Effectful.Async
 import Effectful.Error
 import Effectful.State.Dynamic
 import Effectful.Monad
+
 import qualified Utils as U
 
 asyncTests :: TestTree

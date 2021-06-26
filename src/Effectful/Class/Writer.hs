@@ -6,7 +6,7 @@ import Control.Monad.Trans.Control
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
-import qualified Effectful.Writer as W
+import qualified Effectful.Writer.Dynamic as W
 
 -- | Compatiblity layer for a transition period from MTL-style effect handling
 -- to 'Effectful.Eff'.

@@ -83,6 +83,8 @@ library
                      Effectful.State.MVar
                      Effectful.STM
                      Effectful.Writer
+                     Effectful.Writer.Dynamic
+                     Effectful.Writer.MVar
 
 test-suite test
     import:         language

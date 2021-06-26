@@ -1,4 +1,21 @@
--- | Support for checked exceptions.
+{- | Support for checked exceptions.
+
+   The `Error` effect provided by this module is a suitable replacement for the
+   `Control.Monad.Except.ExceptT` monad transformer found in the mtl library.
+   It is __not__ intended to be a general mechanism for catching errors like
+   the functions of the 'exceptions' package. For example, if you want to catch
+   an unchecked exception like `Control.Exception.SomeException` or
+   `Control.Exception.ErrorCall` you could rely on `Control.Monad.catch`:
+
+   >>> :{
+     let boom :: Eff '[IOE] String
+         boom = error "BOOM!"
+     in
+     runIOE $ boom `Control.Monad.Catch.catch` \(e :: ErrorCall) ->
+       return "caught some error"
+   :}
+   "caught some error"
+-}
 module Effectful.Error
  ( Error
  , runError
@@ -18,6 +35,11 @@ import GHC.Stack
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
+
+-- $setup
+-- >>> import Control.Monad.Catch
+-- >>> import Control.Monad.IO.Class
+-- >>> import Effectful.Interpreter
 
 data Error e :: Effect where
   Error :: Unique -> Error e m r

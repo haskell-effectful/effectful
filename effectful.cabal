@@ -15,7 +15,7 @@ description: An easy to use, performant extensible effects library with seamless
 extra-source-files: CHANGELOG.md
                     README.md
 
-tested-with: GHC ==8.6.5 || ==8.8.4 || ==8.10.4 || ==9.0.1 || ==9.2.0.20210422
+tested-with: GHC ==8.8.4 || ==8.10.4 || ==9.0.1 || ==9.2.0.20210422
 
 bug-reports:   https://github.com/arybczak/effectful/issues
 source-repository head
@@ -51,7 +51,7 @@ library
 
     ghc-options:    -O2
 
-    build-depends:    base >= 4.12 && <5
+    build-depends:    base >= 4.13 && <5
                     , async
                     , containers
                     , exceptions

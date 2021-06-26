@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-noncanonical-monad-instances #-}
 {-# OPTIONS_HADDOCK not-home #-}
@@ -115,10 +114,6 @@ instance Monad (Eff es) where
   Eff m >>= k = unsafeEff $ \es -> m es >>= \a -> unEff (k a) es
   -- https://gitlab.haskell.org/ghc/ghc/-/issues/20008
   Eff ma >> Eff mb = unsafeEff $ \es -> ma es >> mb es
-
-#if __GLASGOW_HASKELL__ < 808
-  fail = unsafeEff_ . fail
-#endif
 
 ----------------------------------------
 -- Exception

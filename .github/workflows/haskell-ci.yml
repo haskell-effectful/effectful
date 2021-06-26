@@ -50,11 +50,6 @@ jobs:
             compilerVersion: 8.8.4
             setup-method: hvr-ppa
             allow-failure: false
-          - compiler: ghc-8.6.5
-            compilerKind: ghc
-            compilerVersion: 8.6.5
-            setup-method: hvr-ppa
-            allow-failure: false
       fail-fast: false
     steps:
       - name: apt
@@ -229,7 +224,7 @@ jobs:
       - name: doctest
         run: |
           if [ $((HCNUMVER < 90000)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 90000)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XFlexibleContexts -XFlexibleInstances -XGADTs -XLambdaCase -XMultiParamTypeClasses -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStrictData -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
+          if [ $((HCNUMVER < 90000)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStrictData -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful} || false

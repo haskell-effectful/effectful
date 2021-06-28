@@ -1,10 +1,10 @@
--- | The 'State' as an effect.
+-- | The 'State' effect.
 --
 -- Represented as a pure value underneath, therefore:
 --
--- - very fast,
+-- - thread local (if you need sharing, have a look at "Effectful.State.MVar"),
 --
--- - thread local (if you need sharing, have a look at "Effectful.State.MVar").
+-- - very fast.
 --
 module Effectful.State
   ( State
@@ -23,7 +23,7 @@ module Effectful.State
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 
--- | Provide access to a pure, mutable state of type @s@.
+-- | Provide access to a strict, thread local, mutable state of type @s@.
 newtype State s :: Effect where
   State :: s -> State s m r
 

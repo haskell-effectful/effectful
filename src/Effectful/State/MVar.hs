@@ -1,8 +1,8 @@
--- | The 'State' as an effect.
+-- | The 'State' effect.
 --
--- Represented as an MVar underneath, therefore:
+-- Represented as an 'MVar' underneath, therefore:
 --
--- - suitable for sharing between multiple threads,
+-- - shareable between multiple threads,
 --
 -- - slower than "Effectful.State".
 --
@@ -25,7 +25,7 @@ import Control.Concurrent.MVar
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 
--- | Provide access to a synchronized, mutable state of type @s@.
+-- | Provide access to a strict, shareable, mutable state of type @s@.
 newtype State s :: Effect where
   State :: MVar s -> State s m r
 

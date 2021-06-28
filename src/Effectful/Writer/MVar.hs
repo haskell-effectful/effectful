@@ -44,11 +44,11 @@ listen
   :: forall w es a. (Writer w :> es, Monoid w)
   => Eff es a
   -> Eff es (a, w)
-listen (Eff m) = unsafeEff $ \es -> uninterruptibleMask $ \restore -> do
+listen m = unsafeEff $ \es -> uninterruptibleMask $ \restore -> do
   v1 <- newMVar mempty
   -- Replace thread local MVar with a fresh one for isolated listening.
   v0 <- unsafeStateEnv (\(IdE (Writer v)) -> (v, IdE (Writer v1))) es
-  a <- restore (m es) `onException` merge es v0 v1
+  a <- restore (unEff m es) `onException` merge es v0 v1
   (a, ) <$> merge es v0 v1
   where
     -- Merge results accumulated in the local MVar with the mainline. If an

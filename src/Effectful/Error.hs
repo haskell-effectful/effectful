@@ -50,13 +50,13 @@ runError
   :: forall e es a. Typeable e
   => Eff (Error e : es) a
   -> Eff es (Either (CallStack, e) a)
-runError (Eff m) = unsafeEff $ \es0 -> mask $ \release -> do
+runError m = unsafeEff $ \es0 -> mask $ \release -> do
   -- A unique tag is picked so that different runError handlers for the same
   -- type don't catch each other's exceptions.
   tag <- newUnique
   size0 <- sizeEnv es0
   es <- unsafeConsEnv (IdE (Error @e tag)) noRelinker es0
-  r <- tryErrorIO tag (release $ m es) `onException` unsafeTailEnv size0 es
+  r <- tryErrorIO tag (release $ unEff m es) `onException` unsafeTailEnv size0 es
   _ <- unsafeTailEnv size0 es
   pure r
 
@@ -72,10 +72,10 @@ catchError
   => Eff es a
   -> (CallStack -> e -> Eff es a)
   -> Eff es a
-catchError (Eff m) handler = do
+catchError m handler = do
   readerEffectM @(Error e) $ \(IdE (Error tag)) -> unsafeEff $ \es -> do
     size <- sizeEnv es
-    catchErrorIO tag (m es) $ \cs e -> do
+    catchErrorIO tag (unEff m es) $ \cs e -> do
       checkSizeEnv size es
       unEff (handler cs e) es
 

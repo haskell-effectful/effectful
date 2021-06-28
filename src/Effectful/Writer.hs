@@ -39,10 +39,10 @@ listen
   :: forall w es a. (Writer w :> es, Monoid w)
   => Eff es a
   -> Eff es (a, w)
-listen (Eff m) = unsafeEff $ \es -> mask $ \restore -> do
+listen m = unsafeEff $ \es -> mask $ \restore -> do
   w0 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer mempty))) es
   -- If an exception is thrown, restore e0 and keep parts of e1.
-  a <- restore (m es) `onException`
+  a <- restore (unEff m es) `onException`
     unsafeModifyEnv (\(IdE (Writer w)) -> IdE (Writer (w0 <> w))) es
   w1 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer (w0 <> w)))) es
   pure (a, w1)

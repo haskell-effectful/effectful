@@ -35,11 +35,11 @@ data Interpreter (e :: Effect) = forall localEs. Interpreter
   }
 
 runInterpreter :: Env es -> Interpreter e -> Eff (e : es) a -> IO a
-runInterpreter es0 e (Eff m) = do
+runInterpreter es0 e m = do
   size0 <- sizeEnv es0
   bracket (unsafeConsEnv e relinker es0)
           (unsafeTailEnv size0)
-          (\es -> m es)
+          (\es -> unEff m es)
   where
     relinker :: Relinker Interpreter e
     relinker = Relinker $ \relink Interpreter{..} -> do

@@ -27,12 +27,12 @@ newtype Resource :: Effect where
 
 -- | Run the resource effect.
 runResource :: IOE :> es => Eff (Resource : es) a -> Eff es a
-runResource (Eff m) = unsafeEff $ \es0 -> do
+runResource m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   istate <- R.createInternalState
   mask $ \restore -> do
     es <- unsafeConsEnv (IdE (Resource istate)) noRelinker es0
-    a <- restore (m es) `catch` \e -> do
+    a <- restore (unEff m es) `catch` \e -> do
       _ <- unsafeTailEnv size0 es
       RI.stateCleanupChecked (Just e) istate
       throwIO e

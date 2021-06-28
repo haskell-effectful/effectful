@@ -7,11 +7,12 @@
 -- in subsequent releases.
 module Effectful.Internal.Monad
   ( -- * Monad
-    Eff(..)
+    Eff
   , runEff
 
   -- ** Access to the internal representation
   , RunIn
+  , unEff
   , unsafeEff
   , unsafeEff_
   , unsafeUnliftEff
@@ -20,10 +21,14 @@ module Effectful.Internal.Monad
   , IOE
   , runIOE
 
-  -- * Helpers
+  -- * Low-level helpers
+
+  -- ** Running
   , runEffect
   , evalEffect
   , execEffect
+
+  -- ** Modification
   , getEffect
   , putEffect
   , stateEffect
@@ -47,7 +52,7 @@ import Effectful.Internal.Env
 
 type role Eff nominal representational
 
-newtype Eff (es :: [Effect]) a = Eff { unEff :: Env es -> IO a }
+newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
 
 -- | Run a pure 'Eff' computation.
 --
@@ -63,6 +68,11 @@ runEff (Eff m) =
   unsafeDupablePerformIO $ m =<< emptyEnv
 
 ----------------------------------------
+-- Access to the internal representation
+
+-- | Peel off the constructor of 'Eff'.
+unEff :: Eff es a -> Env es -> IO a
+unEff (Eff m) = m
 
 -- | Access underlying 'IO' monad along with the environment.
 unsafeEff :: (Env es -> IO a) -> Eff es a
@@ -100,10 +110,10 @@ type RunIn es m = forall r. Eff es r -> m r
 unsafeUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
 unsafeUnliftEff f = unsafeEff $ \es -> do
   tid0 <- myThreadId
-  f $ \(Eff m) -> do
+  f $ \m -> do
     tid <- myThreadId
     if tid == tid0
-      then m es
+      then unEff m es
       else error $ "Running Eff computations in a different thread is "
                 ++ "currently only possible via the AsyncE effect"
 
@@ -134,18 +144,18 @@ instance MonadThrow (Eff es) where
   throwM = unsafeEff_ . throwM
 
 instance MonadCatch (Eff es) where
-  catch (Eff m) handler = unsafeEff $ \es -> do
+  catch m handler = unsafeEff $ \es -> do
     size <- sizeEnv es
-    m es `catch` \e -> do
+    unEff m es `catch` \e -> do
       checkSizeEnv size es
       unEff (handler e) es
 
 instance MonadMask (Eff es) where
   mask k = unsafeEff $ \es -> mask $ \restore ->
-    unEff (k $ \(Eff m) -> unsafeEff $ restore . m) es
+    unEff (k $ \m -> unsafeEff $ restore . unEff m) es
 
   uninterruptibleMask k = unsafeEff $ \es -> uninterruptibleMask $ \restore ->
-    unEff (k $ \(Eff m) -> unsafeEff $ restore . m) es
+    unEff (k $ \m -> unsafeEff $ restore . unEff m) es
 
   generalBracket acquire release use = unsafeEff $ \es -> mask $ \restore -> do
     size <- sizeEnv es
@@ -188,25 +198,25 @@ instance IOE :> es => MonadUnliftIO (Eff es) where
 -- Helpers
 
 runEffect :: i e -> Eff (e : es) a -> Eff es (a, i e)
-runEffect e0 (Eff m) = unsafeEff $ \es0 -> do
+runEffect e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   bracket (unsafeConsEnv e0 noRelinker es0)
           (unsafeTailEnv size0)
-          (\es -> (,) <$> m es <*> getEnv es)
+          (\es -> (,) <$> unEff m es <*> getEnv es)
 
 evalEffect :: i e -> Eff (e : es) a -> Eff es a
-evalEffect e (Eff m) = unsafeEff $ \es0 -> do
+evalEffect e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   bracket (unsafeConsEnv e noRelinker es0)
           (unsafeTailEnv size0)
-          (\es -> m es)
+          (\es -> unEff m es)
 
 execEffect :: i e -> Eff (e : es) a -> Eff es (i e)
-execEffect e0 (Eff m) = unsafeEff $ \es0 -> do
+execEffect e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   bracket (unsafeConsEnv e0 noRelinker es0)
           (unsafeTailEnv size0)
-          (\es -> m es *> getEnv es)
+          (\es -> unEff m es *> getEnv es)
 
 getEffect :: e :> es => Eff es (i e)
 getEffect = unsafeEff $ \es -> getEnv es
@@ -221,10 +231,10 @@ stateEffect f = unsafeEff $ \es -> unsafeStateEnv f es
 {-# INLINE stateEffect #-}
 
 localEffect :: e :> es => (i e -> i e) -> Eff es a -> Eff es a
-localEffect f (Eff m) = unsafeEff $ \es -> do
+localEffect f m = unsafeEff $ \es -> do
   bracket (unsafeStateEnv (\e -> (e, f e)) es)
           (\e -> unsafePutEnv e es)
-          (\_ -> m es)
+          (\_ -> unEff m es)
 {-# INLINE localEffect #-}
 
 readerEffectM :: e :> es => (i e -> Eff es a) -> Eff es a

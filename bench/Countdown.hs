@@ -1,7 +1,9 @@
 {-# LANGUAGE CPP #-}
 module Countdown where
 
+import Control.Monad.ST
 import Data.Functor.Identity
+import Data.STRef
 
 -- eff
 #ifdef VERSION_eff
@@ -46,6 +48,26 @@ import qualified Polysemy.State as P
 countdownRef :: Integer -> (Integer, Integer)
 countdownRef n = if n <= 0 then (n, n) else countdownRef $ n - 1
 {-# NOINLINE countdownRef #-}
+
+----------------------------------------
+-- ST
+
+programST :: STRef s Integer -> ST s Integer
+programST ref = do
+  n <- readSTRef ref
+  if n <= 0
+    then pure n
+    else do
+      writeSTRef ref $! n - 1
+      programST ref
+{-# NOINLINE programST #-}
+
+countdownST :: Integer -> (Integer, Integer)
+countdownST n = runST $ do
+  ref <- newSTRef n
+  a <- programST ref
+  s <- readSTRef ref
+  pure (a, s)
 
 ----------------------------------------
 -- mtl

@@ -118,7 +118,7 @@ data Env (es :: [Effect]) = Env
 data Forks = Forks ForkId Int (IORef EnvRef) Forks | NoFork
 
 data EnvRef = EnvRef
-  { _capacity  :: Int
+  { _size      :: Int
   , _data      :: SmallMutableArray RealWorld Any
   , _relinkers :: SmallMutableArray RealWorld Any
   }
@@ -304,7 +304,7 @@ forkEnv env@(Env NoFork gref gen) = do
 forkEnv (Env forks@(Forks _ baseIx lref0 olderForks) gref gen) = do
   fid <- newForkId gen
   lref <- emptyEnvRef
-  (_capacity <$> readIORef lref0) >>= \case
+  (_size <$> readIORef lref0) >>= \case
     -- If the fork is empty, replace it as no data is lost.
     0 -> pure $ Env (Forks fid baseIx lref olderForks) gref gen
     _ -> pure $ Env (Forks fid baseIx lref forks)      gref gen

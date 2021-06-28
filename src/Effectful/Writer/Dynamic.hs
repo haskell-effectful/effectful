@@ -23,8 +23,8 @@ import qualified Effectful.Writer as WP
 import qualified Effectful.Writer.MVar as WM
 
 data Writer w :: Effect where
-  Tell   :: ~w     -> Writer w m ()
-  Listen :: m a    -> Writer w m (a, w)
+  Tell   :: ~w  -> Writer w m ()
+  Listen :: m a -> Writer w m (a, w)
 
 ----------------------------------------
 -- Pure

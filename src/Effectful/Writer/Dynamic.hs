@@ -71,11 +71,7 @@ tell = send . Tell
 listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
 listen = send . Listen
 
-listens
-  :: (Writer w :> es, Monoid w)
-  => (w -> b)
-  -> Eff es a
-  -> Eff es (a, b)
+listens :: (Writer w :> es, Monoid w) => (w -> b) -> Eff es a -> Eff es (a, b)
 listens f m = do
   (a, w) <- listen m
   pure (a, f w)

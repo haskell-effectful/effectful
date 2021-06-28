@@ -35,10 +35,7 @@ tell w1 = do
   IdE (Writer v) <- getEffect
   unsafeEff_ . modifyMVar_ v $ \w0 -> let w = w0 <> w1 in w `seq` pure w
 
-listen
-  :: forall w es a. (Writer w :> es, Monoid w)
-  => Eff es a
-  -> Eff es (a, w)
+listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
 listen m = unsafeEff $ \es -> uninterruptibleMask $ \restore -> do
   v1 <- newMVar mempty
   -- Replace thread local MVar with a fresh one for isolated listening.
@@ -49,18 +46,14 @@ listen m = unsafeEff $ \es -> uninterruptibleMask $ \restore -> do
     -- Merge results accumulated in the local MVar with the mainline. If an
     -- exception was received while listening, merge results recorded so far.
     merge es v0 v1 = do
-      unsafePutEnv @(Writer w) (IdE (Writer v0)) es
+      unsafePutEnv (IdE (Writer v0)) es
       w1 <- readMVar v1
       -- The mask is uninterruptible because modifyMVar_ v0 might block and if
       -- we get an async exception while waiting, w1 will be lost.
       modifyMVar_ v0 $ \w0 -> let w = w0 <> w1 in w `seq` pure w
       pure w1
 
-listens
-  :: (Writer w :> es, Monoid w)
-  => (w -> b)
-  -> Eff es a
-  -> Eff es (a, b)
+listens :: (Writer w :> es, Monoid w) => (w -> b) -> Eff es a -> Eff es (a, b)
 listens f m = do
   (a, w) <- listen m
   pure (a, f w)

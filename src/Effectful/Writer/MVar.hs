@@ -15,6 +15,7 @@ import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
 
+-- | Provide access to a strict (WHNF), shareable, write only value of type @w@.
 newtype Writer w :: Effect where
   Writer :: MVar w -> Writer w m r
 

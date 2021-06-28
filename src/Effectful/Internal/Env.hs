@@ -40,8 +40,8 @@ import Effectful.Internal.Effect
 
 type role Env nominal
 
--- | A thread local, mutable, strict (elements are kept in weak head normal
--- form), extensible record indexed by data types of kind 'Effect'.
+-- | A strict (WHNF), thread local, mutable, extensible record indexed by types
+-- of kind 'Effect'.
 --
 -- Supports forking, i.e. introduction of local branches for encapsulation of
 -- data specific to effect interpreters.
@@ -55,6 +55,58 @@ type role Env nominal
 -- - Indexing via '(:>)': /O(forks)/, usually /O(1)/ (amortized).
 --
 -- - Modification of a specific element: /O(1)/.
+--
+-- Here's an example of how the environment might look:
+--
+-- @
+-- e00 - e01 - e05 - e07 (*)
+--        |     |     |
+--        |    e06   e08 - e09
+--        |
+--       e02 - e03
+--              |
+--             e04
+-- @
+--
+-- The point of execution is currently at (*), i.e. the mainline. Moreover,
+-- currently:
+--
+-- - Mainline sees @[e00, e01, e05, e07]@.
+--
+-- - @e01@ is an interpreted effect, its handler sees @[e00, e02, e03]@.
+--
+-- - @e03@ is an interpreted effect, its handler sees @[e00, e02, e04]@.
+--
+-- - @e05@ is an interpreted effect, its handler sees @[e00, e01, e06]@.
+--
+-- - @e07@ is an interpreted effect, its handler sees @[e00, e01, e05, e08,
+--   e09]@.
+--
+-- If an operation from @e01@ is invoked, the environment in the middle of
+-- handling it might look like this:
+--
+-- @
+-- e00 - e01 - e05 - e07
+--        |     |     |
+--        |    e06   e08 - e09
+--        |
+--       e02 - e03 - e10 (*)
+--              |     |
+--             e04   e11
+--                    |
+--                   e12
+-- @
+--
+-- The point of execution is at (*), i.e. inside the handler of @e01@. The
+-- handler needed to introduce @e10@ (which introduced @e11@, which in turn
+-- introduced @e12@), so its local environment was temporarily extended with
+-- it. Moreover, currently:
+--
+-- - Handler of @e01@ sees @[e00, e02, e03, e10]@.
+--
+-- - Handler of @e10@ sees @[e00, e02, e03, e11]@.
+--
+-- - Handler of @e11@ sees @[e00, e02, e03, e12]@.
 --
 data Env (es :: [Effect]) = Env
   { _forks     :: Forks

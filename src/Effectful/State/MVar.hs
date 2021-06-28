@@ -25,7 +25,7 @@ import Control.Concurrent.MVar
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 
--- | Provide access to a strict, shareable, mutable state of type @s@.
+-- | Provide access to a strict (WHNF), shareable, mutable state of type @s@.
 newtype State s :: Effect where
   State :: MVar s -> State s m r
 

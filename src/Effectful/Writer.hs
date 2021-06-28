@@ -1,4 +1,4 @@
--- | The 'Writer' as an effect.
+-- | The 'Writer' effect.
 module Effectful.Writer
   ( Writer
   , runWriter
@@ -15,7 +15,8 @@ import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
 
--- | Provide access to a write only value of type @w@.
+-- | Provide access to a strict (WHNF), thread local, write only value of type
+-- @w@.
 newtype Writer w :: Effect where
   Writer :: w -> Writer w m r
 
@@ -41,11 +42,12 @@ listen
   -> Eff es (a, w)
 listen m = unsafeEff $ \es -> mask $ \restore -> do
   w0 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer mempty))) es
-  -- If an exception is thrown, restore e0 and keep parts of e1.
-  a <- restore (unEff m es) `onException`
-    unsafeModifyEnv (\(IdE (Writer w)) -> IdE (Writer (w0 <> w))) es
-  w1 <- unsafeStateEnv (\(IdE (Writer w)) -> (w, IdE (Writer (w0 <> w)))) es
-  pure (a, w1)
+  a <- restore (unEff m es) `onException` merge es w0
+  (a, ) <$> merge es w0
+  where
+    merge es w0 =
+      -- If an exception is thrown, restore w0 and keep parts of w1.
+      unsafeStateEnv (\(IdE (Writer w1)) -> (w1, IdE (Writer (w0 <> w1)))) es
 
 listens
   :: (Writer w :> es, Monoid w)

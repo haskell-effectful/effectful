@@ -2,7 +2,6 @@ module Effectful.Writer.MVar
   ( Writer
   , runWriter
   , execWriter
-  , writer
   , tell
   , listen
   , listens
@@ -30,11 +29,6 @@ execWriter m = do
   v <- unsafeEff_ $ newMVar mempty
   _ <- evalEffect (IdE (Writer v)) m
   unsafeEff_ $ readMVar v
-
-writer :: (Writer w :> es, Monoid w) => (a, w) -> Eff es a
-writer (a, w1) = do
-  IdE (Writer v) <- getEffect
-  unsafeEff_ . modifyMVar v $ \w0 -> let w = w0 <> w1 in w `seq` pure (w, a)
 
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
 tell w1 = do

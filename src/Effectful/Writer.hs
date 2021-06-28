@@ -3,7 +3,6 @@ module Effectful.Writer
   ( Writer
   , runWriter
   , execWriter
-  , writer
   , tell
   , listen
   , listens
@@ -29,9 +28,6 @@ execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
   IdE (Writer w) <- execEffect (IdE (Writer mempty)) m
   pure w
-
-writer :: (Writer w :> es, Monoid w) => (a, w) -> Eff es a
-writer (a, w) = stateEffect $ \(IdE (Writer w0)) -> (a, IdE (Writer (w0 <> w)))
 
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
 tell w = stateEffect $ \(IdE (Writer w0)) -> ((), IdE (Writer (w0 <> w)))

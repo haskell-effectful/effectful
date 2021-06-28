@@ -10,7 +10,6 @@ module Effectful.Writer.Dynamic
   , execWriterMVar
 
   -- * Operations
-  , writer
   , tell
   , listen
   , listens
@@ -24,7 +23,6 @@ import qualified Effectful.Writer as WP
 import qualified Effectful.Writer.MVar as WM
 
 data Writer w :: Effect where
-  Writer :: (a, w) -> Writer w m a
   Tell   :: ~w     -> Writer w m ()
   Listen :: m a    -> Writer w m (a, w)
 
@@ -43,7 +41,6 @@ writerPure
   -> Writer w (Eff es) a
   -> Eff localEs a
 writerPure run = \case
-  Writer aw -> WP.writer aw
   Tell w    -> WP.tell w
   Listen m  -> WP.listen (run m)
 
@@ -62,15 +59,11 @@ writerMVar
   -> Writer w (Eff es) a
   -> Eff localEs a
 writerMVar run = \case
-  Writer aw -> WM.writer aw
   Tell w    -> WM.tell w
   Listen m  -> WM.listen (run m)
 
 ----------------------------------------
 -- Operations
-
-writer :: (Writer w :> es, Monoid w) => (a, w) -> Eff es a
-writer = send . Writer
 
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
 tell = send . Tell

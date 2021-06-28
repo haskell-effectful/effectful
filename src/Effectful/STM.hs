@@ -9,7 +9,7 @@ import qualified Control.Monad.STM as S
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 
--- | Run 'S.STM' computations using the @stm@ library.
+-- | Run 'S.STM' operations using the @stm@ library.
 data STME :: Effect where
   STME :: STME m r
 

@@ -54,7 +54,7 @@ type role Eff nominal representational
 
 newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
 
--- | Run a pure 'Eff' computation.
+-- | Run a pure 'Eff' operation.
 --
 -- For the impure version see 'runIOE'.
 runEff :: Eff '[] a -> a
@@ -82,11 +82,11 @@ unsafeEff m = Eff (oneShot m)
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
 
--- | A function that runs 'Eff' computations in @m@ (usually a local 'Eff'
+-- | A function that runs 'Eff' operations in @m@ (usually a local 'Eff'
 -- environment or 'IO').
 type RunIn es m = forall r. Eff es r -> m r
 
--- | Lower 'Eff' computations into 'IO'.
+-- | Lower 'Eff' operations into 'IO'.
 --
 -- /Note:/ the 'RunIn' argument has to be called from the same thread as
 -- 'unsafeUnliftEff' ('liftBaseWith' / 'withRunInIO'). Attempting otherwise
@@ -114,8 +114,8 @@ unsafeUnliftEff f = unsafeEff $ \es -> do
     tid <- myThreadId
     if tid == tid0
       then unEff m es
-      else error $ "Running Eff computations in a different thread is "
-                ++ "currently only possible via the AsyncE effect"
+      else error $ "Running Eff operations in a different thread is "
+                ++ "currently not possible with the unlifting function"
 
 ----------------------------------------
 -- Base
@@ -171,10 +171,12 @@ instance MonadMask (Eff es) where
 ----------------------------------------
 -- IO
 
+-- | Run 'IO' operations via 'MonadIO', 'MonadBaseControl' 'IO' and
+-- 'MonadUnliftIO' classes.
 data IOE :: Effect where
   IOE :: IOE m r
 
--- | Run an impure 'Eff' computation.
+-- | Run an impure 'Eff' operation.
 --
 -- For the pure version see 'runEff'.
 runIOE :: Eff '[IOE] a -> IO a

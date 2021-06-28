@@ -9,11 +9,11 @@ module Effectful.Internal.Monad
   ( -- * Monad
     Eff(..)
   , runEff
+
+  -- ** Access to the internal representation
+  , RunIn
   , unsafeEff
   , unsafeEff_
-
-  -- ** Running in 'IO'
-  , RunIn
   , unsafeUnliftEff
 
   -- * IO
@@ -62,36 +62,45 @@ runEff (Eff m) =
   -- cleanup actions to run, so the "Dupable" part should also be just fine.
   unsafeDupablePerformIO $ m =<< emptyEnv
 
+----------------------------------------
+
+-- | Access underlying 'IO' monad along with the environment.
 unsafeEff :: (Env es -> IO a) -> Eff es a
 unsafeEff m = Eff (oneShot m)
 
+-- | Access underlying 'IO' monad.
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
-
-----------------------------------------
 
 -- | A function that runs 'Eff' computations in @m@ (usually a local 'Eff'
 -- environment or 'IO').
 type RunIn es m = forall r. Eff es r -> m r
 
 -- | Lower 'Eff' computations into 'IO'.
+--
+-- /Note:/ the 'RunIn' argument has to be called from the same thread as
+-- 'unsafeUnliftEff' ('liftBaseWith' / 'withRunInIO'). Attempting otherwise
+-- results in a runtime error, because it cannot be done safely in general
+-- (*). If you need to spawn threads, have a look at "Effectful.Async" or create
+-- a new 'Eff' environment.
+--
+-- (*) Consider the following:
+--
+-- @
+-- runState 'x' $ do
+--   liftBaseWith $ \run -> forkIO $ do
+--     threadDelay 1000000
+--     run $ ... (1)
+--   ... (2)
+-- ...
+-- @
+--
+-- If (1) runs after (2) completed, the State Char effect is no longer in scope,
+-- but (1) assumes otherwise and things break horribly.
 unsafeUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
 unsafeUnliftEff f = unsafeEff $ \es -> do
   tid0 <- myThreadId
   f $ \(Eff m) -> do
-    -- The unlifting function can't be safely called from another thread.
-    --
-    -- Consider the following:
-    --
-    -- runState 'x' $ do
-    --   liftBaseWith $ \run -> forkIO $ do
-    --     threadDelay 1000000
-    --     run $ ... (1)
-    --   ... (2)
-    -- ...
-    --
-    -- If (1) runs after (2) completed, the State Char effect is no longer in
-    -- scope, but (1) assumes otherwise and things break horribly.
     tid <- myThreadId
     if tid == tid0
       then m es

@@ -1,17 +1,17 @@
--- | The 'Reader' as an effect.
+-- | The 'Reader' effect.
 module Effectful.Reader
   ( Reader
   , runReader
   , ask
-  , local
-  , reader
   , asks
+  , local
   ) where
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 
--- | Provide access to a read only value of type @r@.
+-- | Provide access to a strict (WHNF), thread local, read only value of type
+-- @r@.
 newtype Reader r :: Effect where
   Reader :: r -> Reader r m a
 
@@ -23,13 +23,10 @@ ask = do
   IdE (Reader r) <- getEffect
   pure r
 
-local :: Reader r :> es => (r -> r) -> Eff es a -> Eff es a
-local f = localEffect $ \(IdE (Reader r)) -> IdE (Reader (f r))
-
-reader :: Reader r :> es => (r -> a) -> Eff es a
-reader f = do
+asks :: Reader r :> es => (r -> a) -> Eff es a
+asks f = do
   IdE (Reader r) <- getEffect
   pure $ f r
 
-asks :: Reader r :> es => (r -> a) -> Eff es a
-asks = reader
+local :: Reader r :> es => (r -> r) -> Eff es a -> Eff es a
+local f = localEffect $ \(IdE (Reader r)) -> IdE (Reader (f r))

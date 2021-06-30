@@ -17,6 +17,10 @@ module Effectful.Internal.Monad
   , unsafeEff_
   , unsafeUnliftEff
 
+  -- * Fail
+  , Fail
+  , runFail
+
   -- * IO
   , IOE
   , runIOE
@@ -45,6 +49,7 @@ import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Control
+import Data.Unique
 import GHC.Magic (oneShot)
 import System.IO.Unsafe (unsafeDupablePerformIO)
 
@@ -171,6 +176,43 @@ instance MonadMask (Eff es) where
     checkSizeEnv size es
     c <- unEff (release resource $ ExitCaseSuccess b) es
     pure (b, c)
+
+----------------------------------------
+-- Fail
+
+data Fail :: Effect where
+  Fail :: Unique -> Fail m r
+
+runFail :: Eff (Fail : es) a -> Eff es (Either String a)
+runFail m = unsafeEff $ \es0 -> mask $ \release -> do
+  -- A unique tag is picked so that different runFail handlers don't catch each
+  -- other's exceptions.
+  tag <- newUnique
+  size0 <- sizeEnv es0
+  es <- unsafeConsEnv (IdE (Fail tag)) noRelinker es0
+  r <- tryFailIO tag (release $ unEff m es) `onException` unsafeTailEnv size0 es
+  _ <- unsafeTailEnv size0 es
+  pure r
+
+instance Fail :> es => MonadFail (Eff es) where
+  fail msg = readerEffectM $ \(IdE (Fail tag)) -> unsafeEff_ $ do
+    throwM $ FailEx tag msg
+
+--------------------
+
+data FailEx = FailEx Unique String
+instance Show FailEx where
+  showsPrec p (FailEx _ msg)
+    = ("Effectful.Internal.Monad.FailEx " ++)
+    . showsPrec p msg
+instance Exception FailEx
+
+tryFailIO :: Unique -> IO a -> IO (Either String a)
+tryFailIO tag m =
+  (Right <$> m) `catch` \err@(FailEx etag msg) -> do
+    if tag == etag
+      then pure $ Left msg
+      else throwM err
 
 ----------------------------------------
 -- IO

@@ -71,6 +71,7 @@ library
                      Effectful.Class.State
                      Effectful.Class.Writer
                      Effectful.Error
+                     Effectful.Fail
                      Effectful.Internal.Effect
                      Effectful.Internal.Env
                      Effectful.Internal.Monad

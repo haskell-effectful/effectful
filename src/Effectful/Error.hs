@@ -65,7 +65,7 @@ throwError
   => e
   -> Eff es a
 throwError e = readerEffectM @(Error e) $ \(IdE (Error tag)) -> unsafeEff_ $ do
-  throwIO $ WrapErr tag callStack e
+  throwIO $ ErrorEx tag callStack e
 
 catchError
   :: forall e es a. (Typeable e, Error e :> es)
@@ -88,19 +88,18 @@ tryError m = (Right <$> m) `catchError` \es e -> pure $ Left (es, e)
 ----------------------------------------
 -- Helpers
 
-data WrapErr e = WrapErr Unique CallStack e
-
-instance Typeable e => Show (WrapErr e) where
-  showsPrec p (WrapErr _ cs e)
-    = showsPrec p "Effectful.Error.WrapErr ("
+data ErrorEx e = ErrorEx Unique CallStack e
+instance Typeable e => Show (ErrorEx e) where
+  showsPrec p (ErrorEx _ cs e)
+    = ("Effectful.Error.ErrorEx (" ++)
     . showsPrec p (typeOf e)
-    . showsPrec p ") "
+    . (") " ++)
     . showsPrec p cs
-instance Typeable e => Exception (WrapErr e)
+instance Typeable e => Exception (ErrorEx e)
 
 catchErrorIO :: Typeable e => Unique -> IO a -> (CallStack -> e -> IO a) -> IO a
 catchErrorIO tag m handler = do
-  m `catch` \err@(WrapErr etag e cs) -> do
+  m `catch` \err@(ErrorEx etag e cs) -> do
     if tag == etag
       then handler e cs
       else throwIO err

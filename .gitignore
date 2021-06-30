@@ -3,4 +3,7 @@
 dist-*
 dist
 .ghc.environment.*
+.stack-work/
+.stack.yaml
+.stack.yaml.lock
 cabal.project.local

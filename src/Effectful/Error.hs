@@ -18,6 +18,7 @@
 -}
 module Effectful.Error
  ( Error
+ , Errors
  , runError
  , throwError
  , catchError
@@ -28,6 +29,7 @@ module Effectful.Error
  ) where
 
 import Control.Exception
+import Data.Kind
 import Data.Typeable
 import Data.Unique
 import GHC.Stack
@@ -43,6 +45,11 @@ import Effectful.Internal.Monad
 
 data Error e :: Effect where
   Error :: Unique -> Error e m r
+
+-- | Helper for multiple 'Error' effects.
+type family Errors (errs :: [Type]) (es :: [Effect]) :: Constraint where
+  Errors '[] es = ()
+  Errors (err : errs) es = (Error err :> es, Errors errs es)
 
 -- | TODO: write about possibility of an error escaping the scope of 'runError'
 -- when misused with 'AsyncE'.

@@ -41,6 +41,7 @@ import Control.Applicative (liftA2)
 import Control.Concurrent (myThreadId)
 import Control.Monad.Base
 import Control.Monad.Catch
+import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Control
@@ -136,6 +137,9 @@ instance Monad (Eff es) where
   Eff m >>= k = unsafeEff $ \es -> m es >>= \a -> unEff (k a) es
   -- https://gitlab.haskell.org/ghc/ghc/-/issues/20008
   Eff ma >> Eff mb = unsafeEff $ \es -> ma es >> mb es
+
+instance MonadFix (Eff es) where
+  mfix f = unsafeEff $ \es -> mfix $ \a -> unEff (f a) es
 
 ----------------------------------------
 -- Exception

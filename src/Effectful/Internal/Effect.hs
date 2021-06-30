@@ -12,6 +12,7 @@ module Effectful.Internal.Effect
   ) where
 
 import Data.Kind
+import GHC.TypeLits
 
 type Effect = (Type -> Type) -> Type -> Type
 
@@ -27,6 +28,13 @@ class (e :: Effect) :> (es :: [Effect]) where
   reifyIndex :: Int
   reifyIndex = -- Don't show "minimal complete definition" in haddock.
                error "unimplemented"
+
+instance TypeError
+  ('Text "There is no handler for '" ':<>:
+   'ShowType e ':<>:
+   'Text "' in the context"
+  ) => e :> '[] where
+  reifyIndex = error "unreachable"
 
 instance {-# OVERLAPPING #-} e :> (e : es) where
   reifyIndex = 0

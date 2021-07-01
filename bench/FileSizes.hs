@@ -335,7 +335,7 @@ mtl_calculateFileSizesDeep
 
 #ifdef VERSION_polysemy
 
-data Poly_File (m :: * -> *) a where
+data Poly_File :: E.Effect where
   Poly_tryFileSize :: FilePath -> Poly_File m (Maybe Int)
 
 poly_tryFileSize :: P.Member Poly_File es => FilePath -> P.Sem es (Maybe Int)
@@ -345,7 +345,7 @@ poly_runFile :: P.Member (P.Embed IO) es => P.Sem (Poly_File : es) a -> P.Sem es
 poly_runFile = P.interpret \case
   Poly_tryFileSize path -> P.embed $ tryGetFileSize path
 
-data Poly_Logging (m :: * -> *) a where
+data Poly_Logging :: E.Effect where
   Poly_logMsg :: String -> Poly_Logging m ()
 
 poly_logMsg :: P.Member Poly_Logging es => String -> P.Sem es ()

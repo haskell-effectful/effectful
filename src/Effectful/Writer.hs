@@ -8,7 +8,7 @@ module Effectful.Writer
   , listens
   ) where
 
-import Control.Monad.Catch
+import Control.Exception
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env

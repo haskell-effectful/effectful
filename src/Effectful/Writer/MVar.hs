@@ -8,7 +8,7 @@ module Effectful.Writer.MVar
   ) where
 
 import Control.Concurrent.MVar
-import Control.Monad.Catch
+import Control.Exception
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env

@@ -16,7 +16,7 @@ module Effectful.Interpreter
   , reinterpretIO
   ) where
 
-import Control.Monad.Catch
+import Control.Exception
 import GHC.Stack
 
 import Effectful.Internal.Effect

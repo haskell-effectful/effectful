@@ -43,8 +43,8 @@ module Effectful.Internal.Monad
 
 import Control.Applicative (liftA2)
 import Control.Concurrent (myThreadId)
+import Control.Exception
 import Control.Monad.Base
-import Control.Monad.Catch
 import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
@@ -52,6 +52,7 @@ import Control.Monad.Trans.Control
 import Data.Unique
 import GHC.Magic (oneShot)
 import System.IO.Unsafe (unsafeDupablePerformIO)
+import qualified Control.Monad.Catch as E
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
@@ -149,17 +150,18 @@ instance MonadFix (Eff es) where
 ----------------------------------------
 -- Exception
 
-instance MonadThrow (Eff es) where
-  throwM = unsafeEff_ . throwM
+instance E.MonadThrow (Eff es) where
+  throwM = unsafeEff_ . throwIO
 
-instance MonadCatch (Eff es) where
+instance E.MonadCatch (Eff es) where
   catch m handler = unsafeEff $ \es -> do
     size <- sizeEnv es
     unEff m es `catch` \e -> do
       checkSizeEnv size es
       unEff (handler e) es
+  {-# INLINABLE catch #-}
 
-instance MonadMask (Eff es) where
+instance E.MonadMask (Eff es) where
   mask k = unsafeEff $ \es -> mask $ \restore ->
     unEff (k $ \m -> unsafeEff $ restore . unEff m) es
 
@@ -171,11 +173,12 @@ instance MonadMask (Eff es) where
     resource <- unEff acquire es
     b <- restore (unEff (use resource) es) `catch` \e -> do
       checkSizeEnv size es
-      _ <- unEff (release resource $ ExitCaseException e) es
-      throwM e
+      _ <- unEff (release resource $ E.ExitCaseException e) es
+      throwIO e
     checkSizeEnv size es
-    c <- unEff (release resource $ ExitCaseSuccess b) es
+    c <- unEff (release resource $ E.ExitCaseSuccess b) es
     pure (b, c)
+  {-# INLINABLE generalBracket #-}
 
 ----------------------------------------
 -- Fail
@@ -196,7 +199,7 @@ runFail m = unsafeEff $ \es0 -> mask $ \release -> do
 
 instance Fail :> es => MonadFail (Eff es) where
   fail msg = readerEffectM $ \(IdE (Fail tag)) -> unsafeEff_ $ do
-    throwM $ FailEx tag msg
+    throwIO $ FailEx tag msg
 
 --------------------
 
@@ -212,7 +215,7 @@ tryFailIO tag m =
   (Right <$> m) `catch` \err@(FailEx etag msg) -> do
     if tag == etag
       then pure $ Left msg
-      else throwM err
+      else throwIO err
 
 ----------------------------------------
 -- IO

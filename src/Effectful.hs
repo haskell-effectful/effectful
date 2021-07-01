@@ -6,7 +6,7 @@ module Effectful
   , Effect
   , (:>)
 
-  -- * Sending effects
+  -- ** Sending effects
   , send
 
   -- * Running the 'Eff' monad
@@ -15,8 +15,14 @@ module Effectful
   , runEff
 
   -- ** Operations with side effects
+
+  -- *** Arbitrary I/O
   , IOE
   , runIOE
+
+  -- *** Runtime exceptions
+  , Except
+  , runExcept
 
   -- * Building 'Effect' handlers
 

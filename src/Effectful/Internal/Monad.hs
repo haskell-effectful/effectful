@@ -25,6 +25,10 @@ module Effectful.Internal.Monad
   , IOE
   , runIOE
 
+  -- * Except
+  , Except
+  , runExcept
+
   -- * Low-level helpers
 
   -- ** Running
@@ -174,10 +178,19 @@ instance MonadFix (Eff es) where
 ----------------------------------------
 -- Exception
 
-instance E.MonadThrow (Eff es) where
+-- | Handle runtime exceptions via 'E.MonadThrow', 'E.MonadCatch' and
+-- 'E.MonadMask'.
+data Except :: Effect where
+  Except :: Except m r
+
+-- | Introduce the ability to handle runtime exceptions.
+runExcept :: IOE :> es => Eff (Except : es) a -> Eff es a
+runExcept = evalEffect (IdE Except)
+
+instance Except :> es => E.MonadThrow (Eff es) where
   throwM = unsafeEff_ . throwIO
 
-instance E.MonadCatch (Eff es) where
+instance Except :> es => E.MonadCatch (Eff es) where
   catch m handler = unsafeEff $ \es -> do
     size <- sizeEnv es
     unEff m es `catch` \e -> do
@@ -185,7 +198,7 @@ instance E.MonadCatch (Eff es) where
       unEff (handler e) es
   {-# INLINABLE catch #-}
 
-instance E.MonadMask (Eff es) where
+instance Except :> es => E.MonadMask (Eff es) where
   mask k = unsafeEff $ \es -> mask $ \restore ->
     unEff (k $ \m -> unsafeEff $ restore . unEff m) es
 

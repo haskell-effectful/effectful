@@ -59,6 +59,30 @@ import Effectful.Internal.Env
 
 type role Eff nominal representational
 
+-- | The 'Eff' monad provides the implementation of an operation that performs
+-- an arbitrary set of effects. In @'Eff' es a@, @es@ is a type-level list that
+-- contains all the effects that the operation may perform. For example, an
+-- operation that produces an 'Integer' by consuming a 'String' from the global
+-- environment and acting upon a single mutable cell containing a 'Bool' would
+-- have the following type:
+--
+-- @
+-- 'Eff' '['Effectful.Reader.Reader' 'String', 'Effectful.State.State' 'Bool'] 'Integer'
+-- @
+--
+-- Normally, a concrete list of effects is not used to parameterize 'Eff'.
+-- Instead, the '(:>)' class is used to express constraints on the list of
+-- effects without coupling an operation to a concrete list of effects. For
+-- example, the above example would more commonly be expressed with the
+-- following type:
+--
+-- @
+-- ('Effectful.Reader.Reader' 'String' ':>' es, 'Effectful.State.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
+-- @
+--
+-- This abstraction allows the operation to be used in functions that may
+-- perform other effects, and it also allows the effects to be handled in any
+-- order.
 newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
 
 -- | Run a pure 'Eff' operation.
@@ -220,12 +244,12 @@ tryFailIO tag m =
 ----------------------------------------
 -- IO
 
--- | Run 'IO' operations via 'MonadIO', 'MonadBaseControl' 'IO' and
--- 'MonadUnliftIO' classes.
+-- | Run arbitrary 'IO' operations via 'MonadIO', 'MonadBaseControl' 'IO' or
+-- 'MonadUnliftIO'.
 data IOE :: Effect where
   IOE :: IOE m r
 
--- | Run an impure 'Eff' operation.
+-- | Run an 'Eff' operation with side effects.
 --
 -- For the pure version see 'runEff'.
 runIOE :: Eff '[IOE] a -> IO a

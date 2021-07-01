@@ -11,7 +11,7 @@ import qualified Control.Effect as L
 #endif
 
 -- effectful
-import qualified Effectful.Monad as E
+import qualified Effectful as E
 import qualified Effectful.Reader as E
 import qualified Effectful.State as E
 import qualified Effectful.State.Dynamic as DE

@@ -14,12 +14,24 @@ module Effectful.Internal.Effect
 import Data.Kind
 import GHC.TypeLits
 
+-- | The kind of effects.
 type Effect = (Type -> Type) -> Type -> Type
 
 -- | Adapter for statically dispatched effects.
 newtype IdE (e :: Effect) where
   IdE :: (forall m r. e m r) -> IdE e
 
+-- | A constraint that requires that a particular effect, @e@, is a member of
+-- the type-level list @es@. This is used to parameterize an
+-- 'Effectful.Monad.Eff' operation over an arbitrary list of effects, so long as
+-- @e@ is /somewhere/ in the list.
+--
+-- For example, an operation that only needs access to a cell of mutable state
+-- containing an 'Integer' would likely use the following type:
+--
+-- @
+-- 'Effectful.State.State' 'Integer' ':>' es => 'Effectful.Monad.Eff' es ()
+-- @
 class (e :: Effect) :> (es :: [Effect]) where
   -- | Get the position of @e@ in @es@.
   --

@@ -14,9 +14,8 @@ import Prelude hiding (readFile, writeFile)
 import qualified Data.Map.Strict as M
 import qualified System.IO as IO
 
+import Effectful
 import Effectful.Error
-import Effectful.Interpreter
-import Effectful.Monad
 import Effectful.State
 
 -- | An effect for reading and writing files.

@@ -10,8 +10,7 @@ import Data.Tuple
 import System.Posix
 
 -- effectful
-import qualified Effectful.Interpreter as E
-import qualified Effectful.Monad as E
+import qualified Effectful as E
 import qualified Effectful.Reader as E
 import qualified Effectful.State as E
 

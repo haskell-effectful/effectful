@@ -5,9 +5,8 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import GHC.Stack (getCallStack)
 
+import Effectful
 import Effectful.Error
-import Effectful.Interpreter
-import Effectful.Monad
 
 errorTests :: TestTree
 errorTests = testGroup "Error"

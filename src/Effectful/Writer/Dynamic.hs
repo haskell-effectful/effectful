@@ -15,10 +15,8 @@ module Effectful.Writer.Dynamic
   , listens
   ) where
 
-import Effectful.Internal.Effect
-import Effectful.Internal.Monad
 import Effectful.Interpreter
-
+import Effectful.Monad
 import qualified Effectful.Writer as WP
 import qualified Effectful.Writer.MVar as WM
 

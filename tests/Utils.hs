@@ -10,7 +10,7 @@ import Control.Monad.IO.Class
 import GHC.Stack
 import qualified Test.Tasty.HUnit as T
 
-import Effectful.Monad
+import Effectful
 
 assertBool :: (HasCallStack, IOE :> es) => String -> Bool -> Eff es ()
 assertBool msg p = liftIO $ T.assertBool msg p

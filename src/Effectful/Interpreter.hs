@@ -50,6 +50,9 @@ runInterpreter es0 e m = do
 -- Sending commands
 
 -- | Send an operation of a given effect to the interpreter.
+--
+-- This is used to connect the definition of an effect to the 'Eff' monad so
+-- that it can be used and handled.
 send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
 send op = readerEffectM $ \Interpreter{..} -> do
   unsafeUnliftEff $ \run -> unEff (_interpret run op) _env

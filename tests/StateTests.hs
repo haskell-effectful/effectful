@@ -6,9 +6,8 @@ import qualified Control.Monad.Catch as E
 import qualified Control.Exception.Lifted as LE
 import qualified UnliftIO.Exception as UE
 
-import Effectful.Interpreter
+import Effectful
 import Effectful.State.Dynamic
-import Effectful.Monad
 import qualified Utils as U
 
 stateTests :: TestTree

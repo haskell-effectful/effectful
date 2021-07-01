@@ -67,7 +67,8 @@ library
 
     hs-source-dirs:  src
 
-    exposed-modules: Effectful.Async
+    exposed-modules: Effectful
+                     Effectful.Async
                      Effectful.Class.Reader
                      Effectful.Class.State
                      Effectful.Class.Writer

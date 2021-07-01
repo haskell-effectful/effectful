@@ -7,10 +7,10 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Data.Set as S
 
+import Effectful
 import Effectful.Async
 import Effectful.Error
 import Effectful.State.Dynamic
-import Effectful.Monad
 
 import qualified Utils as U
 

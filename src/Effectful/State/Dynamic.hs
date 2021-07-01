@@ -33,10 +33,8 @@ module Effectful.State.Dynamic
   , modifyM
   ) where
 
-import Effectful.Internal.Effect
-import Effectful.Internal.Monad
 import Effectful.Interpreter
-
+import Effectful.Monad
 import qualified Effectful.State as SP
 import qualified Effectful.State.MVar as SM
 

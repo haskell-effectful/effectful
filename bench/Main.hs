@@ -34,6 +34,9 @@ countdown n = bgroup (show n)
 #ifdef VERSION_eff
     , bench "eff"                      $ nf countdownEff n
 #endif
+#ifdef VERSION_eveff
+    , bench "eveff"                    $ nf countdownEvEff n
+#endif
     , bench "mtl"                      $ nf countdownMtl n
 #ifdef VERSION_fused_effects
     , bench "fused-effects"            $ nf countdownFusedEffects n
@@ -52,6 +55,9 @@ countdown n = bgroup (show n)
 #endif
 #ifdef VERSION_eff
     , bench "eff"                      $ nf countdownEffDeep n
+#endif
+#ifdef VERSION_eveff
+    , bench "eveff"                    $ nf countdownEvEffDeep n
 #endif
 #ifdef VERSION_polysemy
     , bench "polysemy"                 $ nf countdownPolysemyDeep n

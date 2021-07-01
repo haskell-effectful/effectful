@@ -117,6 +117,9 @@ benchmark bench
     ghc-options:    -threaded -rtsopts -with-rtsopts=-T
 
     if impl(ghc < 9)
+       build-depends: eveff
+
+    if impl(ghc < 9)
        build-depends: freer-simple
 
     if impl(ghc < 9.2)

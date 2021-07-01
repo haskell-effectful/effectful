@@ -17,6 +17,11 @@ import qualified Effectful.State as E
 import qualified Effectful.State.Dynamic as DE
 import qualified Effectful.State.MVar as ME
 
+-- eveff
+#ifdef VERSION_eveff
+import qualified Control.Ev.Eff as EE
+#endif
+
 -- freer-simple
 #ifdef VERSION_freer_simple
 import qualified Control.Monad.Freer as FS
@@ -265,6 +270,35 @@ countdownEffDeep n = L.run
   $ programEff
   where
     runR = L.runReader ()
+
+#endif
+
+----------------------------------------
+-- eveff
+
+#ifdef VERSION_eveff
+
+programEvEff :: EE.Local Integer EE.:? es => EE.Eff es Integer
+programEvEff = do
+  n <- EE.perform EE.lget ()
+  if n <= 0
+    then pure n
+    else do
+      EE.perform EE.lput (n - 1)
+      programEvEff
+{-# NOINLINE programEvEff #-}
+
+countdownEvEff :: Integer -> (Integer, Integer)
+countdownEvEff n = EE.runEff . EE.localRet n (,) $ programEvEff
+
+countdownEvEffDeep :: Integer -> (Integer, Integer)
+countdownEvEffDeep n = EE.runEff
+  . runR . runR . runR . runR . runR
+  . EE.localRet n (,)
+  . runR . runR . runR . runR . runR
+  $ programEvEff
+  where
+    runR = EE.local ()
 
 #endif
 

@@ -3,7 +3,7 @@
 The 'Error' effect provided by this module is a suitable replacement for the
 'Control.Monad.Except.ExceptT' monad transformer found in the @mtl@ library. It
 is __not__ intended to be a general mechanism for catching errors, that's what
-the 'Except' effect is for.
+functions from the "Control.Monad.Catch" module are for.
 
 For example, if you want to catch an unchecked exception like
 'Control.Exception.SomeException' or 'Control.Exception.ErrorCall' you could use
@@ -14,7 +14,7 @@ For example, if you want to catch an unchecked exception like
   let boom :: Eff es String
       boom = error "BOOM!"
   in
-  runIOE . runExcept $ boom `E.catch` \(e :: ErrorCall) -> pure "caught some error"
+  runIOE $ boom `E.catch` \(e :: ErrorCall) -> pure "caught some error"
 :}
 "caught some error"
 

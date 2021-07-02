@@ -31,5 +31,5 @@ data NestedErr :: Effect where
 nestedErr :: (HasCallStack, NestedErr :> es) => Eff es ()
 nestedErr = send NestedErr
 
-runNestedErr :: Error String :> es => Eff (NestedErr : es) a -> Eff es a
+runNestedErr :: Errors '[String] es => Eff (NestedErr : es) a -> Eff es a
 runNestedErr = interpret $ \NestedErr -> throwError "nested error"

@@ -10,10 +10,6 @@ module Effectful.Monad
   -- * Arbitrary I/O
   , IOE
   , runIOE
-
-  -- * Exception handling
-  , Except
-  , runExcept
   ) where
 
 import Effectful.Internal.Effect

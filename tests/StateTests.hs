@@ -50,7 +50,7 @@ test_deepStack = runIOE $ do
   U.assertEqual "n" 15 n
 
 test_exceptions :: Assertion
-test_exceptions = runIOE . runExcept $ do
+test_exceptions = runIOE $ do
   testTry   "exceptions"  E.try
   testCatch "exceptions"  E.catch
   testTry   "lifted-base" LE.try
@@ -60,8 +60,8 @@ test_exceptions = runIOE . runExcept $ do
   where
     testTry
       :: String
-      -> (forall a es. (IOE :> es, Except :> es) => Eff es a -> Eff es (Either U.Ex a))
-      -> Eff '[Except, IOE] ()
+      -> (forall a es. IOE :> es => Eff es a -> Eff es (Either U.Ex a))
+      -> Eff '[IOE] ()
     testTry lib tryImpl = do
       e <- tryImpl $ runState (0::Int) action
       U.assertEqual (lib ++ " - exception caught") e (Left U.Ex)
@@ -70,15 +70,15 @@ test_exceptions = runIOE . runExcept $ do
 
     testCatch
       :: String
-      -> (forall a es. (IOE :> es, Except :> es) => Eff es a -> (U.Ex -> Eff es a) -> Eff es a)
-      -> Eff '[Except, IOE] ()
+      -> (forall a es. IOE :> es => Eff es a -> (U.Ex -> Eff es a) -> Eff es a)
+      -> Eff '[IOE] ()
     testCatch lib catchImpl = do
       s <- execState (0::Int) $ do
         _ <- (evalState () action) `catchImpl` \U.Ex -> modify @Int (+4)
         modify @Int (+8)
       U.assertEqual (lib ++ " - state correctly updated") s 13
 
-    action :: (State Int :> es, Except :> es) => Eff es ()
+    action :: State Int :> es => Eff es ()
     action = do
       modify @Int (+1)
       _ <- E.throwM U.Ex

@@ -71,7 +71,7 @@ type role Eff nominal representational
 -- @
 --
 -- Normally, a concrete list of effects is not used to parameterize 'Eff'.
--- Instead, the '(:>)' class is used to express constraints on the list of
+-- Instead, the '(:>)' type class is used to express constraints on the list of
 -- effects without coupling an operation to a concrete list of effects. For
 -- example, the above example would more commonly be expressed with the
 -- following type:

@@ -34,10 +34,10 @@ execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriter = reinterpretM WP.execWriter writerPure
 
 writerPure
-  :: (WP.Writer w :> localEs, Monoid w)
-  => RunIn es (Eff localEs)
-  -> Writer w (Eff es) a
-  -> Eff localEs a
+  :: (WP.Writer w :> es, Monoid w)
+  => RunIn localEs (Eff es)
+  -> Writer w (Eff localEs) a
+  -> Eff es a
 writerPure run = \case
   Tell w    -> WP.tell w
   Listen m  -> WP.listen (run m)
@@ -52,10 +52,10 @@ execWriterMVar :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriterMVar = reinterpretM WM.execWriter writerMVar
 
 writerMVar
-  :: (WM.Writer w :> localEs, Monoid w)
-  => RunIn es (Eff localEs)
-  -> Writer w (Eff es) a
-  -> Eff localEs a
+  :: (WM.Writer w :> es, Monoid w)
+  => RunIn localEs (Eff es)
+  -> Writer w (Eff localEs) a
+  -> Eff es a
 writerMVar run = \case
   Tell w    -> WM.tell w
   Listen m  -> WM.listen (run m)

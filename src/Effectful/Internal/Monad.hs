@@ -51,7 +51,6 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Control
 import Data.IORef (atomicModifyIORef', newIORef, readIORef)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
 import Data.Unique
 import GHC.Magic (oneShot)
 import System.IO.Unsafe (unsafeDupablePerformIO)
@@ -145,6 +144,7 @@ unsafeUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
 unsafeUnliftEff f = unsafeEff $ \es0 -> do
   tid0 <- myThreadId
   envsRef <- newIORef M.empty
+  es <- cloneEnv es0
   f $ \m -> do
     tid <- myThreadId
     if tid == tid0
@@ -153,10 +153,9 @@ unsafeUnliftEff f = unsafeEff $ \es0 -> do
         mes <- M.lookup tid <$> readIORef envsRef
         case mes of
           Nothing -> do
-            es <- cloneEnv es0
-            es' <- atomicModifyIORef' envsRef $ \envs -> let
-              (es', envs') = M.insertLookupWithKey (\_ _ o -> o) tid es envs
-              in (envs', fromMaybe es es')
+            es' <- cloneEnv es
+            atomicModifyIORef' envsRef $ \envs ->
+              (M.insert tid es' envs, ())
             unEff m es'
           Just es' -> unEff m es'
 

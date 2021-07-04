@@ -8,12 +8,10 @@ module Effectful.Interpreter
   -- ** Interpretation
   , interpret
   , interpretM
-  , interpretIO
 
   -- ** Reinterpretation
   , reinterpret
   , reinterpretM
-  , reinterpretIO
   ) where
 
 import Control.Exception
@@ -81,17 +79,6 @@ interpretM interpreter m = unsafeEff $ \es -> do
   les <- forkEnv es
   runInterpreter es (Interpreter les $ \k -> interpreter $ unsafeEff_ . k) m
 
--- | Interpret a higher order effect with help of a function running local 'Eff'
--- operations in 'IO'.
-interpretIO
-  :: (forall r localEs. HasCallStack => RunIn localEs IO -> e (Eff localEs) r -> Eff es r)
-  -- ^ The effect handler.
-  -> Eff (e : es) a
-  -> Eff      es  a
-interpretIO interpreter m = unsafeEff $ \es -> do
-  les <- forkEnv es
-  runInterpreter es (Interpreter les interpreter) m
-
 ----------------------------------------
 -- Reinterpretation
 
@@ -121,17 +108,3 @@ reinterpretM runLocal interpreter m = unsafeEff $ \es -> do
   les0 <- forkEnv es
   (`unEff` les0) . runLocal . unsafeEff $ \les -> do
     runInterpreter es (Interpreter les $ \k -> interpreter $ unsafeEff_ . k) m
-
--- | Interpret a higher order effect using other effects with help of a function
--- running local 'Eff' operations in 'IO'.
-reinterpretIO
-  :: (Eff handlerEs a -> Eff es b)
-  -- ^ Introduction of effects encapsulated within the handler.
-  -> (forall r localEs. HasCallStack => RunIn localEs IO -> e (Eff localEs) r -> Eff handlerEs r)
-  -- ^ The effect handler.
-  -> Eff (e : es) a
-  -> Eff      es  b
-reinterpretIO runLocal interpreter m = unsafeEff $ \es -> do
-  les0 <- forkEnv es
-  (`unEff` les0) . runLocal . unsafeEff $ \les -> do
-    runInterpreter es (Interpreter les interpreter) m

@@ -23,12 +23,10 @@ module Effectful
   -- ** Basic handlers
   , interpret
   , interpretM
-  , interpretIO
 
   -- ** Derived handlers
   , reinterpret
   , reinterpretM
-  , reinterpretIO
   ) where
 
 import Effectful.Interpreter

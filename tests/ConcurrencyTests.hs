@@ -20,6 +20,7 @@ concurrencyTests = testGroup "Concurrency"
   , testCase "shared state" test_sharedState
   , testCase "error handling" test_errorHandling
   , testCase "unlifting several times" test_unlift_many
+  , testCase "spawned environment" test_inner_cloned
   ]
 
 test_localState :: Assertion
@@ -86,3 +87,13 @@ test_unlift_many = runIOE . evalState "initial value" $ do
   (v1, v2, v3) <- liftIO $ wait x
   v4 <- get  -- 4
   U.assertEqual "expected result" (v1, v2, v3, v4) ("initial value", "initial value", "inner change", "outer change")
+
+test_inner_cloned :: Assertion
+test_inner_cloned = runIOE . evalState "initial" $ do
+  x <- withRunInIO $ \runInIO -> async $ do
+    threadDelay 10000
+    runInIO $ get @String -- 3
+  put "changed"  -- 2
+  inner <- liftIO $ wait x
+  outer <- get  -- 4
+  U.assertEqual "expected result" (inner, outer) ("initial", "changed")

@@ -90,9 +90,9 @@ reinterpret
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b
-reinterpret runLocal interpreter m = unsafeEff $ \es -> do
+reinterpret runHandlerEs interpreter m = unsafeEff $ \es -> do
   les0 <- forkEnv es
-  (`unEff` les0) . runLocal . unsafeEff $ \les -> do
+  (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
     runInterpreter es (Interpreter les $ \_ -> interpreter) m
 
 -- | Interpret a higher order effect using other effects with help of a function
@@ -104,7 +104,7 @@ reinterpretM
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b
-reinterpretM runLocal interpreter m = unsafeEff $ \es -> do
+reinterpretM runHandlerEs interpreter m = unsafeEff $ \es -> do
   les0 <- forkEnv es
-  (`unEff` les0) . runLocal . unsafeEff $ \les -> do
+  (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
     runInterpreter es (Interpreter les $ \k -> interpreter $ unsafeEff_ . k) m

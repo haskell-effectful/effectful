@@ -19,6 +19,7 @@ concurrencyTests = testGroup "Concurrency"
   [ testCase "local state" test_localState
   , testCase "shared state" test_sharedState
   , testCase "error handling" test_errorHandling
+  , testCase "unlifting several times" test_unlift_many
   ]
 
 test_localState :: Assertion
@@ -70,3 +71,18 @@ test_errorHandling = runIOE . evalStateMVar (0::Int) $ do
 
     err :: String
     err = "thrown from async"
+
+test_unlift_many :: Assertion
+test_unlift_many = runIOE . evalState "initial value" $ do
+  x <- withRunInIO $ \runInIO -> async $ do
+    v1 <- runInIO $ get @String  -- 1
+    threadDelay 20000
+    v2 <- runInIO $ get @String -- 3
+    runInIO $ put "inner change"
+    v3 <- runInIO $ get @String
+    return (v1, v2, v3)
+  liftIO $ threadDelay 10000
+  put "outer change"  -- 2
+  (v1, v2, v3) <- liftIO $ wait x
+  v4 <- get  -- 4
+  U.assertEqual "expected result" (v1, v2, v3, v4) ("initial value", "initial value", "inner change", "outer change")

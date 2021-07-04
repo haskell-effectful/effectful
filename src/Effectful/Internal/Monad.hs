@@ -49,6 +49,9 @@ import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Control
+import Data.IORef (atomicModifyIORef', newIORef, readIORef)
+import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import Data.Unique
 import GHC.Magic (oneShot)
 import System.IO.Unsafe (unsafeDupablePerformIO)
@@ -139,14 +142,23 @@ type RunIn es m = forall r. Eff es r -> m r
 -- If (1) runs after (2) completed, the State Char effect is no longer in scope,
 -- but (1) assumes otherwise and things break horribly.
 unsafeUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
-unsafeUnliftEff f = unsafeEff $ \es -> do
+unsafeUnliftEff f = unsafeEff $ \es0 -> do
   tid0 <- myThreadId
+  envsRef <- newIORef M.empty
   f $ \m -> do
     tid <- myThreadId
     if tid == tid0
-      then unEff m es
-      else error $ "Running Eff operations in a different thread is "
-                ++ "currently not possible with the unlifting function"
+      then unEff m es0
+      else do
+        mes <- M.lookup tid <$> readIORef envsRef
+        case mes of
+          Nothing -> do
+            es <- cloneEnv es0
+            es' <- atomicModifyIORef' envsRef $ \envs -> let
+              (es', envs') = M.insertLookupWithKey (\_ _ o -> o) tid es envs
+              in (envs', fromMaybe es es')
+            unEff m es'
+          Just es' -> unEff m es'
 
 ----------------------------------------
 -- Base

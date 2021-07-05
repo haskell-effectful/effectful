@@ -141,7 +141,21 @@ type RunIn es m = forall r. Eff es r -> m r
 -- If (1) runs after (2) completed, the State Char effect is no longer in scope,
 -- but (1) assumes otherwise and things break horribly.
 unsafeUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
-unsafeUnliftEff f = unsafeEff $ \es0 -> do
+unsafeUnliftEff f = unsafeEff $ \es -> do
+  tid0 <- myThreadId
+  f $ \m -> do
+    tid <- myThreadId
+    if tid == tid0
+      then unEff m es
+      else error $ "Running Eff operations in a different thread is "
+                ++ "currently not possible with the unlifting function"
+
+-- | A thread-safe version of 'unsafeUnliftEff'.
+--
+-- /Note:/ We opportunistically clone the whole environment before invoking the
+-- callback function. This induces quite a performance penalty; Use with caution.
+safeUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
+safeUnliftEff f = unsafeEff $ \es0 -> do
   tid0 <- myThreadId
   envsRef <- newIORef M.empty
   es <- cloneEnv es0
@@ -278,7 +292,7 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
   restoreM = pure
 
 instance IOE :> es => MonadUnliftIO (Eff es) where
-  withRunInIO = unsafeUnliftEff
+  withRunInIO = safeUnliftEff
 
 ----------------------------------------
 -- Helpers

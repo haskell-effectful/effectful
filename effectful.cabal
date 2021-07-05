@@ -109,6 +109,7 @@ test-suite test
     main-is:        Main.hs
 
     other-modules:  AsyncTests
+                    ConcurrencyTests
                     ErrorTests
                     StateTests
                     Utils

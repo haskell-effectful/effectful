@@ -10,6 +10,11 @@ module Effectful.Monad
   -- * Arbitrary I/O
   , IOE
   , runIOE
+
+  -- ** Unlift strategies
+  , UnliftStrategy(..)
+  , unliftStrategy
+  , withUnliftStrategy
   ) where
 
 import Effectful.Internal.Effect

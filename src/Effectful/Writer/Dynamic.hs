@@ -35,12 +35,12 @@ execWriter = reinterpretM WP.execWriter writerPure
 
 writerPure
   :: (WP.Writer w :> es, Monoid w)
-  => RunIn localEs (Eff es)
+  => LocalEnv localEs
   -> Writer w (Eff localEs) a
   -> Eff es a
-writerPure run = \case
+writerPure env = \case
   Tell w    -> WP.tell w
-  Listen m  -> WP.listen (run m)
+  Listen m  -> localSeqUnlift env $ \run -> WP.listen (run m)
 
 ----------------------------------------
 -- MVar
@@ -53,12 +53,12 @@ execWriterMVar = reinterpretM WM.execWriter writerMVar
 
 writerMVar
   :: (WM.Writer w :> es, Monoid w)
-  => RunIn localEs (Eff es)
+  => LocalEnv localEs
   -> Writer w (Eff localEs) a
   -> Eff es a
-writerMVar run = \case
+writerMVar env = \case
   Tell w    -> WM.tell w
-  Listen m  -> WM.listen (run m)
+  Listen m  -> localSeqUnlift env $ \run -> WM.listen (run m)
 
 ----------------------------------------
 -- Operations

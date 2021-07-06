@@ -51,7 +51,7 @@ module Effectful.Internal.Monad
   ) where
 
 import Control.Applicative (liftA2)
-import Control.Concurrent
+import Control.Concurrent (myThreadId)
 import Control.Exception
 import Control.Monad.Base
 import Control.Monad.Fix
@@ -59,13 +59,13 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Control
 import Data.Unique
-import GHC.Magic (oneShot)
+import GHC.Exts (oneShot)
 import System.IO.Unsafe (unsafeDupablePerformIO)
 import qualified Control.Monad.Catch as E
-import qualified Data.Map.Strict as M
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
+import Effectful.Internal.Unlift
 
 type role Eff nominal representational
 
@@ -141,32 +141,13 @@ seqUnliftEff f = unsafeEff $ \es -> do
 
 -- | Lower 'Eff' operations into 'IO' ('BoundedConcUnlift')
 boundedConcUnliftEff :: Int -> (RunIn es IO -> IO a) -> Eff es a
-boundedConcUnliftEff threads f = unsafeEff $ \es0 -> do
-  -- Create a copy of the environment as a template for the other threads to
-  -- use. This can't be done from inside the callback as the environment might
-  -- have changed by then.
-  esTemplate <- cloneEnv es0
-  esMapVar <- do
-    tid0 <- myThreadId
-    newMVar $ M.singleton tid0 es0
-  f $ \m -> do
-    es <- modifyMVar esMapVar $ \esMap -> do
-      tid <- myThreadId
-      case tid `M.lookup` esMap of
-        Just es -> pure (esMap, es)
-        Nothing -> case M.size esMap `compare` threads of
-          LT -> do
-            es <- cloneEnv esTemplate
-            pure (M.insert tid es esMap, es)
-          EQ -> pure (M.insert tid esTemplate esMap, esTemplate)
-          GT -> error $ "Number of allowed threads to run with the unlifting "
-                     ++ "function exceeded. You have to increase the argument "
-                     ++ "to BoundedConcUnlift or use UnboundedConcUnlift."
-    unEff m es
+boundedConcUnliftEff threads f = unsafeEff $ \es -> do
+  concUnliftIO False threads f es unEff
 
 -- | Lower 'Eff' operations into 'IO' ('UnboundedConcUnlift').
 unboundedConcUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
-unboundedConcUnliftEff = boundedConcUnliftEff maxBound
+unboundedConcUnliftEff f = unsafeEff $ \es -> do
+  concUnliftIO True maxBound f es unEff
 
 ----------------------------------------
 -- Base
@@ -306,6 +287,10 @@ data UnliftStrategy
   --
   -- The function will create @N@ clones of the environment if called from @N@
   -- threads and @K+1@ clones if called from @K@ threads where @K < N@.
+  --
+  -- /Note:/ this strategy is meant for short-lived unlift functions and doesn't
+  -- perform cleanup of internal records associated with threads that no longer
+  -- exist. If you need that feature, use 'UnboundedConcUnlift'.
   | UnboundedConcUnlift
   -- ^ A strategy that makes it possible for the unlifting function to be called
   -- from an unbounded amount of threads distinct from the caller.

@@ -22,14 +22,8 @@ source-repository head
   type:     git
   location: https://github.com/arybczak/effectful.git
 
-flag benchmark-freer-simple
-    description: Include freer-simple in benchmarks
-
-flag benchmark-fused-effects
-    description: Include fused-effects in benchmarks
-
-flag benchmark-polysemy
-    description: Include polysemy in benchmarks
+flag benchmark-foreign-libraries
+    description: Include other effect libraries in the benchmarks
 
 common language
     ghc-options:        -Wall -Wcompat
@@ -127,14 +121,15 @@ benchmark bench
 
     ghc-options:    -threaded -rtsopts -with-rtsopts=-T
 
-    if flag(benchmark-freer-simple) && impl(ghc < 9)
-       build-depends: freer-simple
+    if flag(benchmark-foreign-libraries)
+       if impl(ghc < 9)
+          build-depends: freer-simple
 
-    if flag(benchmark-fused-effects) && impl(ghc < 9.2)
-       build-depends: fused-effects
+       if impl(ghc < 9.2)
+          build-depends: fused-effects
 
-    if flag(benchmark-polysemy) && impl(ghc < 9)
-       build-depends: polysemy
+       if impl(ghc < 9)
+          build-depends: polysemy
 
     build-depends:    base <5
                     , effectful

@@ -6,10 +6,12 @@
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
 module Effectful.Internal.Unlift
-  ( concUnliftIO
+  ( ephemeralConcUnliftIO
+  , persistentConcUnliftIO
   ) where
 
 import Control.Concurrent
+import Control.Monad
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
 import GHC.IO (IO(..))
@@ -20,14 +22,50 @@ import qualified Data.IntMap.Strict as IM
 
 import Effectful.Internal.Env
 
-concUnliftIO
+-- | Concurrent unlift that doesn't preserve the environment between calls to
+-- the unlifting function in threads other than the caller.
+ephemeralConcUnliftIO
+  :: Int
+  -> ((forall r. m r -> IO r) -> IO a)
+  -> Env es
+  -> (forall r. m r -> Env es -> IO r)
+  -> IO a
+ephemeralConcUnliftIO uses f es0 unEff = do
+  when (uses < 0) $ do
+    error $ "ephemeralConcUnliftIO: invalid number of uses: " ++ show uses
+  tid0 <- myThreadId
+  -- Create a copy of the environment as a template for the other threads to
+  -- use. This can't be done from inside the callback as the environment might
+  -- have already changed by then.
+  esTemplate <- cloneEnv es0
+  mvUses <- newMVar uses
+  f $ \m -> do
+    es <- myThreadId >>= \case
+      tid | tid0 == tid -> pure es0
+      _ -> modifyMVar mvUses $ \case
+        0 -> error
+           $ "Number of permitted calls (" ++ show uses ++ ") to the unlifting "
+          ++ "function in other threads was exceeded. Please increase the limit "
+          ++ "or use the unlimited variant."
+        1 -> pure (0, esTemplate)
+        n -> do
+          let newUses = n - 1
+          es <- cloneEnv esTemplate
+          newUses `seq` pure (newUses, es)
+    unEff m es
+
+-- | Concurrent unlift that preserves the environment between calls to the
+-- unlifting function within a particular thread.
+persistentConcUnliftIO
   :: Bool
   -> Int
   -> ((forall r. m r -> IO r) -> IO a)
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
-concUnliftIO cleanUp threads f es0 unEff = do
+persistentConcUnliftIO cleanUp threads f es0 unEff = do
+  when (threads < 0) $ do
+    error $ "persistentConcUnliftIO: invalid number of threads: " ++ show threads
   tid0 <- myThreadId
   -- Create a copy of the environment as a template for the other threads to
   -- use. This can't be done from inside the callback as the environment might
@@ -45,9 +83,10 @@ concUnliftIO cleanUp threads f es0 unEff = do
         case mes of
           Just es -> pure (te, es)
           Nothing -> case teCapacity te of
-            0 -> error $ "Number of allowed threads to run with the unlifting "
-                      ++ "function exceeded. You have to increase the argument "
-                      ++ "to BoundedConcUnlift or use UnboundedConcUnlift."
+            0 -> error
+                $ "Number of other threads (" ++ show threads ++ ") permitted to "
+               ++ "use the unlifting function was exceeded. Please increase the "
+               ++ "limit or use the unlimited variant."
             1 -> do
               wkTidEs <- mkWeakThreadIdEnv tid esTemplate hTid i mvEntries cleanUp
               let newEntries = ThreadEntries
@@ -82,6 +121,9 @@ data ThreadEntries es = ThreadEntries
   , teEntries  :: IM.IntMap (ThreadEntry es)
   }
 
+-- | Hashes of ThreadId are 32bit long, while ThreadIdS are 64bit long, so there
+-- is potential for collisions. This is solved by keeping, for a particular
+-- hash, a list of threads with unique EntryIdS.
 data ThreadEntry es = ThreadEntry EntryId (ThreadData es)
 
 data ThreadData es

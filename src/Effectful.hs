@@ -20,6 +20,8 @@ module Effectful
 
   -- *** Unlift strategies
   , UnliftStrategy(..)
+  , Persistence(..)
+  , Limit(..)
   , unliftStrategy
   , withUnliftStrategy
 

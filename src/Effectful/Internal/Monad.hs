@@ -26,13 +26,14 @@ module Effectful.Internal.Monad
 
   -- ** Unlift strategies
   , UnliftStrategy(..)
+  , Persistence(..)
+  , Limit(..)
   , unliftStrategy
   , withUnliftStrategy
 
   --- *** Low-level helpers
   , seqUnliftEff
-  , boundedConcUnliftEff
-  , unboundedConcUnliftEff
+  , concUnliftEff
 
   -- * Primitive effects
 
@@ -135,19 +136,20 @@ seqUnliftEff f = unsafeEff $ \es -> do
     tid <- myThreadId
     if tid == tid0
       then unEff m es
-      else error $ "If you want to use the unlifting function to run "
-                ++ "Eff operations in multiple threads, have a look "
-                ++ "at BoundedConcUnlift or UnboundedConcUnlift."
+      else error
+         $ "If you want to use the unlifting function to run Eff operations "
+        ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
 
--- | Lower 'Eff' operations into 'IO' ('BoundedConcUnlift')
-boundedConcUnliftEff :: Int -> (RunIn es IO -> IO a) -> Eff es a
-boundedConcUnliftEff threads f = unsafeEff $ \es -> do
-  concUnliftIO False threads f es unEff
-
--- | Lower 'Eff' operations into 'IO' ('UnboundedConcUnlift').
-unboundedConcUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
-unboundedConcUnliftEff f = unsafeEff $ \es -> do
-  concUnliftIO True maxBound f es unEff
+-- | Lower 'Eff' operations into 'IO' ('ConcUnlift')
+concUnliftEff :: Persistence -> Limit -> (RunIn es IO -> IO a) -> Eff es a
+concUnliftEff Ephemeral (Limited uses) f = unsafeEff $ \es -> do
+  ephemeralConcUnliftIO uses f es unEff
+concUnliftEff Ephemeral Unlimited f = unsafeEff $ \es -> do
+  ephemeralConcUnliftIO maxBound f es unEff
+concUnliftEff Persistent (Limited threads) f = unsafeEff $ \es -> do
+  persistentConcUnliftIO False threads f es unEff
+concUnliftEff Persistent Unlimited f = unsafeEff $ \es -> do
+  persistentConcUnliftIO True maxBound f es unEff
 
 ----------------------------------------
 -- Base
@@ -279,25 +281,15 @@ data UnliftStrategy
   = SeqUnlift
   -- ^ The fastest strategy and a default initial value for 'IOE'.
   --
-  -- An attempt to use the unlifting function in a different thread than the
+  -- An attempt to call the unlifting function in threads distinct from the
   -- caller will result in a runtime error.
-  | BoundedConcUnlift Int
+  | ConcUnlift Persistence Limit
   -- ^ A strategy that makes it possible for the unlifting function to be called
-  -- from at most @N@ threads distinct from the caller.
-  --
-  -- The function will create @N@ clones of the environment if called from @N@
-  -- threads and @K+1@ clones if called from @K@ threads where @K < N@.
-  --
-  -- /Note:/ this strategy is meant for short-lived unlift functions and doesn't
-  -- perform cleanup of internal records associated with threads that no longer
-  -- exist. If you need that feature, use 'UnboundedConcUnlift'.
-  | UnboundedConcUnlift
-  -- ^ A strategy that makes it possible for the unlifting function to be called
-  -- from an unbounded amount of threads distinct from the caller.
-  --
-  -- The function will create @N+1@ clones of the environment if called from @N@
-  -- threads. Hence, if you know the upper bound for the number of threads,
-  -- 'BoundedConcUnlift' will be more efficient.
+  -- in threads distinct from the caller.
+
+data Persistence = Ephemeral | Persistent
+
+data Limit = Limited Int | Unlimited
 
 -- | Get the current 'UnliftStrategy'.
 unliftStrategy :: IOE :> es => Eff es UnliftStrategy
@@ -312,9 +304,8 @@ withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
 -- | Helper for 'MonadBaseControl' and 'MonadUnliftIO' instances.
 unliftEff :: IOE :> es => (RunIn es IO -> IO a) -> Eff es a
 unliftEff f = unliftStrategy >>= \case
-  SeqUnlift           -> seqUnliftEff f
-  BoundedConcUnlift n -> withUnliftStrategy SeqUnlift $ boundedConcUnliftEff n f
-  UnboundedConcUnlift -> withUnliftStrategy SeqUnlift $ unboundedConcUnliftEff f
+  SeqUnlift      -> seqUnliftEff f
+  ConcUnlift p b -> withUnliftStrategy SeqUnlift $ concUnliftEff p b f
 
 ----------------------------------------
 -- Helpers

@@ -135,6 +135,7 @@ benchmark bench
                     , tasty-bench
                     , transformers
                     , unix
+                    , unliftio
 
     hs-source-dirs: bench
 
@@ -143,3 +144,4 @@ benchmark bench
 
     other-modules:  Countdown
                     FileSizes
+                    Unlift

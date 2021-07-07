@@ -24,7 +24,7 @@ concurrencyTests = testGroup "Concurrency"
 
 test_localState :: Assertion
 test_localState = runIOE . evalState x $ do
-  withUnliftStrategy (BoundedConcUnlift 2) $ do
+  withUnliftStrategy (ConcUnlift Ephemeral $ Limited 2) $ do
     replicateConcurrently_ 2 $ do
       r <- goDownward 0
       U.assertEqual "expected result" x r
@@ -43,7 +43,7 @@ test_localState = runIOE . evalState x $ do
 
 test_sharedState :: Assertion
 test_sharedState = runIOE . evalStateMVar (S.empty @Int) $ do
-  withUnliftStrategy (BoundedConcUnlift 2) $ do
+  withUnliftStrategy (ConcUnlift Ephemeral $ Limited 2) $ do
     concurrently_ (addWhen even x) (addWhen odd x)
     U.assertEqual "expected result" (S.fromList [1..x]) =<< get
   where
@@ -60,7 +60,7 @@ test_sharedState = runIOE . evalStateMVar (S.empty @Int) $ do
 
 test_errorHandling :: Assertion
 test_errorHandling = runIOE . evalStateMVar (0::Int) $ do
-  withUnliftStrategy (BoundedConcUnlift 2) $ do
+  withUnliftStrategy (ConcUnlift Ephemeral $ Limited 2) $ do
     r <- runError $ concurrently_
       (liftIO (threadDelay 10000) >> throwError err)
       (modify (+x))
@@ -77,7 +77,7 @@ test_errorHandling = runIOE . evalStateMVar (0::Int) $ do
 
 test_unliftMany :: Assertion
 test_unliftMany = runIOE . evalState "initial value" $ do
-  withUnliftStrategy (BoundedConcUnlift 1) $ do
+  withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
     x <- withRunInIO $ \runInIO -> async $ do
       v1 <- runInIO $ get @String  -- 1
       threadDelay 20000
@@ -95,7 +95,7 @@ test_unliftMany = runIOE . evalState "initial value" $ do
 
 test_innerCloned :: Assertion
 test_innerCloned = runIOE . evalState "initial" $ do
-  withUnliftStrategy (BoundedConcUnlift 1) $ do
+  withUnliftStrategy (ConcUnlift Ephemeral $ Limited 1) $ do
     x <- withRunInIO $ \runInIO -> async $ do
       threadDelay 10000
       runInIO $ get @String -- 3

@@ -155,12 +155,8 @@ localUnlift
   -- ^ Continuation with the unlifting function.
   -> Eff es a
 localUnlift (LocalEnv les) unlift f = unsafeEff $ \es -> case unlift of
-  SeqUnlift ->
-    unEff (seqUnliftEff $ \k -> unEff (f $ unsafeEff_ . k) es) les
-  BoundedConcUnlift n ->
-    unEff (boundedConcUnliftEff n $ \k -> unEff (f $ unsafeEff_ . k) es) les
-  UnboundedConcUnlift ->
-    unEff (unboundedConcUnliftEff $ \k -> unEff (f $ unsafeEff_ . k) es) les
+  SeqUnlift      -> unEff (seqUnliftEff $ \k -> unEff (f $ unsafeEff_ . k) es) les
+  ConcUnlift p b -> unEff (concUnliftEff p b $ \k -> unEff (f $ unsafeEff_ . k) es) les
 
 -- | Create a local unlifting function with the given strategy.
 localUnliftIO
@@ -172,6 +168,5 @@ localUnliftIO
   -- ^ Continuation with the unlifting function.
   -> Eff es a
 localUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
-  SeqUnlift           -> unEff (seqUnliftEff f) les
-  BoundedConcUnlift n -> unEff (boundedConcUnliftEff n f) les
-  UnboundedConcUnlift -> unEff (unboundedConcUnliftEff f) les
+  SeqUnlift      -> unEff (seqUnliftEff f) les
+  ConcUnlift p b -> unEff (concUnliftEff p b f) les

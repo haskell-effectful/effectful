@@ -13,6 +13,8 @@ module Effectful.Monad
 
   -- ** Unlift strategies
   , UnliftStrategy(..)
+  , Persistence(..)
+  , Limit(..)
   , unliftStrategy
   , withUnliftStrategy
   ) where

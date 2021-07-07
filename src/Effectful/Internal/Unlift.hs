@@ -17,10 +17,10 @@ import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
 import GHC.IO (IO(..))
 import GHC.Weak (Weak(..))
 import System.Mem.Weak (deRefWeak)
-import qualified Data.Hashable as H
 import qualified Data.IntMap.Strict as IM
 
 import Effectful.Internal.Env
+import Effectful.Internal.Utils
 
 -- | Concurrent unlift that doesn't preserve the environment between calls to
 -- the unlifting function in threads other than the caller.
@@ -41,7 +41,7 @@ ephemeralConcUnliftIO uses f es0 unEff = do
   mvUses <- newMVar uses
   f $ \m -> do
     es <- myThreadId >>= \case
-      tid | tid0 == tid -> pure es0
+      tid | tid0 `eqThreadId` tid -> pure es0
       _ -> modifyMVar mvUses $ \case
         0 -> error
            $ "Number of permitted calls (" ++ show uses ++ ") to the unlifting "
@@ -74,10 +74,10 @@ persistentConcUnliftIO cleanUp threads f es0 unEff = do
   mvEntries <- newMVar $ ThreadEntries threads IM.empty
   f $ \m -> do
     es <- myThreadId >>= \case
-      tid | tid0 == tid -> pure es0
+      tid | tid0 `eqThreadId` tid -> pure es0
       tid -> modifyMVar mvEntries $ \te -> do
-        let hTid = H.hash tid
-        (mes, i) <- case hTid `IM.lookup` teEntries te of
+        let wkTid = weakThreadId tid
+        (mes, i) <- case wkTid `IM.lookup` teEntries te of
           Just (ThreadEntry i td) -> (, i) <$> lookupEnv tid td
           Nothing                 -> pure (Nothing, newEntryId)
         case mes of
@@ -88,18 +88,18 @@ persistentConcUnliftIO cleanUp threads f es0 unEff = do
                ++ "use the unlifting function was exceeded. Please increase the "
                ++ "limit or use the unlimited variant."
             1 -> do
-              wkTidEs <- mkWeakThreadIdEnv tid esTemplate hTid i mvEntries cleanUp
+              wkTidEs <- mkWeakThreadIdEnv tid esTemplate wkTid i mvEntries cleanUp
               let newEntries = ThreadEntries
                     { teCapacity = teCapacity te - 1
-                    , teEntries  = addThreadData hTid i wkTidEs $ teEntries te
+                    , teEntries  = addThreadData wkTid i wkTidEs $ teEntries te
                     }
               newEntries `seq` pure (newEntries, esTemplate)
             _ -> do
               es      <- cloneEnv esTemplate
-              wkTidEs <- mkWeakThreadIdEnv tid es hTid i mvEntries cleanUp
+              wkTidEs <- mkWeakThreadIdEnv tid es wkTid i mvEntries cleanUp
               let newEntries = ThreadEntries
                     { teCapacity = teCapacity te - 1
-                    , teEntries  = addThreadData hTid i wkTidEs $ teEntries te
+                    , teEntries  = addThreadData wkTid i wkTidEs $ teEntries te
                     }
               newEntries `seq` pure (newEntries, es)
     unEff m es
@@ -121,9 +121,9 @@ data ThreadEntries es = ThreadEntries
   , teEntries  :: IM.IntMap (ThreadEntry es)
   }
 
--- | Hashes of ThreadId are 32bit long, while ThreadIdS are 64bit long, so there
--- is potential for collisions. This is solved by keeping, for a particular
--- hash, a list of threads with unique EntryIdS.
+-- | In GHC < 9 weak thread ids are 32bit long, while ThreadIdS are 64bit long,
+-- so there is potential for collisions. This is solved by keeping, for a
+-- particular weak thread id, a list of ThreadIdS with unique EntryIdS.
 data ThreadEntry es = ThreadEntry EntryId (ThreadData es)
 
 data ThreadData es
@@ -141,7 +141,7 @@ mkWeakThreadIdEnv
   -> MVar (ThreadEntries es)
   -> Bool
   -> IO (Weak (ThreadId, Env es))
-mkWeakThreadIdEnv t@(ThreadId t#) es h i v = \case
+mkWeakThreadIdEnv t@(ThreadId t#) es wkTid i v = \case
   True -> IO $ \s0 ->
     case mkWeak# t# (t, es) finalizer s0 of
       (# s1, w #) -> (# s1, Weak w #)
@@ -149,7 +149,7 @@ mkWeakThreadIdEnv t@(ThreadId t#) es h i v = \case
     case mkWeakNoFinalizer# t# (t, es) s0 of
       (# s1, w #) -> (# s1, Weak w #)
   where
-    IO finalizer = deleteThreadData h i v
+    IO finalizer = deleteThreadData wkTid i v
 
 ----------------------------------------
 -- Manipulation of ThreadEntries
@@ -160,8 +160,8 @@ lookupEnv tid0 = \case
   ThreadData _ wkTidEs td -> deRefWeak wkTidEs >>= \case
     Nothing -> lookupEnv tid0 td
     Just (tid, es)
-      | tid0 == tid -> pure $ Just es
-      | otherwise   -> lookupEnv tid0 td
+      | tid0 `eqThreadId` tid -> pure $ Just es
+      | otherwise             -> lookupEnv tid0 td
 
 ----------------------------------------
 
@@ -171,9 +171,9 @@ addThreadData
   -> Weak (ThreadId, Env es)
   -> IM.IntMap (ThreadEntry es)
   -> IM.IntMap (ThreadEntry es)
-addThreadData h i w teMap
-  | i == newEntryId = IM.insert h (newThreadEntry i w) teMap
-  | otherwise       = IM.adjust (consThreadData w) h teMap
+addThreadData wkTid i w teMap
+  | i == newEntryId = IM.insert wkTid (newThreadEntry i w) teMap
+  | otherwise       = IM.adjust (consThreadData w) wkTid teMap
 
 newThreadEntry :: EntryId -> Weak (ThreadId, Env es) -> ThreadEntry es
 newThreadEntry i w = ThreadEntry (nextEntryId i) $ ThreadData i w NoThreadData
@@ -185,14 +185,14 @@ consThreadData w (ThreadEntry i td) =
 ----------------------------------------
 
 deleteThreadData :: Int -> EntryId -> MVar (ThreadEntries es) -> IO ()
-deleteThreadData h i v = modifyMVar_ v $ \te -> do
+deleteThreadData wkTid i v = modifyMVar_ v $ \te -> do
   let newEntries = ThreadEntries
         { teCapacity = case teCapacity te of
             -- If the template copy of the environment hasn't been consumed
             -- yet, the capacity can be restored.
             0 -> 0
             n -> n + 1
-        , teEntries = IM.update (cleanThreadEntry i) h $ teEntries te
+        , teEntries = IM.update (cleanThreadEntry i) wkTid $ teEntries te
         }
   newEntries `seq` pure newEntries
 

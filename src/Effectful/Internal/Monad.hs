@@ -67,6 +67,7 @@ import qualified Control.Monad.Catch as E
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Unlift
+import Effectful.Internal.Utils
 
 type role Eff nominal representational
 
@@ -134,7 +135,7 @@ seqUnliftEff f = unsafeEff $ \es -> do
   tid0 <- myThreadId
   f $ \m -> do
     tid <- myThreadId
-    if tid == tid0
+    if tid `eqThreadId` tid0
       then unEff m es
       else error
          $ "If you want to use the unlifting function to run Eff operations "

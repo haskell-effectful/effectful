@@ -56,7 +56,6 @@ library
                     , async
                     , containers
                     , exceptions
-                    , hashable
                     , monad-control
                     , primitive
                     , resourcet
@@ -66,6 +65,8 @@ library
                     , unliftio-core
 
     hs-source-dirs:  src
+
+    c-sources:       cbits/utils.c
 
     exposed-modules: Effectful
                      Effectful.Async
@@ -78,6 +79,7 @@ library
                      Effectful.Internal.Env
                      Effectful.Internal.Monad
                      Effectful.Internal.Unlift
+                     Effectful.Internal.Utils
                      Effectful.Interpreter
                      Effectful.Monad
                      Effectful.Reader

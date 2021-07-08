@@ -256,7 +256,7 @@ newtype IOE :: Effect where
 --
 -- For the pure version see 'runEff'.
 runIOE :: Eff '[IOE] a -> IO a
-runIOE m = unEff (evalEffect (IdE $ IOE SeqUnlift) m) =<< emptyEnv
+runIOE m = unEff (evalEffect (IdE (IOE SeqUnlift)) m) =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_

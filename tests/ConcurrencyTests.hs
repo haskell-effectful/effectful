@@ -19,7 +19,8 @@ concurrencyTests = testGroup "Concurrency"
   , testCase "shared state" test_sharedState
   , testCase "error handling" test_errorHandling
   , testCase "unlifting several times" test_unliftMany
-  , testCase "spawned environment" test_innerCloned
+  , testCase "async with unmask" test_asyncWithUnmask
+  , testCase "pooled workers" test_pooledWorkers
   ]
 
 test_localState :: Assertion
@@ -93,15 +94,30 @@ test_unliftMany = runIOE . evalState "initial value" $ do
       ("initial value", "initial value", "inner change", "outer change")
       (v1, v2, v3, v4)
 
-test_innerCloned :: Assertion
-test_innerCloned = runIOE . evalState "initial" $ do
-  withUnliftStrategy (ConcUnlift Ephemeral $ Limited 1) $ do
-    x <- withRunInIO $ \runInIO -> async $ do
-      threadDelay 10000
-      runInIO $ get @String -- 3
-    put "changed"  -- 2
-    inner <- liftIO $ wait x
+test_asyncWithUnmask :: Assertion
+test_asyncWithUnmask = runIOE . evalState "initial" $ do
+  withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
+    x <- asyncWithUnmask $ \unmask -> do
+      liftIO $ threadDelay 10000
+      r1 <- get @String -- 2
+      unmask $ put "unmask"
+      r2 <- get @String -- 3
+      pure (r1, r2)
+    put "changed"  -- 1
+    (inner1, inner2) <- liftIO $ wait x
     outer <- get  -- 4
     U.assertEqual "expected result"
-      ("initial", "changed")
-      (inner, outer)
+      ("initial", "unmask", "changed")
+      (inner1, inner2, outer)
+
+test_pooledWorkers :: Assertion
+test_pooledWorkers = runIOE . evalState (0::Int) $ do
+  withUnliftStrategy (ConcUnlift Ephemeral $ Limited n) $ do
+    x <- pooledForConcurrentlyN threads (replicate n ()) $ \() -> do
+      r <- get @Int
+      modify @Int (+1)
+      pure r
+    U.assertEqual "expected result" (replicate n 0) x
+  where
+    n = 10
+    threads = 4

@@ -6,7 +6,9 @@ module FileSizes where
 import Control.Exception
 import Control.Monad.IO.Class
 import Data.IORef
+#ifdef VERSION_polysemy
 import Data.Tuple
+#endif
 import System.Posix
 
 -- effectful
@@ -27,8 +29,10 @@ import qualified Control.Monad.Freer.State as FS
 #endif
 
 -- mtl
+#ifdef VERSION_mtl
 import qualified Control.Monad.State as M
 import qualified Control.Monad.Reader as M
+#endif
 
 -- polysemy
 #ifdef VERSION_polysemy
@@ -263,6 +267,8 @@ fs_calculateFileSizesDeep = FS.runM
 ----------------------------------------
 -- mtl
 
+#ifdef VERSION_mtl
+
 class Monad m => MonadFile m where
   mtl_tryFileSize :: FilePath -> m (Maybe Int)
 
@@ -328,6 +334,8 @@ mtl_calculateFileSizesDeep
   . mtl_program
   where
     runR = flip M.runReaderT ()
+
+#endif
 
 ----------------------------------------
 -- polysemy

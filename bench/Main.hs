@@ -34,7 +34,9 @@ countdown n = bgroup (show n)
 #ifdef VERSION_eff
     , bench "eff"                      $ nf countdownEff n
 #endif
+#ifdef VERSION_mtl
     , bench "mtl"                      $ nf countdownMtl n
+#endif
 #ifdef VERSION_fused_effects
     , bench "fused-effects"            $ nf countdownFusedEffects n
 #endif
@@ -56,7 +58,9 @@ countdown n = bgroup (show n)
 #ifdef VERSION_polysemy
     , bench "polysemy"                 $ nf countdownPolysemyDeep n
 #endif
+#ifdef VERSION_mtl
     , bench "mtl"                      $ nf countdownMtlDeep n
+#endif
 #ifdef VERSION_fused_effects
     , bench "fused-effects"            $ nf countdownFusedEffectsDeep n
 #endif
@@ -71,7 +75,9 @@ filesize n = bgroup (show n)
 #ifdef VERSION_freer_simple
     , bench "freer-simple" $ nfAppIO fs_calculateFileSizes (take n files)
 #endif
+#ifdef VERSION_mtl
     , bench "mtl"          $ nfAppIO mtl_calculateFileSizes (take n files)
+#endif
 #ifdef VERSION_eff
     , bench "eff"          $ nfAppIO eff_calculateFileSizes (take n files)
 #endif
@@ -90,7 +96,9 @@ filesize n = bgroup (show n)
 #ifdef VERSION_polysemy
     , bench "polysemy"     $ nfAppIO poly_calculateFileSizesDeep (take n files)
 #endif
+#ifdef VERSION_mtl
     , bench "mtl"          $ nfAppIO mtl_calculateFileSizesDeep (take n files)
+#endif
     ]
   ]
   where

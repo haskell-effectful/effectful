@@ -2,7 +2,9 @@
 module Countdown where
 
 import Control.Monad.ST
+#ifdef VERSION_mtl
 import Data.Functor.Identity
+#endif
 import Data.STRef
 
 -- eff
@@ -32,8 +34,10 @@ import qualified Control.Carrier.State.Strict as FE
 #endif
 
 -- mtl
+#ifdef VERSION_mtl
 import qualified Control.Monad.Reader as M
 import qualified Control.Monad.State as M
+#endif
 
 -- polysemy
 #ifdef VERSION_polysemy
@@ -72,6 +76,8 @@ countdownST n = runST $ do
 ----------------------------------------
 -- mtl
 
+#ifdef VERSION_mtl
+
 programMtl :: M.MonadState Integer m => m Integer
 programMtl = do
   n <- M.get @Integer
@@ -93,6 +99,8 @@ countdownMtlDeep n = runIdentity
   $ programMtl
   where
     runR = flip M.runReaderT ()
+
+#endif
 
 ----------------------------------------
 -- effectful (pure)

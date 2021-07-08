@@ -123,6 +123,8 @@ benchmark bench
     ghc-options:    -threaded -rtsopts -with-rtsopts=-T
 
     if flag(benchmark-foreign-libraries)
+       build-depends: mtl
+
        if impl(ghc < 9)
           build-depends: freer-simple
 
@@ -134,7 +136,6 @@ benchmark bench
 
     build-depends:    base <5
                     , effectful
-                    , mtl
                     , tasty-bench
                     , transformers
                     , unix

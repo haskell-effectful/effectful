@@ -11,11 +11,9 @@ module Effectful.Internal.Monad
   , runEff
 
   -- ** Access to the internal representation
-  , RunIn
   , unEff
   , unsafeEff
   , unsafeEff_
-  , unsafeUnliftEff
 
   -- * Fail
   , Fail
@@ -25,7 +23,18 @@ module Effectful.Internal.Monad
   , IOE
   , runIOE
 
-  -- * Low-level helpers
+  -- ** Unlift strategies
+  , UnliftStrategy(..)
+  , Persistence(..)
+  , Limit(..)
+  , unliftStrategy
+  , withUnliftStrategy
+
+  --- *** Low-level helpers
+  , seqUnliftEff
+  , concUnliftEff
+
+  -- * Primitive effects
 
   -- ** Running
   , runEffect
@@ -50,12 +59,14 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Control
 import Data.Unique
-import GHC.Magic (oneShot)
+import GHC.Exts (oneShot)
 import System.IO.Unsafe (unsafeDupablePerformIO)
 import qualified Control.Monad.Catch as E
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
+import Effectful.Internal.Unlift
+import Effectful.Internal.Utils
 
 type role Eff nominal representational
 
@@ -113,40 +124,32 @@ unsafeEff m = Eff (oneShot m)
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
 
--- | A function that runs 'Eff' operations in @m@ (usually a local 'Eff'
--- environment or 'IO').
-type RunIn es m = forall r. Eff es r -> m r
-
--- | Lower 'Eff' operations into 'IO'.
---
--- /Note:/ the 'RunIn' argument has to be called from the same thread as
--- 'unsafeUnliftEff' ('liftBaseWith' / 'withRunInIO'). Attempting otherwise
--- results in a runtime error, because it cannot be done safely in general
--- (*). If you need to spawn threads, have a look at "Effectful.Async" or create
--- a new 'Eff' environment.
---
--- (*) Consider the following:
---
--- @
--- runState 'x' $ do
---   liftBaseWith $ \run -> forkIO $ do
---     threadDelay 1000000
---     run $ ... (1)
---   ... (2)
--- ...
--- @
---
--- If (1) runs after (2) completed, the State Char effect is no longer in scope,
--- but (1) assumes otherwise and things break horribly.
-unsafeUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
-unsafeUnliftEff f = unsafeEff $ \es -> do
+-- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
+seqUnliftEff :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
+seqUnliftEff f = unsafeEff $ \es -> do
   tid0 <- myThreadId
   f $ \m -> do
     tid <- myThreadId
-    if tid == tid0
+    if tid `eqThreadId` tid0
       then unEff m es
-      else error $ "Running Eff operations in a different thread is "
-                ++ "currently not possible with the unlifting function"
+      else error
+         $ "If you want to use the unlifting function to run Eff operations "
+        ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
+
+-- | Lower 'Eff' operations into 'IO' ('ConcUnlift').
+concUnliftEff
+  :: Persistence
+  -> Limit
+  -> ((forall r. Eff es r -> IO r) -> IO a)
+  -> Eff es a
+concUnliftEff Ephemeral (Limited uses) f = unsafeEff $ \es -> do
+  ephemeralConcUnliftIO uses f es unEff
+concUnliftEff Ephemeral Unlimited f = unsafeEff $ \es -> do
+  ephemeralConcUnliftIO maxBound f es unEff
+concUnliftEff Persistent (Limited threads) f = unsafeEff $ \es -> do
+  persistentConcUnliftIO False threads f es unEff
+concUnliftEff Persistent Unlimited f = unsafeEff $ \es -> do
+  persistentConcUnliftIO True maxBound f es unEff
 
 ----------------------------------------
 -- Base
@@ -246,14 +249,14 @@ tryFailIO tag m =
 
 -- | Run arbitrary 'IO' operations via 'MonadIO', 'MonadBaseControl' 'IO' or
 -- 'MonadUnliftIO'.
-data IOE :: Effect where
-  IOE :: IOE m r
+newtype IOE :: Effect where
+  IOE :: UnliftStrategy -> IOE m r
 
 -- | Run an 'Eff' operation with side effects.
 --
 -- For the pure version see 'runEff'.
 runIOE :: Eff '[IOE] a -> IO a
-runIOE m = unEff (evalEffect (IdE IOE) m) =<< emptyEnv
+runIOE m = unEff (evalEffect (IdE (IOE SeqUnlift)) m) =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
@@ -263,11 +266,82 @@ instance IOE :> es => MonadBase IO (Eff es) where
 
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
-  liftBaseWith = unsafeUnliftEff
+  liftBaseWith = unliftEff
   restoreM = pure
 
 instance IOE :> es => MonadUnliftIO (Eff es) where
-  withRunInIO = unsafeUnliftEff
+  withRunInIO = unliftEff
+
+----------------------------------------
+-- Unlift strategies
+
+-- | The strategy to use when unlifting 'Eff' operations via 'liftBaseWith',
+-- 'withRunInIO' or the 'Effectful.Interpreter.localUnlift' family.
+data UnliftStrategy
+  = SeqUnlift
+  -- ^ The fastest strategy and a default setting for 'IOE'. An attempt to call
+  -- the unlifting function in threads distinct from its creator will result in
+  -- a runtime error.
+  | ConcUnlift Persistence Limit
+  -- ^ A strategy that makes it possible for the unlifting function to be called
+  -- in threads distinct from its creator. See 'Persistence' and 'Limit'
+  -- settings for more information.
+  deriving (Eq, Ord, Show)
+
+-- | Persistence setting for the 'ConcUnlift' strategy.
+--
+-- Different functions require different persistence strategies. Examples:
+--
+-- - Lifting 'pooledMapConcurrentlyN' from the @unliftio@ library requires the
+--   'Ephemeral' strategy as we don't want jobs to share environment changes
+--   made by previous jobs run in the same worker thread.
+--
+-- - Lifting 'Control.Concurrent.forkIOWithUnmask' requires the 'Persistent'
+--   strategy, otherwise the unmasking function would start with a fresh
+--   environment each time it's called.
+data Persistence
+  = Ephemeral
+  -- ^ Don't persist the environment between calls to the unlifting function in
+  -- threads distinct from its creator.
+  | Persistent
+  -- ^ Persist the environment between calls to the unlifting function within a
+  -- particular thread.
+  deriving (Eq, Ord, Show)
+
+-- | Limit setting for the 'ConcUnlift' strategy.
+data Limit
+  = Limited Int
+  -- ^ Behavior dependent on the 'Persistence' setting.
+  --
+  -- For 'Ephemeral', it limits the amount of uses of the unlifting function in
+  -- threads distinct from its creator to @N@. The unlifting function will
+  -- create @N@ copies of the environment when called @N@ times and @K+1@ copies
+  -- when called @K < N@ times.
+  --
+  -- For 'Persistent', it limits the amount of threads, distinct from the
+  -- creator of the unlifting function, it can be called in to @N@. The amount
+  -- of calls to the unlifting function within a particular threads is
+  -- unlimited. The unlifting function will create @N@ copies of the environment
+  -- when called in @N@ threads and @K+1@ copies when called in @K < N@ threads.
+  | Unlimited
+  -- ^ Unlimited use of the unlifting function.
+  deriving (Eq, Ord, Show)
+
+-- | Get the current 'UnliftStrategy'.
+unliftStrategy :: IOE :> es => Eff es UnliftStrategy
+unliftStrategy = readerEffectM $ \(IdE (IOE unlift)) -> pure unlift
+
+-- | Locally override the 'UnliftStrategy' with a given value.
+--
+-- /Note:/ the strategy is always reset to 'SeqUnlift' for new threads.
+withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
+withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
+
+-- | Helper for 'MonadBaseControl' and 'MonadUnliftIO' instances.
+unliftEff :: IOE :> es => ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
+unliftEff f = unliftStrategy >>= \case
+  SeqUnlift      -> seqUnliftEff f
+  ConcUnlift p b -> withUnliftStrategy SeqUnlift $ concUnliftEff p b f
 
 ----------------------------------------
 -- Helpers
@@ -317,8 +391,8 @@ readerEffectM f = unsafeEff $ \es -> getEnv es >>= \e -> unEff (f e) es
 {-# INLINE readerEffectM #-}
 
 stateEffectM :: e :> es => (i e -> Eff es (a, i e)) -> Eff es a
-stateEffectM f = unsafeEff $ \es -> do
-  (a, e) <- (\e -> unEff (f e) es) =<< getEnv es
+stateEffectM f = unsafeEff $ \es -> mask $ \release -> do
+  (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv es
   unsafePutEnv e es
   pure a
 {-# INLINE stateEffectM #-}

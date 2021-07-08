@@ -47,6 +47,16 @@ common language
                         TypeFamilies
                         TypeOperators
 
+library effectful-internal-utils
+    import:          language
+
+    build-depends:   base
+
+    hs-source-dirs:  utils
+    c-sources:       utils/utils.c
+
+    exposed-modules: Effectful.Internal.Utils
+
 library
     import:         language
 
@@ -56,6 +66,7 @@ library
                     , async
                     , containers
                     , exceptions
+                    , effectful-internal-utils
                     , monad-control
                     , primitive
                     , resourcet
@@ -65,8 +76,6 @@ library
                     , unliftio-core
 
     hs-source-dirs:  src
-
-    c-sources:       cbits/utils.c
 
     exposed-modules: Effectful
                      Effectful.Async
@@ -79,7 +88,6 @@ library
                      Effectful.Internal.Env
                      Effectful.Internal.Monad
                      Effectful.Internal.Unlift
-                     Effectful.Internal.Utils
                      Effectful.Interpreter
                      Effectful.Monad
                      Effectful.Reader
@@ -91,6 +99,8 @@ library
                      Effectful.Writer
                      Effectful.Writer.Dynamic
                      Effectful.Writer.MVar
+
+  reexported-modules: Effectful.Internal.Utils
 
 test-suite test
     import:         language

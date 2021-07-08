@@ -3,7 +3,6 @@ module Effectful.Interpreter
     send
 
   -- * Handling effects
-  , RunIn
 
   -- ** Basic handlers
   , interpret
@@ -82,7 +81,8 @@ interpret interpreter m = unsafeEff $ \es -> do
 
 -- | Interpret a higher order effect.
 --
--- For handling local 'Eff' operations see the 'localUnlift' family.
+-- /Note:/ 'LocalEnv' is used for handling local 'Eff' operations with help of a
+-- function from the 'localUnlift' family.
 interpretM
   :: (forall r localEs. HasCallStack => LocalEnv localEs -> e (Eff localEs) r -> Eff es r)
   -- ^ The effect handler.
@@ -110,7 +110,8 @@ reinterpret runHandlerEs interpreter m = unsafeEff $ \es -> do
 
 -- | Interpret a higher order effect using other effects.
 --
--- For handling local 'Eff' operations see the 'localUnlift' family.
+-- /Note:/ 'LocalEnv' is used for handling local 'Eff' operations with help of a
+-- function from the 'localUnlift' family.
 reinterpretM
   :: (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
@@ -130,7 +131,7 @@ reinterpretM runHandlerEs interpreter m = unsafeEff $ \es -> do
 localSeqUnlift
   :: LocalEnv localEs
   -- ^ Local environment from the effect handler.
-  -> (RunIn localEs (Eff es) -> Eff es a)
+  -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the unlifting function.
   -> Eff es a
 localSeqUnlift (LocalEnv les) f = unsafeEff $ \es -> do
@@ -141,7 +142,7 @@ localSeqUnliftIO
   :: IOE :> es
   => LocalEnv localEs
   -- ^ Local environment from the effect handler.
-  -> (RunIn localEs IO -> IO a)
+  -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function.
   -> Eff es a
 localSeqUnliftIO (LocalEnv les) f = unsafeEff_ $ unEff (seqUnliftEff f) les
@@ -151,7 +152,7 @@ localUnlift
   :: LocalEnv localEs
   -- ^ Local environment from the effect handler.
   -> UnliftStrategy
-  -> (RunIn localEs (Eff es) -> Eff es a)
+  -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the unlifting function.
   -> Eff es a
 localUnlift (LocalEnv les) unlift f = unsafeEff $ \es -> case unlift of
@@ -164,7 +165,7 @@ localUnliftIO
   => LocalEnv localEs
   -- ^ Local environment from the effect handler.
   -> UnliftStrategy
-  -> (RunIn localEs IO -> IO a)
+  -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function.
   -> Eff es a
 localUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of

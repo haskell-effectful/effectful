@@ -11,7 +11,6 @@ module Effectful.Internal.Monad
   , runEff
 
   -- ** Access to the internal representation
-  , RunIn
   , unEff
   , unsafeEff
   , unsafeEff_
@@ -125,12 +124,8 @@ unsafeEff m = Eff (oneShot m)
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
 
--- | A function that runs 'Eff' operations in @m@ (usually a local 'Eff'
--- environment or 'IO').
-type RunIn es m = forall r. Eff es r -> m r
-
 -- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
-seqUnliftEff :: (RunIn es IO -> IO a) -> Eff es a
+seqUnliftEff :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
 seqUnliftEff f = unsafeEff $ \es -> do
   tid0 <- myThreadId
   f $ \m -> do
@@ -142,7 +137,11 @@ seqUnliftEff f = unsafeEff $ \es -> do
         ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
 
 -- | Lower 'Eff' operations into 'IO' ('ConcUnlift')
-concUnliftEff :: Persistence -> Limit -> (RunIn es IO -> IO a) -> Eff es a
+concUnliftEff
+  :: Persistence
+  -> Limit
+  -> ((forall r. Eff es r -> IO r) -> IO a)
+  -> Eff es a
 concUnliftEff Ephemeral (Limited uses) f = unsafeEff $ \es -> do
   ephemeralConcUnliftIO uses f es unEff
 concUnliftEff Ephemeral Unlimited f = unsafeEff $ \es -> do
@@ -303,7 +302,7 @@ withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
 withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
 
 -- | Helper for 'MonadBaseControl' and 'MonadUnliftIO' instances.
-unliftEff :: IOE :> es => (RunIn es IO -> IO a) -> Eff es a
+unliftEff :: IOE :> es => ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
 unliftEff f = unliftStrategy >>= \case
   SeqUnlift      -> seqUnliftEff f
   ConcUnlift p b -> withUnliftStrategy SeqUnlift $ concUnliftEff p b f

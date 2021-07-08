@@ -44,7 +44,9 @@ module Effectful
 
   -- *** 'IO'
   , localSeqUnliftIO
+  , localSeqLiftUnliftIO
   , localUnliftIO
+  , localLiftUnliftIO
   ) where
 
 import Effectful.Interpreter

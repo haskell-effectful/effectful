@@ -21,7 +21,9 @@ module Effectful.Interpreter
 
   -- *** 'IO'
   , localSeqUnliftIO
+  , localSeqLiftUnliftIO
   , localUnliftIO
+  , localLiftUnliftIO
   ) where
 
 import Control.Exception
@@ -127,7 +129,8 @@ reinterpretM runHandlerEs interpreter m = unsafeEff $ \es -> do
 ----------------------------------------
 -- Unlifting
 
--- | Create a local unlifting function with the 'SeqUnlift' strategy.
+-- | Create a local unlifting function with the 'SeqUnlift' strategy. For the
+-- general version see 'localUnlift'.
 localSeqUnlift
   :: LocalEnv localEs
   -- ^ Local environment from the effect handler.
@@ -137,7 +140,8 @@ localSeqUnlift
 localSeqUnlift (LocalEnv les) f = unsafeEff $ \es -> do
   unEff (seqUnliftEff $ \k -> unEff (f $ unsafeEff_ . k) es) les
 
--- | Create a local unlifting function with the 'SeqUnlift' strategy.
+-- | Create a local unlifting function with the 'SeqUnlift' strategy. For the
+-- general version see 'localUnliftIO'.
 localSeqUnliftIO
   :: IOE :> es
   => LocalEnv localEs
@@ -146,6 +150,21 @@ localSeqUnliftIO
   -- ^ Continuation with the unlifting function.
   -> Eff es a
 localSeqUnliftIO (LocalEnv les) f = unsafeEff_ $ unEff (seqUnliftEff f) les
+
+-- | Create a local lifting and unlifting function with the 'SeqUnlift'
+-- strategy. More the general version see 'localLiftUnliftIO'.
+--
+-- /Note:/ the strategy applies only to the unlifting function, lifting function
+-- doesn't have any restrictions.
+localSeqLiftUnliftIO
+  :: IOE :> es
+  => LocalEnv localEs
+  -- ^ Local environment from the effect handler.
+  -> ((forall r. IO r -> Eff localEs r) -> (forall r. Eff localEs r -> IO r) -> IO a)
+  -- ^ Continuation with the lifting and unlifting function.
+  -> Eff es a
+localSeqLiftUnliftIO (LocalEnv les) f = unsafeEff_ $ do
+  unEff (seqUnliftEff $ f unsafeEff_) les
 
 -- | Create a local unlifting function with the given strategy.
 localUnlift
@@ -171,3 +190,38 @@ localUnliftIO
 localUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
   SeqUnlift      -> unEff (seqUnliftEff f) les
   ConcUnlift p b -> unEff (concUnliftEff p b f) les
+
+-- | Create a local lifting and unlifting function with the given strategy.
+--
+-- /Note:/ the strategy applies only to the unlifting function, lifting function
+-- doesn't have any restrictions.
+--
+-- Necessary for lifting 'Control.Concurrent.forkIOWithUnmask'-like operations:
+--
+-- >>> :{
+-- data Fork :: Effect where
+--   ForkWithUnmask :: ((forall a. m a -> m a) -> m ()) -> Fork m ThreadId
+-- :}
+--
+-- >>> :{
+-- runFork :: IOE :> es => Eff (Fork : es) a -> Eff es a
+-- runFork = interpretM $ \env (ForkWithUnmask m) -> do
+--   localLiftUnliftIO env (ConcUnlift Persistent $ Limited 1) $ \lift unlift -> do
+--     forkIOWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift
+-- :}
+--
+localLiftUnliftIO
+  :: IOE :> es
+  => LocalEnv localEs
+  -- ^ Local environment from the effect handler.
+  -> UnliftStrategy
+  -> ((forall r. IO r -> Eff localEs r) -> (forall r. Eff localEs r -> IO r) -> IO a)
+  -- ^ Continuation with the lifting and unlifting function.
+  -> Eff es a
+localLiftUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
+  SeqUnlift      -> unEff (seqUnliftEff $ f unsafeEff_) les
+  ConcUnlift p b -> unEff (concUnliftEff p b $ f unsafeEff_) les
+
+-- $setup
+-- >>> import Control.Concurrent
+-- >>> import Effectful

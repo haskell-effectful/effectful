@@ -2,9 +2,6 @@
 module Countdown where
 
 import Control.Monad.ST
-#ifdef VERSION_mtl
-import Data.Functor.Identity
-#endif
 import Data.STRef
 
 -- eff
@@ -37,6 +34,7 @@ import qualified Control.Carrier.State.Strict as FE
 #ifdef VERSION_mtl
 import qualified Control.Monad.Reader as M
 import qualified Control.Monad.State as M
+import Data.Functor.Identity
 #endif
 
 -- polysemy

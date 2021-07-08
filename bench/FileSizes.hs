@@ -6,9 +6,6 @@ module FileSizes where
 import Control.Exception
 import Control.Monad.IO.Class
 import Data.IORef
-#ifdef VERSION_polysemy
-import Data.Tuple
-#endif
 import System.Posix
 
 -- effectful
@@ -159,9 +156,12 @@ eff_runLogging
   :: L.Eff (Eff_Logging : es) a
   -> L.Eff es (a, [String])
 eff_runLogging
-  = fmap swap . L.runState [] . L.interpret \case
+  = fmap eff_swap . L.runState [] . L.interpret \case
       Eff_logMsg msg -> L.modify (msg :)
   . L.lift
+
+eff_swap :: (a, b) -> (b, a)
+eff_swap (x, y) = (y, x)
 
 ----------
 
@@ -359,8 +359,11 @@ poly_logMsg :: P.Member Poly_Logging es => String -> P.Sem es ()
 poly_logMsg = P.send . Poly_logMsg
 
 poly_runLogging :: P.Sem (Poly_Logging : es) a -> P.Sem es (a, [String])
-poly_runLogging = fmap swap . P.runState [] . P.reinterpret \case
+poly_runLogging = fmap poly_swap . P.runState [] . P.reinterpret \case
   Poly_logMsg msg -> P.modify (msg :)
+
+poly_swap :: (a, b) -> (b, a)
+poly_swap (x, y) = (y, x)
 
 ----------
 

@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.13.20210606
+# version: 0.13.20210621
 #
-# REGENDATA ("0.13.20210606",["github","--config=cabal.haskell-ci","effectful.cabal"])
+# REGENDATA ("0.13.20210621",["github","--config=cabal.haskell-ci","effectful.cabal"])
 #
 name: Haskell-CI
 on:
@@ -148,7 +148,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-60139de7
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-b692a344
           path: ~/.haskell-ci-tools
       - name: install cabal-plan
         run: |
@@ -161,8 +161,8 @@ jobs:
           cabal-plan --version
       - name: install doctest
         run: |
-          if [ $((HCNUMVER < 90000)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.17' ; fi
-          if [ $((HCNUMVER < 90000)) -ne 0 ] ; then doctest --version ; fi
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.18' ; fi
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest --version ; fi
       - name: checkout
         uses: actions/checkout@v2
         with:
@@ -223,8 +223,10 @@ jobs:
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: doctest
         run: |
-          if [ $((HCNUMVER < 90000)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 90000)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStrictData -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStrictData -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStrictData -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators utils ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful} || false

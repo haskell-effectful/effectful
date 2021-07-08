@@ -136,7 +136,7 @@ seqUnliftEff f = unsafeEff $ \es -> do
          $ "If you want to use the unlifting function to run Eff operations "
         ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
 
--- | Lower 'Eff' operations into 'IO' ('ConcUnlift')
+-- | Lower 'Eff' operations into 'IO' ('ConcUnlift').
 concUnliftEff
   :: Persistence
   -> Limit

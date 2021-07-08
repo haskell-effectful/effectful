@@ -81,8 +81,8 @@ interpret interpreter m = unsafeEff $ \es -> do
 
 -- | Interpret a higher order effect.
 --
--- /Note:/ 'LocalEnv' is used for handling local 'Eff' operations with help of a
--- function from the 'localUnlift' family.
+-- /Note:/ 'LocalEnv' is for handling local 'Eff' operations using a function
+-- from the 'localUnlift' family.
 interpretM
   :: (forall r localEs. HasCallStack => LocalEnv localEs -> e (Eff localEs) r -> Eff es r)
   -- ^ The effect handler.
@@ -110,8 +110,8 @@ reinterpret runHandlerEs interpreter m = unsafeEff $ \es -> do
 
 -- | Interpret a higher order effect using other effects.
 --
--- /Note:/ 'LocalEnv' is used for handling local 'Eff' operations with help of a
--- function from the 'localUnlift' family.
+-- /Note:/ 'LocalEnv' is for handling local 'Eff' operations using a function
+-- from the 'localUnlift' family.
 reinterpretM
   :: (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.

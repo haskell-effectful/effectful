@@ -113,11 +113,11 @@ test_asyncWithUnmask = runIOE . evalState "initial" $ do
 test_pooledWorkers :: Assertion
 test_pooledWorkers = runIOE . evalState (0::Int) $ do
   withUnliftStrategy (ConcUnlift Ephemeral $ Limited n) $ do
-    x <- pooledForConcurrentlyN threads (replicate n ()) $ \() -> do
+    x <- pooledForConcurrentlyN threads [1..n] $ \k -> do
       r <- get @Int
       modify @Int (+1)
-      pure r
-    U.assertEqual "expected result" (replicate n 0) x
+      pure $ k + r
+    U.assertEqual "expected result" [1..n] x
   where
     n = 10
     threads = 4

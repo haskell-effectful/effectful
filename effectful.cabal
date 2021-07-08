@@ -65,8 +65,8 @@ library
     build-depends:    base >= 4.13 && <5
                     , async
                     , containers
-                    , exceptions
                     , effectful-internal-utils
+                    , exceptions
                     , monad-control
                     , primitive
                     , resourcet

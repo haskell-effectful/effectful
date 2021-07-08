@@ -24,6 +24,7 @@ source-repository head
 
 flag benchmark-foreign-libraries
     description: Include other effect libraries in the benchmarks
+    default: False
 
 common language
     ghc-options:        -Wall -Wcompat

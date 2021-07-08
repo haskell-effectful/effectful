@@ -286,10 +286,17 @@ data UnliftStrategy
   | ConcUnlift Persistence Limit
   -- ^ A strategy that makes it possible for the unlifting function to be called
   -- in threads distinct from the caller.
+  deriving (Eq, Ord, Show)
 
-data Persistence = Ephemeral | Persistent
+data Persistence
+  = Ephemeral
+  | Persistent
+  deriving (Eq, Ord, Show)
 
-data Limit = Limited Int | Unlimited
+data Limit
+  = Limited Int
+  | Unlimited
+  deriving (Eq, Ord, Show)
 
 -- | Get the current 'UnliftStrategy'.
 unliftStrategy :: IOE :> es => Eff es UnliftStrategy

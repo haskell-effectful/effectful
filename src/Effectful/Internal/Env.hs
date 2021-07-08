@@ -468,7 +468,6 @@ getLocation (Env fork ref _) = do
 
     ix :: Int -> Int
     ix n = n - reifyIndex @e @es - 1
-{-# INLINE getLocation #-}
 
 toAny :: a -> Any
 toAny = unsafeCoerce

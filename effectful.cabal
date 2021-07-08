@@ -71,7 +71,6 @@ library
                     , primitive
                     , resourcet
                     , stm
-                    , transformers
                     , transformers-base
                     , unliftio-core
 
@@ -79,9 +78,6 @@ library
 
     exposed-modules: Effectful
                      Effectful.Async
-                     Effectful.Class.Reader
-                     Effectful.Class.State
-                     Effectful.Class.Writer
                      Effectful.Error
                      Effectful.Fail
                      Effectful.Internal.Effect

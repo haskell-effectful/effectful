@@ -23,7 +23,7 @@ import Effectful.Internal.Env
 import Effectful.Internal.Utils
 
 -- | Concurrent unlift that doesn't preserve the environment between calls to
--- the unlifting function in threads other than the caller.
+-- the unlifting function in threads other than its creator.
 ephemeralConcUnliftIO
   :: Int
   -> ((forall r. m r -> IO r) -> IO a)

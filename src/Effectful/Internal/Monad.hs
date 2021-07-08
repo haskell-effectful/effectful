@@ -275,27 +275,56 @@ instance IOE :> es => MonadUnliftIO (Eff es) where
 ----------------------------------------
 -- Unlift strategies
 
--- | The strategy to use when unlifting 'Eff' computations via 'liftBaseWith',
+-- | The strategy to use when unlifting 'Eff' operations via 'liftBaseWith',
 -- 'withRunInIO' or the 'Effectful.Interpreter.localUnlift' family.
 data UnliftStrategy
   = SeqUnlift
-  -- ^ The fastest strategy and a default initial value for 'IOE'.
-  --
-  -- An attempt to call the unlifting function in threads distinct from the
-  -- caller will result in a runtime error.
+  -- ^ The fastest strategy and a default setting for 'IOE'. An attempt to call
+  -- the unlifting function in threads distinct from its creator will result in
+  -- a runtime error.
   | ConcUnlift Persistence Limit
   -- ^ A strategy that makes it possible for the unlifting function to be called
-  -- in threads distinct from the caller.
+  -- in threads distinct from its creator. See 'Persistence' and 'Limit'
+  -- settings for more information.
   deriving (Eq, Ord, Show)
 
+-- | Persistence setting for the 'ConcUnlift' strategy.
+--
+-- Different functions require different persistence strategies. Examples:
+--
+-- - Lifting 'pooledMapConcurrentlyN' from the @unliftio@ library requires the
+--   'Ephemeral' strategy as we don't want jobs to share environment changes
+--   made by previous jobs run in the same worker thread.
+--
+-- - Lifting 'Control.Concurrent.forkIOWithUnmask' requires the 'Persistent'
+--   strategy, otherwise the unmasking function would start with a fresh
+--   environment each time it's called.
 data Persistence
   = Ephemeral
+  -- ^ Don't persist the environment between calls to the unlifting function in
+  -- threads distinct from its creator.
   | Persistent
+  -- ^ Persist the environment between calls to the unlifting function within a
+  -- particular thread.
   deriving (Eq, Ord, Show)
 
+-- | Limit setting for the 'ConcUnlift' strategy.
 data Limit
   = Limited Int
+  -- ^ Behavior dependent on the 'Persistence' setting.
+  --
+  -- For 'Ephemeral', it limits the amount of uses of the unlifting function in
+  -- threads distinct from its creator to @N@. The unlifting function will
+  -- create @N@ copies of the environment when called @N@ times and @K+1@ copies
+  -- when called @K < N@ times.
+  --
+  -- For 'Persistent', it limits the amount of threads, distinct from the
+  -- creator of the unlifting function, it can be called in to @N@. The amount
+  -- of calls to the unlifting function within a particular threads is
+  -- unlimited. The unlifting function will create @N@ copies of the environment
+  -- when called in @N@ threads and @K+1@ copies when called in @K < N@ threads.
   | Unlimited
+  -- ^ Unlimited use of the unlifting function.
   deriving (Eq, Ord, Show)
 
 -- | Get the current 'UnliftStrategy'.

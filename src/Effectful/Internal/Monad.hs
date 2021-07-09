@@ -57,9 +57,11 @@ import Control.Monad.Base
 import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
+import Control.Monad.Primitive
 import Control.Monad.Trans.Control
 import Data.Unique
 import GHC.Exts (oneShot)
+import GHC.IO (IO(..))
 import System.IO.Unsafe (unsafeDupablePerformIO)
 import qualified Control.Monad.Catch as E
 
@@ -174,6 +176,10 @@ instance Monad (Eff es) where
 
 instance MonadFix (Eff es) where
   mfix f = unsafeEff $ \es -> mfix $ \a -> unEff (f a) es
+
+instance IOE :> es => PrimMonad (Eff es) where
+  type PrimState (Eff es) = PrimState IO
+  primitive = unsafeEff_ . IO
 
 ----------------------------------------
 -- Exception

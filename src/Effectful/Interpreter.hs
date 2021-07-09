@@ -21,8 +21,9 @@ module Effectful.Interpreter
 
   -- *** 'IO'
   , localSeqUnliftIO
+  , localSeqLiftUnliftIO
   , localUnliftIO
-  , withLiftH
+  , localLiftUnliftIO
   ) where
 
 import Control.Exception
@@ -150,6 +151,21 @@ localSeqUnliftIO
   -> Eff es a
 localSeqUnliftIO (LocalEnv les) f = unsafeEff_ $ unEff (seqUnliftEff f) les
 
+-- | Create a local lifting and unlifting function with the 'SeqUnlift'
+-- strategy. For the general version see 'localLiftUnliftIO'.
+--
+-- /Note:/ the strategy applies only to the unlifting function, lifting function
+-- doesn't have any restrictions.
+localSeqLiftUnliftIO
+  :: IOE :> es
+  => LocalEnv localEs
+  -- ^ Local environment from the effect handler.
+  -> ((forall r. IO r -> Eff localEs r) -> (forall r. Eff localEs r -> IO r) -> IO a)
+  -- ^ Continuation with the lifting and unlifting function.
+  -> Eff es a
+localSeqLiftUnliftIO (LocalEnv les) f = unsafeEff_ $ do
+  unEff (seqUnliftEff $ f unsafeEff_) les
+
 -- | Create a local unlifting function with the given strategy.
 localUnlift
   :: LocalEnv localEs
@@ -175,7 +191,10 @@ localUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
   SeqUnlift      -> unEff (seqUnliftEff f) les
   ConcUnlift p b -> unEff (concUnliftEff p b f) les
 
--- | Create a local higher order lifting function.
+-- | Create a local lifting and unlifting function with the given strategy.
+--
+-- /Note:/ the strategy applies only to the unlifting function, lifting function
+-- doesn't have any restrictions.
 --
 -- Necessary for lifting 'Control.Concurrent.forkIOWithUnmask'-like operations:
 --
@@ -186,16 +205,21 @@ localUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
 --
 -- >>> :{
 -- runFork :: IOE :> es => Eff (Fork : es) a -> Eff es a
--- runFork = interpretM $ \env (ForkWithUnmask m) -> withLiftH $ \liftH -> do
---   localUnliftIO env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
---     forkIOWithUnmask $ \unmask -> unlift $ m $ liftH unmask
+-- runFork = interpretM $ \env (ForkWithUnmask m) -> do
+--   localLiftUnliftIO env (ConcUnlift Persistent $ Limited 1) $ \lift unlift -> do
+--     forkIOWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift
 -- :}
-withLiftH
+localLiftUnliftIO
   :: IOE :> es
-  => ((forall a b localEs. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
-  -- ^ Continuation with the higher order lifting function in scope.
-  -> Eff es r
-withLiftH k = k $ \f m -> unsafeEff $ f . unEff m
+  => LocalEnv localEs
+  -- ^ Local environment from the effect handler.
+  -> UnliftStrategy
+  -> ((forall r. IO r -> Eff localEs r) -> (forall r. Eff localEs r -> IO r) -> IO a)
+  -- ^ Continuation with the lifting and unlifting function in scope.
+  -> Eff es a
+localLiftUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
+  SeqUnlift      -> unEff (seqUnliftEff $ f unsafeEff_) les
+  ConcUnlift p b -> unEff (concUnliftEff p b $ f unsafeEff_) les
 
 -- $setup
 -- >>> import Control.Concurrent

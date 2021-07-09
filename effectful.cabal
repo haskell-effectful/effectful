@@ -147,7 +147,6 @@ benchmark bench
     build-depends:    base <5
                     , effectful
                     , tasty-bench
-                    , transformers
                     , unix
                     , unliftio
 

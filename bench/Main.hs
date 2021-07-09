@@ -12,10 +12,12 @@ import Test.Tasty.Bench
 
 import Countdown
 import FileSizes
+import Unlift
 
 main :: IO ()
 main = defaultMain
-  [ bgroup "countdown" $ map countdown [1000, 10000]
+  [ unliftBenchmark
+  , bgroup "countdown" $ map countdown [1000, 10000]
   , bgroup "filesize"  $ map filesize [100, 1000]
   ]
 

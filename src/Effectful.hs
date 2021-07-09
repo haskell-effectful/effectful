@@ -18,17 +18,35 @@ module Effectful
   , IOE
   , runIOE
 
+  -- *** Unlift strategies
+  , UnliftStrategy(..)
+  , Persistence(..)
+  , Limit(..)
+  , unliftStrategy
+  , withUnliftStrategy
+
   -- * Building 'Effect' handlers
 
   -- ** Basic handlers
   , interpret
   , interpretM
-  , interpretIO
 
   -- ** Derived handlers
   , reinterpret
   , reinterpretM
-  , reinterpretIO
+
+  -- ** Local operations
+  , LocalEnv
+
+  -- *** 'Eff'
+  , localSeqUnlift
+  , localUnlift
+
+  -- *** 'IO'
+  , localSeqUnliftIO
+  , localSeqLiftUnliftIO
+  , localUnliftIO
+  , localLiftUnliftIO
   ) where
 
 import Effectful.Interpreter

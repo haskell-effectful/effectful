@@ -61,15 +61,15 @@ execState :: s -> Eff (State s : es) a -> Eff es s
 execState s0 = reinterpretM (SP.execState s0) statePure
 
 statePure
-  :: SP.State s :> localEs
-  => RunIn es (Eff localEs)
-  -> State s (Eff es) a
-  -> Eff localEs a
-statePure run = \case
+  :: SP.State s :> es
+  => LocalEnv localEs
+  -> State s (Eff localEs) a
+  -> Eff es a
+statePure env = \case
   Get      -> SP.get
   Put s    -> SP.put s
   State f  -> SP.state f
-  StateM f -> SP.stateM (run . f)
+  StateM f -> localSeqUnlift env $ \run -> SP.stateM (run . f)
 
 ----------------------------------------
 -- MVar
@@ -84,15 +84,15 @@ execStateMVar :: s -> Eff (State s : es) a -> Eff es s
 execStateMVar s0 = reinterpretM (SM.execState s0) stateMVar
 
 stateMVar
-  :: SM.State s :> localEs
-  => (forall r. Eff es r -> Eff localEs r)
-  -> State s (Eff es) a
-  -> Eff localEs a
-stateMVar run = \case
+  :: SM.State s :> es
+  => LocalEnv localEs
+  -> State s (Eff localEs) a
+  -> Eff es a
+stateMVar env = \case
   Get      -> SM.get
   Put s    -> SM.put s
   State f  -> SM.state f
-  StateM f -> SM.stateM (run . f)
+  StateM f -> localSeqUnlift env $ \run -> SM.stateM (run . f)
 
 ----------------------------------------
 -- Operations

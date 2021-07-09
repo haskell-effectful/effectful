@@ -51,6 +51,16 @@ common language
                         TypeFamilies
                         TypeOperators
 
+library effectful-internal-utils
+    import:          language
+
+    build-depends:   base
+
+    hs-source-dirs:  utils
+    c-sources:       utils/utils.c
+
+    exposed-modules: Effectful.Internal.Utils
+
 library
     import:         language
 
@@ -59,13 +69,12 @@ library
     build-depends:    base >= 4.13 && <5
                     , async
                     , containers
+                    , effectful-internal-utils
                     , exceptions
-                    , ghc-prim
                     , monad-control
                     , primitive
                     , resourcet
                     , stm
-                    , transformers
                     , transformers-base
                     , unliftio-core
 
@@ -73,14 +82,12 @@ library
 
     exposed-modules: Effectful
                      Effectful.Async
-                     Effectful.Class.Reader
-                     Effectful.Class.State
-                     Effectful.Class.Writer
                      Effectful.Error
                      Effectful.Fail
                      Effectful.Internal.Effect
                      Effectful.Internal.Env
                      Effectful.Internal.Monad
+                     Effectful.Internal.Unlift
                      Effectful.Interpreter
                      Effectful.Monad
                      Effectful.Reader
@@ -92,6 +99,8 @@ library
                      Effectful.Writer
                      Effectful.Writer.Dynamic
                      Effectful.Writer.MVar
+
+  reexported-modules: Effectful.Internal.Utils
 
 test-suite test
     import:         language
@@ -113,6 +122,7 @@ test-suite test
     main-is:        Main.hs
 
     other-modules:  AsyncTests
+                    ConcurrencyTests
                     ErrorTests
                     StateTests
                     Utils
@@ -139,6 +149,7 @@ benchmark bench
                     , tasty-bench
                     , transformers
                     , unix
+                    , unliftio
 
     hs-source-dirs: bench
 
@@ -147,3 +158,4 @@ benchmark bench
 
     other-modules:  Countdown
                     FileSizes
+                    Unlift

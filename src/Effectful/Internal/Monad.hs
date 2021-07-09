@@ -282,7 +282,7 @@ instance IOE :> es => MonadUnliftIO (Eff es) where
 ----------------------------------------
 -- Primitive
 
--- | An effect to perform primitive state-transformer actions
+-- | An effect to perform primitive state-transformer actions.
 data PrimE :: Effect where
   PrimE :: PrimE m r
 

@@ -36,7 +36,9 @@ import Effectful.Internal.Monad
 ----------------------------------------
 -- Interpreter
 
--- | Representation of the local 'Eff' environment.
+-- | Opaque representation of the 'Eff' environment at the point of calling the
+-- 'send' function, i.e. right before the control is passed to the effect
+-- handler.
 newtype LocalEnv es = LocalEnv (Env es)
 
 data Interpreter (e :: Effect) = forall handlerEs. Interpreter
@@ -133,7 +135,7 @@ reinterpretM runHandlerEs interpreter m = unsafeEff $ \es -> do
 -- general version see 'localUnlift'.
 localSeqUnlift
   :: LocalEnv localEs
-  -- ^ Local environment from the effect handler.
+  -- ^ Local environment.
   -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
@@ -145,7 +147,7 @@ localSeqUnlift (LocalEnv les) f = unsafeEff $ \es -> do
 localSeqUnliftIO
   :: IOE :> es
   => LocalEnv localEs
-  -- ^ Local environment from the effect handler.
+  -- ^ Local environment.
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
@@ -159,7 +161,7 @@ localSeqUnliftIO (LocalEnv les) f = unsafeEff_ $ unEff (seqUnliftEff f) les
 localSeqLiftUnliftIO
   :: IOE :> es
   => LocalEnv localEs
-  -- ^ Local environment from the effect handler.
+  -- ^ Local environment.
   -> ((forall r. IO r -> Eff localEs r) -> (forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the lifting and unlifting function.
   -> Eff es a
@@ -169,7 +171,7 @@ localSeqLiftUnliftIO (LocalEnv les) f = unsafeEff_ $ do
 -- | Create a local unlifting function with the given strategy.
 localUnlift
   :: LocalEnv localEs
-  -- ^ Local environment from the effect handler.
+  -- ^ Local environment.
   -> UnliftStrategy
   -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the unlifting function in scope.
@@ -182,7 +184,7 @@ localUnlift (LocalEnv les) unlift f = unsafeEff $ \es -> case unlift of
 localUnliftIO
   :: IOE :> es
   => LocalEnv localEs
-  -- ^ Local environment from the effect handler.
+  -- ^ Local environment.
   -> UnliftStrategy
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
@@ -212,7 +214,7 @@ localUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
 localLiftUnliftIO
   :: IOE :> es
   => LocalEnv localEs
-  -- ^ Local environment from the effect handler.
+  -- ^ Local environment.
   -> UnliftStrategy
   -> ((forall r. IO r -> Eff localEs r) -> (forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the lifting and unlifting function in scope.

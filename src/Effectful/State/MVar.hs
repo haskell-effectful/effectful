@@ -32,7 +32,8 @@ newtype State s :: Effect where
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = do
   v <- unsafeEff_ $ newMVar s
-  evalEffect (IdE (State v)) $ (,) <$> m <*> get
+  a <- evalEffect (IdE (State v)) m
+  (a, ) <$> unsafeEff_ (readMVar v)
 
 evalState :: s -> Eff (State s : es) a -> Eff es a
 evalState s m = do
@@ -42,7 +43,8 @@ evalState s m = do
 execState :: s -> Eff (State s : es) a -> Eff es s
 execState s m = do
   v <- unsafeEff_ $ newMVar s
-  evalEffect (IdE (State v)) $ m *> get
+  _ <- evalEffect (IdE (State v)) m
+  unsafeEff_ $ readMVar v
 
 get :: State s :> es => Eff es s
 get = do

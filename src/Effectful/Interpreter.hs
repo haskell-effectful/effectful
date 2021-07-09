@@ -134,7 +134,7 @@ localSeqUnlift
   :: LocalEnv localEs
   -- ^ Local environment from the effect handler.
   -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
-  -- ^ Continuation with the unlifting function.
+  -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 localSeqUnlift (LocalEnv les) f = unsafeEff $ \es -> do
   unEff (seqUnliftEff $ \k -> unEff (f $ unsafeEff_ . k) es) les
@@ -146,7 +146,7 @@ localSeqUnliftIO
   => LocalEnv localEs
   -- ^ Local environment from the effect handler.
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
-  -- ^ Continuation with the unlifting function.
+  -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 localSeqUnliftIO (LocalEnv les) f = unsafeEff_ $ unEff (seqUnliftEff f) les
 
@@ -156,7 +156,7 @@ localUnlift
   -- ^ Local environment from the effect handler.
   -> UnliftStrategy
   -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
-  -- ^ Continuation with the unlifting function.
+  -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 localUnlift (LocalEnv les) unlift f = unsafeEff $ \es -> case unlift of
   SeqUnlift      -> unEff (seqUnliftEff $ \k -> unEff (f $ unsafeEff_ . k) es) les
@@ -169,13 +169,13 @@ localUnliftIO
   -- ^ Local environment from the effect handler.
   -> UnliftStrategy
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
-  -- ^ Continuation with the unlifting function.
+  -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 localUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
   SeqUnlift      -> unEff (seqUnliftEff f) les
   ConcUnlift p b -> unEff (concUnliftEff p b f) les
 
--- | Bring into scope a higher order lifting function.
+-- | Create a local higher order lifting function.
 --
 -- Necessary for lifting 'Control.Concurrent.forkIOWithUnmask'-like operations:
 --
@@ -191,9 +191,10 @@ localUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
 --     forkIOWithUnmask $ \unmask -> unlift $ m $ liftH unmask
 -- :}
 withLiftH
-  :: IOE :> baseEs
-  => ((forall a b es. (IO a -> IO b) -> Eff es a -> Eff es b) -> Eff baseEs r)
-  -> Eff baseEs r
+  :: IOE :> es
+  => ((forall a b localEs. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
+  -- ^ Continuation with the higher order lifting function in scope.
+  -> Eff es r
 withLiftH k = k $ \f m -> unsafeEff $ f . unEff m
 
 -- $setup

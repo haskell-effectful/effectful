@@ -287,7 +287,7 @@ data PrimE :: Effect where
   PrimE :: PrimE m r
 
 -- | Run an 'Eff' operation with primitive state-transformer actions.
-runPrimE :: Eff (PrimE : es) a -> Eff es a
+runPrimE :: IOE :> es => Eff (PrimE : es) a -> Eff es a
 runPrimE = evalEffect (IdE PrimE)
 
 instance PrimE :> es => PrimMonad (Eff es) where

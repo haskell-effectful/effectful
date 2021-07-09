@@ -5,3 +5,7 @@ tests:          True
 benchmarks:     True
 
 ghcup-jobs:     >=9.2
+
+raw-project
+  package effectful
+    flags: +benchmark-foreign-libraries

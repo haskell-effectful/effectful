@@ -191,6 +191,8 @@ jobs:
           echo "package effectful" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           cat >> cabal.project <<EOF
+          package effectful
+            flags: +benchmark-foreign-libraries
           EOF
           if $HEADHACKAGE; then
           echo "allow-newer: $($HCPKG list --simple-output | sed -E 's/([a-zA-Z-]+)-[0-9.]+/*:\1,/g')" >> cabal.project

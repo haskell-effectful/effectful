@@ -286,7 +286,7 @@ instance IOE :> es => MonadUnliftIO (Eff es) where
 data PrimE :: Effect where
   PrimE :: PrimE m r
 
--- | Run an 'Eff' with primitive state-transformer actions
+-- | Run an 'Eff' operation with primitive state-transformer actions.
 runPrimE :: Eff (PrimE : es) a -> Eff es a
 runPrimE = evalEffect (IdE PrimE)
 

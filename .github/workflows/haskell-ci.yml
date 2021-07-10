@@ -226,9 +226,9 @@ jobs:
       - name: doctest
         run: |
           if [ $((HCNUMVER < 90200)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStrictData -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XStrictData -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
           if [ $((HCNUMVER < 90200)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStrictData -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators utils ; fi
+          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XStrictData -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators utils ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful} || false

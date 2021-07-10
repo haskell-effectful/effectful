@@ -24,8 +24,8 @@ module Effectful.Internal.Monad
   , runEff
 
   -- * Primitive
-  , PrimE
-  , runPrimE
+  , Prim
+  , runPrim
 
   -- ** Unlift strategies
   , UnliftStrategy(..)
@@ -305,14 +305,14 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
 -- Primitive
 
 -- | An effect to perform primitive state-transformer actions.
-data PrimE :: Effect where
-  PrimE :: PrimE m r
+data Prim :: Effect where
+  Prim :: Prim m r
 
 -- | Run an 'Eff' operation with primitive state-transformer actions.
-runPrimE :: IOE :> es => Eff (PrimE : es) a -> Eff es a
-runPrimE = evalEffect (IdE PrimE)
+runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
+runPrim = evalEffect (IdE Prim)
 
-instance PrimE :> es => PrimMonad (Eff es) where
+instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = PrimState IO
   primitive = unsafeEff_ . IO
 

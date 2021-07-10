@@ -12,8 +12,8 @@ module Effectful.Monad
   , runEff
 
   -- * Primitive actions
-  , PrimE
-  , runPrimE
+  , Prim
+  , runPrim
 
   -- ** Unlift strategies
   , UnliftStrategy(..)

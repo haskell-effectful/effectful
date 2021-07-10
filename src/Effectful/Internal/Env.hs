@@ -31,10 +31,9 @@ import Control.Monad
 import Control.Monad.Primitive
 import Data.IORef
 import Data.Primitive.SmallArray
-import Data.Word
 import GHC.Exts (Any)
 import Unsafe.Coerce
-import qualified Data.Map.Strict as M
+import qualified Data.IntMap.Strict as IM
 
 import Effectful.Internal.Effect
 
@@ -126,21 +125,16 @@ data EnvRef = EnvRef
 ----------------------------------------
 -- ForkId
 
-newtype ForkId = ForkId Word64
-  deriving (Eq, Ord, Show)
-
--- | Implicit 'ForkId' of the 'EnvRef' directly available from 'Env'.
-globalFid :: ForkId
-globalFid = ForkId 0
+newtype ForkId = ForkId { unForkId :: Int }
 
 -- | 'ForkId' generation.
 newtype ForkIdGen = ForkIdGen (IORef ForkId)
 
--- | Create a new thread local unique generator.
+-- | Create a new thread local 'ForkId' generator.
 newForkIdGen :: IO ForkIdGen
 newForkIdGen = ForkIdGen <$> newIORef (ForkId 1)
 
--- | Clone the unique generator for use in a different thread.
+-- | Clone the 'ForkId' generator for use in a different thread.
 cloneForkIdGen :: ForkIdGen -> IO ForkIdGen
 cloneForkIdGen (ForkIdGen ref) = fmap ForkIdGen . newIORef =<< readIORef ref
 
@@ -172,9 +166,13 @@ emptyEnv = Env NoFork <$> emptyEnvRef <*> newForkIdGen
 -- | Clone the environment.
 cloneEnv :: Env es -> IO (Env es)
 cloneEnv (Env NoFork gref0 gen0) = do
+  EnvRef n es0 fs0 <- readIORef gref0
+  es  <- cloneSmallMutableArray es0 0 (sizeofSmallMutableArray es0)
+  fs  <- cloneSmallMutableArray fs0 0 (sizeofSmallMutableArray fs0)
   gen <- cloneForkIdGen gen0
-  cache <- newIORef M.empty
-  gref <- cloneEnvRef gen cache globalFid gref0
+  gref <- newIORef $ EnvRef n es fs
+  cache <- newIORef IM.empty
+  relinkData gref gen cache es fs n
   pure $ Env NoFork gref gen
 cloneEnv (Env forks@(Forks _ baseIx lref0 _) gref0 gen0) = do
   EnvRef _ es0 fs0 <- readIORef gref0
@@ -187,8 +185,8 @@ cloneEnv (Env forks@(Forks _ baseIx lref0 _) gref0 gen0) = do
   copySmallMutableArray fs 0 fs0 0 baseN
   gen <- cloneForkIdGen gen0
   gref <- newIORef $ EnvRef len es fs
-  cache <- newIORef $ M.singleton globalFid gref
-  relinkData gen cache es fs n
+  cache <- newIORef IM.empty
+  relinkData gref gen cache es fs n
   -- The forked environment is flattened and becomes the global one.
   pure $ Env NoFork gref gen
 {-# NOINLINE cloneEnv #-}
@@ -238,33 +236,18 @@ copyForks es fs len = \case
     copySmallMutableArray fs baseIx fs0 0 n
     copyForks es fs baseIx forks
 
-type EnvRefCache = IORef (M.Map ForkId (IORef EnvRef))
-
--- | Clone the 'EnvRef' and put it in a cache.
-cloneEnvRef
-  :: ForkIdGen
-  -> EnvRefCache
-  -> ForkId
-  -> IORef EnvRef
-  -> IO (IORef EnvRef)
-cloneEnvRef gen cache fid ref0 = do
-  EnvRef n es0 fs0 <- readIORef ref0
-  es  <- cloneSmallMutableArray es0 0 (sizeofSmallMutableArray es0)
-  fs  <- cloneSmallMutableArray fs0 0 (sizeofSmallMutableArray fs0)
-  ref <- newIORef $ EnvRef n es fs
-  modifyIORef' cache $ M.insert fid ref
-  relinkData gen cache es fs n
-  pure ref
+type EnvRefCache = IORef (IM.IntMap (IORef EnvRef))
 
 -- | Relink local environments hiding in the interpreters.
 relinkData
-  :: ForkIdGen
+  :: IORef EnvRef
+  -> ForkIdGen
   -> EnvRefCache
   -> SmallMutableArray RealWorld Any
   -> SmallMutableArray RealWorld Any
   -> Int
   -> IO ()
-relinkData gen cache es fs = \case
+relinkData gref gen cache es fs = \case
   0 -> pure ()
   n -> do
     let i = n - 1
@@ -272,25 +255,42 @@ relinkData gen cache es fs = \case
     readSmallArray es i
       >>= f relinkEnv . fromAny
       >>= writeSmallArray es i . toAny
-    relinkData gen cache es fs i
+    relinkData gref gen cache es fs i
   where
     relinkEnv :: Env es -> IO (Env es)
-    relinkEnv (Env forks _ _) = do
-      Just gref <- M.lookup globalFid <$> readIORef cache
-      Env <$> relinkForks gen cache forks <*> pure gref <*> pure gen
+    relinkEnv (Env forks _ _) = Env <$> relinkForks gref gen cache forks
+                                    <*> pure gref
+                                    <*> pure gen
 
-relinkForks :: ForkIdGen -> EnvRefCache -> Forks -> IO Forks
-relinkForks gen cache = \case
+relinkForks :: IORef EnvRef -> ForkIdGen -> EnvRefCache -> Forks -> IO Forks
+relinkForks gref gen cache = \case
   NoFork -> pure NoFork
   Forks fid baseIx lref0 forks -> do
     -- A specific IORef EnvRef can be held by more than one local environment
     -- and we need to replace all its occurences with the same, new value
     -- containing its clone.
-    readIORef cache >>= pure . M.lookup fid >>= \case
+    readIORef cache >>= pure . IM.lookup (unForkId fid) >>= \case
       Just lref -> Forks fid baseIx <$> pure lref
-                                    <*> relinkForks gen cache forks
-      Nothing   -> Forks fid baseIx <$> cloneEnvRef gen cache fid lref0
-                                    <*> relinkForks gen cache forks
+                                    <*> relinkForks gref gen cache forks
+      Nothing   -> Forks fid baseIx <$> cloneEnvRef gref gen cache fid lref0
+                                    <*> relinkForks gref gen cache forks
+
+-- | Clone the local 'EnvRef' and put it in a cache.
+cloneEnvRef
+  :: IORef EnvRef
+  -> ForkIdGen
+  -> EnvRefCache
+  -> ForkId
+  -> IORef EnvRef
+  -> IO (IORef EnvRef)
+cloneEnvRef gref gen cache fid lref0 = do
+  EnvRef n es0 fs0 <- readIORef lref0
+  es  <- cloneSmallMutableArray es0 0 (sizeofSmallMutableArray es0)
+  fs  <- cloneSmallMutableArray fs0 0 (sizeofSmallMutableArray fs0)
+  ref <- newIORef $ EnvRef n es fs
+  modifyIORef' cache $ IM.insert (unForkId fid) ref
+  relinkData gref gen cache es fs n
+  pure ref
 
 ----------------------------------------
 

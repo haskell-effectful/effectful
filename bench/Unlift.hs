@@ -51,7 +51,7 @@ shallowConc
   -> Eff '[IOE] ()
   -> Benchmark
 shallowConc name n r f = bgroup name
-  [ bench "reference" $ nfAppIO (runShallow . A.runAsyncE) r
+  [ bench "AsyncE" $ nfAppIO (runShallow . A.runAsyncE) r
   , bench "ephemeral/limited" $ nfAppIO
     (runShallow . withUnliftStrategy (ConcUnlift Ephemeral $ Limited n)) f
   , bench "ephemeral/unlimited" $ nfAppIO
@@ -74,7 +74,7 @@ deepConc
           , IOE] ()
   -> Benchmark
 deepConc name n r f = bgroup name
-  [ bench "reference" $ nfAppIO (runDeep . A.runAsyncE) r
+  [ bench "AsyncE" $ nfAppIO (runDeep . A.runAsyncE) r
   , bench "ephemeral/limited" $ nfAppIO
     (runDeep . withUnliftStrategy (ConcUnlift Ephemeral $ Limited n)) f
   , bench "ephemeral/unlimited" $ nfAppIO

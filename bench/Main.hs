@@ -10,13 +10,15 @@ import Criterion.Main
 import Test.Tasty.Bench
 #endif
 
+import Concurrency
 import Countdown
 import FileSizes
 import Unlift
 
 main :: IO ()
 main = defaultMain
-  [ unliftBenchmark
+  [ concurrencyBenchmark
+  , unliftBenchmark
   , bgroup "countdown" $ map countdown [1000, 10000]
   , bgroup "filesize"  $ map filesize [100, 1000]
   ]

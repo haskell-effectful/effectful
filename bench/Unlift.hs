@@ -14,6 +14,7 @@ import UnliftIO
 
 import Effectful
 import Effectful.State.Dynamic
+import Utils
 
 unliftBenchmark :: Benchmark
 unliftBenchmark = bgroup "unlift"
@@ -24,7 +25,7 @@ unliftBenchmark = bgroup "unlift"
     ]
   , bgroup "shallow"
     [ bgroup "dummy"
-      [ bench "seq" $ nfAppIO (runShallow SeqUnlift) benchDummy
+      [ bench "seq" $ nfAppIO (runShallow . withUnliftStrategy SeqUnlift) benchDummy
       , shallowConc "conc" 1 benchDummy
       ]
     , shallowConc "async" 1 benchAsync
@@ -32,30 +33,13 @@ unliftBenchmark = bgroup "unlift"
     ]
   , bgroup "deep"
     [ bgroup "dummy"
-      [ bench "seq" $ nfAppIO (runDeep SeqUnlift) benchDummy
+      [ bench "seq" $ nfAppIO (runDeep . withUnliftStrategy SeqUnlift) benchDummy
       , deepConc "conc" 1 benchDummy
       ]
     , deepConc "async" 1 benchAsync
     , deepConc "concurrently" 2 benchConcurrently
     ]
   ]
-
-----------------------------------------
-
-runShallow :: UnliftStrategy -> Eff '[IOE] a -> IO a
-runShallow s = runIOE . withUnliftStrategy s
-
-runDeep
-  :: UnliftStrategy
-  -> Eff '[ State (), State (), State (), State (), State ()
-          , State (), State (), State (), State (), State ()
-          , IOE
-          ] a
-  -> IO a
-runDeep s = runIOE
-  . evalState () . evalState () . evalState () . evalState () . evalState ()
-  . evalState () . evalState () . evalState () . evalState () . evalState ()
-  . withUnliftStrategy s
 
 ----------------------------------------
 
@@ -66,13 +50,13 @@ shallowConc
   -> Benchmark
 shallowConc name n f = bgroup name
   [ bench "ephemeral/limited" $ nfAppIO
-    (runShallow (ConcUnlift Ephemeral $ Limited n)) f
+    (runShallow . withUnliftStrategy (ConcUnlift Ephemeral $ Limited n)) f
   , bench "ephemeral/unlimited" $ nfAppIO
-    (runShallow (ConcUnlift Ephemeral Unlimited)) f
+    (runShallow . withUnliftStrategy (ConcUnlift Ephemeral Unlimited)) f
   , bench "persistent/limited" $ nfAppIO
-    (runShallow (ConcUnlift Persistent $ Limited n)) f
+    (runShallow . withUnliftStrategy (ConcUnlift Persistent $ Limited n)) f
   , bench "persistent/unlimited" $ nfAppIO
-    (runShallow (ConcUnlift Persistent Unlimited)) f
+    (runShallow . withUnliftStrategy (ConcUnlift Persistent Unlimited)) f
   ]
 
 deepConc
@@ -84,13 +68,13 @@ deepConc
   -> Benchmark
 deepConc name n f = bgroup name
   [ bench "ephemeral/limited" $ nfAppIO
-    (runDeep (ConcUnlift Ephemeral $ Limited n)) f
+    (runDeep . withUnliftStrategy (ConcUnlift Ephemeral $ Limited n)) f
   , bench "ephemeral/unlimited" $ nfAppIO
-    (runDeep (ConcUnlift Ephemeral Unlimited)) f
+    (runDeep . withUnliftStrategy (ConcUnlift Ephemeral Unlimited)) f
   , bench "persistent/limited" $ nfAppIO
-    (runDeep (ConcUnlift Persistent $ Limited n)) f
+    (runDeep . withUnliftStrategy (ConcUnlift Persistent $ Limited n)) f
   , bench "persistent/unlimited" $ nfAppIO
-    (runDeep (ConcUnlift Persistent Unlimited)) f
+    (runDeep . withUnliftStrategy (ConcUnlift Persistent Unlimited)) f
   ]
 
 ----------------------------------------

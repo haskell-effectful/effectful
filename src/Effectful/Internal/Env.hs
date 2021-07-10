@@ -132,7 +132,7 @@ newtype ForkIdGen = ForkIdGen (IORef ForkId)
 
 -- | Create a new thread local 'ForkId' generator.
 newForkIdGen :: IO ForkIdGen
-newForkIdGen = ForkIdGen <$> newIORef (ForkId 1)
+newForkIdGen = ForkIdGen <$> newIORef (ForkId 0)
 
 -- | Clone the 'ForkId' generator for use in a different thread.
 cloneForkIdGen :: ForkIdGen -> IO ForkIdGen

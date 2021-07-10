@@ -23,13 +23,13 @@ concurrencyBenchmark = bgroup "concurrency"
   [ bench "async (IO)" $ nfAppIO asyncBenchIO (pure 1)
   , bgroup "shallow"
     [ bench "async (Eff)" $ nfAppIO (runShallow . A.runAsyncE . asyncBench) (pure 1)
-    , bench "Fork (unlift)" $ nfAppIO (runShallow . runFork1 . forkBench) (pure 1)
-    , bench "Fork (lift/unlift)" $ nfAppIO (runShallow . runFork2 . forkBench) (pure 1)
+    , bench "Fork (1)" $ nfAppIO (runShallow . runFork1 . forkBench) (pure 1)
+    , bench "Fork (2)" $ nfAppIO (runShallow . runFork2 . forkBench) (pure 1)
     ]
   , bgroup "deep"
     [ bench "async (Eff)" $ nfAppIO (runDeep . A.runAsyncE . asyncBench) (pure 1)
-    , bench "Fork (unlift)" $ nfAppIO (runDeep . runFork1 . forkBench) (pure 1)
-    , bench "Fork (lift/unlift)" $ nfAppIO (runDeep . runFork2 . forkBench) (pure 1)
+    , bench "Fork (1)" $ nfAppIO (runDeep . runFork1 . forkBench) (pure 1)
+    , bench "Fork (2)" $ nfAppIO (runDeep . runFork2 . forkBench) (pure 1)
     ]
   ]
 

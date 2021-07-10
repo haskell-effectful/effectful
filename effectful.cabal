@@ -34,6 +34,7 @@ common language
     default-extensions: BangPatterns
                         ConstraintKinds
                         DataKinds
+                        DeriveFunctor
                         FlexibleContexts
                         FlexibleInstances
                         GADTs
@@ -45,6 +46,7 @@ common language
                         RecordWildCards
                         RoleAnnotations
                         ScopedTypeVariables
+                        StandaloneDeriving
                         StrictData
                         TupleSections
                         TypeApplications
@@ -77,6 +79,7 @@ library
                     , stm
                     , transformers-base
                     , unliftio-core
+                    , unliftio
 
     hs-source-dirs:  src
 

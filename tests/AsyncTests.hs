@@ -19,6 +19,8 @@ asyncTests = testGroup "Async"
   [ testCase "local state" test_localState
   , testCase "shared state" test_sharedState
   , testCase "error handling" test_errorHandling
+  , testCase "async with unmask" test_asyncWithUnmask
+  , testCase "pooled workers" test_pooledWorkers
   ]
 
 test_localState :: Assertion
@@ -70,3 +72,29 @@ test_errorHandling = runIOE . runAsyncE . evalStateMVar (0::Int) $ do
 
     err :: String
     err = "thrown from async"
+
+test_asyncWithUnmask :: Assertion
+test_asyncWithUnmask = runIOE . runAsyncE . evalState "initial" $ do
+  x <- asyncWithUnmask $ \unmask -> do
+    liftIO $ threadDelay 10000
+    r1 <- get @String -- 2
+    unmask $ put "unmask"
+    r2 <- get @String -- 3
+    pure (r1, r2)
+  put "changed"  -- 1
+  (inner1, inner2) <- wait x
+  outer <- get  -- 4
+  U.assertEqual "expected result"
+    ("initial", "unmask", "changed")
+    (inner1, inner2, outer)
+
+test_pooledWorkers :: Assertion
+test_pooledWorkers = runIOE . runAsyncE . evalState (0::Int) $ do
+  x <- pooledForConcurrentlyN threads [1..n] $ \k -> do
+    r <- get @Int
+    modify @Int (+1)
+    pure $ k + r
+  U.assertEqual "expected result" [1..n] x
+  where
+    n = 10
+    threads = 4

@@ -253,19 +253,31 @@ link2Only f a b = unsafeEff_ $ A.link2Only f a b
 
 -- | Generalized version of 'A.race'.
 race :: AsyncE :> es => Eff es a -> Eff es b -> Eff es (Either a b)
-race ma mb = withAsync ma $ \a -> withAsync mb $ \b -> waitEither a b
+race ma mb = unsafeEff $ \es -> do
+  esA <- cloneEnv es
+  esB <- cloneEnv es
+  A.race (unEff ma esA) (unEff mb esB)
 
 -- | Generalized version of 'A.race_'.
 race_ ::  AsyncE :> es => Eff es a -> Eff es b -> Eff es ()
-race_ ma mb = withAsync ma $ \a -> withAsync mb $ \b -> waitEither_ a b
+race_ ma mb = unsafeEff $ \es -> do
+  esA <- cloneEnv es
+  esB <- cloneEnv es
+  A.race_ (unEff ma esA) (unEff mb esB)
 
 -- | Generalized version of 'A.concurrently'.
 concurrently :: AsyncE :> es => Eff es a -> Eff es b -> Eff es (a, b)
-concurrently ma mb = withAsync ma $ \a -> withAsync mb $ \b -> waitBoth a b
+concurrently ma mb = unsafeEff $ \es -> do
+  esA <- cloneEnv es
+  esB <- cloneEnv es
+  A.concurrently (unEff ma esA) (unEff mb esB)
 
 -- | Generalized version of 'A.concurrently_'.
 concurrently_ :: AsyncE :> es => Eff es a -> Eff es b -> Eff es ()
-concurrently_ ma mb = void $ concurrently ma mb
+concurrently_ ma mb = unsafeEff $ \es -> do
+  esA <- cloneEnv es
+  esB <- cloneEnv es
+  A.concurrently_ (unEff ma esA) (unEff mb esB)
 
 -- | Generalized version of 'A.mapConcurrently'.
 mapConcurrently
@@ -340,34 +352,36 @@ liftAsync
   :: (IO a -> IO (Async a))
   -> Eff es a
   -> Eff es (Async a)
-liftAsync fork action = unsafeEff $ \es0 -> do
-  es <- cloneEnv es0
-  fork $ unEff action es
+liftAsync fork action = unsafeEff $ \es -> do
+  esA <- cloneEnv es
+  fork $ unEff action esA
 
 liftAsyncWithUnmask
   :: (((forall b. IO b -> IO b) -> IO a) -> IO (Async a))
   -> ((forall b. Eff es b -> Eff es b) -> Eff es a)
   -> Eff es (Async a)
-liftAsyncWithUnmask fork action = unsafeEff $ \es0 -> do
-  es <- cloneEnv es0
-  fork $ \unmask -> unEff (action $ \m -> unsafeEff $ unmask . unEff m) es
+liftAsyncWithUnmask fork action = do
+  unsafeWithLiftSeqOp $ \liftSeqOp -> unsafeEff $ \es -> do
+    esA <- cloneEnv es
+    fork $ \unmask -> unEff (action $ liftSeqOp unmask) esA
 
 liftWithAsync
   :: (IO a -> (Async a -> IO b) -> IO b)
   -> Eff es a
   -> (Async a -> Eff es b)
   -> Eff es b
-liftWithAsync withA action k = unsafeEff $ \es0 -> do
-  es <- cloneEnv es0
-  withA (unEff action es)
-        (\a -> unEff (k a) es0)
+liftWithAsync withA action k = unsafeEff $ \es -> do
+  esA <- cloneEnv es
+  withA (unEff action esA)
+        (\a -> unEff (k a) es)
 
 liftWithAsyncWithUnmask
   :: (((forall c. IO c -> IO c) -> IO a) -> (Async a -> IO b) -> IO b)
   -> ((forall c. Eff es c -> Eff es c) -> Eff es a)
   -> (Async a -> Eff es b)
   -> Eff es b
-liftWithAsyncWithUnmask withA action k = unsafeEff $ \es0 -> do
-  es <- cloneEnv es0
-  withA (\unmask -> unEff (action $ \m -> unsafeEff $ unmask . unEff m) es)
-        (\a -> unEff (k a) es0)
+liftWithAsyncWithUnmask withA action k = do
+  unsafeWithLiftSeqOp $ \liftSeqOp -> unsafeEff $ \es -> do
+    esA <- cloneEnv es
+    withA (\unmask -> unEff (action $ liftSeqOp unmask) esA)
+          (\a -> unEff (k a) es)

@@ -457,25 +457,25 @@ data Conc es a where
 
 deriving instance Functor (Conc es)
 
-instance AsyncE :> es => Applicative (Conc es) where
+instance Applicative (Conc es) where
   pure   = Pure
   (<*>)  = Apply
   (<*)   = LiftA2 (\x _ -> x)
   (*>)   = LiftA2 (\_ y -> y)
   liftA2 = LiftA2
 
-instance AsyncE :> es => Alternative (Conc es) where
+instance Alternative (Conc es) where
   empty = Empty
   (<|>) = Alt
 
-instance (AsyncE :> es, Semigroup a) => Semigroup (Conc es a) where
+instance Semigroup a => Semigroup (Conc es a) where
   (<>) = liftA2 (<>)
 
-instance (AsyncE :> es, Monoid a) => Monoid (Conc es a) where
+instance Monoid a => Monoid (Conc es a) where
   mempty = pure mempty
 
 -- | Lifted 'U.conc'.
-conc :: AsyncE :> es => Eff es a -> Conc es a
+conc :: Eff es a -> Conc es a
 conc = Action
 
 -- | Lifted 'U.runConc'.

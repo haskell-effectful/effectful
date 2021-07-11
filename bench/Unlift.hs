@@ -26,7 +26,8 @@ unliftBenchmark = bgroup "unlift"
     ]
   , bgroup "shallow"
     [ bgroup "dummy"
-      [ bench "seq" $ nfAppIO (runShallow . withUnliftStrategy SeqUnlift) benchDummy
+      [ bench "noop" $ nfAppIO runShallow benchDummyE
+      , bench "seq" $ nfAppIO runShallow benchDummy
       , shallowConc "conc" 1 benchDummyE benchDummy
       ]
     , shallowConc "async" 1 benchAsyncE benchAsync
@@ -34,7 +35,8 @@ unliftBenchmark = bgroup "unlift"
     ]
   , bgroup "deep"
     [ bgroup "dummy"
-      [ bench "seq" $ nfAppIO (runDeep . withUnliftStrategy SeqUnlift) benchDummy
+      [ bench "noop" $ nfAppIO runDeep benchDummyE
+      , bench "seq" $ nfAppIO runDeep benchDummy
       , deepConc "conc" 1 benchDummyE benchDummy
       ]
     , deepConc "async" 1 benchAsyncE benchAsync

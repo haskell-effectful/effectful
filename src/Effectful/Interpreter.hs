@@ -139,8 +139,8 @@ localSeqUnlift
   -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-localSeqUnlift (LocalEnv les) f = unsafeEff $ \es -> do
-  unEff (unsafeSeqUnliftEff $ \unlift -> unEff (f $ unsafeEff_ . unlift) es) les
+localSeqUnlift (LocalEnv les) k = unsafeEff $ \es -> do
+  unsafeSeqUnliftEff les $ \unlift -> unEff (k $ unsafeEff_ . unlift) es
 
 -- | Create a local unlifting function with the 'SeqUnlift' strategy. For the
 -- general version see 'localUnliftIO'.
@@ -151,7 +151,7 @@ localSeqUnliftIO
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-localSeqUnliftIO (LocalEnv les) f = unsafeEff_ $ unEff (unsafeSeqUnliftEff f) les
+localSeqUnliftIO (LocalEnv les) k = unsafeEff_ $ unsafeSeqUnliftEff les k
 
 -- | Create a local unlifting function with the given strategy.
 localUnlift
@@ -161,11 +161,11 @@ localUnlift
   -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-localUnlift (LocalEnv les) strategy f = unsafeEff $ \es -> case strategy of
-  SeqUnlift ->
-    unEff (unsafeSeqUnliftEff $ \unlift -> unEff (f $ unsafeEff_ . unlift) es) les
-  ConcUnlift p l ->
-    unEff (unsafeConcUnliftEff p l $ \unlift -> unEff (f $ unsafeEff_ . unlift) es) les
+localUnlift (LocalEnv les) strategy k = unsafeEff $ \es -> case strategy of
+  SeqUnlift -> unsafeSeqUnliftEff les $ \unlift -> do
+    unEff (k $ unsafeEff_ . unlift) es
+  ConcUnlift p l -> unsafeConcUnliftEff les p l $ \unlift -> do
+    unEff (k $ unsafeEff_ . unlift) es
 
 -- | Create a local unlifting function with the given strategy.
 localUnliftIO
@@ -176,15 +176,15 @@ localUnliftIO
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-localUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
-  SeqUnlift      -> unEff (unsafeSeqUnliftEff f) les
-  ConcUnlift p l -> unEff (unsafeConcUnliftEff p l f) les
+localUnliftIO (LocalEnv les) unlift k = unsafeEff_ $ case unlift of
+  SeqUnlift      -> unsafeSeqUnliftEff les k
+  ConcUnlift p l -> unsafeConcUnliftEff les p l k
 
 -- | Create a local unlifting function with the given strategy along with an
 -- unrestricted lifting function.
 --
--- Useful for lifting local 'Eff' operations where the monadic action shows in
--- both positive and negative position.
+-- Useful for lifting 'IO' operations where the monadic action shows in both
+-- positive (as a result) and negative (as an argument) position.
 --
 -- /Note:/ depending on the operations you're lifting, 'localUnliftIO' along
 -- with 'withLiftSeqOp' might be enough and is more efficient.
@@ -196,9 +196,9 @@ localLiftUnliftIO
   -> ((forall r. IO r -> Eff localEs r) -> (forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the lifting and unlifting function in scope.
   -> Eff es a
-localLiftUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
-  SeqUnlift      -> unEff (unsafeSeqUnliftEff $ f unsafeEff_) les
-  ConcUnlift p l -> unEff (unsafeConcUnliftEff p l $ f unsafeEff_) les
+localLiftUnliftIO (LocalEnv les) unlift k = unsafeEff_ $ case unlift of
+  SeqUnlift      -> unsafeSeqUnliftEff les $ k unsafeEff_
+  ConcUnlift p l -> unsafeConcUnliftEff les p l $ k unsafeEff_
 
 -- | Utility for lifting 'IO' actions of type
 --
@@ -208,8 +208,8 @@ localLiftUnliftIO (LocalEnv les) unlift f = unsafeEff_ $ case unlift of
 --
 -- @forall localEs. 'Eff' localEs a -> 'Eff' localEs b@
 --
--- /Note:/ the 'IO' operation must not try to run its argument in a different
--- thread, attempting to do so will result in a runtime error.
+-- /Note:/ the 'IO' operation must not run its argument in a separate thread,
+-- attempting to do so will result in a runtime error.
 --
 -- Useful e.g. for lifting the unmasking function in
 -- 'Control.Exception.mask'-like operations:

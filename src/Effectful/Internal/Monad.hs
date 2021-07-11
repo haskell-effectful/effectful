@@ -132,7 +132,7 @@ unsafeEff m = Eff (oneShot m)
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
 
--- | Utility for lifting sequential 'IO' actions of type
+-- | Utility for lifting 'IO' actions of type
 --
 -- @'IO' a -> 'IO' b@
 --
@@ -140,18 +140,19 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 --
 -- @forall localEs. 'Eff' localEs a -> 'Eff' localEs b@
 --
--- /Note:/ the 'IO' operation must not try to run its argument in a different
--- thread, attempting to do so will result in a runtime error.
+-- /Note:/ the 'IO' operation must not run its argument in a separate thread,
+-- attempting to do so will result in a runtime error.
 unsafeWithLiftSeqOp
   :: ((forall a b localEs. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -> Eff es r
-unsafeWithLiftSeqOp k = k $ \f m -> unsafeSeqUnliftEff $ \unlift -> f $ unlift m
+unsafeWithLiftSeqOp k = k $ \mapIO m -> unsafeEff $ \es -> do
+  unsafeSeqUnliftEff es $ \unlift -> mapIO $ unlift m
 
 -- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
-unsafeSeqUnliftEff :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
-unsafeSeqUnliftEff f = unsafeEff $ \es -> do
+unsafeSeqUnliftEff :: Env es -> ((forall r. Eff es r -> IO r) -> IO a) -> IO a
+unsafeSeqUnliftEff es k = do
   tid0 <- myThreadId
-  f $ \m -> do
+  k $ \m -> do
     tid <- myThreadId
     if tid `eqThreadId` tid0
       then unEff m es
@@ -161,18 +162,19 @@ unsafeSeqUnliftEff f = unsafeEff $ \es -> do
 
 -- | Lower 'Eff' operations into 'IO' ('ConcUnlift').
 unsafeConcUnliftEff
-  :: Persistence
+  :: Env es
+  -> Persistence
   -> Limit
   -> ((forall r. Eff es r -> IO r) -> IO a)
-  -> Eff es a
-unsafeConcUnliftEff Ephemeral (Limited uses) f = unsafeEff $ \es -> do
-  unsafeEphemeralConcUnliftIO uses f es unEff
-unsafeConcUnliftEff Ephemeral Unlimited f = unsafeEff $ \es -> do
-  unsafeEphemeralConcUnliftIO maxBound f es unEff
-unsafeConcUnliftEff Persistent (Limited threads) f = unsafeEff $ \es -> do
-  unsafePersistentConcUnliftIO False threads f es unEff
-unsafeConcUnliftEff Persistent Unlimited f = unsafeEff $ \es -> do
-  unsafePersistentConcUnliftIO True maxBound f es unEff
+  -> IO a
+unsafeConcUnliftEff es Ephemeral (Limited uses) k =
+  unsafeEphemeralConcUnliftIO uses k es unEff
+unsafeConcUnliftEff es Ephemeral Unlimited k =
+  unsafeEphemeralConcUnliftIO maxBound k es unEff
+unsafeConcUnliftEff es Persistent (Limited threads) k =
+  unsafePersistentConcUnliftIO False threads k es unEff
+unsafeConcUnliftEff es Persistent Unlimited k =
+  unsafePersistentConcUnliftIO True maxBound k es unEff
 
 ----------------------------------------
 -- Base
@@ -378,8 +380,9 @@ withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
 -- | Helper for 'MonadBaseControl' and 'MonadUnliftIO' instances.
 unliftEff :: IOE :> es => ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
 unliftEff f = unliftStrategy >>= \case
-  SeqUnlift      -> unsafeSeqUnliftEff f
-  ConcUnlift p b -> withUnliftStrategy SeqUnlift $ unsafeConcUnliftEff p b f
+  SeqUnlift -> unsafeEff $ \es -> unsafeSeqUnliftEff es f
+  ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
+    unsafeEff $ \es -> unsafeConcUnliftEff es p b f
 
 ----------------------------------------
 -- Helpers

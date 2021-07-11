@@ -30,7 +30,7 @@ unsafeEphemeralConcUnliftIO
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
-unsafeEphemeralConcUnliftIO uses f es0 unEff = do
+unsafeEphemeralConcUnliftIO uses k es0 unEff = do
   when (uses < 0) $ do
     error $ "ephemeralConcUnliftIO: invalid number of uses: " ++ show uses
   tid0 <- myThreadId
@@ -39,7 +39,7 @@ unsafeEphemeralConcUnliftIO uses f es0 unEff = do
   -- have already changed by then.
   esTemplate <- cloneEnv es0
   mvUses <- newMVar uses
-  f $ \m -> do
+  k $ \m -> do
     es <- myThreadId >>= \case
       tid | tid0 `eqThreadId` tid -> pure es0
       _ -> modifyMVar mvUses $ \case
@@ -63,7 +63,7 @@ unsafePersistentConcUnliftIO
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
-unsafePersistentConcUnliftIO cleanUp threads f es0 unEff = do
+unsafePersistentConcUnliftIO cleanUp threads k es0 unEff = do
   when (threads < 0) $ do
     error $ "persistentConcUnliftIO: invalid number of threads: " ++ show threads
   tid0 <- myThreadId
@@ -72,7 +72,7 @@ unsafePersistentConcUnliftIO cleanUp threads f es0 unEff = do
   -- have already changed by then.
   esTemplate <- cloneEnv es0
   mvEntries <- newMVar $ ThreadEntries threads IM.empty
-  f $ \m -> do
+  k $ \m -> do
     es <- myThreadId >>= \case
       tid | tid0 `eqThreadId` tid -> pure es0
       tid -> modifyMVar mvEntries $ \te -> do

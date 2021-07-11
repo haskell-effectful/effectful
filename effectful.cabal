@@ -98,7 +98,6 @@ library
                      Effectful.State
                      Effectful.State.Dynamic
                      Effectful.State.MVar
-                     Effectful.STM
                      Effectful.Writer
                      Effectful.Writer.Dynamic
                      Effectful.Writer.MVar

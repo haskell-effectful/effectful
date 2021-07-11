@@ -132,7 +132,7 @@ unsafeEff m = Eff (oneShot m)
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
 
--- | Utility for lifting 'IO' actions of type
+-- | Utility for lifting 'IO' operations of type
 --
 -- @'IO' a -> 'IO' b@
 --

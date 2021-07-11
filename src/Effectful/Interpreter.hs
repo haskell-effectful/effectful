@@ -200,7 +200,7 @@ localLiftUnliftIO (LocalEnv les) unlift k = unsafeEff_ $ case unlift of
   SeqUnlift      -> unsafeSeqUnliftEff les $ k unsafeEff_
   ConcUnlift p l -> unsafeConcUnliftEff les p l $ k unsafeEff_
 
--- | Utility for lifting 'IO' actions of type
+-- | Utility for lifting 'IO' operations of type
 --
 -- @'IO' a -> 'IO' b@
 --

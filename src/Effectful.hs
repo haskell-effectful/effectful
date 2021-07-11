@@ -12,11 +12,11 @@ module Effectful
   -- * Running the 'Eff' monad
 
   -- ** Pure operations
-  , runEff
+  , runPureEff
 
   -- ** Operations with side effects
   , IOE
-  , runIOE
+  , runEff
 
   -- *** Unlift strategies
   , UnliftStrategy(..)

@@ -21,24 +21,24 @@ stateTests = testGroup "State"
   ]
 
 test_runState :: Assertion
-test_runState = runIOE $ do
+test_runState = runEff $ do
   (end, len) <- runState (0::Int) . execState collatzStart $ collatz
   U.assertEqual "correct end" 1 end
   U.assertEqual "correct len" collatzLength len
 
 test_evalState :: Assertion
-test_evalState = runIOE $ do
+test_evalState = runEff $ do
   len <- evalState (0::Int) . evalState collatzStart $ collatz *> get @Int
   U.assertEqual "correct len" collatzLength len
 
 test_stateM :: Assertion
-test_stateM = runIOE $ do
+test_stateM = runEff $ do
   (a, b) <- runState "hi" . stateM $ \s -> pure (s, s ++ "!!!")
   U.assertEqual "correct a" "hi"    a
   U.assertEqual "correct b" "hi!!!" b
 
 test_deepStack :: Assertion
-test_deepStack = runIOE $ do
+test_deepStack = runEff $ do
   n <- evalState () . execState (0::Int) $ do
     evalState () . evalState () $ do
       evalState () $ do
@@ -50,7 +50,7 @@ test_deepStack = runIOE $ do
   U.assertEqual "n" 15 n
 
 test_exceptions :: Assertion
-test_exceptions = runIOE $ do
+test_exceptions = runEff $ do
   testTry   "exceptions"  E.try
   testCatch "exceptions"  E.catch
   testTry   "lifted-base" LE.try
@@ -85,7 +85,7 @@ test_exceptions = runIOE $ do
       modify @Int (+2)
 
 test_localEffects :: Assertion
-test_localEffects = runIOE $ do
+test_localEffects = runEff $ do
   x <- runHasInt 0 $ do
     putInt 1
     execState () $ do

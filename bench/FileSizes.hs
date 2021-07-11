@@ -120,10 +120,10 @@ effectful_program files = do
 
 effectful_calculateFileSizes :: [FilePath] -> IO (Int, [String])
 effectful_calculateFileSizes =
-  E.runIOE . effectful_runFile . effectful_runLogging . effectful_program
+  E.runEff . effectful_runFile . effectful_runLogging . effectful_program
 
 effectful_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
-effectful_calculateFileSizesDeep = E.runIOE
+effectful_calculateFileSizesDeep = E.runEff
   . runR . runR . runR . runR . runR
   . effectful_runFile . effectful_runLogging
   . runR . runR . runR . runR . runR

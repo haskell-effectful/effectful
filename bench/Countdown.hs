@@ -114,10 +114,10 @@ programEffectfulStatic = do
 {-# NOINLINE programEffectfulStatic #-}
 
 countdownEffectfulStatic :: Integer -> (Integer, Integer)
-countdownEffectfulStatic n = E.runEff . E.runState n $ programEffectfulStatic
+countdownEffectfulStatic n = E.runPureEff . E.runState n $ programEffectfulStatic
 
 countdownEffectfulStaticDeep :: Integer -> (Integer, Integer)
-countdownEffectfulStaticDeep n = E.runEff
+countdownEffectfulStaticDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
   . E.runState n
   . runR . runR . runR . runR . runR
@@ -139,10 +139,10 @@ programEffectfulMVar = do
 {-# NOINLINE programEffectfulMVar #-}
 
 countdownEffectfulMVar :: Integer -> (Integer, Integer)
-countdownEffectfulMVar n = E.runEff . ME.runState n $ programEffectfulMVar
+countdownEffectfulMVar n = E.runPureEff . ME.runState n $ programEffectfulMVar
 
 countdownEffectfulMVarDeep :: Integer -> (Integer, Integer)
-countdownEffectfulMVarDeep n = E.runEff
+countdownEffectfulMVarDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
   . ME.runState n
   . runR . runR . runR . runR . runR
@@ -164,13 +164,13 @@ programEffectfulDynamic = do
 {-# NOINLINE programEffectfulDynamic #-}
 
 countdownEffectfulDynPure :: Integer -> (Integer, Integer)
-countdownEffectfulDynPure n = E.runEff . DE.runState n $ programEffectfulDynamic
+countdownEffectfulDynPure n = E.runPureEff . DE.runState n $ programEffectfulDynamic
 
 countdownEffectfulDynMVar :: Integer -> (Integer, Integer)
-countdownEffectfulDynMVar n = E.runEff . DE.runStateMVar n $ programEffectfulDynamic
+countdownEffectfulDynMVar n = E.runPureEff . DE.runStateMVar n $ programEffectfulDynamic
 
 countdownEffectfulDynPureDeep :: Integer -> (Integer, Integer)
-countdownEffectfulDynPureDeep n = E.runEff
+countdownEffectfulDynPureDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
   . DE.runState n
   . runR . runR . runR . runR . runR
@@ -179,7 +179,7 @@ countdownEffectfulDynPureDeep n = E.runEff
     runR = E.runReader ()
 
 countdownEffectfulDynMVarDeep :: Integer -> (Integer, Integer)
-countdownEffectfulDynMVarDeep n = E.runEff
+countdownEffectfulDynMVarDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
   . DE.runStateMVar n
   . runR . runR . runR . runR . runR

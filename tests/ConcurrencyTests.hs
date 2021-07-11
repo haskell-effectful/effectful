@@ -24,7 +24,7 @@ concurrencyTests = testGroup "Concurrency"
   ]
 
 test_localState :: Assertion
-test_localState = runIOE . evalState x $ do
+test_localState = runEff . evalState x $ do
   withUnliftStrategy (ConcUnlift Ephemeral $ Limited 2) $ do
     replicateConcurrently_ 2 $ do
       r <- goDownward 0
@@ -43,7 +43,7 @@ test_localState = runIOE . evalState x $ do
         else goDownward $ acc + 1
 
 test_sharedState :: Assertion
-test_sharedState = runIOE . evalStateMVar (S.empty @Int) $ do
+test_sharedState = runEff . evalStateMVar (S.empty @Int) $ do
   withUnliftStrategy (ConcUnlift Ephemeral $ Limited 2) $ do
     concurrently_ (addWhen even x) (addWhen odd x)
     U.assertEqual "expected result" (S.fromList [1..x]) =<< get
@@ -60,7 +60,7 @@ test_sharedState = runIOE . evalStateMVar (S.empty @Int) $ do
         addWhen f $ n - 1
 
 test_errorHandling :: Assertion
-test_errorHandling = runIOE . evalStateMVar (0::Int) $ do
+test_errorHandling = runEff . evalStateMVar (0::Int) $ do
   withUnliftStrategy (ConcUnlift Ephemeral $ Limited 2) $ do
     r <- runError $ concurrently_
       (liftIO (threadDelay 10000) >> throwError err)
@@ -77,7 +77,7 @@ test_errorHandling = runIOE . evalStateMVar (0::Int) $ do
     err = "thrown from async"
 
 test_unliftMany :: Assertion
-test_unliftMany = runIOE . evalState "initial value" $ do
+test_unliftMany = runEff . evalState "initial value" $ do
   withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
     x <- withRunInIO $ \runInIO -> async $ do
       v1 <- runInIO $ get @String  -- 1
@@ -95,7 +95,7 @@ test_unliftMany = runIOE . evalState "initial value" $ do
       (v1, v2, v3, v4)
 
 test_asyncWithUnmask :: Assertion
-test_asyncWithUnmask = runIOE . evalState "initial" $ do
+test_asyncWithUnmask = runEff . evalState "initial" $ do
   withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
     x <- asyncWithUnmask $ \unmask -> do
       liftIO $ threadDelay 10000
@@ -111,7 +111,7 @@ test_asyncWithUnmask = runIOE . evalState "initial" $ do
       (inner1, inner2, outer)
 
 test_pooledWorkers :: Assertion
-test_pooledWorkers = runIOE . evalState (0::Int) $ do
+test_pooledWorkers = runEff . evalState (0::Int) $ do
   withUnliftStrategy (ConcUnlift Ephemeral $ Limited n) $ do
     x <- pooledForConcurrentlyN threads [1..n] $ \k -> do
       r <- get @Int

@@ -7,7 +7,7 @@ import Effectful
 import Effectful.State.Dynamic
 
 runShallow :: Eff '[IOE] a -> IO a
-runShallow = runIOE
+runShallow = runEff
 
 runDeep
   :: Eff '[ State (), State (), State (), State (), State ()
@@ -15,6 +15,6 @@ runDeep
           , IOE
           ] a
   -> IO a
-runDeep = runIOE
+runDeep = runEff
   . evalState () . evalState () . evalState () . evalState () . evalState ()
   . evalState () . evalState () . evalState () . evalState () . evalState ()

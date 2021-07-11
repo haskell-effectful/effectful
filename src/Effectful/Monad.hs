@@ -1,7 +1,7 @@
 module Effectful.Monad
   ( -- * The 'Eff' monad
     Eff
-  , runEff
+  , runPureEff
 
   -- ** Effect constraints
   , Effect
@@ -9,7 +9,7 @@ module Effectful.Monad
 
   -- * Arbitrary I/O
   , IOE
-  , runIOE
+  , runEff
 
   -- ** Unlift strategies
   , UnliftStrategy(..)

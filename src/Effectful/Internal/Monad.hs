@@ -8,7 +8,7 @@
 module Effectful.Internal.Monad
   ( -- * Monad
     Eff
-  , runEff
+  , runPureEff
 
   -- ** Access to the internal representation
   , unEff
@@ -21,7 +21,7 @@ module Effectful.Internal.Monad
 
   -- * IO
   , IOE
-  , runIOE
+  , runEff
 
   -- * Primitive
   , PrimE
@@ -106,9 +106,9 @@ newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
 
 -- | Run a pure 'Eff' operation.
 --
--- For the impure version see 'runIOE'.
-runEff :: Eff '[] a -> a
-runEff (Eff m) =
+-- For running operations with side effects see 'runEff'.
+runPureEff :: Eff '[] a -> a
+runPureEff (Eff m) =
   -- unsafePerformIO is safe here since IOE was not on the stack, so no IO with
   -- side effects was performed (unless someone sneakily introduced side effects
   -- with unsafeEff, but then all bets are off).
@@ -279,9 +279,9 @@ newtype IOE :: Effect where
 
 -- | Run an 'Eff' operation with side effects.
 --
--- For the pure version see 'runEff'.
-runIOE :: Eff '[IOE] a -> IO a
-runIOE m = unEff (evalEffect (IdE (IOE SeqUnlift)) m) =<< emptyEnv
+-- For running pure operations see 'runPureEff'.
+runEff :: Eff '[IOE] a -> IO a
+runEff m = unEff (evalEffect (IdE (IOE SeqUnlift)) m) =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_

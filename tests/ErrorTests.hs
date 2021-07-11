@@ -14,7 +14,7 @@ errorTests = testGroup "Error"
   ]
 
 test_errorFromInterpret :: Assertion
-test_errorFromInterpret = runIOE $ do
+test_errorFromInterpret = runEff $ do
   result <- runError @String . runNestedErr $ do
     runError @String nestedErr
   liftIO $ case result of

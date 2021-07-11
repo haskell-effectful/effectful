@@ -14,7 +14,7 @@ For example, if you want to catch an unchecked exception like
   let boom :: Eff es String
       boom = error "BOOM!"
   in
-  runIOE $ boom `E.catch` \(e :: ErrorCall) -> pure "caught some error"
+  runEff $ boom `E.catch` \(e :: ErrorCall) -> pure "caught some error"
 :}
 "caught some error"
 

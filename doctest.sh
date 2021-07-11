@@ -11,6 +11,7 @@ doctest src \
   -XBangPatterns \
   -XConstraintKinds \
   -XDataKinds \
+  -XDeriveFunctor \
   -XFlexibleContexts \
   -XFlexibleInstances \
   -XGADTs \
@@ -22,6 +23,7 @@ doctest src \
   -XRecordWildCards \
   -XRoleAnnotations \
   -XScopedTypeVariables \
+  -XStandaloneDeriving \
   -XStrictData \
   -XTupleSections \
   -XTypeApplications \

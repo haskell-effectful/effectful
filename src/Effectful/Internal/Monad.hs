@@ -272,8 +272,8 @@ tryFailIO tag m =
 ----------------------------------------
 -- IO
 
--- | Run arbitrary 'IO' operations via 'MonadIO', 'MonadBaseControl' 'IO' or
--- 'MonadUnliftIO'.
+-- | Run arbitrary 'IO' operations via 'MonadIO', 'MonadUnliftIO' or
+-- 'MonadBaseControl' 'IO'.
 newtype IOE :: Effect where
   IOE :: UnliftStrategy -> IOE m r
 
@@ -286,16 +286,20 @@ runIOE m = unEff (evalEffect (IdE (IOE SeqUnlift)) m) =<< emptyEnv
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
 
+instance IOE :> es => MonadUnliftIO (Eff es) where
+  withRunInIO = unliftEff
+
+-- | Instance included for compatibility with existing code, usage of 'liftIO'
+-- is preferrable.
 instance IOE :> es => MonadBase IO (Eff es) where
   liftBase = unsafeEff_
 
+-- | Instance included for compatibility with existing code, usage of
+-- 'withRunInIO' is preferrable.
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
   liftBaseWith = unliftEff
   restoreM = pure
-
-instance IOE :> es => MonadUnliftIO (Eff es) where
-  withRunInIO = unliftEff
 
 ----------------------------------------
 -- Primitive
@@ -315,8 +319,8 @@ instance PrimE :> es => PrimMonad (Eff es) where
 ----------------------------------------
 -- Unlift strategies
 
--- | The strategy to use when unlifting 'Eff' operations via 'liftBaseWith',
--- 'withRunInIO' or the 'Effectful.Interpreter.localUnlift' family.
+-- | The strategy to use when unlifting 'Eff' operations via 'withRunInIO',
+-- 'liftBaseWith' or the 'Effectful.Interpreter.localUnlift' family.
 data UnliftStrategy
   = SeqUnlift
   -- ^ The fastest strategy and a default setting for 'IOE'. An attempt to call

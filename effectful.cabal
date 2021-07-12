@@ -86,6 +86,7 @@ library
     exposed-modules: Effectful
                      Effectful.Async
                      Effectful.Error
+                     Effectful.Error.Dynamic
                      Effectful.Fail
                      Effectful.Handler
                      Effectful.Internal.Effect

@@ -73,7 +73,7 @@ dedicated, well established solution such as
 
 This is where `effectful` comes in. The `Eff` monad it uses is essentially a
 `ReaderT` over `IO` on steroids, allowing us to dynamically extend its
-environment with data types that represent effects or their interpreters.
+environment with data types that represent effects or their handlers.
 
 Because this concept is so simple:
 

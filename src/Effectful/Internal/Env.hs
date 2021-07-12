@@ -43,7 +43,7 @@ type role Env nominal
 -- of kind 'Effect'.
 --
 -- Supports forking, i.e. introduction of local branches for encapsulation of
--- data specific to effect interpreters.
+-- data specific to effect handlers.
 --
 -- Offers very good performance characteristics:
 --
@@ -150,10 +150,10 @@ newForkId (ForkIdGen ref) = do
 
 newtype Relinker i (e :: Effect) where
   Relinker
-    :: ((forall es. Env es -> IO (Env es)) -> i e -> IO (i e))
-    -> Relinker i e
+    :: ((forall es. Env es -> IO (Env es)) -> handler e -> IO (handler e))
+    -> Relinker handler e
 
-noRelinker :: Relinker i e
+noRelinker :: Relinker handler e
 noRelinker = Relinker $ \_ -> pure
 
 ----------------------------------------
@@ -238,7 +238,7 @@ copyForks es fs len = \case
 
 type EnvRefCache = IORef (IM.IntMap (IORef EnvRef))
 
--- | Relink local environments hiding in the interpreters.
+-- | Relink local environments hiding in the handlers.
 relinkData
   :: IORef EnvRef
   -> ForkIdGen
@@ -294,7 +294,7 @@ cloneEnvRef gref gen cache fid lref0 = do
 
 ----------------------------------------
 
--- | Create a local fork of the environment for interpreters.
+-- | Create a local fork of the environment for handlers.
 forkEnv :: Env es -> IO (Env es)
 forkEnv env@(Env NoFork gref gen) = do
   size <- sizeEnv env
@@ -321,7 +321,7 @@ sizeEnv (Env (Forks _ baseIx lref _) _ _) = do
 {-# NOINLINE sizeEnv #-}
 
 -- | Extract a specific data type from the environment.
-getEnv :: forall e es i. e :> es => Env es -> IO (i e)
+getEnv :: forall e es handler. e :> es => Env es -> IO (handler e)
 getEnv env = do
   (i, es) <- getLocation @e env
   fromAny <$> readSmallArray es i
@@ -343,7 +343,7 @@ checkSizeEnv k (Env (Forks _ baseIx lref _) _ _) = do
 -- Extending and shrinking
 
 -- | Extend the environment with a new data type (in place).
-unsafeConsEnv :: i e -> Relinker i e -> Env es -> IO (Env (e : es))
+unsafeConsEnv :: handler e -> Relinker handler e -> Env es -> IO (Env (e : es))
 unsafeConsEnv e f (Env fork gref gen) = case fork of
   NoFork -> do
     extendEnvRef gref
@@ -402,20 +402,31 @@ unsafeTailEnv len (Env fork gref gen) = case fork of
 -- Data retrieval and update
 
 -- | Replace the data type in the environment with a new value (in place).
-unsafePutEnv :: forall e es i. e :> es => i e -> Env es -> IO ()
+unsafePutEnv
+  :: forall e es handler. e :> es
+  => handler e
+  -> Env es -> IO ()
 unsafePutEnv e env = do
   (i, es) <- getLocation @e env
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place).
-unsafeModifyEnv :: forall e es i. e :> es => (i e -> i e) -> Env es -> IO ()
+unsafeModifyEnv
+  :: forall e es handler. e :> es
+  => (handler e -> handler e)
+  -> Env es
+  -> IO ()
 unsafeModifyEnv f env = do
   (i, es) <- getLocation @e env
   e <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place) and return a value.
-unsafeStateEnv :: forall e es i a. e :> es => (i e -> (a, i e)) -> Env es -> IO a
+unsafeStateEnv
+  :: forall e es handler a. e :> es
+  => (handler e -> (a, handler e))
+  -> Env es
+  -> IO a
 unsafeStateEnv f env = do
   (i, es) <- getLocation @e env
   (a, e) <- f . fromAny <$> readSmallArray es i
@@ -443,8 +454,8 @@ getLocation (Env fork ref _) = do
   -- - Most application code has no access to forks, in which case we look at
   --   the global EnvRef.
   --
-  -- - Interpreters will most likely access the newest fork for reinterpretation
-  --   of effects that are there.
+  -- - Effect handlers will most likely access the newest fork with handler
+  --   specific effects for reinterpretation.
   case fork of
     NoFork -> pure (ix n, es)
     Forks _ baseIx lref forks -> do

@@ -87,11 +87,11 @@ library
                      Effectful.Async
                      Effectful.Error
                      Effectful.Fail
+                     Effectful.Handler
                      Effectful.Internal.Effect
                      Effectful.Internal.Env
                      Effectful.Internal.Monad
                      Effectful.Internal.Unlift
-                     Effectful.Interpreter
                      Effectful.Monad
                      Effectful.Reader
                      Effectful.Resource

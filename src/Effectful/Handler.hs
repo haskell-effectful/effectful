@@ -1,4 +1,4 @@
-module Effectful.Interpreter
+module Effectful.Handler
   ( -- * Sending operations to the handler
     send
 
@@ -30,50 +30,50 @@ module Effectful.Interpreter
   , localLiftUnliftIO
   ) where
 
-import Control.Exception
 import Control.Monad.IO.Unlift
 import GHC.Stack
+import qualified Control.Exception as E
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
 
 ----------------------------------------
--- Interpreter
+-- Handler
 
 -- | Opaque representation of the 'Eff' environment at the point of calling the
 -- 'send' function, i.e. right before the control is passed to the effect
 -- handler.
 newtype LocalEnv es = LocalEnv (Env es)
 
-data Interpreter (e :: Effect) = forall handlerEs. Interpreter
-  { _env       :: Env handlerEs
-  , _interpret :: forall a localEs. HasCallStack
-               => LocalEnv localEs
-               -> e (Eff localEs) a
-               -> Eff handlerEs a
+data Handler (e :: Effect) = forall handlerEs. Handler
+  { _env    :: Env handlerEs
+  , _handle :: forall a localEs. HasCallStack
+            => LocalEnv localEs
+            -> e (Eff localEs) a
+            -> Eff handlerEs a
   }
 
-runInterpreter :: Env es -> Interpreter e -> Eff (e : es) a -> IO a
-runInterpreter es0 e m = do
+runHandler :: Env es -> Handler e -> Eff (e : es) a -> IO a
+runHandler es0 e m = do
   size0 <- sizeEnv es0
-  bracket (unsafeConsEnv e relinker es0)
-          (unsafeTailEnv size0)
-          (\es -> unEff m es)
+  E.bracket (unsafeConsEnv e relinker es0)
+            (unsafeTailEnv size0)
+            (\es -> unEff m es)
   where
-    relinker :: Relinker Interpreter e
-    relinker = Relinker $ \relink Interpreter{..} -> do
+    relinker :: Relinker Handler e
+    relinker = Relinker $ \relink Handler{..} -> do
       env <- relink _env
-      pure Interpreter { _env = env, .. }
+      pure Handler { _env = env, .. }
 
 ----------------------------------------
--- Sending commands
+-- Sending operations
 
--- | Send an operation of a given effect to the interpreter for execution.
+-- | Send an operation of a given effect to its handler for execution.
 send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
 send op = unsafeEff $ \es -> do
-  Interpreter{..} <- getEnv es
-  unEff (_interpret (LocalEnv es) op) _env
+  Handler{..} <- getEnv es
+  unEff (_handle (LocalEnv es) op) _env
 
 ----------------------------------------
 -- Interpretation
@@ -84,9 +84,9 @@ interpret
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
-interpret interpreter m = unsafeEff $ \es -> do
+interpret handler m = unsafeEff $ \es -> do
   les <- forkEnv es
-  runInterpreter es (Interpreter les $ \_ -> interpreter) m
+  runHandler es (Handler les $ \_ -> handler) m
 
 -- | Interpret a higher order effect.
 --
@@ -97,9 +97,9 @@ interpretM
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
-interpretM interpreter m = unsafeEff $ \es -> do
+interpretM handler m = unsafeEff $ \es -> do
   les <- forkEnv es
-  runInterpreter es (Interpreter les interpreter) m
+  runHandler es (Handler les handler) m
 
 ----------------------------------------
 -- Reinterpretation
@@ -112,10 +112,10 @@ reinterpret
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b
-reinterpret runHandlerEs interpreter m = unsafeEff $ \es -> do
+reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
   les0 <- forkEnv es
   (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
-    runInterpreter es (Interpreter les $ \_ -> interpreter) m
+    runHandler es (Handler les $ \_ -> handler) m
 
 -- | Interpret a higher order effect using other effects.
 --
@@ -128,10 +128,10 @@ reinterpretM
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b
-reinterpretM runHandlerEs interpreter m = unsafeEff $ \es -> do
+reinterpretM runHandlerEs handler m = unsafeEff $ \es -> do
   les0 <- forkEnv es
   (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
-    runInterpreter es (Interpreter les interpreter) m
+    runHandler es (Handler les handler) m
 
 ----------------------------------------
 -- Unlifts

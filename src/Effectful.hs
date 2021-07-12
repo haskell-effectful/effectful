@@ -53,5 +53,5 @@ module Effectful
   , localLiftUnliftIO
   ) where
 
-import Effectful.Interpreter
+import Effectful.Handler
 import Effectful.Monad

@@ -35,7 +35,7 @@ module Effectful.Internal.Monad
   , withUnliftStrategy
 
   --- *** Low-level helpers
-  , unsafeWithLiftSeqOp
+  , unsafeWithLiftMapIO
   , unsafeSeqUnliftEff
   , unsafeConcUnliftEff
 
@@ -142,10 +142,10 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 --
 -- /Note:/ the 'IO' operation must not run its argument in a separate thread,
 -- attempting to do so will result in a runtime error.
-unsafeWithLiftSeqOp
+unsafeWithLiftMapIO
   :: ((forall a b localEs. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -> Eff es r
-unsafeWithLiftSeqOp k = k $ \mapIO m -> unsafeEff $ \es -> do
+unsafeWithLiftMapIO k = k $ \mapIO m -> unsafeEff $ \es -> do
   unsafeSeqUnliftEff es $ \unlift -> mapIO $ unlift m
 
 -- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
@@ -272,8 +272,7 @@ tryFailIO tag m =
 ----------------------------------------
 -- IO
 
--- | Run arbitrary 'IO' operations via 'MonadIO', 'MonadUnliftIO' or
--- 'MonadBaseControl' 'IO'.
+-- | Run arbitrary 'IO' operations via 'MonadIO' or 'MonadUnliftIO'.
 newtype IOE :: Effect where
   IOE :: UnliftStrategy -> IOE m r
 
@@ -319,8 +318,8 @@ instance Prim :> es => PrimMonad (Eff es) where
 ----------------------------------------
 -- Unlift strategies
 
--- | The strategy to use when unlifting 'Eff' operations via 'withRunInIO',
--- 'liftBaseWith' or the 'Effectful.Interpreter.localUnlift' family.
+-- | The strategy to use when unlifting 'Eff' operations via 'withRunInIO' or
+-- the 'Effectful.Interpreter.localUnlift' family.
 data UnliftStrategy
   = SeqUnlift
   -- ^ The fastest strategy and a default setting for 'IOE'. An attempt to call

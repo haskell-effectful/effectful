@@ -1,7 +1,7 @@
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# OPTIONS_HADDOCK not-home #-}
--- | Implementation of the concurrent unlift.
+-- | Implementation of concurrent unlifts.
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.

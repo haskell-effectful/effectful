@@ -6,9 +6,6 @@ module Effectful
   , Effect
   , (:>)
 
-  -- ** Sending effects
-  , send
-
   -- * Running the 'Eff' monad
 
   -- ** Pure operations
@@ -25,7 +22,10 @@ module Effectful
   , unliftStrategy
   , withUnliftStrategy
 
-  -- * Building 'Effect' handlers
+  -- * 'Effect' handlers
+
+  -- ** Sending operations to the handler
+  , send
 
   -- ** Basic handlers
   , interpret
@@ -35,18 +35,22 @@ module Effectful
   , reinterpret
   , reinterpretM
 
-  -- ** Local operations
+  -- ** Handling local 'Eff' operations
   , LocalEnv
 
-  -- *** 'Eff'
+  -- *** Unlifts
   , localSeqUnlift
-  , localUnlift
-
-  -- *** 'IO'
   , localSeqUnliftIO
+  , localUnlift
   , localUnliftIO
+
+  -- *** Lifts
+  , withLiftMap
+  , withLiftMapIO
+
+  -- *** Bidirectional lifts
+  , localLiftUnlift
   , localLiftUnliftIO
-  , withLiftSeqOp
   ) where
 
 import Effectful.Interpreter

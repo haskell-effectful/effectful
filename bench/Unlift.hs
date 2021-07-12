@@ -18,7 +18,7 @@ import Utils
 import qualified Effectful.Async as A
 
 unliftBenchmark :: Benchmark
-unliftBenchmark = bgroup "unlift"
+unliftBenchmark = bgroup "unlifting"
   [ bgroup "reference"
     [ bench "dummy" $ nfIO benchDummy
     , bench "async" $ nfIO benchAsync

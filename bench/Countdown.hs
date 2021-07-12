@@ -12,9 +12,9 @@ import qualified Control.Effect as L
 -- effectful
 import qualified Effectful as E
 import qualified Effectful.Reader as E
-import qualified Effectful.State as E
-import qualified Effectful.State.Dynamic as DE
-import qualified Effectful.State.MVar as ME
+import qualified Effectful.State.Dynamic as ED
+import qualified Effectful.State.Local as EL
+import qualified Effectful.State.Shared as ES
 
 -- freer-simple
 #ifdef VERSION_freer_simple
@@ -103,85 +103,87 @@ countdownMtlDeep n = runIdentity
 ----------------------------------------
 -- effectful (pure)
 
-programEffectfulStatic :: E.State Integer E.:> es => E.Eff es Integer
-programEffectfulStatic = do
-  n <- E.get @Integer
+programEffectfulLocal :: EL.State Integer E.:> es => E.Eff es Integer
+programEffectfulLocal = do
+  n <- EL.get @Integer
   if n <= 0
     then pure n
     else do
-      E.put (n - 1)
-      programEffectfulStatic
-{-# NOINLINE programEffectfulStatic #-}
+      EL.put (n - 1)
+      programEffectfulLocal
+{-# NOINLINE programEffectfulLocal #-}
 
-countdownEffectfulStatic :: Integer -> (Integer, Integer)
-countdownEffectfulStatic n = E.runPureEff . E.runState n $ programEffectfulStatic
+countdownEffectfulLocal :: Integer -> (Integer, Integer)
+countdownEffectfulLocal n = E.runPureEff . EL.runState n $ programEffectfulLocal
 
-countdownEffectfulStaticDeep :: Integer -> (Integer, Integer)
-countdownEffectfulStaticDeep n = E.runPureEff
+countdownEffectfulLocalDeep :: Integer -> (Integer, Integer)
+countdownEffectfulLocalDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . E.runState n
+  . EL.runState n
   . runR . runR . runR . runR . runR
-  $ programEffectfulStatic
+  $ programEffectfulLocal
   where
     runR = E.runReader ()
 
 ----------------------------------------
 -- effectful (mvar)
 
-programEffectfulMVar :: ME.State Integer E.:> es => E.Eff es Integer
-programEffectfulMVar = do
-  n <- ME.get @Integer
+programEffectfulShared :: ES.State Integer E.:> es => E.Eff es Integer
+programEffectfulShared = do
+  n <- ES.get @Integer
   if n <= 0
     then pure n
     else do
-      ME.put (n - 1)
-      programEffectfulMVar
-{-# NOINLINE programEffectfulMVar #-}
+      ES.put (n - 1)
+      programEffectfulShared
+{-# NOINLINE programEffectfulShared #-}
 
-countdownEffectfulMVar :: Integer -> (Integer, Integer)
-countdownEffectfulMVar n = E.runPureEff . ME.runState n $ programEffectfulMVar
+countdownEffectfulShared :: Integer -> (Integer, Integer)
+countdownEffectfulShared n = E.runPureEff . ES.runState n $ programEffectfulShared
 
-countdownEffectfulMVarDeep :: Integer -> (Integer, Integer)
-countdownEffectfulMVarDeep n = E.runPureEff
+countdownEffectfulSharedDeep :: Integer -> (Integer, Integer)
+countdownEffectfulSharedDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . ME.runState n
+  . ES.runState n
   . runR . runR . runR . runR . runR
-  $ programEffectfulMVar
+  $ programEffectfulShared
   where
     runR = E.runReader ()
 
 ----------------------------------------
 -- effectful (dynamic)
 
-programEffectfulDynamic :: DE.State Integer E.:> es => E.Eff es Integer
+programEffectfulDynamic :: ED.State Integer E.:> es => E.Eff es Integer
 programEffectfulDynamic = do
-  n <- DE.get @Integer
+  n <- ED.get @Integer
   if n <= 0
     then pure n
     else do
-      DE.put (n - 1)
+      ED.put (n - 1)
       programEffectfulDynamic
 {-# NOINLINE programEffectfulDynamic #-}
 
-countdownEffectfulDynPure :: Integer -> (Integer, Integer)
-countdownEffectfulDynPure n = E.runPureEff . DE.runState n $ programEffectfulDynamic
+countdownEffectfulDynLocal :: Integer -> (Integer, Integer)
+countdownEffectfulDynLocal n =
+  E.runPureEff . ED.runLocalState n $ programEffectfulDynamic
 
-countdownEffectfulDynMVar :: Integer -> (Integer, Integer)
-countdownEffectfulDynMVar n = E.runPureEff . DE.runStateMVar n $ programEffectfulDynamic
+countdownEffectfulDynShared :: Integer -> (Integer, Integer)
+countdownEffectfulDynShared n =
+  E.runPureEff . ED.runSharedState n $ programEffectfulDynamic
 
-countdownEffectfulDynPureDeep :: Integer -> (Integer, Integer)
-countdownEffectfulDynPureDeep n = E.runPureEff
+countdownEffectfulDynLocalDeep :: Integer -> (Integer, Integer)
+countdownEffectfulDynLocalDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . DE.runState n
+  . ED.runLocalState n
   . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where
     runR = E.runReader ()
 
-countdownEffectfulDynMVarDeep :: Integer -> (Integer, Integer)
-countdownEffectfulDynMVarDeep n = E.runPureEff
+countdownEffectfulDynSharedDeep :: Integer -> (Integer, Integer)
+countdownEffectfulDynSharedDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . DE.runStateMVar n
+  . ED.runSharedState n
   . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where

@@ -1,27 +1,25 @@
 -- | The 'State' effect with dynamic dispatch.
 --
 -- It's not clear in which situation it's beneficial to use this instead of
--- "Effectful.State" or "Effectful.State.MVar" as you either:
+-- "Effectful.State.Local" or "Effectful.State.Shared" as you either:
 --
--- - Share state between threads and need the synchonized version.
+-- - Share state between threads and need the shared version.
 --
 -- - Don't share state between threads (or want it to be thread local) and are
---   free to use the faster, pure version.
---
--- However, let's include this for now.
+--   free to use the faster, local version.
 --
 module Effectful.State.Dynamic
   ( State(..)
 
-  -- * Pure
-  , runState
-  , evalState
-  , execState
+  -- * Local
+  , runLocalState
+  , evalLocalState
+  , execLocalState
 
-  -- * MVar
-  , runStateMVar
-  , evalStateMVar
-  , execStateMVar
+  -- * Shared
+  , runSharedState
+  , evalSharedState
+  , execSharedState
 
   -- * Operations
   , get
@@ -35,13 +33,12 @@ module Effectful.State.Dynamic
 
 import Effectful.Handler
 import Effectful.Monad
-import qualified Effectful.State as SP
-import qualified Effectful.State.MVar as SM
+import qualified Effectful.State.Local as L
+import qualified Effectful.State.Shared as S
 
 -- | Provide access to a mutable state of type @s@.
 --
--- Whether the state is represented as a pure value or an 'MVar' underneath
--- depends on the interpretation.
+-- Whether the state is local and shareable depends on the interpretation.
 data State s :: Effect where
   Get    :: State s m s
   Put    :: ~s -> State s m ()
@@ -49,50 +46,50 @@ data State s :: Effect where
   StateM :: (s -> m (a, s)) -> State s m a
 
 ----------------------------------------
--- Pure
+-- Local
 
-runState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runState s0 = reinterpretM (SP.runState s0) statePure
+runLocalState :: s -> Eff (State s : es) a -> Eff es (a, s)
+runLocalState s0 = reinterpretM (L.runState s0) localState
 
-evalState :: s -> Eff (State s : es) a -> Eff es a
-evalState s0 = reinterpretM (SP.evalState s0) statePure
+evalLocalState :: s -> Eff (State s : es) a -> Eff es a
+evalLocalState s0 = reinterpretM (L.evalState s0) localState
 
-execState :: s -> Eff (State s : es) a -> Eff es s
-execState s0 = reinterpretM (SP.execState s0) statePure
+execLocalState :: s -> Eff (State s : es) a -> Eff es s
+execLocalState s0 = reinterpretM (L.execState s0) localState
 
-statePure
-  :: SP.State s :> es
+localState
+  :: L.State s :> es
   => LocalEnv localEs
   -> State s (Eff localEs) a
   -> Eff es a
-statePure env = \case
-  Get      -> SP.get
-  Put s    -> SP.put s
-  State f  -> SP.state f
-  StateM f -> localSeqUnlift env $ \run -> SP.stateM (run . f)
+localState env = \case
+  Get      -> L.get
+  Put s    -> L.put s
+  State f  -> L.state f
+  StateM f -> localSeqUnlift env $ \run -> L.stateM (run . f)
 
 ----------------------------------------
--- MVar
+-- Shared
 
-runStateMVar :: s -> Eff (State s : es) a -> Eff es (a, s)
-runStateMVar s0 = reinterpretM (SM.runState s0) stateMVar
+runSharedState :: s -> Eff (State s : es) a -> Eff es (a, s)
+runSharedState s0 = reinterpretM (S.runState s0) sharedState
 
-evalStateMVar :: s -> Eff (State s : es) a -> Eff es a
-evalStateMVar s0 = reinterpretM (SM.evalState s0) stateMVar
+evalSharedState :: s -> Eff (State s : es) a -> Eff es a
+evalSharedState s0 = reinterpretM (S.evalState s0) sharedState
 
-execStateMVar :: s -> Eff (State s : es) a -> Eff es s
-execStateMVar s0 = reinterpretM (SM.execState s0) stateMVar
+execSharedState :: s -> Eff (State s : es) a -> Eff es s
+execSharedState s0 = reinterpretM (S.execState s0) sharedState
 
-stateMVar
-  :: SM.State s :> es
+sharedState
+  :: S.State s :> es
   => LocalEnv localEs
   -> State s (Eff localEs) a
   -> Eff es a
-stateMVar env = \case
-  Get      -> SM.get
-  Put s    -> SM.put s
-  State f  -> SM.state f
-  StateM f -> localSeqUnlift env $ \run -> SM.stateM (run . f)
+sharedState env = \case
+  Get      -> S.get
+  Put s    -> S.put s
+  State f  -> S.state f
+  StateM f -> localSeqUnlift env $ \run -> S.stateM (run . f)
 
 ----------------------------------------
 -- Operations

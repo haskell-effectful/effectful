@@ -11,7 +11,7 @@ import System.Posix
 -- effectful
 import qualified Effectful as E
 import qualified Effectful.Reader as E
-import qualified Effectful.State as E
+import qualified Effectful.State.Local as E
 
 -- eff
 #ifdef VERSION_eff

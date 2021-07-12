@@ -26,47 +26,47 @@ main = defaultMain
 countdown :: Integer -> Benchmark
 countdown n = bgroup (show n)
   [ bgroup "shallow"
-    [ bench "reference (pure)"         $ nf countdownRef n
-    , bench "reference (ST)"           $ nf countdownST n
-    , bench "effectful (pure-static)"  $ nf countdownEffectfulStatic n
-    , bench "effectful (pure-dynamic)" $ nf countdownEffectfulDynPure n
-    , bench "effectful (MVar-static)"  $ nf countdownEffectfulMVar n
-    , bench "effectful (MVar-dynamic)" $ nf countdownEffectfulDynMVar n
+    [ bench "reference (pure)"           $ nf countdownRef n
+    , bench "reference (ST)"             $ nf countdownST n
+    , bench "effectful (local/static)"   $ nf countdownEffectfulLocal n
+    , bench "effectful (local/dynamic)"  $ nf countdownEffectfulDynLocal n
+    , bench "effectful (shared/static)"  $ nf countdownEffectfulShared n
+    , bench "effectful (shared/dynamic)" $ nf countdownEffectfulDynShared n
 #ifdef VERSION_freer_simple
-    , bench "freer-simple"             $ nf countdownFreerSimple n
+    , bench "freer-simple"               $ nf countdownFreerSimple n
 #endif
 #ifdef VERSION_eff
-    , bench "eff"                      $ nf countdownEff n
+    , bench "eff"                        $ nf countdownEff n
 #endif
 #ifdef VERSION_mtl
-    , bench "mtl"                      $ nf countdownMtl n
+    , bench "mtl"                        $ nf countdownMtl n
 #endif
 #ifdef VERSION_fused_effects
-    , bench "fused-effects"            $ nf countdownFusedEffects n
+    , bench "fused-effects"              $ nf countdownFusedEffects n
 #endif
 #ifdef VERSION_polysemy
-    , bench "polysemy"                 $ nf countdownPolysemy n
+    , bench "polysemy"                   $ nf countdownPolysemy n
 #endif
     ]
   , bgroup "deep"
-    [ bench "effectful (pure-static)"  $ nf countdownEffectfulStaticDeep n
-    , bench "effectful (pure-dynamic)" $ nf countdownEffectfulDynPureDeep n
-    , bench "effectful (MVar-static)"  $ nf countdownEffectfulMVarDeep n
-    , bench "effectful (MVar-dynamic)" $ nf countdownEffectfulDynMVarDeep n
+    [ bench "effectful (local/static)"   $ nf countdownEffectfulLocalDeep n
+    , bench "effectful (local/dynamic)"  $ nf countdownEffectfulDynLocalDeep n
+    , bench "effectful (shared/static)"  $ nf countdownEffectfulSharedDeep n
+    , bench "effectful (shared/dynamic)" $ nf countdownEffectfulDynSharedDeep n
 #ifdef VERSION_freer_simple
-    , bench "freer-simple"             $ nf countdownFreerSimpleDeep n
+    , bench "freer-simple"               $ nf countdownFreerSimpleDeep n
 #endif
 #ifdef VERSION_eff
-    , bench "eff"                      $ nf countdownEffDeep n
+    , bench "eff"                        $ nf countdownEffDeep n
 #endif
 #ifdef VERSION_polysemy
-    , bench "polysemy"                 $ nf countdownPolysemyDeep n
+    , bench "polysemy"                   $ nf countdownPolysemyDeep n
 #endif
 #ifdef VERSION_mtl
-    , bench "mtl"                      $ nf countdownMtlDeep n
+    , bench "mtl"                        $ nf countdownMtlDeep n
 #endif
 #ifdef VERSION_fused_effects
-    , bench "fused-effects"            $ nf countdownFusedEffectsDeep n
+    , bench "fused-effects"              $ nf countdownFusedEffectsDeep n
 #endif
     ]
   ]

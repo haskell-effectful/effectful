@@ -2,11 +2,12 @@
 --
 -- Represented as a pure value underneath, therefore:
 --
--- - thread local (if you need sharing, have a look at "Effectful.State.MVar"),
+-- - thread local (if you need the state to be shareble, have a look at
+--   "Effectful.State.Shared"),
 --
 -- - very fast.
 --
-module Effectful.State
+module Effectful.State.Local
   ( State
   , runState
   , evalState

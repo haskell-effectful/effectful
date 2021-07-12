@@ -95,12 +95,12 @@ library
                      Effectful.Monad
                      Effectful.Reader
                      Effectful.Resource
-                     Effectful.State
                      Effectful.State.Dynamic
-                     Effectful.State.MVar
-                     Effectful.Writer
+                     Effectful.State.Local
+                     Effectful.State.Shared
                      Effectful.Writer.Dynamic
-                     Effectful.Writer.MVar
+                     Effectful.Writer.Local
+                     Effectful.Writer.Shared
 
   reexported-modules: Effectful.Internal.Utils
 

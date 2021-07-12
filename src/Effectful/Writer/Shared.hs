@@ -1,4 +1,4 @@
-module Effectful.Writer.MVar
+module Effectful.Writer.Shared
   ( Writer
   , runWriter
   , execWriter
@@ -31,25 +31,27 @@ execWriter m = do
   unsafeEff_ $ readMVar v
 
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
-tell w1 = do
-  IdE (Writer v) <- getEffect
-  unsafeEff_ . modifyMVar_ v $ \w0 -> let w = w0 <> w1 in w `seq` pure w
+tell w1 = unsafeEff $ \es -> do
+  IdE (Writer v) <- getEnv es
+  modifyMVar_ v $ \w0 -> let w = w0 <> w1 in w `seq` pure w
 
 listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
-listen m = unsafeEff $ \es -> uninterruptibleMask $ \restore -> do
-  v1 <- newMVar mempty
-  -- Replace thread local MVar with a fresh one for isolated listening.
-  v0 <- unsafeStateEnv (\(IdE (Writer v)) -> (v, IdE (Writer v1))) es
-  a <- restore (unEff m es) `onException` merge es v0 v1
-  (a, ) <$> merge es v0 v1
+listen m = unsafeEff $ \es -> do
+  -- The mask is uninterruptible because modifyMVar_ v0 in the merge function
+  -- might block and if an async exception is received while waiting, w1 will be
+  -- lost.
+  uninterruptibleMask $ \restore -> do
+    v1 <- newMVar mempty
+    -- Replace thread local MVar with a fresh one for isolated listening.
+    v0 <- unsafeStateEnv (\(IdE (Writer v)) -> (v, IdE (Writer v1))) es
+    a <- restore (unEff m es) `onException` merge es v0 v1
+    (a, ) <$> merge es v0 v1
   where
     -- Merge results accumulated in the local MVar with the mainline. If an
     -- exception was received while listening, merge results recorded so far.
     merge es v0 v1 = do
       unsafePutEnv (IdE (Writer v0)) es
       w1 <- readMVar v1
-      -- The mask is uninterruptible because modifyMVar_ v0 might block and if
-      -- we get an async exception while waiting, w1 will be lost.
       modifyMVar_ v0 $ \w0 -> let w = w0 <> w1 in w `seq` pure w
       pure w1
 

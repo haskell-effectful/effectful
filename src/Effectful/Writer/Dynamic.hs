@@ -1,13 +1,13 @@
 module Effectful.Writer.Dynamic
   ( Writer(..)
 
-  -- * Pure
-  , runWriter
-  , execWriter
+  -- * Local
+  , runLocalWriter
+  , execLocalWriter
 
-  -- * MVar
-  , runWriterMVar
-  , execWriterMVar
+  -- * Shared
+  , runSharedWriter
+  , execSharedWriter
 
   -- * Operations
   , tell
@@ -17,48 +17,48 @@ module Effectful.Writer.Dynamic
 
 import Effectful.Handler
 import Effectful.Monad
-import qualified Effectful.Writer as WP
-import qualified Effectful.Writer.MVar as WM
+import qualified Effectful.Writer.Local as L
+import qualified Effectful.Writer.Shared as S
 
 data Writer w :: Effect where
   Tell   :: ~w  -> Writer w m ()
   Listen :: m a -> Writer w m (a, w)
 
 ----------------------------------------
--- Pure
+-- Local
 
-runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runWriter = reinterpretM WP.runWriter writerPure
+runLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
+runLocalWriter = reinterpretM L.runWriter localWriter
 
-execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execWriter = reinterpretM WP.execWriter writerPure
+execLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
+execLocalWriter = reinterpretM L.execWriter localWriter
 
-writerPure
-  :: (WP.Writer w :> es, Monoid w)
+localWriter
+  :: (L.Writer w :> es, Monoid w)
   => LocalEnv localEs
   -> Writer w (Eff localEs) a
   -> Eff es a
-writerPure env = \case
-  Tell w    -> WP.tell w
-  Listen m  -> localSeqUnlift env $ \run -> WP.listen (run m)
+localWriter env = \case
+  Tell w   -> L.tell w
+  Listen m -> localSeqUnlift env $ \run -> L.listen (run m)
 
 ----------------------------------------
--- MVar
+-- Shared
 
-runWriterMVar :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runWriterMVar = reinterpretM WM.runWriter writerMVar
+runSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
+runSharedWriter = reinterpretM S.runWriter sharedWriter
 
-execWriterMVar :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execWriterMVar = reinterpretM WM.execWriter writerMVar
+execSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
+execSharedWriter = reinterpretM S.execWriter sharedWriter
 
-writerMVar
-  :: (WM.Writer w :> es, Monoid w)
+sharedWriter
+  :: (S.Writer w :> es, Monoid w)
   => LocalEnv localEs
   -> Writer w (Eff localEs) a
   -> Eff es a
-writerMVar env = \case
-  Tell w    -> WM.tell w
-  Listen m  -> localSeqUnlift env $ \run -> WM.listen (run m)
+sharedWriter env = \case
+  Tell w    -> S.tell w
+  Listen m  -> localSeqUnlift env $ \run -> S.listen (run m)
 
 ----------------------------------------
 -- Operations

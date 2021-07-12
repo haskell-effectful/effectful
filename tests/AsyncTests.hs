@@ -24,7 +24,7 @@ asyncTests = testGroup "Async"
   ]
 
 test_localState :: Assertion
-test_localState = runEff . runAsyncE . evalState x $ do
+test_localState = runEff . runAsyncE . evalLocalState x $ do
   replicateConcurrently_ 2 $ do
     r <- goDownward 0
     U.assertEqual "expected result" x r
@@ -42,7 +42,7 @@ test_localState = runEff . runAsyncE . evalState x $ do
         else goDownward $ acc + 1
 
 test_sharedState :: Assertion
-test_sharedState = runEff . runAsyncE . evalStateMVar (S.empty @Int) $ do
+test_sharedState = runEff . runAsyncE . evalSharedState (S.empty @Int) $ do
   concurrently_ (addWhen even x) (addWhen odd x)
   U.assertEqual "expected result" (S.fromList [1..x]) =<< get
   where
@@ -58,7 +58,7 @@ test_sharedState = runEff . runAsyncE . evalStateMVar (S.empty @Int) $ do
         addWhen f $ n - 1
 
 test_errorHandling :: Assertion
-test_errorHandling = runEff . runAsyncE . evalStateMVar (0::Int) $ do
+test_errorHandling = runEff . runAsyncE . evalSharedState (0::Int) $ do
   r <- runError $ concurrently_
     (liftIO (threadDelay 10000) >> throwError err)
     (modify (+x))
@@ -74,7 +74,7 @@ test_errorHandling = runEff . runAsyncE . evalStateMVar (0::Int) $ do
     err = "thrown from async"
 
 test_asyncWithUnmask :: Assertion
-test_asyncWithUnmask = runEff . runAsyncE . evalState "initial" $ do
+test_asyncWithUnmask = runEff . runAsyncE . evalLocalState "initial" $ do
   x <- asyncWithUnmask $ \unmask -> do
     liftIO $ threadDelay 10000
     r1 <- get @String -- 2
@@ -89,7 +89,7 @@ test_asyncWithUnmask = runEff . runAsyncE . evalState "initial" $ do
     (inner1, inner2, outer)
 
 test_pooledWorkers :: Assertion
-test_pooledWorkers = runEff . runAsyncE . evalState (0::Int) $ do
+test_pooledWorkers = runEff . runAsyncE . evalLocalState (0::Int) $ do
   x <- pooledForConcurrentlyN threads [1..n] $ \k -> do
     r <- get @Int
     modify @Int (+1)

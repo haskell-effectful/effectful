@@ -1,5 +1,5 @@
 -- | The 'Writer' effect.
-module Effectful.Writer
+module Effectful.Writer.Local
   ( Writer
   , runWriter
   , execWriter

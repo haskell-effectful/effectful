@@ -211,7 +211,6 @@ instance E.MonadCatch (Eff es) where
     unEff m es `catch` \e -> do
       checkSizeEnv size es
       unEff (handler e) es
-  {-# INLINABLE catch #-}
 
 instance E.MonadMask (Eff es) where
   mask k = unsafeEff $ \es -> mask $ \restore ->
@@ -230,7 +229,6 @@ instance E.MonadMask (Eff es) where
     checkSizeEnv size es
     c <- unEff (release resource $ E.ExitCaseSuccess b) es
     pure (b, c)
-  {-# INLINABLE generalBracket #-}
 
 ----------------------------------------
 -- Fail

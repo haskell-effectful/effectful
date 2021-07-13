@@ -94,23 +94,43 @@ sharedState env = \case
 ----------------------------------------
 -- Operations
 
-get :: State s :> es => Eff es s
+get
+  :: (HasCallStack, State s :> es)
+  => Eff es s
 get = send Get
 
-gets :: State s :> es => (s -> a) -> Eff es a
+gets
+  :: (HasCallStack, State s :> es)
+  => (s -> a)
+  -> Eff es a
 gets f = f <$> get
 
-put :: State s :> es => s -> Eff es ()
+put
+  :: (HasCallStack, State s :> es)
+  => s
+  -> Eff es ()
 put = send . Put
 
-state :: (State s :> es) => (s -> (a, s)) -> Eff es a
+state
+  :: (HasCallStack, State s :> es)
+  => (s -> (a, s))
+  -> Eff es a
 state = send . State
 
-modify :: State s :> es => (s -> s) -> Eff es ()
+modify
+  :: (HasCallStack, State s :> es)
+  => (s -> s)
+  -> Eff es ()
 modify f = state (\s -> ((), f s))
 
-stateM :: State s :> es => (s -> Eff es (a, s)) -> Eff es a
+stateM
+  :: (HasCallStack, State s :> es)
+  => (s -> Eff es (a, s))
+  -> Eff es a
 stateM = send . StateM
 
-modifyM :: State s :> es => (s -> Eff es s) -> Eff es ()
+modifyM
+  :: (HasCallStack, State s :> es)
+  => (s -> Eff es s)
+  -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)

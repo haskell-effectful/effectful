@@ -25,6 +25,12 @@ module Effectful.Error
  , throwError
  , catchError
  , tryError
+
+ -- * Re-exports
+ , HasCallStack
+ , CallStack
+ , getCallStack
+ , prettyCallStack
  ) where
 
 import Control.Exception

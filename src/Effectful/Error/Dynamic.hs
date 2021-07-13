@@ -7,7 +7,6 @@ module Effectful.Error.Dynamic
   ) where
 
 import Data.Typeable
-import GHC.Stack
 
 import Effectful.Handler
 import Effectful.Monad
@@ -15,12 +14,12 @@ import qualified Effectful.Error as E
 
 data Error e :: Effect where
   ThrowError :: e -> Error e m a
-  CatchError :: m a -> (CallStack -> e -> m a) -> Error e m a
+  CatchError :: m a -> (E.CallStack -> e -> m a) -> Error e m a
 
 runError
   :: Typeable e
   => Eff (Error e : es) a
-  -> Eff es (Either (CallStack, e) a)
+  -> Eff es (Either (E.CallStack, e) a)
 runError = reinterpretM E.runError $ \env -> \case
   ThrowError e   -> E.throwError e
   CatchError m h -> localSeqUnlift env $ \unlift -> do
@@ -33,14 +32,14 @@ throwError
 throwError = send . ThrowError
 
 catchError
-  :: Error e :> es
+  :: (HasCallStack, Error e :> es)
   => Eff es a
-  -> (CallStack -> e -> Eff es a)
+  -> (E.CallStack -> e -> Eff es a)
   -> Eff es a
 catchError m = send . CatchError m
 
 tryError
-  :: Error e :> es
+  :: (HasCallStack, Error e :> es)
   => Eff es a
-  -> Eff es (Either (CallStack, e) a)
+  -> Eff es (Either (E.CallStack, e) a)
 tryError m = (Right <$> m) `catchError` \es e -> pure $ Left (es, e)

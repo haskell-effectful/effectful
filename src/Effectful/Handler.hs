@@ -28,6 +28,9 @@ module Effectful.Handler
   -- *** Bidirectional lifts
   , localLiftUnlift
   , localLiftUnliftIO
+
+  -- * Re-exports
+  , HasCallStack
   ) where
 
 import Control.Monad.IO.Unlift

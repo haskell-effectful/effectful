@@ -3,7 +3,6 @@ module ErrorTests (errorTests) where
 import Control.Monad.IO.Class
 import Test.Tasty
 import Test.Tasty.HUnit
-import GHC.Stack (getCallStack)
 
 import Effectful
 import Effectful.Error

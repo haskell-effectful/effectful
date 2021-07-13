@@ -40,7 +40,7 @@ localWriter
   -> Eff es a
 localWriter env = \case
   Tell w   -> L.tell w
-  Listen m -> localSeqUnlift env $ \run -> L.listen (run m)
+  Listen m -> localSeqUnlift env $ \unlift -> L.listen (unlift m)
 
 ----------------------------------------
 -- Shared
@@ -58,7 +58,7 @@ sharedWriter
   -> Eff es a
 sharedWriter env = \case
   Tell w    -> S.tell w
-  Listen m  -> localSeqUnlift env $ \run -> S.listen (run m)
+  Listen m  -> localSeqUnlift env $ \unlift -> S.listen (unlift m)
 
 ----------------------------------------
 -- Operations

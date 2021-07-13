@@ -23,8 +23,8 @@ runError
   -> Eff es (Either (CallStack, e) a)
 runError = reinterpretM E.runError $ \env -> \case
   ThrowError e   -> E.throwError e
-  CatchError m h -> localSeqUnlift env $ \run -> do
-    E.catchError (run m) (\cs -> run . h cs)
+  CatchError m h -> localSeqUnlift env $ \unlift -> do
+    E.catchError (unlift m) (\cs -> unlift . h cs)
 
 throwError
   :: (HasCallStack, Error e :> es)

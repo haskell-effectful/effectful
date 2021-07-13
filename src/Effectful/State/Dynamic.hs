@@ -66,7 +66,7 @@ localState env = \case
   Get      -> L.get
   Put s    -> L.put s
   State f  -> L.state f
-  StateM f -> localSeqUnlift env $ \run -> L.stateM (run . f)
+  StateM f -> localSeqUnlift env $ \unlift -> L.stateM (unlift . f)
 
 ----------------------------------------
 -- Shared
@@ -89,7 +89,7 @@ sharedState env = \case
   Get      -> S.get
   Put s    -> S.put s
   State f  -> S.state f
-  StateM f -> localSeqUnlift env $ \run -> S.stateM (run . f)
+  StateM f -> localSeqUnlift env $ \unlift -> S.stateM (unlift . f)
 
 ----------------------------------------
 -- Operations

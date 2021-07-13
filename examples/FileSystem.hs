@@ -16,7 +16,7 @@ import qualified System.IO as IO
 
 import Effectful
 import Effectful.Error
-import Effectful.State
+import Effectful.State.Local
 
 -- | An effect for reading and writing files.
 data FileSystem :: Effect where
@@ -30,11 +30,11 @@ newtype FsError = FsError String
 -- Operations
 
 -- | Read contents of a file.
-readFile :: FileSystem :> es => FilePath -> Eff es String
+readFile :: (HasCallStack, FileSystem :> es) => FilePath -> Eff es String
 readFile = send . ReadFile
 
 -- | Write contents to a file.
-writeFile :: FileSystem :> es => FilePath -> String -> Eff es ()
+writeFile :: (HasCallStack, FileSystem :> es) => FilePath -> String -> Eff es ()
 writeFile path = send . WriteFile path
 
 ----------------------------------------

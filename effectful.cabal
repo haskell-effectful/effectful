@@ -95,6 +95,7 @@ library
                      Effectful.Internal.Unlift
                      Effectful.Monad
                      Effectful.Reader
+                     Effectful.Reader.Dynamic
                      Effectful.Resource
                      Effectful.State.Dynamic
                      Effectful.State.Local

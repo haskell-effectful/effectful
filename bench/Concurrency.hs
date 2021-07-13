@@ -2,8 +2,7 @@
 module Concurrency (concurrencyBenchmark) where
 
 #ifdef VERSION_criterion
-import Criterion
-import Criterion.Main
+import Criterion hiding (env)
 #endif
 
 #ifdef VERSION_tasty_bench

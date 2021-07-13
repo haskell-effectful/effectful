@@ -3,7 +3,6 @@ module Unlift (unliftBenchmark) where
 
 #ifdef VERSION_criterion
 import Criterion
-import Criterion.Main
 #endif
 
 #ifdef VERSION_tasty_bench

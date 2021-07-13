@@ -149,11 +149,11 @@ benchmark bench
           build-depends: polysemy
 
     build-depends:    base
+                    , async
                     , effectful
                     , tasty-bench
                     , unix
                     , unliftio
-                    , async
 
     hs-source-dirs: bench
 

@@ -15,6 +15,7 @@ import Control.Monad
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
 import GHC.IO (IO(..))
+import GHC.Stack (HasCallStack)
 import GHC.Weak (Weak(..))
 import System.Mem.Weak (deRefWeak)
 import qualified Data.IntMap.Strict as IM
@@ -25,14 +26,15 @@ import Effectful.Internal.Utils
 -- | Concurrent unlift that doesn't preserve the environment between calls to
 -- the unlifting function in threads other than its creator.
 unsafeEphemeralConcUnliftIO
-  :: Int
+  :: HasCallStack
+  => Int
   -> ((forall r. m r -> IO r) -> IO a)
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
 unsafeEphemeralConcUnliftIO uses k es0 unEff = do
-  when (uses < 0) $ do
-    error $ "ephemeralConcUnliftIO: invalid number of uses: " ++ show uses
+  unless (uses > 0) $ do
+    error $ "Invalid number of uses: " ++ show uses
   tid0 <- myThreadId
   -- Create a copy of the environment as a template for the other threads to
   -- use. This can't be done from inside the callback as the environment might
@@ -57,15 +59,16 @@ unsafeEphemeralConcUnliftIO uses k es0 unEff = do
 -- | Concurrent unlift that preserves the environment between calls to the
 -- unlifting function within a particular thread.
 unsafePersistentConcUnliftIO
-  :: Bool
+  :: HasCallStack
+  => Bool
   -> Int
   -> ((forall r. m r -> IO r) -> IO a)
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
 unsafePersistentConcUnliftIO cleanUp threads k es0 unEff = do
-  when (threads < 0) $ do
-    error $ "persistentConcUnliftIO: invalid number of threads: " ++ show threads
+  unless (threads > 0) $ do
+    error $ "Invalid number of threads: " ++ show threads
   tid0 <- myThreadId
   -- Create a copy of the environment as a template for the other threads to
   -- use. This can't be done from inside the callback as the environment might

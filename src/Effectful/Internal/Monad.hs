@@ -58,17 +58,18 @@ module Effectful.Internal.Monad
 import Control.Applicative (liftA2)
 import Control.Concurrent (myThreadId)
 import Control.Exception
-import Control.Monad.Base
 import Control.Monad.Fix
 import Control.Monad.IO.Class
-import Control.Monad.IO.Unlift
 import Control.Monad.Primitive
-import Control.Monad.Trans.Control
 import Data.Unique
 import GHC.Exts (oneShot)
 import GHC.IO (IO(..))
+import GHC.Stack (HasCallStack)
 import System.IO.Unsafe (unsafeDupablePerformIO)
+import qualified Control.Monad.Base as M
 import qualified Control.Monad.Catch as E
+import qualified Control.Monad.IO.Unlift as M
+import qualified Control.Monad.Trans.Control as M
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
@@ -143,13 +144,18 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 -- /Note:/ the 'IO' operation must not run its argument in a separate thread,
 -- attempting to do so will result in a runtime error.
 unsafeWithLiftMapIO
-  :: ((forall a b localEs. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
+  :: HasCallStack
+  => ((forall a b localEs. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -> Eff es r
 unsafeWithLiftMapIO k = k $ \mapIO m -> unsafeEff $ \es -> do
   unsafeSeqUnliftEff es $ \unlift -> mapIO $ unlift m
 
 -- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
-unsafeSeqUnliftEff :: Env es -> ((forall r. Eff es r -> IO r) -> IO a) -> IO a
+unsafeSeqUnliftEff
+  :: HasCallStack
+  => Env es
+  -> ((forall r. Eff es r -> IO r) -> IO a)
+  -> IO a
 unsafeSeqUnliftEff es k = do
   tid0 <- myThreadId
   k $ \m -> do
@@ -162,7 +168,8 @@ unsafeSeqUnliftEff es k = do
 
 -- | Lower 'Eff' operations into 'IO' ('ConcUnlift').
 unsafeConcUnliftEff
-  :: Env es
+  :: HasCallStack
+  => Env es
   -> Persistence
   -> Limit
   -> ((forall r. Eff es r -> IO r) -> IO a)
@@ -283,20 +290,40 @@ runEff m = unEff (evalEffect (IdE (IOE SeqUnlift)) m) =<< emptyEnv
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
 
-instance IOE :> es => MonadUnliftIO (Eff es) where
-  withRunInIO = unliftEff
+instance IOE :> es => M.MonadUnliftIO (Eff es) where
+  withRunInIO = withRunInIO
+    where
+      -- A trick to show name of the function in the call stack.
+      withRunInIO
+        :: (HasCallStack, IOE :> es)
+        => ((forall r. Eff es r -> IO r) -> IO a)
+        -> Eff es a
+      withRunInIO f = unliftStrategy >>= \case
+        SeqUnlift -> unsafeEff $ \es -> unsafeSeqUnliftEff es f
+        ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
+          unsafeEff $ \es -> unsafeConcUnliftEff es p b f
 
 -- | Instance included for compatibility with existing code, usage of 'liftIO'
 -- is preferrable.
-instance IOE :> es => MonadBase IO (Eff es) where
+instance IOE :> es => M.MonadBase IO (Eff es) where
   liftBase = unsafeEff_
 
 -- | Instance included for compatibility with existing code, usage of
 -- 'withRunInIO' is preferrable.
-instance IOE :> es => MonadBaseControl IO (Eff es) where
+instance IOE :> es => M.MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
-  liftBaseWith = unliftEff
   restoreM = pure
+  liftBaseWith = liftBaseWith
+    where
+      -- A trick to show name of the function in the call stack.
+      liftBaseWith
+        :: (HasCallStack, IOE :> es)
+        => ((forall r. Eff es r -> IO r) -> IO a)
+        -> Eff es a
+      liftBaseWith f = unliftStrategy >>= \case
+        SeqUnlift -> unsafeEff $ \es -> unsafeSeqUnliftEff es f
+        ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
+          unsafeEff $ \es -> unsafeConcUnliftEff es p b f
 
 ----------------------------------------
 -- Primitive
@@ -377,13 +404,6 @@ unliftStrategy = readerEffectM $ \(IdE (IOE unlift)) -> pure unlift
 -- /Note:/ the strategy is always reset to 'SeqUnlift' for new threads.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
 withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
-
--- | Helper for 'MonadBaseControl' and 'MonadUnliftIO' instances.
-unliftEff :: IOE :> es => ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
-unliftEff f = unliftStrategy >>= \case
-  SeqUnlift -> unsafeEff $ \es -> unsafeSeqUnliftEff es f
-  ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
-    unsafeEff $ \es -> unsafeConcUnliftEff es p b f
 
 ----------------------------------------
 -- Helpers

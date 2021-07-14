@@ -1,5 +1,5 @@
 module Effectful.Reader.Dynamic
-  ( Reader
+  ( Reader(..)
   , runReader
   , ask
   , asks

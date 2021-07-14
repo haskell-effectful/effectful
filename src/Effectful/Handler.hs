@@ -209,9 +209,9 @@ withLiftMap
   -- ^ Continuation with the lifting function in scope.
   -> Eff es r
 withLiftMap k = unsafeEff $ \es -> do
-  (`unEff` es) $ k $ \mapIO m -> unsafeEff $ \localEs -> do
+  (`unEff` es) $ k $ \mapEff m -> unsafeEff $ \localEs -> do
     unsafeSeqUnliftEff localEs $ \unlift -> do
-      (`unEff` es) . mapIO . liftIO $ unlift m
+      (`unEff` es) . mapEff . liftIO $ unlift m
 
 -- | Utility for lifting 'IO' operations of type
 --

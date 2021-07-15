@@ -88,6 +88,8 @@ import Effectful.Internal.Monad
 --
 -- /Note:/ thread local state changes in 'Eff' operations run asynchronously
 -- will not affect the parent thread.
+--
+-- /TODO:/ write about 'AsyncE' not respecting scoped operations.
 data AsyncE :: Effect where
   AsyncE :: AsyncE m r
 

@@ -33,6 +33,7 @@ module Effectful.Internal.Monad
   , Limit(..)
   , unliftStrategy
   , withUnliftStrategy
+  , withEffToIO
 
   --- *** Low-level helpers
   , unsafeWithLiftMapIO
@@ -58,18 +59,18 @@ module Effectful.Internal.Monad
 import Control.Applicative (liftA2)
 import Control.Concurrent (myThreadId)
 import Control.Exception
+import Control.Monad.Base
 import Control.Monad.Fix
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Primitive
+import Control.Monad.Trans.Control
 import Data.Unique
 import GHC.Exts (oneShot)
 import GHC.IO (IO(..))
 import GHC.Stack (HasCallStack)
 import System.IO.Unsafe (unsafeDupablePerformIO)
-import qualified Control.Monad.Base as M
 import qualified Control.Monad.Catch as E
-import qualified Control.Monad.IO.Unlift as M
-import qualified Control.Monad.Trans.Control as M
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
@@ -290,40 +291,21 @@ runEff m = unEff (evalEffect (IdE (IOE SeqUnlift)) m) =<< emptyEnv
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
 
-instance IOE :> es => M.MonadUnliftIO (Eff es) where
-  withRunInIO = withRunInIO
-    where
-      -- A trick to show name of the function in the call stack.
-      withRunInIO
-        :: (HasCallStack, IOE :> es)
-        => ((forall r. Eff es r -> IO r) -> IO a)
-        -> Eff es a
-      withRunInIO f = unliftStrategy >>= \case
-        SeqUnlift -> unsafeEff $ \es -> unsafeSeqUnliftEff es f
-        ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
-          unsafeEff $ \es -> unsafeConcUnliftEff es p b f
+-- | Use 'withEffToIO' if you want accurate stack traces on errors.
+instance IOE :> es => MonadUnliftIO (Eff es) where
+  withRunInIO = withEffToIO
 
 -- | Instance included for compatibility with existing code, usage of 'liftIO'
 -- is preferrable.
-instance IOE :> es => M.MonadBase IO (Eff es) where
+instance IOE :> es => MonadBase IO (Eff es) where
   liftBase = unsafeEff_
 
 -- | Instance included for compatibility with existing code, usage of
 -- 'withRunInIO' is preferrable.
-instance IOE :> es => M.MonadBaseControl IO (Eff es) where
+instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
+  liftBaseWith = withEffToIO
   restoreM = pure
-  liftBaseWith = liftBaseWith
-    where
-      -- A trick to show name of the function in the call stack.
-      liftBaseWith
-        :: (HasCallStack, IOE :> es)
-        => ((forall r. Eff es r -> IO r) -> IO a)
-        -> Eff es a
-      liftBaseWith f = unliftStrategy >>= \case
-        SeqUnlift -> unsafeEff $ \es -> unsafeSeqUnliftEff es f
-        ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
-          unsafeEff $ \es -> unsafeConcUnliftEff es p b f
 
 ----------------------------------------
 -- Primitive
@@ -401,9 +383,24 @@ unliftStrategy = readerEffectM $ \(IdE (IOE unlift)) -> pure unlift
 
 -- | Locally override the 'UnliftStrategy' with a given value.
 --
--- /Note:/ the strategy is always reset to 'SeqUnlift' for new threads.
+-- /Note:/ the strategy is reset to 'SeqUnlift' for new threads.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
 withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
+
+-- | Create an unlifting function with the current 'UnliftStrategy'.
+--
+-- This function is equivalent to 'withRunInIO', but has a 'HasCallStack'
+-- constraint for accurate stack traces in case an insufficiently powerful
+-- 'UnliftStrategy' is used and the unlifting function fails.
+withEffToIO
+  :: (HasCallStack, IOE :> es)
+  => ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
+  -> Eff es a
+withEffToIO f = unliftStrategy >>= \case
+  SeqUnlift -> unsafeEff $ \es -> unsafeSeqUnliftEff es f
+  ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
+    unsafeEff $ \es -> unsafeConcUnliftEff es p b f
 
 ----------------------------------------
 -- Helpers

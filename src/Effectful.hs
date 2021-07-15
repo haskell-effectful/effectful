@@ -21,6 +21,7 @@ module Effectful
   , Limit(..)
   , unliftStrategy
   , withUnliftStrategy
+  , withEffToIO
 
   -- * 'Effect' handlers
 

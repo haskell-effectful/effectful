@@ -21,6 +21,7 @@ module Effectful.Monad
   , Limit(..)
   , unliftStrategy
   , withUnliftStrategy
+  , withEffToIO
   ) where
 
 import Effectful.Internal.Effect

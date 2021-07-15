@@ -76,7 +76,6 @@ library
                     , monad-control
                     , primitive
                     , resourcet
-                    , stm
                     , transformers-base
                     , unliftio-core
                     , unliftio

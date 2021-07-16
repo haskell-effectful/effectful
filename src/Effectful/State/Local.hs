@@ -2,8 +2,8 @@
 --
 -- Represented as a pure value underneath, therefore:
 --
--- - thread local (if you need the state to be shareble, have a look at
---   "Effectful.State.Shared"),
+-- - thread local (if you need the state to be shared between threads, have a
+--   look at "Effectful.State.Shared"),
 --
 -- - very fast.
 --

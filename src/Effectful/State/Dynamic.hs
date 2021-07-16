@@ -38,7 +38,7 @@ import qualified Effectful.State.Shared as S
 
 -- | Provide access to a mutable state of type @s@.
 --
--- Whether the state is local and shareable depends on the interpretation.
+-- Whether the state is local or shared depends on the interpretation.
 data State s :: Effect where
   Get    :: State s m s
   Put    :: ~s -> State s m ()

@@ -83,7 +83,7 @@ send op = unsafeEff $ \es -> do
 
 -- | Interpret a first order effect.
 interpret
-  :: (forall r localEs. HasCallStack => e (Eff localEs) r -> Eff es r)
+  :: (forall r m. HasCallStack => e m r -> Eff es r)
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
@@ -111,7 +111,7 @@ interpretM handler m = unsafeEff $ \es -> do
 reinterpret
   :: (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
-  -> (forall r localEs. HasCallStack => e (Eff localEs) r -> Eff handlerEs r)
+  -> (forall r m. HasCallStack => e m r -> Eff handlerEs r)
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b

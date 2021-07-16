@@ -1,7 +1,7 @@
 # effectful
 
 [![Build Status](https://github.com/arybczak/effectful/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/arybczak/effectful/actions?query=branch%3Amaster)
-[![Hackage](https://img.shields.io/hackage/v/effectful.svg)](https://hackage.haskell.org/package/effectful)
+[![Documentation](https://img.shields.io/static/v1?label=docs&message=0.0.0.0&color=informational)](https://rybczak.net/files/effectful/effectful-0.0.0.0-docs)
 
 *Note:* this is a pre-release.
 

@@ -32,6 +32,7 @@ import Control.Monad.Primitive
 import Data.IORef
 import Data.Primitive.SmallArray
 import GHC.Exts (Any)
+import GHC.Stack (HasCallStack)
 import Unsafe.Coerce
 import qualified Data.IntMap.Strict as IM
 
@@ -178,8 +179,8 @@ cloneEnv (Env forks@(Forks _ baseIx lref0 _) gref0 gen0) = do
   EnvRef _ es0 fs0 <- readIORef gref0
   EnvRef n _   _   <- readIORef lref0
   let len = baseIx + n
-  es  <- newSmallArray len (error "undefined field")
-  fs  <- newSmallArray len (error "undefined field")
+  es  <- newSmallArray len undefinedData
+  fs  <- newSmallArray len undefinedData
   baseN <- copyForks es fs len forks
   copySmallMutableArray es 0 es0 0 baseN
   copySmallMutableArray fs 0 fs0 0 baseN
@@ -364,10 +365,10 @@ unsafeConsEnv e f (Env fork gref gen) = case fork of
           writeIORef ref $! EnvRef (n + 1) es0 fs0
         EQ -> do
           let len = doubleCapacity len0
-          es <- newSmallArray len (error "undefined field")
+          es <- newSmallArray len undefinedData
           copySmallMutableArray es 0 es0 0 len0
           e `seq` writeSmallArray es n (toAny e)
-          fs <- newSmallArray len (error "undefined field")
+          fs <- newSmallArray len undefinedData
           copySmallMutableArray fs 0 fs0 0 len0
           f `seq` writeSmallArray fs n (toAny f)
           writeIORef ref $! EnvRef (n + 1) es fs
@@ -393,8 +394,8 @@ unsafeTailEnv len (Env fork gref gen) = case fork of
       if k /= n - 1
         then error $ "k (" ++ show k ++ ") /= n - 1 (" ++ show (n - 1) ++ ")"
         else do
-          writeSmallArray es k (error "undefined field")
-          writeSmallArray fs k (error "undefined field")
+          writeSmallArray es k undefinedData
+          writeSmallArray fs k undefinedData
           writeIORef ref $! EnvRef k es fs
 {-# NOINLINE unsafeTailEnv #-}
 
@@ -436,10 +437,13 @@ unsafeStateEnv f env = do
 ----------------------------------------
 -- Internal helpers
 
+undefinedData :: HasCallStack => a
+undefinedData = error "undefined data"
+
 emptyEnvRef :: IO (IORef EnvRef)
 emptyEnvRef = do
-  es <- newSmallArray 0 (error "undefined field")
-  fs <- newSmallArray 0 (error "undefined field")
+  es <- newSmallArray 0 undefinedData
+  fs <- newSmallArray 0 undefinedData
   newIORef $ EnvRef 0 es fs
 
 -- | Determine location of the data type in the environment.

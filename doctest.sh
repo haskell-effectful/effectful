@@ -7,27 +7,35 @@
 # - Compile doctest with the same GHC version the project currently uses.
 #
 
-doctest \
-  effectful/src \
-  effectful-core/src \
-  -XBangPatterns \
-  -XConstraintKinds \
-  -XDataKinds \
-  -XDeriveFunctor \
-  -XFlexibleContexts \
-  -XFlexibleInstances \
-  -XGADTs \
-  -XGeneralizedNewtypeDeriving \
-  -XLambdaCase \
-  -XMultiParamTypeClasses \
-  -XNoStarIsType \
-  -XRankNTypes \
-  -XRecordWildCards \
-  -XRoleAnnotations \
-  -XScopedTypeVariables \
-  -XStandaloneDeriving \
-  -XStrictData \
-  -XTupleSections \
-  -XTypeApplications \
-  -XTypeFamilies \
-  -XTypeOperators
+set -eu
+
+run_doctest() {
+  pushd "${1}"
+  doctest \
+    "${2}" \
+    -XBangPatterns \
+    -XConstraintKinds \
+    -XDataKinds \
+    -XDeriveFunctor \
+    -XFlexibleContexts \
+    -XFlexibleInstances \
+    -XGADTs \
+    -XGeneralizedNewtypeDeriving \
+    -XLambdaCase \
+    -XMultiParamTypeClasses \
+    -XNoStarIsType \
+    -XRankNTypes \
+    -XRecordWildCards \
+    -XRoleAnnotations \
+    -XScopedTypeVariables \
+    -XStandaloneDeriving \
+    -XStrictData \
+    -XTupleSections \
+    -XTypeApplications \
+    -XTypeFamilies \
+    -XTypeOperators
+  popd
+}
+
+run_doctest effectful src
+run_doctest effectful-core src

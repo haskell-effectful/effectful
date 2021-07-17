@@ -7,7 +7,8 @@
 # - Compile doctest with the same GHC version the project currently uses.
 #
 
-doctest src \
+doctest \
+  effectful/src \
   -XBangPatterns \
   -XConstraintKinds \
   -XDataKinds \

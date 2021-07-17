@@ -69,10 +69,8 @@ library
                     , exceptions
                     , monad-control
                     , primitive
-                    , stm
                     , transformers-base
                     , unliftio-core
-                    , unliftio
 
     hs-source-dirs:  src
 

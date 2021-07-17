@@ -1,6 +1,6 @@
 cabal-version:      2.4
 build-type:         Simple
-name:               effectful
+name:               effectful-core
 version:            0.0.0.0
 license:            BSD-3-Clause
 license-file:       LICENSE
@@ -53,47 +53,53 @@ common language
                         TypeFamilies
                         TypeOperators
 
+library effectful-internal-utils
+    import:          language
+
+    build-depends:   base
+
+    hs-source-dirs:  utils
+    c-sources:       utils/utils.c
+
+    exposed-modules: Effectful.Internal.Utils
+
 library
     import:         language
 
     ghc-options:    -O2
 
     build-depends:    base >= 4.13 && <5
-                    , async
                     , containers
-                    , effectful-core
+                    , effectful-internal-utils
                     , exceptions
                     , monad-control
                     , primitive
-                    , resourcet
+                    , stm
                     , transformers-base
                     , unliftio-core
                     , unliftio
 
     hs-source-dirs:  src
 
-    exposed-modules: Effectful
-                     Effectful.Async
-                     Effectful.Resource
+    exposed-modules: Effectful.Error
+                     Effectful.Error.Dynamic
+                     Effectful.Fail
+                     Effectful.Handler
+                     Effectful.Internal.Effect
+                     Effectful.Internal.Env
+                     Effectful.Internal.Monad
+                     Effectful.Internal.Unlift
+                     Effectful.Monad
+                     Effectful.Reader
+                     Effectful.Reader.Dynamic
+                     Effectful.State.Dynamic
+                     Effectful.State.Local
+                     Effectful.State.Shared
+                     Effectful.Writer.Dynamic
+                     Effectful.Writer.Local
+                     Effectful.Writer.Shared
 
-  reexported-modules:    Effectful.Error
-                       , Effectful.Error.Dynamic
-                       , Effectful.Fail
-                       , Effectful.Handler
-                       , Effectful.Internal.Effect
-                       , Effectful.Internal.Env
-                       , Effectful.Internal.Monad
-                       , Effectful.Internal.Unlift
-                       , Effectful.Internal.Utils
-                       , Effectful.Monad
-                       , Effectful.Reader
-                       , Effectful.Reader.Dynamic
-                       , Effectful.State.Dynamic
-                       , Effectful.State.Local
-                       , Effectful.State.Shared
-                       , Effectful.Writer.Dynamic
-                       , Effectful.Writer.Local
-                       , Effectful.Writer.Shared
+  reexported-modules: Effectful.Internal.Utils
 
 test-suite test
     import:         language
@@ -102,7 +108,7 @@ test-suite test
 
     build-depends:    base
                     , containers
-                    , effectful
+                    , effectful-core
                     , exceptions
                     , lifted-base
                     , tasty
@@ -114,8 +120,7 @@ test-suite test
     type:           exitcode-stdio-1.0
     main-is:        Main.hs
 
-    other-modules:  AsyncTests
-                    ConcurrencyTests
+    other-modules:  ConcurrencyTests
                     ErrorTests
                     StateTests
                     Utils
@@ -134,12 +139,12 @@ benchmark bench
        if impl(ghc < 9.2)
           build-depends: fused-effects
 
-       if impl(ghc < 9.2)
+       if impl(ghc < 9)
           build-depends: polysemy
 
     build-depends:    base
                     , async
-                    , effectful
+                    , effectful-core
                     , tasty-bench
                     , unix
                     , unliftio

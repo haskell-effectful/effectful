@@ -9,6 +9,7 @@
 
 doctest \
   effectful/src \
+  effectful-core/src \
   -XBangPatterns \
   -XConstraintKinds \
   -XDataKinds \

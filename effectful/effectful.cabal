@@ -76,24 +76,24 @@ library
                      Effectful.Async
                      Effectful.Resource
 
-  reexported-modules:    Effectful.Error
-                       , Effectful.Error.Dynamic
-                       , Effectful.Fail
-                       , Effectful.Handler
-                       , Effectful.Internal.Effect
-                       , Effectful.Internal.Env
-                       , Effectful.Internal.Monad
-                       , Effectful.Internal.Unlift
-                       , Effectful.Internal.Utils
-                       , Effectful.Monad
-                       , Effectful.Reader
-                       , Effectful.Reader.Dynamic
-                       , Effectful.State.Dynamic
-                       , Effectful.State.Local
-                       , Effectful.State.Shared
-                       , Effectful.Writer.Dynamic
-                       , Effectful.Writer.Local
-                       , Effectful.Writer.Shared
+    reexported-modules:    Effectful.Error
+                         , Effectful.Error.Dynamic
+                         , Effectful.Fail
+                         , Effectful.Handler
+                         , Effectful.Internal.Effect
+                         , Effectful.Internal.Env
+                         , Effectful.Internal.Monad
+                         , Effectful.Internal.Unlift
+                         , Effectful.Internal.Utils
+                         , Effectful.Monad
+                         , Effectful.Reader
+                         , Effectful.Reader.Dynamic
+                         , Effectful.State.Dynamic
+                         , Effectful.State.Local
+                         , Effectful.State.Shared
+                         , Effectful.Writer.Dynamic
+                         , Effectful.Writer.Local
+                         , Effectful.Writer.Shared
 
 test-suite test
     import:         language

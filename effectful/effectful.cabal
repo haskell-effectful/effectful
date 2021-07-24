@@ -11,6 +11,11 @@ synopsis:           An easy to use, performant extensible effects library.
 
 description: An easy to use, performant extensible effects library with seamless
              integration with the existing Haskell ecosystem.
+             .
+             This is the "batteries included" variant; See the
+             @<https://hackage.haskell.org/package/effectful-core effectful-core>@
+             package for the effect system itself as well as the various other
+             @effectful-*@ packages if you need a smaller dependency footprint.
 
 extra-source-files: CHANGELOG.md
 

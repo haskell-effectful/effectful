@@ -44,7 +44,7 @@ runFileSystemIO
   :: (IOE :> es, Error FsError :> es)
   => Eff (FileSystem : es) a
   -> Eff es a
-runFileSystemIO = interpret $ \case
+runFileSystemIO = interpret $ \_ -> \case
   ReadFile path           -> adapt $ IO.readFile path
   WriteFile path contents -> adapt $ IO.writeFile path contents
   where
@@ -55,7 +55,7 @@ runFileSystemPure
   => M.Map FilePath String
   -> Eff (FileSystem : es) a
   -> Eff es a
-runFileSystemPure fs0 = reinterpret (evalState fs0) $ \case
+runFileSystemPure fs0 = reinterpret (evalState fs0) $ \_ -> \case
   ReadFile path -> gets (M.lookup path) >>= \case
     Just contents -> pure contents
     Nothing       -> throwError . FsError $ "File not found: " ++ show path

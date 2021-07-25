@@ -205,7 +205,7 @@ withLiftMap k = unsafeEff $ \es -> do
 --
 -- >>> :{
 -- runFork :: IOE :> es => Eff (Fork : es) a -> Eff es a
--- runFork = interpretM $ \env (ForkWithUnmask m) -> withLiftMapIO $ \liftMap -> do
+-- runFork = interpret $ \env (ForkWithUnmask m) -> withLiftMapIO $ \liftMap -> do
 --   localUnliftIO env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
 --     forkIOWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 -- :}

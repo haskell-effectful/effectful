@@ -30,11 +30,7 @@ module Effectful
 
   -- ** Basic handlers
   , interpret
-  , interpretM
-
-  -- ** Derived handlers
   , reinterpret
-  , reinterpretM
 
   -- ** Handling local 'Eff' operations
   , LocalEnv

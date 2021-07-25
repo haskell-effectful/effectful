@@ -28,10 +28,10 @@ data Writer w :: Effect where
 -- Local
 
 runLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runLocalWriter = reinterpretM L.runWriter localWriter
+runLocalWriter = reinterpret L.runWriter localWriter
 
 execLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execLocalWriter = reinterpretM L.execWriter localWriter
+execLocalWriter = reinterpret L.execWriter localWriter
 
 localWriter
   :: (L.Writer w :> es, Monoid w)
@@ -46,10 +46,10 @@ localWriter env = \case
 -- Shared
 
 runSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runSharedWriter = reinterpretM S.runWriter sharedWriter
+runSharedWriter = reinterpret S.runWriter sharedWriter
 
 execSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execSharedWriter = reinterpretM S.execWriter sharedWriter
+execSharedWriter = reinterpret S.execWriter sharedWriter
 
 sharedWriter
   :: (S.Writer w :> es, Monoid w)

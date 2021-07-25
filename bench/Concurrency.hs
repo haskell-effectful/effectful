@@ -60,28 +60,28 @@ data Fork :: Effect where
 
 -- | Uses 'localUnliftIO' and 'withLiftMapIO'.
 runFork1 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork1 = interpretM $ \env -> \case
+runFork1 = interpret $ \env -> \case
   ForkWithUnmask m -> withLiftMapIO $ \liftMap -> do
     localUnliftIO env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
       asyncWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 
 -- | Uses 'localUnlift' and 'withLiftMap'.
 runFork2 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork2 = reinterpretM A.runAsyncE $ \env -> \case
+runFork2 = reinterpret A.runAsyncE $ \env -> \case
   ForkWithUnmask m -> withLiftMap $ \liftMap -> do
     localUnlift env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
       A.asyncWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 
 -- | Uses 'localLiftUnliftIO'.
 runFork3 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork3 = interpretM $ \env -> \case
+runFork3 = interpret $ \env -> \case
   ForkWithUnmask m -> do
     localLiftUnliftIO env (ConcUnlift Persistent $ Limited 1) $ \lift unlift -> do
       asyncWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift
 
 -- | Uses 'localLiftUnlift'.
 runFork4 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork4 = reinterpretM A.runAsyncE $ \env -> \case
+runFork4 = reinterpret A.runAsyncE $ \env -> \case
   ForkWithUnmask m -> do
     localLiftUnlift env (ConcUnlift Persistent $ Limited 1) $ \lift unlift -> do
       A.asyncWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift

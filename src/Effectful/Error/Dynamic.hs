@@ -20,7 +20,7 @@ runError
   :: Typeable e
   => Eff (Error e : es) a
   -> Eff es (Either (E.CallStack, e) a)
-runError = reinterpretM E.runError $ \env -> \case
+runError = reinterpret E.runError $ \env -> \case
   ThrowError e   -> E.throwError e
   CatchError m h -> localSeqUnlift env $ \unlift -> do
     E.catchError (unlift m) (\cs -> unlift . h cs)

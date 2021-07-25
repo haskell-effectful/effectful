@@ -81,7 +81,7 @@ effectful_tryFileSize :: Effectful_File E.:> es => FilePath -> E.Eff es (Maybe I
 effectful_tryFileSize = E.send . Effectful_tryFileSize
 
 effectful_runFile :: E.IOE E.:> es => E.Eff (Effectful_File : es) a -> E.Eff es a
-effectful_runFile = E.interpret \case
+effectful_runFile = E.interpret \_ -> \case
   Effectful_tryFileSize path -> liftIO $ tryGetFileSize path
 
 data Effectful_Logging :: E.Effect where
@@ -93,7 +93,7 @@ effectful_logMsg = E.send . Effectful_logMsg
 effectful_runLogging
   :: E.Eff (Effectful_Logging : es) a
   -> E.Eff es (a, [String])
-effectful_runLogging = E.reinterpret (E.runState []) \case
+effectful_runLogging = E.reinterpret (E.runState []) \_ -> \case
   Effectful_logMsg msg -> E.modify (msg :)
 
 ----------

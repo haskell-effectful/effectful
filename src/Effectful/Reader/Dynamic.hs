@@ -15,7 +15,7 @@ data Reader r :: Effect where
   Local :: (r -> r) -> m a -> Reader r m a
 
 runReader :: r -> Eff (Reader r : es) a -> Eff es a
-runReader r = reinterpretM (R.runReader r) $ \env -> \case
+runReader r = reinterpret (R.runReader r) $ \env -> \case
   Ask       -> R.ask
   Local f m -> localSeqUnlift env $ \unlift -> R.local f (unlift m)
 

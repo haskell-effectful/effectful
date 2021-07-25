@@ -1,0 +1,157 @@
+cabal-version:      2.4
+build-type:         Simple
+name:               effectful
+version:            0.0.0.0
+license:            BSD-3-Clause
+license-file:       LICENSE
+category:           Control
+maintainer:         andrzej@rybczak.net
+author:             Andrzej Rybczak
+synopsis:           An easy to use, performant extensible effects library.
+
+description: An easy to use, performant extensible effects library with seamless
+             integration with the existing Haskell ecosystem.
+             .
+             This is the "batteries included" variant; See the
+             @<https://hackage.haskell.org/package/effectful-core effectful-core>@
+             package for the effect system itself as well as the various other
+             @effectful-*@ packages if you need a smaller dependency footprint.
+
+extra-source-files: CHANGELOG.md
+
+tested-with: GHC ==8.8.4 || ==8.10.4 || ==9.0.1 || ==9.2.0.20210422
+
+bug-reports:   https://github.com/arybczak/effectful/issues
+source-repository head
+  type:     git
+  location: https://github.com/arybczak/effectful.git
+
+flag benchmark-foreign-libraries
+    description: Include other effect libraries in the benchmarks.
+    default: False
+
+common language
+    ghc-options:        -Wall -Wcompat
+
+    default-language:   Haskell2010
+
+    default-extensions: BangPatterns
+                        ConstraintKinds
+                        DataKinds
+                        DeriveFunctor
+                        FlexibleContexts
+                        FlexibleInstances
+                        GADTs
+                        GeneralizedNewtypeDeriving
+                        LambdaCase
+                        MultiParamTypeClasses
+                        NoStarIsType
+                        RankNTypes
+                        RecordWildCards
+                        RoleAnnotations
+                        ScopedTypeVariables
+                        StandaloneDeriving
+                        StrictData
+                        TupleSections
+                        TypeApplications
+                        TypeFamilies
+                        TypeOperators
+
+library
+    import:         language
+
+    ghc-options:    -O2
+
+    build-depends:    base >= 4.13 && <5
+                    , async
+                    , effectful-core
+                    , resourcet
+                    , unliftio
+
+    hs-source-dirs:  src
+
+    exposed-modules: Effectful
+                     Effectful.Async
+                     Effectful.Resource
+
+    reexported-modules:    Effectful.Error
+                         , Effectful.Error.Dynamic
+                         , Effectful.Fail
+                         , Effectful.Handler
+                         , Effectful.Internal.Effect
+                         , Effectful.Internal.Env
+                         , Effectful.Internal.Monad
+                         , Effectful.Internal.Unlift
+                         , Effectful.Internal.Utils
+                         , Effectful.Monad
+                         , Effectful.Reader
+                         , Effectful.Reader.Dynamic
+                         , Effectful.State.Dynamic
+                         , Effectful.State.Local
+                         , Effectful.State.Shared
+                         , Effectful.Writer.Dynamic
+                         , Effectful.Writer.Local
+                         , Effectful.Writer.Shared
+
+test-suite test
+    import:         language
+
+    ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
+
+    build-depends:    base
+                    , containers
+                    , effectful
+                    , exceptions
+                    , lifted-base
+                    , tasty
+                    , tasty-hunit
+                    , unliftio
+
+    hs-source-dirs: tests examples
+
+    type:           exitcode-stdio-1.0
+    main-is:        Main.hs
+
+    other-modules:  AsyncTests
+                    ConcurrencyTests
+                    ErrorTests
+                    StateTests
+                    Utils
+                    -- These are examples; We do not actually run them but list
+                    -- them here in order to check if they compile.
+                    FileSystem
+
+benchmark bench
+    import:         language
+
+    ghc-options:    -threaded -rtsopts -with-rtsopts=-T
+
+    if flag(benchmark-foreign-libraries)
+       build-depends: mtl
+
+       if impl(ghc < 9)
+          build-depends: freer-simple
+
+       if impl(ghc < 9.2)
+          build-depends: fused-effects
+
+       if impl(ghc < 9.2)
+          build-depends: polysemy
+
+    build-depends:    base
+                    , async
+                    , effectful
+                    , tasty-bench
+                    , unix
+                    , unliftio
+
+    hs-source-dirs: bench
+
+    type:           exitcode-stdio-1.0
+    main-is:        Main.hs
+
+    other-modules:  Concurrency
+                    Countdown
+                    FileSizes
+                    Unlift
+                    Utils

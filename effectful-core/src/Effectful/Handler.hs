@@ -267,4 +267,3 @@ localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
 
 -- $setup
 -- >>> import Control.Concurrent
--- >>> import Effectful

@@ -1,6 +1,6 @@
 cabal-version:      2.4
 build-type:         Simple
-name:               effectful
+name:               effectful-core
 version:            0.0.0.0
 license:            BSD-3-Clause
 license-file:       LICENSE
@@ -11,9 +11,13 @@ synopsis:           An easy to use, performant extensible effects library.
 
 description: An easy to use, performant extensible effects library with seamless
              integration with the existing Haskell ecosystem.
+             .
+             This library provides the core of the effect system and is quiet
+             minimal. If you look for something more sophisticated have a look
+             at the @<https://hackage.haskell.org/package/effectful effectful>@
+             package.
 
 extra-source-files: CHANGELOG.md
-                    README.md
 
 tested-with: GHC ==8.8.4 || ==8.10.4 || ==9.0.1 || ==9.2.0.20210422
 
@@ -21,10 +25,6 @@ bug-reports:   https://github.com/arybczak/effectful/issues
 source-repository head
   type:     git
   location: https://github.com/arybczak/effectful.git
-
-flag benchmark-foreign-libraries
-    description: Include other effect libraries in the benchmarks.
-    default: False
 
 common language
     ghc-options:        -Wall -Wcompat
@@ -69,22 +69,17 @@ library
     ghc-options:    -O2
 
     build-depends:    base >= 4.13 && <5
-                    , async
                     , containers
                     , effectful-internal-utils
                     , exceptions
                     , monad-control
                     , primitive
-                    , resourcet
                     , transformers-base
                     , unliftio-core
-                    , unliftio
 
     hs-source-dirs:  src
 
-    exposed-modules: Effectful
-                     Effectful.Async
-                     Effectful.Error
+    exposed-modules: Effectful.Error
                      Effectful.Error.Dynamic
                      Effectful.Fail
                      Effectful.Handler
@@ -95,7 +90,6 @@ library
                      Effectful.Monad
                      Effectful.Reader
                      Effectful.Reader.Dynamic
-                     Effectful.Resource
                      Effectful.State.Dynamic
                      Effectful.State.Local
                      Effectful.State.Shared
@@ -103,64 +97,4 @@ library
                      Effectful.Writer.Local
                      Effectful.Writer.Shared
 
-  reexported-modules: Effectful.Internal.Utils
-
-test-suite test
-    import:         language
-
-    ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
-
-    build-depends:    base
-                    , containers
-                    , effectful
-                    , exceptions
-                    , lifted-base
-                    , tasty
-                    , tasty-hunit
-                    , unliftio
-
-    hs-source-dirs: tests
-
-    type:           exitcode-stdio-1.0
-    main-is:        Main.hs
-
-    other-modules:  AsyncTests
-                    ConcurrencyTests
-                    ErrorTests
-                    StateTests
-                    Utils
-
-benchmark bench
-    import:         language
-
-    ghc-options:    -threaded -rtsopts -with-rtsopts=-T
-
-    if flag(benchmark-foreign-libraries)
-       build-depends: mtl
-
-       if impl(ghc < 9)
-          build-depends: freer-simple
-
-       if impl(ghc < 9.2)
-          build-depends: fused-effects
-
-       if impl(ghc < 9.2)
-          build-depends: polysemy
-
-    build-depends:    base
-                    , async
-                    , effectful
-                    , tasty-bench
-                    , unix
-                    , unliftio
-
-    hs-source-dirs: bench
-
-    type:           exitcode-stdio-1.0
-    main-is:        Main.hs
-
-    other-modules:  Concurrency
-                    Countdown
-                    FileSizes
-                    Unlift
-                    Utils
+    reexported-modules: Effectful.Internal.Utils

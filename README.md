@@ -100,11 +100,25 @@ to "boring" transformer stacks, most of which are a dozen of newtype'd `StateT`
 or `ReaderT` transformers, each with a few associated operations (usually tied
 to a type class), not to replace monad transformers altogether.
 
+## Usage
+
+The effect system and its effects are split among several libraries:
+
+- The `effectful-core` library contains the main machinery of the effect system
+  itself and a few basic effects.
+  It aims for a small dependency footprint and provides the building blocks for
+  more advanced effects.
+
+- _TBD_ `effectful-resource`, `effectful-process`, ...
+
+- Finally, the `effectful` library which comes with 'batteries included'. It is
+  build on top of the other libraries and re-exports the functionality of those.
+
 ## Example
 
 A `Filesystem` effect with two handlers, one that runs in `IO` and another that
 uses an in-memory virtual file system can be found
-[here](https://github.com/arybczak/effectful/blob/master/examples/FileSystem.hs).
+[here](https://github.com/arybczak/effectful/blob/master/effectful/examples/FileSystem.hs).
 
 ## Resources
 

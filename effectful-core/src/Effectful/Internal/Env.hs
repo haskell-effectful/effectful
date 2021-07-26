@@ -405,19 +405,20 @@ unsafeTailEnv len (Env fork gref gen) = case fork of
 -- | Replace the data type in the environment with a new value (in place).
 unsafePutEnv
   :: forall e es handler. e :> es
-  => handler e
-  -> Env es -> IO ()
-unsafePutEnv e env = do
+  => Env es
+  -> handler e
+  -> IO ()
+unsafePutEnv env e = do
   (i, es) <- getLocation @e env
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place).
 unsafeModifyEnv
   :: forall e es handler. e :> es
-  => (handler e -> handler e)
-  -> Env es
+  => Env es
+  -> (handler e -> handler e)
   -> IO ()
-unsafeModifyEnv f env = do
+unsafeModifyEnv env f = do
   (i, es) <- getLocation @e env
   e <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
@@ -425,10 +426,10 @@ unsafeModifyEnv f env = do
 -- | Modify the data type in the environment (in place) and return a value.
 unsafeStateEnv
   :: forall e es handler a. e :> es
-  => (handler e -> (a, handler e))
-  -> Env es
+  => Env es
+  -> (handler e -> (a, handler e))
   -> IO a
-unsafeStateEnv f env = do
+unsafeStateEnv env f = do
   (i, es) <- getLocation @e env
   (a, e) <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)

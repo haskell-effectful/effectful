@@ -51,9 +51,8 @@ module Effectful.Internal.Monad
   , getEffect
   , putEffect
   , stateEffect
-  , localEffect
-  , readerEffectM
   , stateEffectM
+  , localEffect
   ) where
 
 import Control.Applicative (liftA2)
@@ -256,8 +255,9 @@ runFail m = unsafeEff $ \es0 -> mask $ \release -> do
   pure r
 
 instance Fail :> es => MonadFail (Eff es) where
-  fail msg = readerEffectM $ \(IdE (Fail tag)) -> unsafeEff_ $ do
-    throwIO $ FailEx tag msg
+  fail msg = do
+    IdE (Fail tag) <- getEffect
+    unsafeEff_ . throwIO $ FailEx tag msg
 
 --------------------
 
@@ -379,7 +379,9 @@ data Limit
 
 -- | Get the current 'UnliftStrategy'.
 unliftStrategy :: IOE :> es => Eff es UnliftStrategy
-unliftStrategy = readerEffectM $ \(IdE (IOE unlift)) -> pure unlift
+unliftStrategy = do
+  IdE (IOE unlift) <- getEffect
+  pure unlift
 
 -- | Locally override the 'UnliftStrategy' with a given value.
 --
@@ -430,22 +432,19 @@ getEffect :: e :> es => Eff es (handler e)
 getEffect = unsafeEff $ \es -> getEnv es
 
 putEffect :: e :> es => handler e -> Eff es ()
-putEffect e = unsafeEff $ \es -> unsafePutEnv e es
+putEffect e = unsafeEff $ \es -> unsafePutEnv es e
 
 stateEffect :: e :> es => (handler e -> (a, handler e)) -> Eff es a
-stateEffect f = unsafeEff $ \es -> unsafeStateEnv f es
-
-localEffect :: e :> es => (handler e -> handler e) -> Eff es a -> Eff es a
-localEffect f m = unsafeEff $ \es -> do
-  bracket (unsafeStateEnv (\e -> (e, f e)) es)
-          (\e -> unsafePutEnv e es)
-          (\_ -> unEff m es)
-
-readerEffectM :: e :> es => (handler e -> Eff es a) -> Eff es a
-readerEffectM f = unsafeEff $ \es -> getEnv es >>= \e -> unEff (f e) es
+stateEffect f = unsafeEff $ \es -> unsafeStateEnv es f
 
 stateEffectM :: e :> es => (handler e -> Eff es (a, handler e)) -> Eff es a
 stateEffectM f = unsafeEff $ \es -> mask $ \release -> do
   (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv es
-  unsafePutEnv e es
+  unsafePutEnv es e
   pure a
+
+localEffect :: e :> es => (handler e -> handler e) -> Eff es a -> Eff es a
+localEffect f m = unsafeEff $ \es -> do
+  bracket (unsafeStateEnv es $ \e -> (e, f e))
+          (\e -> unsafePutEnv es e)
+          (\_ -> unEff m es)

@@ -11,6 +11,9 @@ module Effectful.Resource
   , R.register
   , R.release
   , R.unprotect
+
+  -- * Dealing with nested resource effects
+  , useCurrentScope
   ) where
 
 import Control.Exception
@@ -43,3 +46,24 @@ runResource m = unsafeEff $ \es0 -> do
 instance (IOE :> es, Resource :> es) => R.MonadResource (Eff es) where
   liftResourceT (RI.ResourceT m) = unsafeEff $ \es -> do
     getEnv es >>= \(IdE (Resource istate)) -> m istate
+
+-- | Capture the 'R.InternalState' of the encosing 'Resource' effect and get a
+-- function allowing its use later.
+--
+-- This can be useful in the presence of nested 'Resource' effects. Careful not
+-- to use the returned runner outside the current 'Resource' effect!
+useCurrentScope :: Resource :> es => Eff es (Eff (Resource : es') a -> Eff es' a)
+useCurrentScope = flip runInternalState <$> getInternalState
+
+-- | Get the 'R.InternalState' of the current 'Resource' effect. Take care that
+-- this does not escape the current 'Resource' effect.
+getInternalState :: Resource :> es => Eff es R.InternalState
+getInternalState = do
+  IdE (Resource istate) <- getEffect
+  pure istate
+
+-- | Eliminate the 'Resource' effect with a specific 'R.InternalState'.
+--
+-- Note that this doesn't close the 'R.InternalState'!
+runInternalState :: Eff (Resource : es) a -> R.InternalState -> Eff es a
+runInternalState m i = evalEffect (IdE (Resource i)) m

@@ -15,7 +15,11 @@ import           UnliftIO                       ( MonadUnliftIO
 import qualified Utils                         as U
 
 resourceTests :: TestTree
-resourceTests = testGroup "Resource" [testCase "nested" test_nested]
+resourceTests = testGroup
+  "Resource"
+  [ testCase "nested"          test_nested
+  , testCase "useCurrentScope" test_useCurrentScope
+  ]
 
 test_nested :: Assertion
 test_nested = runEff $ do
@@ -29,4 +33,20 @@ test_nested = runEff $ do
       register (step 2)
     step 3
   r <- readMVar rV
-  U.assertEqual "correct order" [1, 2, 3, 4] (reverse r)
+  U.assertEqual "correct order" [1 .. 4] (reverse r)
+
+test_useCurrentScope :: Assertion
+test_useCurrentScope = runEff $ do
+  rV <- newMVar []
+  let step :: MonadUnliftIO m => Int -> m ()
+      step n = modifyMVar_ rV (pure . (n :))
+  runResource $ do
+    s <- useCurrentScope
+    step 1
+    _ <- register (step 5)
+    _ <- runResource $ do
+      _ <- register (step 2)
+      s (register (step 4))
+    step 3
+  r <- readMVar rV
+  U.assertEqual "correct order" [1 .. 5] (reverse r)

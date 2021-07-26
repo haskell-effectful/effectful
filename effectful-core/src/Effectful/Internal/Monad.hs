@@ -432,19 +432,19 @@ getEffect :: e :> es => Eff es (handler e)
 getEffect = unsafeEff $ \es -> getEnv es
 
 putEffect :: e :> es => handler e -> Eff es ()
-putEffect e = unsafeEff $ \es -> unsafePutEnv es e
+putEffect e = unsafeEff $ \es -> putEnv es e
 
 stateEffect :: e :> es => (handler e -> (a, handler e)) -> Eff es a
-stateEffect f = unsafeEff $ \es -> unsafeStateEnv es f
+stateEffect f = unsafeEff $ \es -> stateEnv es f
 
 stateEffectM :: e :> es => (handler e -> Eff es (a, handler e)) -> Eff es a
 stateEffectM f = unsafeEff $ \es -> mask $ \release -> do
   (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv es
-  unsafePutEnv es e
+  putEnv es e
   pure a
 
 localEffect :: e :> es => (handler e -> handler e) -> Eff es a -> Eff es a
 localEffect f m = unsafeEff $ \es -> do
-  bracket (unsafeStateEnv es $ \e -> (e, f e))
-          (\e -> unsafePutEnv es e)
+  bracket (stateEnv es $ \e -> (e, f e))
+          (\e -> putEnv es e)
           (\_ -> unEff m es)

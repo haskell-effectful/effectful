@@ -43,14 +43,14 @@ listen m = unsafeEff $ \es -> do
   uninterruptibleMask $ \restore -> do
     v1 <- newMVar mempty
     -- Replace thread local MVar with a fresh one for isolated listening.
-    v0 <- unsafeStateEnv es $ \(IdE (Writer v)) -> (v, IdE (Writer v1))
+    v0 <- stateEnv es $ \(IdE (Writer v)) -> (v, IdE (Writer v1))
     a <- restore (unEff m es) `onException` merge es v0 v1
     (a, ) <$> merge es v0 v1
   where
     -- Merge results accumulated in the local MVar with the mainline. If an
     -- exception was received while listening, merge results recorded so far.
     merge es v0 v1 = do
-      unsafePutEnv es $ IdE (Writer v0)
+      putEnv es $ IdE (Writer v0)
       w1 <- readMVar v1
       modifyMVar_ v0 $ \w0 -> let w = w0 <> w1 in w `seq` pure w
       pure w1

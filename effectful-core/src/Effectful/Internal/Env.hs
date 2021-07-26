@@ -9,22 +9,22 @@ module Effectful.Internal.Env
   , Relinker(..)
   , noRelinker
 
-  -- * Safe operations
+  -- * Operations
   , emptyEnv
   , cloneEnv
   , forkEnv
   , sizeEnv
-  , getEnv
   , checkSizeEnv
 
-  -- * Extending and shrinking
+  -- ** Extending and shrinking
   , unsafeConsEnv
   , unsafeTailEnv
 
-  -- * Data retrieval and update
-  , unsafePutEnv
-  , unsafeModifyEnv
-  , unsafeStateEnv
+  -- ** Data retrieval and update
+  , getEnv
+  , putEnv
+  , stateEnv
+  , modifyEnv
   ) where
 
 import Control.Monad
@@ -322,12 +322,6 @@ sizeEnv (Env (Forks _ baseIx lref _) _ _) = do
   pure $ baseIx + n
 {-# NOINLINE sizeEnv #-}
 
--- | Extract a specific data type from the environment.
-getEnv :: forall e es handler. e :> es => Env es -> IO (handler e)
-getEnv env = do
-  (i, es) <- getLocation @e env
-  fromAny <$> readSmallArray es i
-
 -- | Check that the size of the environment is the same as the expected value.
 checkSizeEnv :: Int -> Env es -> IO ()
 checkSizeEnv k (Env NoFork ref _) = do
@@ -345,6 +339,9 @@ checkSizeEnv k (Env (Forks _ baseIx lref _) _ _) = do
 -- Extending and shrinking
 
 -- | Extend the environment with a new data type (in place).
+--
+-- /Note:/ this function is __unsafe__ because it renders the input 'Env'
+-- unusable, but it's not checked anywhere.
 unsafeConsEnv :: handler e -> Relinker handler e -> Env es -> IO (Env (e : es))
 unsafeConsEnv e f (Env fork gref gen) = case fork of
   NoFork -> do
@@ -380,6 +377,9 @@ unsafeConsEnv e f (Env fork gref gen) = case fork of
 
 -- | Shrink the environment by one data type (in place). Makes sure the size of
 -- the environment is as expected.
+--
+-- /Note:/ this function is __unsafe__ because it renders the input 'Env'
+-- unusable, but it's not checked anywhere.
 unsafeTailEnv :: Int -> Env (e : es) -> IO (Env es)
 unsafeTailEnv len (Env fork gref gen) = case fork of
   NoFork -> do
@@ -403,38 +403,44 @@ unsafeTailEnv len (Env fork gref gen) = case fork of
 ----------------------------------------
 -- Data retrieval and update
 
+-- | Extract a specific data type from the environment.
+getEnv :: forall e es handler. e :> es => Env es -> IO (handler e)
+getEnv env = do
+  (i, es) <- getLocation @e env
+  fromAny <$> readSmallArray es i
+
 -- | Replace the data type in the environment with a new value (in place).
-unsafePutEnv
+putEnv
   :: forall e es handler. e :> es
   => Env es
   -> handler e
   -> IO ()
-unsafePutEnv env e = do
+putEnv env e = do
   (i, es) <- getLocation @e env
-  e `seq` writeSmallArray es i (toAny e)
-
--- | Modify the data type in the environment (in place).
-unsafeModifyEnv
-  :: forall e es handler. e :> es
-  => Env es
-  -> (handler e -> handler e)
-  -> IO ()
-unsafeModifyEnv env f = do
-  (i, es) <- getLocation @e env
-  e <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place) and return a value.
-unsafeStateEnv
+stateEnv
   :: forall e es handler a. e :> es
   => Env es
   -> (handler e -> (a, handler e))
   -> IO a
-unsafeStateEnv env f = do
+stateEnv env f = do
   (i, es) <- getLocation @e env
   (a, e) <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
   pure a
+
+-- | Modify the data type in the environment (in place).
+modifyEnv
+  :: forall e es handler. e :> es
+  => Env es
+  -> (handler e -> handler e)
+  -> IO ()
+modifyEnv env f = do
+  (i, es) <- getLocation @e env
+  e <- f . fromAny <$> readSmallArray es i
+  e `seq` writeSmallArray es i (toAny e)
 
 ----------------------------------------
 -- Internal helpers

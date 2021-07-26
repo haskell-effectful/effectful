@@ -115,6 +115,7 @@ test-suite test
     other-modules:  AsyncTests
                     ConcurrencyTests
                     ErrorTests
+                    ResourceTests
                     StateTests
                     Utils
                     -- These are examples; We do not actually run them but list

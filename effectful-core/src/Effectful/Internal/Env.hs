@@ -341,7 +341,8 @@ checkSizeEnv k (Env (Forks _ baseIx lref _) _ _) = do
 -- | Extend the environment with a new data type (in place).
 --
 -- /Note:/ this function is __unsafe__ because it renders the input 'Env'
--- unusable, but it's not checked anywhere.
+-- unusable until the corresponding 'unsafeTailEnv' call, but it's not checked
+-- anywhere.
 unsafeConsEnv :: handler e -> Relinker handler e -> Env es -> IO (Env (e : es))
 unsafeConsEnv e f (Env fork gref gen) = case fork of
   NoFork -> do

@@ -76,6 +76,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async)
 import Control.Exception (Exception, SomeException)
 import Control.Monad (forever)
+import Data.Kind
 import qualified Control.Concurrent.Async as A
 import qualified UnliftIO.Async as U
 import qualified UnliftIO.Internals.Async as I
@@ -449,7 +450,7 @@ pooledReplicateConcurrently_ n f = unsafeEff $ \es -> do
 -- Conc
 
 -- | Lifted 'U.Conc'.
-data Conc es a where
+data Conc :: [Effect] -> Type -> Type where
   Action :: Eff es a -> Conc es a
   Apply  :: Conc es (v -> a) -> Conc es v -> Conc es a
   LiftA2 :: (x -> y -> a) -> Conc es x -> Conc es y -> Conc es a

@@ -30,6 +30,7 @@ module Effectful.Internal.Env
 import Control.Monad
 import Control.Monad.Primitive
 import Data.IORef
+import Data.Kind
 import Data.Primitive.SmallArray
 import GHC.Exts (Any)
 import GHC.Stack (HasCallStack)
@@ -149,7 +150,7 @@ newForkId (ForkIdGen ref) = do
 ----------------------------------------
 -- Relinker
 
-newtype Relinker i (e :: Effect) where
+newtype Relinker :: (Effect -> Type) -> Effect -> Type where
   Relinker
     :: ((forall es. Env es -> IO (Env es)) -> handler e -> IO (handler e))
     -> Relinker handler e

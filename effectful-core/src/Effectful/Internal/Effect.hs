@@ -18,7 +18,7 @@ import GHC.TypeLits
 type Effect = (Type -> Type) -> Type -> Type
 
 -- | Adapter for statically dispatched effects.
-newtype IdE (e :: Effect) where
+newtype IdE :: Effect -> Type where
   IdE :: (forall m r. e m r) -> IdE e
 
 -- | A constraint that requires that a particular effect, @e@, is a member of

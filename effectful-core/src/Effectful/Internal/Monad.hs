@@ -319,7 +319,7 @@ runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
 runPrim = evalEffect (IdE Prim)
 
 instance Prim :> es => PrimMonad (Eff es) where
-  type PrimState (Eff es) = PrimState IO
+  type PrimState (Eff es) = RealWorld
   primitive = unsafeEff_ . IO
 
 ----------------------------------------

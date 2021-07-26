@@ -11,10 +11,6 @@ module Effectful.Monad
   , IOE
   , runEff
 
-  -- * Primitive actions
-  , Prim
-  , runPrim
-
   -- ** Unlift strategies
   , UnliftStrategy(..)
   , Persistence(..)

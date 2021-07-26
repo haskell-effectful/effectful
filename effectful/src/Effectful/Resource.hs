@@ -11,6 +11,13 @@ module Effectful.Resource
   , R.register
   , R.release
   , R.unprotect
+
+  -- * Internal state
+  , R.InternalState
+  , getInternalState
+  , runInternalState
+  , R.createInternalState
+  , R.closeInternalState
   ) where
 
 import Control.Exception
@@ -39,6 +46,24 @@ runResource m = unsafeEff $ \es0 -> do
     _ <- unsafeTailEnv size0 es
     RI.stateCleanupChecked Nothing istate
     pure a
+
+----------------------------------------
+-- Internal state
+
+-- | Get the 'R.InternalState' of the current 'Resource' effect.
+getInternalState :: Resource :> es => Eff es R.InternalState
+getInternalState = do
+  IdE (Resource istate) <- getEffect
+  pure istate
+
+-- | Run the 'Resource' effect with existing 'R.InternalState'.
+--
+-- /Note:/ the 'R.InternalState' will not be closed at the end.
+runInternalState :: R.InternalState -> Eff (Resource : es) a -> Eff es a
+runInternalState istate = evalEffect $ IdE (Resource istate)
+
+----------------------------------------
+-- Orphan instance
 
 instance (IOE :> es, Resource :> es) => R.MonadResource (Eff es) where
   liftResourceT (RI.ResourceT m) = unsafeEff $ \es -> do

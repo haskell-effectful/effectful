@@ -9,6 +9,9 @@ module Effectful.Internal.Effect
   ( Effect
   , (:>)(..)
   , IdE(..)
+
+  -- * Re-exports
+  , Type
   ) where
 
 import Data.Kind

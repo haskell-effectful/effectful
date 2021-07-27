@@ -3,6 +3,7 @@ module Effectful.Handler
     send
 
   -- * Handling effects
+  , EffectHandler
   , interpret
   , reinterpret
 
@@ -43,13 +44,18 @@ import Effectful.Internal.Monad
 -- handler.
 newtype LocalEnv es = LocalEnv (Env es)
 
-data Handler (e :: Effect) = forall handlerEs. Handler
-  { _env    :: Env handlerEs
-  , _handle :: forall a localEs. HasCallStack
-            => LocalEnv localEs
-            -> e (Eff localEs) a
-            -> Eff handlerEs a
-  }
+-- | Type signature of the effect handler.
+type EffectHandler e es
+  = forall a localEs. HasCallStack
+  => LocalEnv localEs
+  -- ^ The environment for handling local 'Eff' operations with functions from
+  -- the 'localUnlift' family when given a higher order effect.
+  -> e (Eff localEs) a
+  -- ^ The effect in the local environment.
+  -> Eff es a
+
+data Handler :: Effect -> Type where
+  Handler :: Env es -> EffectHandler e es -> Handler e
 
 runHandler :: Env es -> Handler e -> Eff (e : es) a -> IO a
 runHandler es0 e m = do
@@ -59,9 +65,9 @@ runHandler es0 e m = do
             (\es -> unEff m es)
   where
     relinker :: Relinker Handler e
-    relinker = Relinker $ \relink Handler{..} -> do
-      env <- relink _env
-      pure Handler { _env = env, .. }
+    relinker = Relinker $ \relink (Handler env handle) -> do
+      newEnv <- relink env
+      pure $ Handler newEnv handle
 
 ----------------------------------------
 -- Sending operations
@@ -69,18 +75,15 @@ runHandler es0 e m = do
 -- | Send an operation of a given effect to its handler for execution.
 send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
 send op = unsafeEff $ \es -> do
-  Handler{..} <- getEnv es
-  unEff (_handle (LocalEnv es) op) _env
+  Handler env handle <- getEnv es
+  unEff (handle (LocalEnv es) op) env
 
 ----------------------------------------
 -- Interpretation
 
 -- | Interpret an effect.
---
--- /Note:/ 'LocalEnv' is for handling local 'Eff' operations using a function
--- from the 'localUnlift' family.
 interpret
-  :: (forall r localEs. HasCallStack => LocalEnv localEs -> e (Eff localEs) r -> Eff es r)
+  :: EffectHandler e es
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
@@ -92,13 +95,10 @@ interpret handler m = unsafeEff $ \es -> do
 -- Reinterpretation
 
 -- | Interpret an effect using other effects.
---
--- /Note:/ 'LocalEnv' is for handling local 'Eff' operations using a function
--- from the 'localUnlift' family.
 reinterpret
   :: (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
-  -> (forall r localEs. HasCallStack => LocalEnv localEs -> e (Eff localEs) r -> Eff handlerEs r)
+  -> EffectHandler e handlerEs
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b

@@ -33,11 +33,7 @@ runLocalWriter = reinterpret L.runWriter localWriter
 execLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execLocalWriter = reinterpret L.execWriter localWriter
 
-localWriter
-  :: (L.Writer w :> es, Monoid w)
-  => LocalEnv localEs
-  -> Writer w (Eff localEs) a
-  -> Eff es a
+localWriter :: (L.Writer w :> es, Monoid w) => EffectHandler (Writer w) es
 localWriter env = \case
   Tell w   -> L.tell w
   Listen m -> localSeqUnlift env $ \unlift -> L.listen (unlift m)
@@ -51,11 +47,7 @@ runSharedWriter = reinterpret S.runWriter sharedWriter
 execSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execSharedWriter = reinterpret S.execWriter sharedWriter
 
-sharedWriter
-  :: (S.Writer w :> es, Monoid w)
-  => LocalEnv localEs
-  -> Writer w (Eff localEs) a
-  -> Eff es a
+sharedWriter :: (S.Writer w :> es, Monoid w) => EffectHandler (Writer w) es
 sharedWriter env = \case
   Tell w    -> S.tell w
   Listen m  -> localSeqUnlift env $ \unlift -> S.listen (unlift m)

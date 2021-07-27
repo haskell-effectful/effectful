@@ -30,7 +30,6 @@ module Effectful.Internal.Env
 import Control.Monad
 import Control.Monad.Primitive
 import Data.IORef
-import Data.Kind
 import Data.Primitive.SmallArray
 import GHC.Exts (Any)
 import GHC.Stack (HasCallStack)

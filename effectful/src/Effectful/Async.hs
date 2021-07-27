@@ -76,7 +76,6 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async)
 import Control.Exception (Exception, SomeException)
 import Control.Monad (forever)
-import Data.Kind
 import qualified Control.Concurrent.Async as A
 import qualified UnliftIO.Async as U
 import qualified UnliftIO.Internals.Async as I

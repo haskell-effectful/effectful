@@ -57,8 +57,8 @@ type EffectHandler e es
 data Handler :: Effect -> Type where
   Handler :: Env es -> EffectHandler e es -> Handler e
 
-runHandler :: Env es -> Handler e -> Eff (e : es) a -> IO a
-runHandler es0 e m = do
+runHandler :: Handler e -> Eff (e : es) a -> Eff es a
+runHandler e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e relinker es0)
             (unsafeTailEnv size0)
@@ -89,7 +89,7 @@ interpret
   -> Eff      es  a
 interpret handler m = unsafeEff $ \es -> do
   les <- forkEnv es
-  runHandler es (Handler les handler) m
+  (`unEff` es) $ runHandler (Handler les handler) m
 
 ----------------------------------------
 -- Reinterpretation
@@ -105,7 +105,7 @@ reinterpret
 reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
   les0 <- forkEnv es
   (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
-    runHandler es (Handler les handler) m
+    (`unEff` es) $ runHandler (Handler les handler) m
 
 ----------------------------------------
 -- Unlifts

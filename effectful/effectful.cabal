@@ -1,7 +1,7 @@
 cabal-version:      2.4
 build-type:         Simple
 name:               effectful
-version:            0.0.0.0
+version:            0.1
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control
@@ -64,7 +64,7 @@ library
 
     build-depends:    base >= 4.13 && <5
                     , async
-                    , effectful-core
+                    , effectful-core >= 0.1 && <0.1.1
                     , resourcet
                     , unliftio
 

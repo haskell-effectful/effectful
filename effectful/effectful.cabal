@@ -64,6 +64,7 @@ library
     build-depends:    base >= 4.13 && <5
                     , async
                     , effectful-core >= 0.1 && <0.1.1
+                    , process
                     , resourcet
                     , unliftio
 
@@ -71,6 +72,7 @@ library
 
     exposed-modules: Effectful
                      Effectful.Async
+                     Effectful.Process
                      Effectful.Resource
 
     reexported-modules:    Effectful.Error

@@ -57,7 +57,11 @@ evalLocalState s0 = reinterpret (L.evalState s0) localState
 execLocalState :: s -> Eff (State s : es) a -> Eff es s
 execLocalState s0 = reinterpret (L.execState s0) localState
 
-localState :: L.State s :> es => EffectHandler (State s) es
+localState
+  :: L.State s :> es
+  => LocalEnv localEs
+  -> State s (Eff localEs) a
+  -> Eff es a
 localState env = \case
   Get      -> L.get
   Put s    -> L.put s
@@ -76,7 +80,11 @@ evalSharedState s0 = reinterpret (S.evalState s0) sharedState
 execSharedState :: s -> Eff (State s : es) a -> Eff es s
 execSharedState s0 = reinterpret (S.execState s0) sharedState
 
-sharedState :: S.State s :> es => EffectHandler (State s) es
+sharedState
+  :: S.State s :> es
+  => LocalEnv localEs
+  -> State s (Eff localEs) a
+  -> Eff es a
 sharedState env = \case
   Get      -> S.get
   Put s    -> S.put s

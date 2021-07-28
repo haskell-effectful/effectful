@@ -54,7 +54,7 @@ import qualified System.Process as P
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 
--- | An effect for running child processes using the @typed-process@ library.
+-- | An effect for running child processes using the @process@ library.
 data Process :: Effect where
     Process :: Process m r
 

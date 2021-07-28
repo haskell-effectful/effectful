@@ -109,18 +109,18 @@ type role Env nominal
 -- - Handler of @e11@ sees @[e00, e02, e03, e12]@.
 --
 data Env (es :: [Effect]) = Env
-  { _forks     :: Forks
-  , _globalRef :: IORef EnvRef
-  , _forkIdGen :: ForkIdGen
+  { _forks     :: !Forks
+  , _globalRef :: !(IORef EnvRef)
+  , _forkIdGen :: !ForkIdGen
   }
 
 -- | Local forks of the environment.
-data Forks = Forks ForkId Int (IORef EnvRef) Forks | NoFork
+data Forks = Forks !ForkId !Int !(IORef EnvRef) Forks | NoFork
 
 data EnvRef = EnvRef
-  { _size      :: Int
-  , _data      :: SmallMutableArray RealWorld Any
-  , _relinkers :: SmallMutableArray RealWorld Any
+  { _size      :: !Int
+  , _data      :: !(SmallMutableArray RealWorld Any)
+  , _relinkers :: !(SmallMutableArray RealWorld Any)
   }
 
 ----------------------------------------

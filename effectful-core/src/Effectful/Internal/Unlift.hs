@@ -120,17 +120,17 @@ nextEntryId :: EntryId -> EntryId
 nextEntryId (EntryId i) = EntryId (i + 1)
 
 data ThreadEntries es = ThreadEntries
-  { teCapacity :: Int
-  , teEntries  :: IM.IntMap (ThreadEntry es)
+  { teCapacity :: !Int
+  , teEntries  :: !(IM.IntMap (ThreadEntry es))
   }
 
 -- | In GHC < 9 weak thread ids are 32bit long, while ThreadIdS are 64bit long,
 -- so there is potential for collisions. This is solved by keeping, for a
 -- particular weak thread id, a list of ThreadIdS with unique EntryIdS.
-data ThreadEntry es = ThreadEntry EntryId (ThreadData es)
+data ThreadEntry es = ThreadEntry !EntryId !(ThreadData es)
 
 data ThreadData es
-  = ThreadData EntryId (Weak (ThreadId, Env es)) (ThreadData es)
+  = ThreadData !EntryId !(Weak (ThreadId, Env es)) (ThreadData es)
   | NoThreadData
 
 ----------------------------------------

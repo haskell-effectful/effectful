@@ -29,7 +29,6 @@ run_doctest() {
     -XRoleAnnotations \
     -XScopedTypeVariables \
     -XStandaloneDeriving \
-    -XStrictData \
     -XTupleSections \
     -XTypeApplications \
     -XTypeFamilies \

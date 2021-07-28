@@ -42,7 +42,7 @@ import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
 
-data Error e :: Effect where
+newtype Error e :: Effect where
   Error :: ErrorId -> Error e m r
 
 runError
@@ -112,7 +112,7 @@ tryHandler ex eid0 handler next = case fromException ex of
     | otherwise   -> next
   Nothing -> next
 
-data ErrorEx e = ErrorEx ErrorId CallStack e
+data ErrorEx e = ErrorEx !ErrorId CallStack e
 instance Typeable e => Show (ErrorEx e) where
   showsPrec p (ErrorEx _ cs e)
     = ("Effectful.Error.ErrorEx (" ++)

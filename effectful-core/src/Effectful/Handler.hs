@@ -55,7 +55,7 @@ type EffectHandler e es
   -> Eff es a
 
 data Handler :: Effect -> Type where
-  Handler :: Env es -> EffectHandler e es -> Handler e
+  Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
 
 runHandler :: Handler e -> Eff (e : es) a -> Eff es a
 runHandler e m = unsafeEff $ \es0 -> do

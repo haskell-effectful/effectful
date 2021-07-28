@@ -240,7 +240,7 @@ instance E.MonadMask (Eff es) where
 ----------------------------------------
 -- Fail
 
-data Fail :: Effect where
+newtype Fail :: Effect where
   Fail :: Unique -> Fail m r
 
 runFail :: Eff (Fail : es) a -> Eff es (Either String a)
@@ -261,7 +261,7 @@ instance Fail :> es => MonadFail (Eff es) where
 
 --------------------
 
-data FailEx = FailEx Unique String
+data FailEx = FailEx !Unique String
 instance Show FailEx where
   showsPrec p (FailEx _ msg)
     = ("Effectful.Internal.Monad.FailEx " ++)
@@ -332,7 +332,7 @@ data UnliftStrategy
   -- ^ The fastest strategy and a default setting for 'IOE'. An attempt to call
   -- the unlifting function in threads distinct from its creator will result in
   -- a runtime error.
-  | ConcUnlift Persistence Limit
+  | ConcUnlift !Persistence !Limit
   -- ^ A strategy that makes it possible for the unlifting function to be called
   -- in threads distinct from its creator. See 'Persistence' and 'Limit'
   -- settings for more information.
@@ -360,7 +360,7 @@ data Persistence
 
 -- | Limit setting for the 'ConcUnlift' strategy.
 data Limit
-  = Limited Int
+  = Limited !Int
   -- ^ Behavior dependent on the 'Persistence' setting.
   --
   -- For 'Ephemeral', it limits the amount of uses of the unlifting function in

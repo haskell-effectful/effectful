@@ -21,7 +21,7 @@ import qualified Effectful.Writer.Local as L
 import qualified Effectful.Writer.Shared as S
 
 data Writer w :: Effect where
-  Tell   :: ~w  -> Writer w m ()
+  Tell   :: w   -> Writer w m ()
   Listen :: m a -> Writer w m (a, w)
 
 ----------------------------------------

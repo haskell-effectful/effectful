@@ -47,7 +47,6 @@ common language
                         RoleAnnotations
                         ScopedTypeVariables
                         StandaloneDeriving
-                        StrictData
                         TupleSections
                         TypeApplications
                         TypeFamilies

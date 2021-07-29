@@ -251,7 +251,7 @@ runFail m = unsafeEff $ \es0 -> mask $ \release -> do
   size0 <- sizeEnv es0
   es <- unsafeConsEnv (IdE (Fail tag)) noRelinker es0
   r <- tryFailIO tag (release $ unEff m es) `onException` unsafeTailEnv size0 es
-  _ <- unsafeTailEnv size0 es
+  unsafeTailEnv size0 es
   pure r
 
 instance Fail :> es => MonadFail (Eff es) where

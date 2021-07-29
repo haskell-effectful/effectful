@@ -54,7 +54,7 @@ runError m = unsafeEff $ \es0 -> mask $ \release -> do
   size0 <- sizeEnv es0
   es <- unsafeConsEnv (IdE (Error @e eid)) noRelinker es0
   r <- tryErrorIO release eid es `onException` unsafeTailEnv size0 es
-  _ <- unsafeTailEnv size0 es
+  unsafeTailEnv size0 es
   pure r
   where
     tryErrorIO release eid es = try (release $ unEff m es) >>= \case

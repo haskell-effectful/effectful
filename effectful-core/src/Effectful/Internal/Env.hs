@@ -380,14 +380,10 @@ unsafeConsEnv e f (Env fork gref gen) = case fork of
 --
 -- /Note:/ this function is __unsafe__ because it renders the input 'Env'
 -- unusable, but it's not checked anywhere.
-unsafeTailEnv :: Int -> Env (e : es) -> IO (Env es)
-unsafeTailEnv len (Env fork gref gen) = case fork of
-  NoFork -> do
-    shrinkEnvRef len gref
-    pure $ Env NoFork gref gen
-  Forks _ baseIx lref _ -> do
-    shrinkEnvRef (len - baseIx) lref
-    pure $ Env fork gref gen
+unsafeTailEnv :: Int -> Env (e : es) -> IO ()
+unsafeTailEnv len (Env fork gref _) = case fork of
+  NoFork -> shrinkEnvRef len gref
+  Forks _ baseIx lref _ -> shrinkEnvRef (len - baseIx) lref
   where
     shrinkEnvRef :: Int -> IORef EnvRef -> IO ()
     shrinkEnvRef k ref = do

@@ -40,10 +40,10 @@ runResource m = unsafeEff $ \es0 -> do
   mask $ \restore -> do
     es <- unsafeConsEnv (IdE (Resource istate)) noRelinker es0
     a <- restore (unEff m es) `catch` \e -> do
-      _ <- unsafeTailEnv size0 es
+      unsafeTailEnv size0 es
       RI.stateCleanupChecked (Just e) istate
       throwIO e
-    _ <- unsafeTailEnv size0 es
+    unsafeTailEnv size0 es
     RI.stateCleanupChecked Nothing istate
     pure a
 

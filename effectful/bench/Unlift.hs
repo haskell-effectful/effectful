@@ -67,11 +67,11 @@ deepConc
   :: String
   -> Int
   -> Eff '[ A.AsyncE
-          , State (), State (), State (), State (), State ()
-          , State (), State (), State (), State (), State ()
+          , StateE (), StateE (), StateE (), StateE (), StateE ()
+          , StateE (), StateE (), StateE (), StateE (), StateE ()
           , IOE] ()
-  -> Eff '[ State (), State (), State (), State (), State ()
-          , State (), State (), State (), State (), State ()
+  -> Eff '[ StateE (), StateE (), StateE (), StateE (), StateE ()
+          , StateE (), StateE (), StateE (), StateE (), StateE ()
           , IOE] ()
   -> Benchmark
 deepConc name n r f = bgroup name

@@ -24,7 +24,7 @@ concurrencyTests = testGroup "Concurrency"
   ]
 
 test_localState :: Assertion
-test_localState = runEff . evalLocalState x $ do
+test_localState = runEff . evalLocalStateE x $ do
   withUnliftStrategy (ConcUnlift Ephemeral $ Limited 2) $ do
     replicateConcurrently_ 2 $ do
       r <- goDownward 0
@@ -33,7 +33,7 @@ test_localState = runEff . evalLocalState x $ do
     x :: Int
     x = 100000
 
-    goDownward :: State Int :> es => Int -> Eff es Int
+    goDownward :: StateE Int :> es => Int -> Eff es Int
     goDownward acc = do
       end <- state @Int $ \case
         0 -> (True,  0)
@@ -43,7 +43,7 @@ test_localState = runEff . evalLocalState x $ do
         else goDownward $ acc + 1
 
 test_sharedState :: Assertion
-test_sharedState = runEff . evalSharedState (S.empty @Int) $ do
+test_sharedState = runEff . evalSharedStateE (S.empty @Int) $ do
   withUnliftStrategy (ConcUnlift Ephemeral $ Limited 2) $ do
     concurrently_ (addWhen even x) (addWhen odd x)
     U.assertEqual "expected result" (S.fromList [1..x]) =<< get
@@ -51,7 +51,7 @@ test_sharedState = runEff . evalSharedState (S.empty @Int) $ do
     x :: Int
     x = 100
 
-    addWhen :: State (S.Set Int) :> es => (Int -> Bool) -> Int -> Eff es ()
+    addWhen :: StateE (S.Set Int) :> es => (Int -> Bool) -> Int -> Eff es ()
     addWhen f = \case
       0 -> pure ()
       n -> do
@@ -60,9 +60,9 @@ test_sharedState = runEff . evalSharedState (S.empty @Int) $ do
         addWhen f $ n - 1
 
 test_errorHandling :: Assertion
-test_errorHandling = runEff . evalSharedState (0::Int) $ do
+test_errorHandling = runEff . evalSharedStateE (0::Int) $ do
   withUnliftStrategy (ConcUnlift Ephemeral $ Limited 2) $ do
-    r <- runError $ concurrently_
+    r <- runErrorE $ concurrently_
       (liftIO (threadDelay 10000) >> throwError err)
       (modify (+x))
     case r of
@@ -77,7 +77,7 @@ test_errorHandling = runEff . evalSharedState (0::Int) $ do
     err = "thrown from async"
 
 test_unliftMany :: Assertion
-test_unliftMany = runEff . evalLocalState "initial value" $ do
+test_unliftMany = runEff . evalLocalStateE "initial value" $ do
   withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
     x <- withRunInIO $ \runInIO -> async $ do
       v1 <- runInIO $ get @String  -- 1
@@ -95,7 +95,7 @@ test_unliftMany = runEff . evalLocalState "initial value" $ do
       (v1, v2, v3, v4)
 
 test_asyncWithUnmask :: Assertion
-test_asyncWithUnmask = runEff . evalLocalState "initial" $ do
+test_asyncWithUnmask = runEff . evalLocalStateE "initial" $ do
   withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
     x <- asyncWithUnmask $ \unmask -> do
       liftIO $ threadDelay 10000
@@ -111,7 +111,7 @@ test_asyncWithUnmask = runEff . evalLocalState "initial" $ do
       (inner1, inner2, outer)
 
 test_pooledWorkers :: Assertion
-test_pooledWorkers = runEff . evalLocalState (0::Int) $ do
+test_pooledWorkers = runEff . evalLocalStateE (0::Int) $ do
   withUnliftStrategy (ConcUnlift Ephemeral $ Limited n) $ do
     x <- pooledForConcurrentlyN threads [1..n] $ \k -> do
       r <- get @Int

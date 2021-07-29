@@ -1,5 +1,5 @@
 module FileSystem
-  ( FileSystem(..)
+  ( FileSystemE(..)
   , FsError(..)
   , readFile
   , writeFile
@@ -19,9 +19,9 @@ import Effectful.Error
 import Effectful.State.Local
 
 -- | An effect for reading and writing files.
-data FileSystem :: Effect where
-  ReadFile  :: FilePath -> FileSystem m String
-  WriteFile :: FilePath -> String -> FileSystem m ()
+data FileSystemE :: Effect where
+  ReadFile  :: FilePath -> FileSystemE m String
+  WriteFile :: FilePath -> String -> FileSystemE m ()
 
 --- | File system error.
 newtype FsError = FsError String
@@ -30,19 +30,19 @@ newtype FsError = FsError String
 -- Operations
 
 -- | Read contents of a file.
-readFile :: (HasCallStack, FileSystem :> es) => FilePath -> Eff es String
+readFile :: (HasCallStack, FileSystemE :> es) => FilePath -> Eff es String
 readFile = send . ReadFile
 
 -- | Write contents to a file.
-writeFile :: (HasCallStack, FileSystem :> es) => FilePath -> String -> Eff es ()
+writeFile :: (HasCallStack, FileSystemE :> es) => FilePath -> String -> Eff es ()
 writeFile path = send . WriteFile path
 
 ----------------------------------------
 -- Handlers
 
 runFileSystemIO
-  :: (IOE :> es, Error FsError :> es)
-  => Eff (FileSystem : es) a
+  :: (IOE :> es, ErrorE FsError :> es)
+  => Eff (FileSystemE : es) a
   -> Eff es a
 runFileSystemIO = interpret $ \_ -> \case
   ReadFile path           -> adapt $ IO.readFile path
@@ -51,11 +51,11 @@ runFileSystemIO = interpret $ \_ -> \case
     adapt m = liftIO m `catch` \(e::IOException) -> throwError . FsError $ show e
 
 runFileSystemPure
-  :: Error FsError :> es
+  :: ErrorE FsError :> es
   => M.Map FilePath String
-  -> Eff (FileSystem : es) a
+  -> Eff (FileSystemE : es) a
   -> Eff es a
-runFileSystemPure fs0 = reinterpret (evalState fs0) $ \_ -> \case
+runFileSystemPure fs0 = reinterpret (evalStateE fs0) $ \_ -> \case
   ReadFile path -> gets (M.lookup path) >>= \case
     Just contents -> pure contents
     Nothing       -> throwError . FsError $ "File not found: " ++ show path

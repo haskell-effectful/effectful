@@ -20,8 +20,8 @@ For example, if you want to catch an unchecked exception like
 
 -}
 module Effectful.Error
- ( Error
- , runError
+ ( ErrorE
+ , runErrorE
  , throwError
  , catchError
  , tryError
@@ -42,17 +42,17 @@ import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
 
-newtype Error e :: Effect where
-  Error :: ErrorId -> Error e m r
+newtype ErrorE e :: Effect where
+  ErrorE :: ErrorId -> ErrorE e m r
 
-runError
+runErrorE
   :: forall e es a. Typeable e
-  => Eff (Error e : es) a
+  => Eff (ErrorE e : es) a
   -> Eff es (Either (CallStack, e) a)
-runError m = unsafeEff $ \es0 -> mask $ \release -> do
+runErrorE m = unsafeEff $ \es0 -> mask $ \release -> do
   eid <- newErrorId
   size0 <- sizeEnv es0
-  es <- unsafeConsEnv (IdE (Error @e eid)) noRelinker es0
+  es <- unsafeConsEnv (IdE (ErrorE @e eid)) noRelinker es0
   r <- tryErrorIO release eid es `onException` unsafeTailEnv size0 es
   unsafeTailEnv size0 es
   pure r
@@ -63,27 +63,27 @@ runError m = unsafeEff $ \es0 -> mask $ \release -> do
                $ throwIO ex
 
 throwError
-  :: forall e es a. (HasCallStack, Typeable e, Error e :> es)
+  :: forall e es a. (HasCallStack, Typeable e, ErrorE e :> es)
   => e
   -> Eff es a
 throwError e = unsafeEff $ \es -> do
-  IdE (Error eid) <- getEnv @(Error e) es
+  IdE (ErrorE eid) <- getEnv @(ErrorE e) es
   throwIO $ ErrorEx eid callStack e
 
 catchError
-  :: forall e es a. (Typeable e, Error e :> es)
+  :: forall e es a. (Typeable e, ErrorE e :> es)
   => Eff es a
   -> (CallStack -> e -> Eff es a)
   -> Eff es a
 catchError m handler = unsafeEff $ \es -> do
-  IdE (Error eid) <- getEnv @(Error e) es
+  IdE (ErrorE eid) <- getEnv @(ErrorE e) es
   size <- sizeEnv es
   catchErrorIO eid (unEff m es) $ \cs e -> do
     checkSizeEnv size es
     unEff (handler cs e) es
 
 tryError
-  :: forall e es a. (Typeable e, Error e :> es)
+  :: forall e es a. (Typeable e, ErrorE e :> es)
   => Eff es a
   -> Eff es (Either (CallStack, e) a)
 tryError m = (Right <$> m) `catchError` \es e -> pure $ Left (es, e)

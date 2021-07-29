@@ -93,7 +93,7 @@ effectful_logMsg = E.send . Effectful_logMsg
 effectful_runLogging
   :: E.Eff (Effectful_Logging : es) a
   -> E.Eff es (a, [String])
-effectful_runLogging = E.reinterpret (E.runState []) \_ -> \case
+effectful_runLogging = E.reinterpret (E.runStateE []) \_ -> \case
   Effectful_logMsg msg -> E.modify (msg :)
 
 ----------
@@ -129,7 +129,7 @@ effectful_calculateFileSizesDeep = E.runEff
   . runR . runR . runR . runR . runR
   . effectful_program
   where
-    runR = E.runReader ()
+    runR = E.runReaderE ()
 
 ----------------------------------------
 -- eff

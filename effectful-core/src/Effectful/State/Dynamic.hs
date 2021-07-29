@@ -9,17 +9,17 @@
 --   free to use the faster, local version.
 --
 module Effectful.State.Dynamic
-  ( State(..)
+  ( StateE(..)
 
   -- * Local
-  , runLocalState
-  , evalLocalState
-  , execLocalState
+  , runLocalStateE
+  , evalLocalStateE
+  , execLocalStateE
 
   -- * Shared
-  , runSharedState
-  , evalSharedState
-  , execSharedState
+  , runSharedStateE
+  , evalSharedStateE
+  , execSharedStateE
 
   -- * Operations
   , get
@@ -39,28 +39,28 @@ import qualified Effectful.State.Shared as S
 -- | Provide access to a mutable state of type @s@.
 --
 -- Whether the state is local or shared depends on the interpretation.
-data State s :: Effect where
-  Get    :: State s m s
-  Put    :: s -> State s m ()
-  State  :: (s ->   (a, s)) -> State s m a
-  StateM :: (s -> m (a, s)) -> State s m a
+data StateE s :: Effect where
+  Get    :: StateE s m s
+  Put    :: s -> StateE s m ()
+  State  :: (s ->   (a, s)) -> StateE s m a
+  StateM :: (s -> m (a, s)) -> StateE s m a
 
 ----------------------------------------
 -- Local
 
-runLocalState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runLocalState s0 = reinterpret (L.runState s0) localState
+runLocalStateE :: s -> Eff (StateE s : es) a -> Eff es (a, s)
+runLocalStateE s0 = reinterpret (L.runStateE s0) localState
 
-evalLocalState :: s -> Eff (State s : es) a -> Eff es a
-evalLocalState s0 = reinterpret (L.evalState s0) localState
+evalLocalStateE :: s -> Eff (StateE s : es) a -> Eff es a
+evalLocalStateE s0 = reinterpret (L.evalStateE s0) localState
 
-execLocalState :: s -> Eff (State s : es) a -> Eff es s
-execLocalState s0 = reinterpret (L.execState s0) localState
+execLocalStateE :: s -> Eff (StateE s : es) a -> Eff es s
+execLocalStateE s0 = reinterpret (L.execStateE s0) localState
 
 localState
-  :: L.State s :> es
+  :: L.StateE s :> es
   => LocalEnv localEs
-  -> State s (Eff localEs) a
+  -> StateE s (Eff localEs) a
   -> Eff es a
 localState env = \case
   Get      -> L.get
@@ -71,19 +71,19 @@ localState env = \case
 ----------------------------------------
 -- Shared
 
-runSharedState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runSharedState s0 = reinterpret (S.runState s0) sharedState
+runSharedStateE :: s -> Eff (StateE s : es) a -> Eff es (a, s)
+runSharedStateE s0 = reinterpret (S.runStateE s0) sharedState
 
-evalSharedState :: s -> Eff (State s : es) a -> Eff es a
-evalSharedState s0 = reinterpret (S.evalState s0) sharedState
+evalSharedStateE :: s -> Eff (StateE s : es) a -> Eff es a
+evalSharedStateE s0 = reinterpret (S.evalStateE s0) sharedState
 
-execSharedState :: s -> Eff (State s : es) a -> Eff es s
-execSharedState s0 = reinterpret (S.execState s0) sharedState
+execSharedStateE :: s -> Eff (StateE s : es) a -> Eff es s
+execSharedStateE s0 = reinterpret (S.execStateE s0) sharedState
 
 sharedState
-  :: S.State s :> es
+  :: S.StateE s :> es
   => LocalEnv localEs
-  -> State s (Eff localEs) a
+  -> StateE s (Eff localEs) a
   -> Eff es a
 sharedState env = \case
   Get      -> S.get
@@ -95,42 +95,42 @@ sharedState env = \case
 -- Operations
 
 get
-  :: (HasCallStack, State s :> es)
+  :: (HasCallStack, StateE s :> es)
   => Eff es s
 get = send Get
 
 gets
-  :: (HasCallStack, State s :> es)
+  :: (HasCallStack, StateE s :> es)
   => (s -> a)
   -> Eff es a
 gets f = f <$> get
 
 put
-  :: (HasCallStack, State s :> es)
+  :: (HasCallStack, StateE s :> es)
   => s
   -> Eff es ()
 put = send . Put
 
 state
-  :: (HasCallStack, State s :> es)
+  :: (HasCallStack, StateE s :> es)
   => (s -> (a, s))
   -> Eff es a
 state = send . State
 
 modify
-  :: (HasCallStack, State s :> es)
+  :: (HasCallStack, StateE s :> es)
   => (s -> s)
   -> Eff es ()
 modify f = state (\s -> ((), f s))
 
 stateM
-  :: (HasCallStack, State s :> es)
+  :: (HasCallStack, StateE s :> es)
   => (s -> Eff es (a, s))
   -> Eff es a
 stateM = send . StateM
 
 modifyM
-  :: (HasCallStack, State s :> es)
+  :: (HasCallStack, StateE s :> es)
   => (s -> Eff es s)
   -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)

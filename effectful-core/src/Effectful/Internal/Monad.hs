@@ -16,16 +16,16 @@ module Effectful.Internal.Monad
   , unsafeEff_
 
   -- * Fail
-  , Fail
-  , runFail
+  , FailE
+  , runFailE
 
   -- * IO
   , IOE
   , runEff
 
   -- * Primitive
-  , Prim
-  , runPrim
+  , PrimE
+  , runPrimE
 
   -- ** Unlift strategies
   , UnliftStrategy(..)
@@ -240,23 +240,23 @@ instance E.MonadMask (Eff es) where
 ----------------------------------------
 -- Fail
 
-newtype Fail :: Effect where
-  Fail :: Unique -> Fail m r
+newtype FailE :: Effect where
+  FailE :: Unique -> FailE m r
 
-runFail :: Eff (Fail : es) a -> Eff es (Either String a)
-runFail m = unsafeEff $ \es0 -> mask $ \release -> do
+runFailE :: Eff (FailE : es) a -> Eff es (Either String a)
+runFailE m = unsafeEff $ \es0 -> mask $ \release -> do
   -- A unique tag is picked so that different runFail handlers don't catch each
   -- other's exceptions.
   tag <- newUnique
   size0 <- sizeEnv es0
-  es <- unsafeConsEnv (IdE (Fail tag)) noRelinker es0
+  es <- unsafeConsEnv (IdE (FailE tag)) noRelinker es0
   r <- tryFailIO tag (release $ unEff m es) `onException` unsafeTailEnv size0 es
   unsafeTailEnv size0 es
   pure r
 
-instance Fail :> es => MonadFail (Eff es) where
+instance FailE :> es => MonadFail (Eff es) where
   fail msg = do
-    IdE (Fail tag) <- getEffect
+    IdE (FailE tag) <- getEffect
     unsafeEff_ . throwIO $ FailEx tag msg
 
 --------------------
@@ -311,14 +311,14 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
 -- Primitive
 
 -- | An effect to perform primitive state-transformer actions.
-data Prim :: Effect where
-  Prim :: Prim m r
+data PrimE :: Effect where
+  PrimE :: PrimE m r
 
 -- | Run an 'Eff' operation with primitive state-transformer actions.
-runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
-runPrim = evalEffect (IdE Prim)
+runPrimE :: IOE :> es => Eff (PrimE : es) a -> Eff es a
+runPrimE = evalEffect (IdE PrimE)
 
-instance Prim :> es => PrimMonad (Eff es) where
+instance PrimE :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
   primitive = unsafeEff_ . IO
 

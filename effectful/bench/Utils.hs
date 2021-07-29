@@ -10,12 +10,12 @@ runShallow :: Eff '[IOE] a -> IO a
 runShallow = runEff
 
 runDeep
-  :: Eff '[ State (), State (), State (), State (), State ()
-          , State (), State (), State (), State (), State ()
+  :: Eff '[ StateE (), StateE (), StateE (), StateE (), StateE ()
+          , StateE (), StateE (), StateE (), StateE (), StateE ()
           , IOE
           ] a
   -> IO a
 runDeep = runEff
-  . evalLocalState () . evalLocalState () . evalLocalState () . evalLocalState ()
-  . evalLocalState () . evalLocalState () . evalLocalState () . evalLocalState ()
-  . evalLocalState () . evalLocalState ()
+  . evalLocalStateE () . evalLocalStateE () . evalLocalStateE () . evalLocalStateE ()
+  . evalLocalStateE () . evalLocalStateE () . evalLocalStateE () . evalLocalStateE ()
+  . evalLocalStateE () . evalLocalStateE ()

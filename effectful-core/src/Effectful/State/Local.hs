@@ -8,10 +8,10 @@
 -- - very fast.
 --
 module Effectful.State.Local
-  ( State
-  , runState
-  , evalState
-  , execState
+  ( StateE
+  , runStateE
+  , evalStateE
+  , execStateE
   , get
   , gets
   , put
@@ -25,43 +25,43 @@ import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 
 -- | Provide access to a strict (WHNF), thread local, mutable state of type @s@.
-newtype State s :: Effect where
-  State :: s -> State s m r
+newtype StateE s :: Effect where
+  StateE :: s -> StateE s m r
 
-runState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runState s0 m = do
-  (a, IdE (State s)) <- runEffect (IdE (State s0)) m
+runStateE :: s -> Eff (StateE s : es) a -> Eff es (a, s)
+runStateE s0 m = do
+  (a, IdE (StateE s)) <- runEffect (IdE (StateE s0)) m
   pure (a, s)
 
-evalState :: s -> Eff (State s : es) a -> Eff es a
-evalState s = evalEffect (IdE (State s))
+evalStateE :: s -> Eff (StateE s : es) a -> Eff es a
+evalStateE s = evalEffect (IdE (StateE s))
 
-execState :: s -> Eff (State s : es) a -> Eff es s
-execState s0 m = do
-  IdE (State s) <- execEffect (IdE (State s0)) m
+execStateE :: s -> Eff (StateE s : es) a -> Eff es s
+execStateE s0 m = do
+  IdE (StateE s) <- execEffect (IdE (StateE s0)) m
   pure s
 
-get :: State s :> es => Eff es s
+get :: StateE s :> es => Eff es s
 get = do
-  IdE (State s) <- getEffect
+  IdE (StateE s) <- getEffect
   pure s
 
-gets :: State s :> es => (s -> a) -> Eff es a
+gets :: StateE s :> es => (s -> a) -> Eff es a
 gets f = f <$> get
 
-put :: State s :> es => s -> Eff es ()
-put s = putEffect (IdE (State s))
+put :: StateE s :> es => s -> Eff es ()
+put s = putEffect (IdE (StateE s))
 
-state :: State s :> es => (s -> (a, s)) -> Eff es a
-state f = stateEffect $ \(IdE (State s0)) -> let (a, s) = f s0 in (a, IdE (State s))
+state :: StateE s :> es => (s -> (a, s)) -> Eff es a
+state f = stateEffect $ \(IdE (StateE s0)) -> let (a, s) = f s0 in (a, IdE (StateE s))
 
-modify :: State s :> es => (s -> s) -> Eff es ()
+modify :: StateE s :> es => (s -> s) -> Eff es ()
 modify f = state (\s -> ((), f s))
 
-stateM :: State s :> es => (s -> Eff es (a, s)) -> Eff es a
-stateM f = stateEffectM $ \(IdE (State s0)) -> do
+stateM :: StateE s :> es => (s -> Eff es (a, s)) -> Eff es a
+stateM f = stateEffectM $ \(IdE (StateE s0)) -> do
   (a, s) <- f s0
-  pure (a, IdE (State s))
+  pure (a, IdE (StateE s))
 
-modifyM :: State s :> es => (s -> Eff es s) -> Eff es ()
+modifyM :: StateE s :> es => (s -> Eff es s) -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)

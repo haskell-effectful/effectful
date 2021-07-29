@@ -1,8 +1,8 @@
 -- | The 'Writer' effect.
 module Effectful.Writer.Local
-  ( Writer
-  , runWriter
-  , execWriter
+  ( WriterE
+  , runWriterE
+  , execWriterE
   , tell
   , listen
   , listens
@@ -16,33 +16,33 @@ import Effectful.Internal.Monad
 
 -- | Provide access to a strict (WHNF), thread local, write only value of type
 -- @w@.
-newtype Writer w :: Effect where
-  Writer :: w -> Writer w m r
+newtype WriterE w :: Effect where
+  WriterE :: w -> WriterE w m r
 
-runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runWriter m = do
-  (a, IdE (Writer w)) <- runEffect (IdE (Writer mempty)) m
+runWriterE :: Monoid w => Eff (WriterE w : es) a -> Eff es (a, w)
+runWriterE m = do
+  (a, IdE (WriterE w)) <- runEffect (IdE (WriterE mempty)) m
   pure (a, w)
 
-execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execWriter m = do
-  IdE (Writer w) <- execEffect (IdE (Writer mempty)) m
+execWriterE :: Monoid w => Eff (WriterE w : es) a -> Eff es w
+execWriterE m = do
+  IdE (WriterE w) <- execEffect (IdE (WriterE mempty)) m
   pure w
 
-tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
-tell w = stateEffect $ \(IdE (Writer w0)) -> ((), IdE (Writer (w0 <> w)))
+tell :: (WriterE w :> es, Monoid w) => w -> Eff es ()
+tell w = stateEffect $ \(IdE (WriterE w0)) -> ((), IdE (WriterE (w0 <> w)))
 
-listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
+listen :: (WriterE w :> es, Monoid w) => Eff es a -> Eff es (a, w)
 listen m = unsafeEff $ \es -> mask $ \restore -> do
-  w0 <- stateEnv es $ \(IdE (Writer w)) -> (w, IdE (Writer mempty))
+  w0 <- stateEnv es $ \(IdE (WriterE w)) -> (w, IdE (WriterE mempty))
   a <- restore (unEff m es) `onException` merge es w0
   (a, ) <$> merge es w0
   where
     merge es w0 =
       -- If an exception is thrown, restore w0 and keep parts of w1.
-      stateEnv es $ \(IdE (Writer w1)) -> (w1, IdE (Writer (w0 <> w1)))
+      stateEnv es $ \(IdE (WriterE w1)) -> (w1, IdE (WriterE (w0 <> w1)))
 
-listens :: (Writer w :> es, Monoid w) => (w -> b) -> Eff es a -> Eff es (a, b)
+listens :: (WriterE w :> es, Monoid w) => (w -> b) -> Eff es a -> Eff es (a, b)
 listens f m = do
   (a, w) <- listen m
   pure (a, f w)

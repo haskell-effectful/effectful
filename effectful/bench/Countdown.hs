@@ -103,7 +103,7 @@ countdownMtlDeep n = runIdentity
 ----------------------------------------
 -- effectful (pure)
 
-programEffectfulLocal :: EL.State Integer E.:> es => E.Eff es Integer
+programEffectfulLocal :: EL.StateE Integer E.:> es => E.Eff es Integer
 programEffectfulLocal = do
   n <- EL.get @Integer
   if n <= 0
@@ -114,21 +114,21 @@ programEffectfulLocal = do
 {-# NOINLINE programEffectfulLocal #-}
 
 countdownEffectfulLocal :: Integer -> (Integer, Integer)
-countdownEffectfulLocal n = E.runPureEff . EL.runState n $ programEffectfulLocal
+countdownEffectfulLocal n = E.runPureEff . EL.runStateE n $ programEffectfulLocal
 
 countdownEffectfulLocalDeep :: Integer -> (Integer, Integer)
 countdownEffectfulLocalDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . EL.runState n
+  . EL.runStateE n
   . runR . runR . runR . runR . runR
   $ programEffectfulLocal
   where
-    runR = E.runReader ()
+    runR = E.runReaderE ()
 
 ----------------------------------------
 -- effectful (mvar)
 
-programEffectfulShared :: ES.State Integer E.:> es => E.Eff es Integer
+programEffectfulShared :: ES.StateE Integer E.:> es => E.Eff es Integer
 programEffectfulShared = do
   n <- ES.get @Integer
   if n <= 0
@@ -139,21 +139,21 @@ programEffectfulShared = do
 {-# NOINLINE programEffectfulShared #-}
 
 countdownEffectfulShared :: Integer -> (Integer, Integer)
-countdownEffectfulShared n = E.runPureEff . ES.runState n $ programEffectfulShared
+countdownEffectfulShared n = E.runPureEff . ES.runStateE n $ programEffectfulShared
 
 countdownEffectfulSharedDeep :: Integer -> (Integer, Integer)
 countdownEffectfulSharedDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . ES.runState n
+  . ES.runStateE n
   . runR . runR . runR . runR . runR
   $ programEffectfulShared
   where
-    runR = E.runReader ()
+    runR = E.runReaderE ()
 
 ----------------------------------------
 -- effectful (dynamic)
 
-programEffectfulDynamic :: ED.State Integer E.:> es => E.Eff es Integer
+programEffectfulDynamic :: ED.StateE Integer E.:> es => E.Eff es Integer
 programEffectfulDynamic = do
   n <- ED.get @Integer
   if n <= 0
@@ -165,29 +165,29 @@ programEffectfulDynamic = do
 
 countdownEffectfulDynLocal :: Integer -> (Integer, Integer)
 countdownEffectfulDynLocal n =
-  E.runPureEff . ED.runLocalState n $ programEffectfulDynamic
+  E.runPureEff . ED.runLocalStateE n $ programEffectfulDynamic
 
 countdownEffectfulDynShared :: Integer -> (Integer, Integer)
 countdownEffectfulDynShared n =
-  E.runPureEff . ED.runSharedState n $ programEffectfulDynamic
+  E.runPureEff . ED.runSharedStateE n $ programEffectfulDynamic
 
 countdownEffectfulDynLocalDeep :: Integer -> (Integer, Integer)
 countdownEffectfulDynLocalDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . ED.runLocalState n
+  . ED.runLocalStateE n
   . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where
-    runR = E.runReader ()
+    runR = E.runReaderE ()
 
 countdownEffectfulDynSharedDeep :: Integer -> (Integer, Integer)
 countdownEffectfulDynSharedDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . ED.runSharedState n
+  . ED.runSharedStateE n
   . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where
-    runR = E.runReader ()
+    runR = E.runReaderE ()
 
 ----------------------------------------
 -- fused-effects

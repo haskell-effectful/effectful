@@ -14,8 +14,8 @@ errorTests = testGroup "Error"
 
 test_errorFromInterpret :: Assertion
 test_errorFromInterpret = runEff $ do
-  result <- runError @String . runNestedErr $ do
-    runError @String nestedErr
+  result <- runErrorE @String . runNestedErr $ do
+    runErrorE @String nestedErr
   liftIO $ case result of
     Left (cs, _) -> assertBool "stack trace points to the correct action" $
       "nestedErr" == fst (last $ getCallStack cs)
@@ -24,12 +24,12 @@ test_errorFromInterpret = runEff $ do
 ----------------------------------------
 -- Helpers
 
-data NestedErr :: Effect where
-  NestedErr :: NestedErr m ()
+data NestedErrE :: Effect where
+  NestedErr :: NestedErrE m ()
 
-nestedErr :: (HasCallStack, NestedErr :> es) => Eff es ()
+nestedErr :: (HasCallStack, NestedErrE :> es) => Eff es ()
 nestedErr = send NestedErr
 
-runNestedErr :: Error String :> es => Eff (NestedErr : es) a -> Eff es a
+runNestedErr :: ErrorE String :> es => Eff (NestedErrE : es) a -> Eff es a
 runNestedErr = interpret $ \_ -> \case
   NestedErr -> throwError "nested error"

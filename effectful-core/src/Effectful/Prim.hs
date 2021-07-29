@@ -1,6 +1,6 @@
 module Effectful.Prim
-  ( Prim
-  , runPrim
+  ( PrimE
+  , runPrimE
   ) where
 
 import Effectful.Internal.Monad

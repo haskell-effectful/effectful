@@ -1,5 +1,5 @@
 module Effectful.Writer.Dynamic
-  ( Writer(..)
+  ( WriterE(..)
 
   -- * Local
   , runLocalWriter
@@ -20,23 +20,23 @@ import Effectful.Monad
 import qualified Effectful.Writer.Local as L
 import qualified Effectful.Writer.Shared as S
 
-data Writer w :: Effect where
-  Tell   :: w   -> Writer w m ()
-  Listen :: m a -> Writer w m (a, w)
+data WriterE w :: Effect where
+  Tell   :: w   -> WriterE w m ()
+  Listen :: m a -> WriterE w m (a, w)
 
 ----------------------------------------
 -- Local
 
-runLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runLocalWriter = reinterpret L.runWriter localWriter
+runLocalWriter :: Monoid w => Eff (WriterE w : es) a -> Eff es (a, w)
+runLocalWriter = reinterpret L.runWriterE localWriter
 
-execLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execLocalWriter = reinterpret L.execWriter localWriter
+execLocalWriter :: Monoid w => Eff (WriterE w : es) a -> Eff es w
+execLocalWriter = reinterpret L.execWriterE localWriter
 
 localWriter
-  :: (L.Writer w :> es, Monoid w)
+  :: (L.WriterE w :> es, Monoid w)
   => LocalEnv localEs
-  -> Writer w (Eff localEs) a
+  -> WriterE w (Eff localEs) a
   -> Eff es a
 localWriter env = \case
   Tell w   -> L.tell w
@@ -45,16 +45,16 @@ localWriter env = \case
 ----------------------------------------
 -- Shared
 
-runSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runSharedWriter = reinterpret S.runWriter sharedWriter
+runSharedWriter :: Monoid w => Eff (WriterE w : es) a -> Eff es (a, w)
+runSharedWriter = reinterpret S.runWriterE sharedWriter
 
-execSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execSharedWriter = reinterpret S.execWriter sharedWriter
+execSharedWriter :: Monoid w => Eff (WriterE w : es) a -> Eff es w
+execSharedWriter = reinterpret S.execWriterE sharedWriter
 
 sharedWriter
-  :: (S.Writer w :> es, Monoid w)
+  :: (S.WriterE w :> es, Monoid w)
   => LocalEnv localEs
-  -> Writer w (Eff localEs) a
+  -> WriterE w (Eff localEs) a
   -> Eff es a
 sharedWriter env = \case
   Tell w    -> S.tell w
@@ -64,19 +64,19 @@ sharedWriter env = \case
 -- Operations
 
 tell
-  :: (HasCallStack, Writer w :> es, Monoid w)
+  :: (HasCallStack, WriterE w :> es, Monoid w)
   => w
   -> Eff es ()
 tell = send . Tell
 
 listen
-  :: (HasCallStack, Writer w :> es, Monoid w)
+  :: (HasCallStack, WriterE w :> es, Monoid w)
   => Eff es a
   -> Eff es (a, w)
 listen = send . Listen
 
 listens
-  :: (HasCallStack, Writer w :> es, Monoid w)
+  :: (HasCallStack, WriterE w :> es, Monoid w)
   => (w -> b)
   -> Eff es a
   -> Eff es (a, b)

@@ -1,6 +1,6 @@
 module Effectful.Fail
-  ( Fail
-  , runFail
+  ( FailE
+  , runFailE
   ) where
 
 import Effectful.Internal.Monad

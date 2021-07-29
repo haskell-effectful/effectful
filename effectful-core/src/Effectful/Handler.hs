@@ -54,20 +54,20 @@ type EffectHandler e es
   -- ^ The effect in the local environment.
   -> Eff es a
 
-data Handler :: Effect -> Type where
-  Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
+data HandlerE :: Effect -> Type where
+  HandlerE :: !(Env es) -> !(EffectHandler e es) -> HandlerE e
 
-runHandler :: Handler e -> Eff (e : es) a -> Eff es a
-runHandler e m = unsafeEff $ \es0 -> do
+runHandlerE :: HandlerE e -> Eff (e : es) a -> Eff es a
+runHandlerE e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e relinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es)
   where
-    relinker :: Relinker Handler e
-    relinker = Relinker $ \relink (Handler env handle) -> do
+    relinker :: Relinker HandlerE e
+    relinker = Relinker $ \relink (HandlerE env handle) -> do
       newEnv <- relink env
-      pure $ Handler newEnv handle
+      pure $ HandlerE newEnv handle
 
 ----------------------------------------
 -- Sending operations
@@ -75,7 +75,7 @@ runHandler e m = unsafeEff $ \es0 -> do
 -- | Send an operation of a given effect to its handler for execution.
 send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
 send op = unsafeEff $ \es -> do
-  Handler env handle <- getEnv es
+  HandlerE env handle <- getEnv es
   unEff (handle (LocalEnv es) op) env
 
 ----------------------------------------
@@ -89,7 +89,7 @@ interpret
   -> Eff      es  a
 interpret handler m = unsafeEff $ \es -> do
   les <- forkEnv es
-  (`unEff` es) $ runHandler (Handler les handler) m
+  (`unEff` es) $ runHandlerE (HandlerE les handler) m
 
 ----------------------------------------
 -- Reinterpretation
@@ -105,7 +105,7 @@ reinterpret
 reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
   les0 <- forkEnv es
   (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
-    (`unEff` es) $ runHandler (Handler les handler) m
+    (`unEff` es) $ runHandlerE (HandlerE les handler) m
 
 ----------------------------------------
 -- Unlifts
@@ -199,13 +199,13 @@ withLiftMap k = unsafeEff $ \es -> do
 -- 'Control.Exception.mask'-like operations:
 --
 -- >>> :{
--- data Fork :: Effect where
---   ForkWithUnmask :: ((forall a. m a -> m a) -> m ()) -> Fork m ThreadId
+-- data ForkE :: Effect where
+--   ForkWithUnmask :: ((forall a. m a -> m a) -> m ()) -> ForkE m ThreadId
 -- :}
 --
 -- >>> :{
--- runFork :: IOE :> es => Eff (Fork : es) a -> Eff es a
--- runFork = interpret $ \env (ForkWithUnmask m) -> withLiftMapIO $ \liftMap -> do
+-- runForkE :: IOE :> es => Eff (Fork : es) a -> Eff es a
+-- runForkE = interpret $ \env (ForkWithUnmask m) -> withLiftMapIO $ \liftMap -> do
 --   localUnliftIO env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
 --     forkIOWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 -- :}

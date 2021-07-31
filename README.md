@@ -3,6 +3,8 @@
 [![Build Status](https://github.com/arybczak/effectful/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/arybczak/effectful/actions?query=branch%3Amaster)
 [![Documentation](https://img.shields.io/static/v1?label=docs&message=0.0.0.0&color=informational)](https://rybczak.net/files/effectful/effectful-0.0.0.0-docs)
 
+<img src="https://user-images.githubusercontent.com/387658/127747903-f728437f-2ee4-47b8-9f0c-5102fd44c8e4.png" width="128">
+
 *Note:* this is a pre-release.
 
 An easy to use, performant extensible effects library with seamless integration
@@ -136,3 +138,7 @@ Blog posts:
 * [ReaderT design pattern](https://www.fpcomplete.com/blog/2017/06/readert-design-pattern/) by Michael Snoyman.
 
 * [Exceptions Best Practices](https://www.fpcomplete.com/blog/2016/11/exceptions-best-practices-haskell/) by Michael Snoyman.
+
+----------------------------------------
+
+<div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>

@@ -56,7 +56,7 @@ import Effectful.Internal.Monad
 
 -- | An effect for running child processes using the @process@ library.
 data Process :: Effect where
-    Process :: Process m r
+  Process :: Process m r
 
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
 runProcess = evalEffect (IdE Process)
@@ -129,8 +129,8 @@ withCreateProcess
   => P.CreateProcess
   -> (Maybe Handle -> Maybe Handle -> Maybe Handle -> P.ProcessHandle -> Eff es a)
   -> Eff es a
-withCreateProcess cp cb = unsafeEff $ \es ->
-  unsafeSeqUnliftEff es $ \runInIO ->
+withCreateProcess cp cb = unsafeEff $ \es -> do
+  seqUnliftEff es $ \runInIO -> do
     P.withCreateProcess cp (\inh outh errh ph -> runInIO $ cb inh outh errh ph)
 
 -- | Lifted 'P.cleanupProcess'.

@@ -72,7 +72,7 @@ runHandler e m = unsafeEff $ \es0 -> do
 ----------------------------------------
 -- Sending operations
 
--- | Send an operation of a given effect to its handler for execution.
+-- | Send an operation of the given effect to its handler for execution.
 send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
 send op = unsafeEff $ \es -> do
   Handler env handle <- getEnv es

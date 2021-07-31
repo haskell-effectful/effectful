@@ -383,7 +383,7 @@ unliftStrategy = do
   IdE (IOE unlift) <- getEffect
   pure unlift
 
--- | Locally override the 'UnliftStrategy' with a given value.
+-- | Locally override the 'UnliftStrategy' with the given value.
 --
 -- /Note:/ the strategy is reset to 'SeqUnlift' for new threads.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a

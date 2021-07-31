@@ -6,8 +6,7 @@ is __not__ intended to be a general mechanism for catching errors, that's what
 functions from the "Control.Monad.Catch" module are for.
 
 For example, if you want to catch an unchecked exception like
-'Control.Exception.SomeException' or 'Control.Exception.ErrorCall' you could use
-'Control.Monad.Catch.catch':
+'Control.Exception.ErrorCall' you could use 'Control.Monad.Catch.catch':
 
 >>> import qualified Control.Monad.Catch as E
 >>> :{

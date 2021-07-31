@@ -149,11 +149,14 @@ newForkId (ForkIdGen ref) = do
 ----------------------------------------
 -- Relinker
 
+-- | A function for relinking 'Env' objects stored in the handlers when cloning
+-- the environment.
 newtype Relinker :: (Effect -> Type) -> Effect -> Type where
   Relinker
     :: ((forall es. Env es -> IO (Env es)) -> handler e -> IO (handler e))
     -> Relinker handler e
 
+-- | A dummy 'Relinker' that does nothing.
 noRelinker :: Relinker handler e
 noRelinker = Relinker $ \_ -> pure
 
@@ -400,7 +403,10 @@ unsafeTailEnv len (Env fork gref _) = case fork of
 -- Data retrieval and update
 
 -- | Extract a specific data type from the environment.
-getEnv :: forall e es handler. e :> es => Env es -> IO (handler e)
+getEnv
+  :: forall e es handler. e :> es
+  => Env es
+  -> IO (handler e)
 getEnv env = do
   (i, es) <- getLocation @e env
   fromAny <$> readSmallArray es i

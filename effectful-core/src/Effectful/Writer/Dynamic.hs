@@ -64,19 +64,19 @@ sharedWriter env = \case
 -- Operations
 
 tell
-  :: (HasCallStack, Writer w :> es, Monoid w)
+  :: (HasCallStack, Writer w :> es)
   => w
   -> Eff es ()
 tell = send . Tell
 
 listen
-  :: (HasCallStack, Writer w :> es, Monoid w)
+  :: (HasCallStack, Writer w :> es)
   => Eff es a
   -> Eff es (a, w)
 listen = send . Listen
 
 listens
-  :: (HasCallStack, Writer w :> es, Monoid w)
+  :: (HasCallStack, Writer w :> es)
   => (w -> b)
   -> Eff es a
   -> Eff es (a, b)

@@ -15,18 +15,35 @@ import Effectful.Internal.Monad
 newtype Reader r :: Effect where
   Reader :: r -> Reader r m a
 
-runReader :: r -> Eff (Reader r : es) a -> Eff es a
+-- | Run a 'Reader' effect with the given initial environment.
+runReader
+  :: r -- ^ An initial environment.
+  -> Eff (Reader r : es) a
+  -> Eff es a
 runReader r = evalEffect (IdE (Reader r))
 
+-- | Fetch the value of the environment.
 ask :: Reader r :> es => Eff es r
 ask = do
   IdE (Reader r) <- getEffect
   pure r
 
-asks :: Reader r :> es => (r -> a) -> Eff es a
-asks f = do
-  IdE (Reader r) <- getEffect
-  pure $ f r
+-- | Retrieve a function of the current environment.
+--
+-- @'asks' f ≡ f '<$>' 'ask'@
+asks
+  :: Reader r :> es
+  => (r -> a) -- ^ The function to apply to the environment.
+  -> Eff es a
+asks f = f <$> ask
 
-local :: Reader r :> es => (r -> r) -> Eff es a -> Eff es a
+-- | Execute a computation in a modified environment.
+--
+-- @'runReader' r ('local' f m) ≡ 'runReader' (f r) m@
+--
+local
+  :: Reader r :> es
+  => (r -> r) -- ^ The function to modify the environment.
+  -> Eff es a
+  -> Eff es a
 local f = localEffect $ \(IdE (Reader r)) -> IdE (Reader (f r))

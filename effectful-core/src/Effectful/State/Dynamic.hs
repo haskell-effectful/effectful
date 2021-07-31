@@ -1,13 +1,4 @@
 -- | The 'State' effect with dynamic dispatch.
---
--- It's not clear in which situation it's beneficial to use this instead of
--- "Effectful.State.Local" or "Effectful.State.Shared" as you either:
---
--- - Share state between threads and need the shared version.
---
--- - Don't share state between threads (or want it to be thread local) and are
---   free to use the faster, local version.
---
 module Effectful.State.Dynamic
   ( State(..)
 
@@ -37,8 +28,6 @@ import qualified Effectful.State.Local as L
 import qualified Effectful.State.Shared as S
 
 -- | Provide access to a mutable state of type @s@.
---
--- Whether the state is local or shared depends on the interpretation.
 data State s :: Effect where
   Get    :: State s m s
   Put    :: s -> State s m ()

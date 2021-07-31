@@ -2,7 +2,6 @@ module ConcurrencyTests (concurrencyTests) where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad
-import Control.Monad.IO.Class
 import Test.Tasty
 import Test.Tasty.HUnit
 import UnliftIO

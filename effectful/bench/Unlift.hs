@@ -9,7 +9,7 @@ import Criterion
 import Test.Tasty.Bench
 #endif
 
-import UnliftIO
+import qualified UnliftIO as U
 
 import Effectful
 import Effectful.State.Dynamic
@@ -92,10 +92,10 @@ benchDummy :: MonadUnliftIO m => m ()
 benchDummy = withRunInIO $ \runIO -> runIO $ pure ()
 
 benchAsync :: MonadUnliftIO m => m ()
-benchAsync = withAsync (pure ()) wait
+benchAsync = U.withAsync (pure ()) U.wait
 
 benchConcurrently :: MonadUnliftIO m => m ()
-benchConcurrently = concurrently_ (pure ()) (pure ())
+benchConcurrently = U.concurrently_ (pure ()) (pure ())
 
 benchDummyE :: Eff es ()
 benchDummyE = pure ()

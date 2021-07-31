@@ -1,6 +1,5 @@
 module ErrorTests (errorTests) where
 
-import Control.Monad.IO.Class
 import Test.Tasty
 import Test.Tasty.HUnit
 

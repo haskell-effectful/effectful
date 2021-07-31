@@ -9,7 +9,6 @@ module FileSystem
 
 import Control.Exception (IOException)
 import Control.Monad.Catch
-import Control.Monad.IO.Class
 import Prelude hiding (readFile, writeFile)
 import qualified Data.Map.Strict as M
 import qualified System.IO as IO

@@ -48,6 +48,10 @@ module Effectful
   -- *** Bidirectional lifts
   , localLiftUnlift
   , localLiftUnliftIO
+
+  -- * Re-exports
+  , MonadIO(..)
+  , MonadUnliftIO(..)
   ) where
 
 import Effectful.Handler

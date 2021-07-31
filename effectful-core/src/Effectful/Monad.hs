@@ -18,7 +18,14 @@ module Effectful.Monad
   , unliftStrategy
   , withUnliftStrategy
   , withEffToIO
+
+  -- * Re-exports
+  , MonadIO(..)
+  , MonadUnliftIO(..)
   ) where
+
+import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad

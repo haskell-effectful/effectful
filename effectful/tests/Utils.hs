@@ -6,7 +6,6 @@ module Utils
   ) where
 
 import Control.Exception
-import Control.Monad.IO.Class
 import GHC.Stack
 import qualified Test.Tasty.HUnit as T
 

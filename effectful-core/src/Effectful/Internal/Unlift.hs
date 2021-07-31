@@ -6,8 +6,8 @@
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
 module Effectful.Internal.Unlift
-  ( unsafeEphemeralConcUnliftIO
-  , unsafePersistentConcUnliftIO
+  ( ephemeralConcUnliftIO
+  , persistentConcUnliftIO
   ) where
 
 import Control.Concurrent
@@ -25,14 +25,14 @@ import Effectful.Internal.Utils
 
 -- | Concurrent unlift that doesn't preserve the environment between calls to
 -- the unlifting function in threads other than its creator.
-unsafeEphemeralConcUnliftIO
+ephemeralConcUnliftIO
   :: HasCallStack
   => Int
   -> ((forall r. m r -> IO r) -> IO a)
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
-unsafeEphemeralConcUnliftIO uses k es0 unEff = do
+ephemeralConcUnliftIO uses k es0 unEff = do
   unless (uses > 0) $ do
     error $ "Invalid number of uses: " ++ show uses
   tid0 <- myThreadId
@@ -58,7 +58,7 @@ unsafeEphemeralConcUnliftIO uses k es0 unEff = do
 
 -- | Concurrent unlift that preserves the environment between calls to the
 -- unlifting function within a particular thread.
-unsafePersistentConcUnliftIO
+persistentConcUnliftIO
   :: HasCallStack
   => Bool
   -> Int
@@ -66,7 +66,7 @@ unsafePersistentConcUnliftIO
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
-unsafePersistentConcUnliftIO cleanUp threads k es0 unEff = do
+persistentConcUnliftIO cleanUp threads k es0 unEff = do
   unless (threads > 0) $ do
     error $ "Invalid number of threads: " ++ show threads
   tid0 <- myThreadId

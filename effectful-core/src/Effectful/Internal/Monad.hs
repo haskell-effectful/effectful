@@ -37,8 +37,8 @@ module Effectful.Internal.Monad
 
   --- *** Low-level helpers
   , unsafeWithLiftMapIO
-  , unsafeSeqUnliftEff
-  , unsafeConcUnliftEff
+  , seqUnliftEff
+  , concUnliftEff
 
   -- * Primitive effects
 
@@ -126,10 +126,16 @@ unEff :: Eff es a -> Env es -> IO a
 unEff (Eff m) = m
 
 -- | Access the underlying 'IO' monad along with the environment.
+--
+-- This function is __unsafe__ because it can be used to introduce arbitrary
+-- 'IO' actions into pure 'Eff' operations.
 unsafeEff :: (Env es -> IO a) -> Eff es a
 unsafeEff m = Eff (oneShot m)
 
 -- | Access the underlying 'IO' monad.
+--
+-- This function is __unsafe__ because it can be used to introduce arbitrary
+-- 'IO' actions into pure 'Eff' operations.
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
 
@@ -141,6 +147,9 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 --
 -- @forall localEs. 'Eff' localEs a -> 'Eff' localEs b@
 --
+-- This function is __unsafe__ because it can be used to introduce arbitrary
+-- 'IO' actions into pure 'Eff' operations.
+--
 -- /Note:/ the 'IO' operation must not run its argument in a separate thread,
 -- attempting to do so will result in a runtime error.
 unsafeWithLiftMapIO
@@ -148,15 +157,15 @@ unsafeWithLiftMapIO
   => ((forall a b localEs. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -> Eff es r
 unsafeWithLiftMapIO k = k $ \mapIO m -> unsafeEff $ \es -> do
-  unsafeSeqUnliftEff es $ \unlift -> mapIO $ unlift m
+  seqUnliftEff es $ \unlift -> mapIO $ unlift m
 
 -- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
-unsafeSeqUnliftEff
+seqUnliftEff
   :: HasCallStack
   => Env es
   -> ((forall r. Eff es r -> IO r) -> IO a)
   -> IO a
-unsafeSeqUnliftEff es k = do
+seqUnliftEff es k = do
   tid0 <- myThreadId
   k $ \m -> do
     tid <- myThreadId
@@ -167,21 +176,21 @@ unsafeSeqUnliftEff es k = do
         ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
 
 -- | Lower 'Eff' operations into 'IO' ('ConcUnlift').
-unsafeConcUnliftEff
+concUnliftEff
   :: HasCallStack
   => Env es
   -> Persistence
   -> Limit
   -> ((forall r. Eff es r -> IO r) -> IO a)
   -> IO a
-unsafeConcUnliftEff es Ephemeral (Limited uses) k =
-  unsafeEphemeralConcUnliftIO uses k es unEff
-unsafeConcUnliftEff es Ephemeral Unlimited k =
-  unsafeEphemeralConcUnliftIO maxBound k es unEff
-unsafeConcUnliftEff es Persistent (Limited threads) k =
-  unsafePersistentConcUnliftIO False threads k es unEff
-unsafeConcUnliftEff es Persistent Unlimited k =
-  unsafePersistentConcUnliftIO True maxBound k es unEff
+concUnliftEff es Ephemeral (Limited uses) k =
+  ephemeralConcUnliftIO uses k es unEff
+concUnliftEff es Ephemeral Unlimited k =
+  ephemeralConcUnliftIO maxBound k es unEff
+concUnliftEff es Persistent (Limited threads) k =
+  persistentConcUnliftIO False threads k es unEff
+concUnliftEff es Persistent Unlimited k =
+  persistentConcUnliftIO True maxBound k es unEff
 
 ----------------------------------------
 -- Base
@@ -400,9 +409,9 @@ withEffToIO
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 withEffToIO f = unliftStrategy >>= \case
-  SeqUnlift -> unsafeEff $ \es -> unsafeSeqUnliftEff es f
+  SeqUnlift -> unsafeEff $ \es -> seqUnliftEff es f
   ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
-    unsafeEff $ \es -> unsafeConcUnliftEff es p b f
+    unsafeEff $ \es -> concUnliftEff es p b f
 
 ----------------------------------------
 -- Helpers

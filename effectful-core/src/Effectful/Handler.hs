@@ -120,7 +120,7 @@ localSeqUnlift
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 localSeqUnlift (LocalEnv les) k = unsafeEff $ \es -> do
-  unsafeSeqUnliftEff les $ \unlift -> do
+  seqUnliftEff les $ \unlift -> do
     (`unEff` es) $ k $ unsafeEff_ . unlift
 
 -- | Create a local unlifting function with the 'SeqUnlift' strategy. For the
@@ -132,7 +132,7 @@ localSeqUnliftIO
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-localSeqUnliftIO (LocalEnv les) k = liftIO $ unsafeSeqUnliftEff les k
+localSeqUnliftIO (LocalEnv les) k = liftIO $ seqUnliftEff les k
 
 -- | Create a local unlifting function with the given strategy.
 localUnlift
@@ -145,10 +145,10 @@ localUnlift
   -> Eff es a
 localUnlift (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
-    unsafeSeqUnliftEff les $ \unlift -> do
+    seqUnliftEff les $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
   ConcUnlift p l -> unsafeEff $ \es -> do
-    unsafeConcUnliftEff les p l $ \unlift -> do
+    concUnliftEff les p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
 
 -- | Create a local unlifting function with the given strategy.
@@ -161,8 +161,8 @@ localUnliftIO
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 localUnliftIO (LocalEnv les) strategy k = case strategy of
-  SeqUnlift      -> liftIO $ unsafeSeqUnliftEff les k
-  ConcUnlift p l -> liftIO $ unsafeConcUnliftEff les p l k
+  SeqUnlift      -> liftIO $ seqUnliftEff les k
+  ConcUnlift p l -> liftIO $ concUnliftEff les p l k
 
 -- | Utility for lifting 'Eff' operations of type
 --
@@ -181,7 +181,7 @@ withLiftMap
   -> Eff es r
 withLiftMap k = unsafeEff $ \es -> do
   (`unEff` es) $ k $ \mapEff m -> unsafeEff $ \localEs -> do
-    unsafeSeqUnliftEff localEs $ \unlift -> do
+    seqUnliftEff localEs $ \unlift -> do
       (`unEff` es) . mapEff . liftIO $ unlift m
 
 -- | Utility for lifting 'IO' operations of type
@@ -215,7 +215,7 @@ withLiftMapIO
   -- ^ Continuation with the lifting function in scope.
   -> Eff es r
 withLiftMapIO k = k $ \mapIO m -> unsafeEff $ \es -> do
-  unsafeSeqUnliftEff es $ \unlift -> mapIO $ unlift m
+  seqUnliftEff es $ \unlift -> mapIO $ unlift m
 
 ----------------------------------------
 -- Bidirectional lifts
@@ -237,12 +237,12 @@ localLiftUnlift
   -> Eff es a
 localLiftUnlift (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
-    unsafeSeqUnliftEff es $ \unliftEs -> do
-      unsafeSeqUnliftEff les $ \unliftLocalEs -> do
+    seqUnliftEff es $ \unliftEs -> do
+      seqUnliftEff les $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (liftIO . unliftLocalEs)
   ConcUnlift p l -> unsafeEff $ \es -> do
-    unsafeConcUnliftEff es p l $ \unliftEs -> do
-      unsafeConcUnliftEff les p l $ \unliftLocalEs -> do
+    concUnliftEff es p l $ \unliftEs -> do
+      concUnliftEff les p l $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (liftIO . unliftLocalEs)
 
 -- | Create a local unlifting function with the given strategy along with an
@@ -262,8 +262,8 @@ localLiftUnliftIO
   -- ^ Continuation with the lifting and unlifting function in scope.
   -> Eff es a
 localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
-  SeqUnlift      -> liftIO $ unsafeSeqUnliftEff les $ k unsafeEff_
-  ConcUnlift p l -> liftIO $ unsafeConcUnliftEff les p l $ k unsafeEff_
+  SeqUnlift      -> liftIO $ seqUnliftEff les $ k unsafeEff_
+  ConcUnlift p l -> liftIO $ concUnliftEff les p l $ k unsafeEff_
 
 -- $setup
 -- >>> import Control.Concurrent

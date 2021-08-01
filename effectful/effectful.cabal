@@ -74,6 +74,7 @@ library
                      Effectful.Async
                      Effectful.Process
                      Effectful.Resource
+                     Effectful.Temporary
 
     reexported-modules:    Effectful.Error
                          , Effectful.Error.Dynamic

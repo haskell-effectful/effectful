@@ -80,6 +80,7 @@ library
                          , Effectful.Fail
                          , Effectful.Handler
                          , Effectful.Monad
+                         , Effectful.Prim
                          , Effectful.Reader
                          , Effectful.Reader.Dynamic
                          , Effectful.State.Dynamic

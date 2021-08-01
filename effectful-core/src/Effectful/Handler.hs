@@ -30,56 +30,13 @@ module Effectful.Handler
 
 import Control.Monad.IO.Unlift
 import GHC.Stack
-import qualified Control.Exception as E
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
 
 ----------------------------------------
--- Handler
-
--- | Opaque representation of the 'Eff' environment at the point of calling the
--- 'send' function, i.e. right before the control is passed to the effect
--- handler.
-newtype LocalEnv es = LocalEnv (Env es)
-
--- | Type signature of the effect handler.
-type EffectHandler e es
-  = forall a localEs. HasCallStack
-  => LocalEnv localEs
-  -- ^ The environment for handling local 'Eff' operations with functions from
-  -- the 'localUnlift' family when given a higher order effect.
-  -> e (Eff localEs) a
-  -- ^ The effect in the local environment.
-  -> Eff es a
-
-data Handler :: Effect -> Type where
-  Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
-
-runHandler :: Handler e -> Eff (e : es) a -> Eff es a
-runHandler e m = unsafeEff $ \es0 -> do
-  size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e relinker es0)
-            (unsafeTailEnv size0)
-            (\es -> unEff m es)
-  where
-    relinker :: Relinker Handler e
-    relinker = Relinker $ \relink (Handler env handle) -> do
-      newEnv <- relink env
-      pure $ Handler newEnv handle
-
-----------------------------------------
--- Sending operations
-
--- | Send an operation of the given effect to its handler for execution.
-send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
-send op = unsafeEff $ \es -> do
-  Handler env handle <- getEnv es
-  unEff (handle (LocalEnv es) op) env
-
-----------------------------------------
--- Interpretation
+-- Handling effects
 
 -- | Interpret an effect.
 interpret
@@ -90,9 +47,6 @@ interpret
 interpret handler m = unsafeEff $ \es -> do
   les <- forkEnv es
   (`unEff` es) $ runHandler (Handler les handler) m
-
-----------------------------------------
--- Reinterpretation
 
 -- | Interpret an effect using other effects.
 reinterpret

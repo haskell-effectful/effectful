@@ -16,8 +16,7 @@ module Effectful.Internal.Monad
   , unsafeEff_
 
   -- * Fail
-  , Fail
-  , runFail
+  , Fail(..)
 
   -- * IO
   , IOE
@@ -40,14 +39,25 @@ module Effectful.Internal.Monad
   , seqUnliftEff
   , concUnliftEff
 
-  -- * Primitive effects
+  -- * Effects
 
-  -- ** Running
+  -- ** Handler
+  , EffectHandler
+  , LocalEnv(..)
+  , Handler(..)
+  , runHandler
+
+  -- *** Sending operations
+  , send
+
+  -- ** Primitive
+
+  -- *** Running
   , runEffect
   , evalEffect
   , execEffect
 
-  -- ** Modification
+  -- *** Modification
   , getEffect
   , putEffect
   , stateEffect
@@ -57,19 +67,18 @@ module Effectful.Internal.Monad
 
 import Control.Applicative (liftA2)
 import Control.Concurrent (myThreadId)
-import Control.Exception
 import Control.Monad.Base
 import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Primitive
 import Control.Monad.Trans.Control
-import Data.Unique
 import GHC.Exts (oneShot)
 import GHC.IO (IO(..))
 import GHC.Stack (HasCallStack)
 import System.IO.Unsafe (unsafeDupablePerformIO)
-import qualified Control.Monad.Catch as E
+import qualified Control.Exception as E
+import qualified Control.Monad.Catch as C
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
@@ -218,71 +227,43 @@ instance MonadFix (Eff es) where
 ----------------------------------------
 -- Exception
 
-instance E.MonadThrow (Eff es) where
-  throwM = unsafeEff_ . throwIO
+instance C.MonadThrow (Eff es) where
+  throwM = unsafeEff_ . E.throwIO
 
-instance E.MonadCatch (Eff es) where
+instance C.MonadCatch (Eff es) where
   catch m handler = unsafeEff $ \es -> do
     size <- sizeEnv es
-    unEff m es `catch` \e -> do
+    unEff m es `E.catch` \e -> do
       checkSizeEnv size es
       unEff (handler e) es
 
-instance E.MonadMask (Eff es) where
-  mask k = unsafeEff $ \es -> mask $ \restore ->
+instance C.MonadMask (Eff es) where
+  mask k = unsafeEff $ \es -> E.mask $ \restore ->
     unEff (k $ \m -> unsafeEff $ restore . unEff m) es
 
-  uninterruptibleMask k = unsafeEff $ \es -> uninterruptibleMask $ \restore ->
+  uninterruptibleMask k = unsafeEff $ \es -> E.uninterruptibleMask $ \restore ->
     unEff (k $ \m -> unsafeEff $ restore . unEff m) es
 
-  generalBracket acquire release use = unsafeEff $ \es -> mask $ \restore -> do
+  generalBracket acquire release use = unsafeEff $ \es -> E.mask $ \restore -> do
     size <- sizeEnv es
     resource <- unEff acquire es
-    b <- restore (unEff (use resource) es) `catch` \e -> do
+    b <- restore (unEff (use resource) es) `E.catch` \e -> do
       checkSizeEnv size es
-      _ <- unEff (release resource $ E.ExitCaseException e) es
-      throwIO e
+      _ <- unEff (release resource $ C.ExitCaseException e) es
+      E.throwIO e
     checkSizeEnv size es
-    c <- unEff (release resource $ E.ExitCaseSuccess b) es
+    c <- unEff (release resource $ C.ExitCaseSuccess b) es
     pure (b, c)
 
 ----------------------------------------
 -- Fail
 
-newtype Fail :: Effect where
-  Fail :: Unique -> Fail m r
-
-runFail :: Eff (Fail : es) a -> Eff es (Either String a)
-runFail m = unsafeEff $ \es0 -> mask $ \release -> do
-  -- A unique tag is picked so that different runFail handlers don't catch each
-  -- other's exceptions.
-  tag <- newUnique
-  size0 <- sizeEnv es0
-  es <- unsafeConsEnv (IdE (Fail tag)) noRelinker es0
-  r <- tryFailIO tag (release $ unEff m es) `onException` unsafeTailEnv size0 es
-  unsafeTailEnv size0 es
-  pure r
+-- | Provide the ability to use the 'MonadFail' instance of 'Eff'.
+data Fail :: Effect where
+  Fail :: String -> Fail m a
 
 instance Fail :> es => MonadFail (Eff es) where
-  fail msg = do
-    IdE (Fail tag) <- getEffect
-    unsafeEff_ . throwIO $ FailEx tag msg
-
---------------------
-
-data FailEx = FailEx !Unique String
-instance Show FailEx where
-  showsPrec p (FailEx _ msg)
-    = ("Effectful.Internal.Monad.FailEx " ++)
-    . showsPrec p msg
-instance Exception FailEx
-
-tryFailIO :: Unique -> IO a -> IO (Either String a)
-tryFailIO tag m =
-  (Right <$> m) `catch` \err@(FailEx etag msg) -> do
-    if tag == etag
-      then pure $ Left msg
-      else throwIO err
+  fail = send . Fail
 
 ----------------------------------------
 -- IO
@@ -414,28 +395,69 @@ withEffToIO f = unliftStrategy >>= \case
     unsafeEff $ \es -> concUnliftEff es p b f
 
 ----------------------------------------
+-- Handler
+
+-- | Opaque representation of the 'Eff' environment at the point of calling the
+-- 'send' function, i.e. right before the control is passed to the effect
+-- handler.
+newtype LocalEnv es = LocalEnv (Env es)
+
+-- | Type signature of the effect handler.
+type EffectHandler e es
+  = forall a localEs. HasCallStack
+  => LocalEnv localEs
+  -- ^ Capture of the local environment for handling local 'Eff' operations when
+  -- @e@ is a higher order effect.
+  -> e (Eff localEs) a
+  -- ^ The effect performed in the local environment.
+  -> Eff es a
+
+-- | An effect handler bundled along with its environment.
+data Handler :: Effect -> Type where
+  Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
+
+-- | Run the effect with the given handler.
+runHandler :: Handler e -> Eff (e : es) a -> Eff es a
+runHandler e m = unsafeEff $ \es0 -> do
+  size0 <- sizeEnv es0
+  E.bracket (unsafeConsEnv e relinker es0)
+            (unsafeTailEnv size0)
+            (\es -> unEff m es)
+  where
+    relinker :: Relinker Handler e
+    relinker = Relinker $ \relink (Handler env handle) -> do
+      newEnv <- relink env
+      pure $ Handler newEnv handle
+
+-- | Send an operation of the given effect to its handler for execution.
+send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
+send op = unsafeEff $ \es -> do
+  Handler env handle <- getEnv es
+  unEff (handle (LocalEnv es) op) env
+
+----------------------------------------
 -- Helpers
 
 runEffect :: handler e -> Eff (e : es) a -> Eff es (a, handler e)
 runEffect e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
-  bracket (unsafeConsEnv e0 noRelinker es0)
-          (unsafeTailEnv size0)
-          (\es -> (,) <$> unEff m es <*> getEnv es)
+  E.bracket (unsafeConsEnv e0 noRelinker es0)
+            (unsafeTailEnv size0)
+            (\es -> (,) <$> unEff m es <*> getEnv es)
 
 evalEffect :: handler e -> Eff (e : es) a -> Eff es a
 evalEffect e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
-  bracket (unsafeConsEnv e noRelinker es0)
-          (unsafeTailEnv size0)
-          (\es -> unEff m es)
+  E.bracket (unsafeConsEnv e noRelinker es0)
+            (unsafeTailEnv size0)
+            (\es -> unEff m es)
 
 execEffect :: handler e -> Eff (e : es) a -> Eff es (handler e)
 execEffect e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
-  bracket (unsafeConsEnv e0 noRelinker es0)
-          (unsafeTailEnv size0)
-          (\es -> unEff m es *> getEnv es)
+  E.bracket (unsafeConsEnv e0 noRelinker es0)
+            (unsafeTailEnv size0)
+            (\es -> unEff m es *> getEnv es)
 
 getEffect :: e :> es => Eff es (handler e)
 getEffect = unsafeEff $ \es -> getEnv es
@@ -447,13 +469,13 @@ stateEffect :: e :> es => (handler e -> (a, handler e)) -> Eff es a
 stateEffect f = unsafeEff $ \es -> stateEnv es f
 
 stateEffectM :: e :> es => (handler e -> Eff es (a, handler e)) -> Eff es a
-stateEffectM f = unsafeEff $ \es -> mask $ \release -> do
+stateEffectM f = unsafeEff $ \es -> E.mask $ \release -> do
   (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv es
   putEnv es e
   pure a
 
 localEffect :: e :> es => (handler e -> handler e) -> Eff es a -> Eff es a
 localEffect f m = unsafeEff $ \es -> do
-  bracket (stateEnv es $ \e -> (e, f e))
-          (\e -> putEnv es e)
-          (\_ -> unEff m es)
+  E.bracket (stateEnv es $ \e -> (e, f e))
+            (\e -> putEnv es e)
+            (\_ -> unEff m es)

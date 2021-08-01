@@ -79,11 +79,6 @@ library
                          , Effectful.Error.Dynamic
                          , Effectful.Fail
                          , Effectful.Handler
-                         , Effectful.Internal.Effect
-                         , Effectful.Internal.Env
-                         , Effectful.Internal.Monad
-                         , Effectful.Internal.Unlift
-                         , Effectful.Internal.Utils
                          , Effectful.Monad
                          , Effectful.Reader
                          , Effectful.Reader.Dynamic

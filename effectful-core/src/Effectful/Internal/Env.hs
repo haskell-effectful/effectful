@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- | The environment for the 'Effectful.Internal.Monad.Eff' monad.
 --
@@ -408,7 +407,7 @@ getEnv
   => Env es
   -> IO (handler e)
 getEnv env = do
-  (i, es) <- getLocation @e env
+  (i, es) <- getLocation (reifyIndex @e @es) env
   fromAny <$> readSmallArray es i
 
 -- | Replace the data type in the environment with a new value (in place).
@@ -418,7 +417,7 @@ putEnv
   -> handler e
   -> IO ()
 putEnv env e = do
-  (i, es) <- getLocation @e env
+  (i, es) <- getLocation (reifyIndex @e @es) env
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place) and return a value.
@@ -428,7 +427,7 @@ stateEnv
   -> (handler e -> (a, handler e))
   -> IO a
 stateEnv env f = do
-  (i, es) <- getLocation @e env
+  (i, es) <- getLocation (reifyIndex @e @es) env
   (a, e) <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
   pure a
@@ -440,7 +439,7 @@ modifyEnv
   -> (handler e -> handler e)
   -> IO ()
 modifyEnv env f = do
-  (i, es) <- getLocation @e env
+  (i, es) <- getLocation (reifyIndex @e @es) env
   e <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
 
@@ -458,10 +457,10 @@ emptyEnvRef = do
 
 -- | Determine location of the data type in the environment.
 getLocation
-  :: forall e es. e :> es
-  => Env es
+  :: Int
+  -> Env es
   -> IO (Int, SmallMutableArray RealWorld Any)
-getLocation (Env fork ref _) = do
+getLocation ixE (Env fork ref _) = do
   EnvRef n es _ <- readIORef ref
   -- Optimized for the common access pattern:
   --
@@ -492,7 +491,7 @@ getLocation (Env fork ref _) = do
           else go es i forks
 
     ix :: Int -> Int
-    ix n = n - reifyIndex @e @es - 1
+    ix n = n - ixE - 1
 
 toAny :: a -> Any
 toAny = unsafeCoerce

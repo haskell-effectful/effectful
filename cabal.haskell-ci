@@ -4,7 +4,7 @@ doctest:        <9.2
 tests:          True
 benchmarks:     True
 
-ghcup-jobs:     >=9.2
+ghcup-jobs:     ==8.10.7 || >=9.2
 
 raw-project
   package effectful

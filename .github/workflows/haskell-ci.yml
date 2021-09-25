@@ -43,7 +43,7 @@ jobs:
           - compiler: ghc-8.10.7
             compilerKind: ghc
             compilerVersion: 8.10.7
-            setup-method: hvr-ppa
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-8.8.4
             compilerKind: ghc

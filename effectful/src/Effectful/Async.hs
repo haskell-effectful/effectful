@@ -533,10 +533,9 @@ liftAsyncWithUnmask
   :: (((forall b. IO b -> IO b) -> IO a) -> IO (Async a))
   -> ((forall b. Eff es b -> Eff es b) -> Eff es a)
   -> Eff es (Async a)
-liftAsyncWithUnmask fork action = do
-  unsafeWithLiftMapIO $ \liftMap -> unsafeEff $ \es -> do
-    esA <- cloneEnv es
-    fork $ \unmask -> unEff (action $ liftMap unmask) esA
+liftAsyncWithUnmask fork action = unsafeEff $ \es -> do
+  esA <- cloneEnv es
+  fork $ \unmask -> unEff (action $ unsafeLiftMapIO unmask) esA
 
 liftWithAsync
   :: (IO a -> (Async a -> IO b) -> IO b)
@@ -553,8 +552,7 @@ liftWithAsyncWithUnmask
   -> ((forall c. Eff es c -> Eff es c) -> Eff es a)
   -> (Async a -> Eff es b)
   -> Eff es b
-liftWithAsyncWithUnmask withA action k = do
-  unsafeWithLiftMapIO $ \liftMap -> unsafeEff $ \es -> do
-    esA <- cloneEnv es
-    withA (\unmask -> unEff (action $ liftMap unmask) esA)
-          (\a -> unEff (k a) es)
+liftWithAsyncWithUnmask withA action k = unsafeEff $ \es -> do
+  esA <- cloneEnv es
+  withA (\unmask -> unEff (action $ unsafeLiftMapIO unmask) esA)
+        (\a -> unEff (k a) es)

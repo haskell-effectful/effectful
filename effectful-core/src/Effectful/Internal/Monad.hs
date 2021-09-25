@@ -35,7 +35,7 @@ module Effectful.Internal.Monad
   , withEffToIO
 
   --- *** Low-level helpers
-  , unsafeWithLiftMapIO
+  , unsafeLiftMapIO
   , seqUnliftEff
   , concUnliftEff
 
@@ -154,19 +154,17 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 --
 -- to
 --
--- @forall localEs. 'Eff' localEs a -> 'Eff' localEs b@
+-- @'Eff' es a -> 'Eff' es b@
 --
--- This function is __unsafe__ because it can be used to introduce arbitrary
--- 'IO' actions into pure 'Eff' operations.
+-- This function is __unsafe__ because:
 --
--- /Note:/ the 'IO' operation must not run its argument in a separate thread,
--- attempting to do so will result in a runtime error.
-unsafeWithLiftMapIO
-  :: HasCallStack
-  => ((forall a b localEs. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
-  -> Eff es r
-unsafeWithLiftMapIO k = k $ \mapIO m -> unsafeEff $ \es -> do
-  seqUnliftEff es $ \unlift -> mapIO $ unlift m
+-- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
+--   operations.
+--
+-- - The 'IO' operation must not run its argument in a separate thread, but it's
+--   not checked anywhere.
+unsafeLiftMapIO :: (IO a -> IO b) -> Eff es a -> Eff es b
+unsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
 
 -- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
 seqUnliftEff

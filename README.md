@@ -123,6 +123,81 @@ A `Filesystem` effect with two handlers, one that runs in `IO` and another that
 uses an in-memory virtual file system can be found
 [here](https://github.com/arybczak/effectful/blob/master/effectful/examples/FileSystem.hs).
 
+## Writing your own effects
+
+### Static and dynamic effects
+
+Effects come in two different flavours: _Dynamically_ dispatched effects and
+_statically_ dispatched effects. To exemplify the difference between those two
+consider the following implementations of a `FileSystem` effect:
+
+```haskell
+import Effectful
+
+data FileSystemDynamic :: Effect where
+  ReadFile  :: FilePath -> FileSystemDynamic m String
+  WriteFile :: FilePath -> String -> FileSystemDynamic m ()
+
+runFileSystemDynamic :: IOE :> es => Eff (FileSystemDynamic : es) a -> Eff es a
+runFileSystemDynamic = interpret $ \_localEnv -> \case
+  ReadFile path -> liftIO $ Prelude.readFile path
+  WriteFile path content -> liftIO $ Prelude.writeFile path content
+
+readFile :: FileSystemDynamic :> es => FilePath -> Eff es String
+readFile = send . ReadFile
+
+writeFile :: FileSystemDynamic :> es => FilePath -> String -> Eff es ()
+writeFile path = send . WriteFile path
+```
+
+```haskell
+import Effectful
+import Effectful.Internal.Effect (IdE(..))
+import Effectful.Internal.Monad (evalEffect, unsafeEff_)
+
+data FileSystemStatic :: Effect where
+  FileSystemStatic  :: FileSystemStatic m r
+
+runFileSystemStatic :: IOE :> es => Eff (FileSystemStatic : es) a -> Eff es a
+runFileSystemStatic = evalEffect (IdE FileSystemStatic)
+
+readFile :: FileSystemStatic :> es => FilePath -> Eff es String
+readFile path = unsafeEff_ $ do
+  -- We are in an IO monad here
+  Prelude.readFile path
+
+writeFile :: FileSystem :> es => FilePath -> String -> Eff es ()
+writeFile path content = unsafeEff_ $ do
+  -- We are in an IO monad here
+  Prelude.writeFile path content
+```
+
+The first one uses dynamic dispatch: That means, the actual work is done in the
+interpreter of the effect. The second, statically dispatched implementation on
+the other performs the read and write operations in the respective functions and
+does not use the effects environment (`FileSystemStatic`) at all. This makes the
+interpreter essentially a stub with the sole purpose to pop the effect off the
+effect stack.
+
+To summarize the tradeoff between the two variants:
+
+You may consider dynamic effects if
+
+- you develop a library and the users of those are free to choose which
+  interpretation they use for your effect.
+
+- you want to rely on the public API only.
+
+- you interpret your effect in terms of other effects.
+
+You may consider static effects if
+
+- you want to get the last bit of performance out of effectful.
+
+- there is only one sensible way the effect can be interpreted.
+
+- are not afraid to deal with effectfuls internals.
+
 ## Resources
 
 Resources that inspired the rise of this library and had a lot of impact on its

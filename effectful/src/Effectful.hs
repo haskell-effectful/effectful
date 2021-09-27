@@ -22,6 +22,7 @@ module Effectful
   , unliftStrategy
   , withUnliftStrategy
   , withEffToIO
+  , EffectfulError(..)
 
   -- * 'Effect' handlers
 

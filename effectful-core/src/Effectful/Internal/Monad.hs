@@ -82,6 +82,7 @@ import qualified Control.Monad.Catch as C
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
+import Effectful.Internal.Error
 import Effectful.Internal.Unlift
 import Effectful.Internal.Utils
 
@@ -167,6 +168,10 @@ unsafeLiftMapIO :: (IO a -> IO b) -> Eff es a -> Eff es b
 unsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
 
 -- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
+--
+-- Exceptions thrown by this function:
+--
+--  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread
 seqUnliftEff
   :: HasCallStack
   => Env es
@@ -178,9 +183,7 @@ seqUnliftEff es k = do
     tid <- myThreadId
     if tid `eqThreadId` tid0
       then unEff m es
-      else error
-         $ "If you want to use the unlifting function to run Eff operations "
-        ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
+      else E.throwIO InvalidUseOfSeqUnlift
 
 -- | Lower 'Eff' operations into 'IO' ('ConcUnlift').
 concUnliftEff
@@ -372,8 +375,6 @@ unliftStrategy = do
   pure unlift
 
 -- | Locally override the 'UnliftStrategy' with the given value.
---
--- /Note:/ the strategy is reset to 'SeqUnlift' for new threads.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
 withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
 
@@ -382,6 +383,8 @@ withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
 -- This function is equivalent to 'withRunInIO', but has a 'HasCallStack'
 -- constraint for accurate stack traces in case an insufficiently powerful
 -- 'UnliftStrategy' is used and the unlifting function fails.
+--
+-- /Note:/ the strategy is reset to 'SeqUnlift' for new threads.
 withEffToIO
   :: (HasCallStack, IOE :> es)
   => ((forall r. Eff es r -> IO r) -> IO a)

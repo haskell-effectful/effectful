@@ -11,6 +11,7 @@ module Effectful.Internal.Unlift
   ) where
 
 import Control.Concurrent
+import Control.Exception
 import Control.Monad
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
@@ -21,20 +22,27 @@ import System.Mem.Weak (deRefWeak)
 import qualified Data.IntMap.Strict as IM
 
 import Effectful.Internal.Env
+import Effectful.Internal.Error
 import Effectful.Internal.Utils
 
 -- | Concurrent unlift that doesn't preserve the environment between calls to
 -- the unlifting function in threads other than its creator.
+--
+-- Exceptions thrown by this function:
+--
+--  - 'InvalidNumberOfUses' if the number of uses is less or equal zero.
+--  - 'ExceededNumberOfUses' if the unlift function is called too often.
 ephemeralConcUnliftIO
   :: HasCallStack
   => Int
+  -- ^ Number of permitted uses of the unlift function
   -> ((forall r. m r -> IO r) -> IO a)
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
 ephemeralConcUnliftIO uses k es0 unEff = do
   unless (uses > 0) $ do
-    error $ "Invalid number of uses: " ++ show uses
+    throwIO $ InvalidNumberOfUses uses
   tid0 <- myThreadId
   -- Create a copy of the environment as a template for the other threads to
   -- use. This can't be done from inside the callback as the environment might
@@ -45,10 +53,7 @@ ephemeralConcUnliftIO uses k es0 unEff = do
     es <- myThreadId >>= \case
       tid | tid0 `eqThreadId` tid -> pure es0
       _ -> modifyMVar mvUses $ \case
-        0 -> error
-           $ "Number of permitted calls (" ++ show uses ++ ") to the unlifting "
-          ++ "function in other threads was exceeded. Please increase the limit "
-          ++ "or use the unlimited variant."
+        0 -> throwIO $ ExceededNumberOfUses uses
         1 -> pure (0, esTemplate)
         n -> do
           let newUses = n - 1
@@ -58,17 +63,24 @@ ephemeralConcUnliftIO uses k es0 unEff = do
 
 -- | Concurrent unlift that preserves the environment between calls to the
 -- unlifting function within a particular thread.
+--
+-- Exceptions thrown by this function:
+--
+--  - 'InvalidNumberOfThreads' if the number of threads is less or equal zero.
+--  - 'ExceededNumberOfThreads' if the unlift function is called by too many
+--    threads.
 persistentConcUnliftIO
   :: HasCallStack
   => Bool
   -> Int
+  -- ^ Number of threads that are allowed to use the unlift function
   -> ((forall r. m r -> IO r) -> IO a)
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
 persistentConcUnliftIO cleanUp threads k es0 unEff = do
   unless (threads > 0) $ do
-    error $ "Invalid number of threads: " ++ show threads
+    throwIO $ InvalidNumberOfThreads threads
   tid0 <- myThreadId
   -- Create a copy of the environment as a template for the other threads to
   -- use. This can't be done from inside the callback as the environment might
@@ -86,10 +98,7 @@ persistentConcUnliftIO cleanUp threads k es0 unEff = do
         case mes of
           Just es -> pure (te, es)
           Nothing -> case teCapacity te of
-            0 -> error
-                $ "Number of other threads (" ++ show threads ++ ") permitted to "
-               ++ "use the unlifting function was exceeded. Please increase the "
-               ++ "limit or use the unlimited variant."
+            0 -> throwIO $ ExceededNumberOfThreads threads
             1 -> do
               wkTidEs <- mkWeakThreadIdEnv tid esTemplate wkTid i mvEntries cleanUp
               let newEntries = ThreadEntries

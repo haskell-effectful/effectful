@@ -33,6 +33,7 @@ module Effectful.Internal.Monad
   , unliftStrategy
   , withUnliftStrategy
   , withEffToIO
+  , UnliftError(..)
 
   --- *** Low-level helpers
   , unsafeLiftMapIO
@@ -82,7 +83,6 @@ import qualified Control.Monad.Catch as C
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
-import Effectful.Internal.Error
 import Effectful.Internal.Unlift
 import Effectful.Internal.Utils
 

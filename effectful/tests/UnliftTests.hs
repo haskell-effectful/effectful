@@ -5,7 +5,6 @@ import Test.Tasty.HUnit
 import qualified UnliftIO.Async as A
 
 import Effectful
-import Effectful.Internal.Error
 import qualified Utils as U
 
 unliftTests :: TestTree
@@ -84,23 +83,23 @@ test_persistent_multiple_threads = runEff $ do
 ----------------------------------------
 -- Predicates
 
-isExceededNumberOfThreads :: EffectfulError -> Bool
+isExceededNumberOfThreads :: UnliftError -> Bool
 isExceededNumberOfThreads (ExceededNumberOfThreads {}) = True
 isExceededNumberOfThreads _ = False
 
-isExceededNumberOfUses :: EffectfulError -> Bool
+isExceededNumberOfUses :: UnliftError -> Bool
 isExceededNumberOfUses (ExceededNumberOfUses {}) = True
 isExceededNumberOfUses _ = False
 
-isInvalidNumberOfThreads :: EffectfulError -> Bool
+isInvalidNumberOfThreads :: UnliftError -> Bool
 isInvalidNumberOfThreads (InvalidNumberOfThreads {}) = True
 isInvalidNumberOfThreads _ = False
 
-isInvalidNumberOfUses :: EffectfulError -> Bool
+isInvalidNumberOfUses :: UnliftError -> Bool
 isInvalidNumberOfUses (InvalidNumberOfUses {}) = True
 isInvalidNumberOfUses _ = False
 
-isInvalidUseOfSeqUnlift :: EffectfulError -> Bool
+isInvalidUseOfSeqUnlift :: UnliftError -> Bool
 isInvalidUseOfSeqUnlift (InvalidUseOfSeqUnlift {}) = True
 isInvalidUseOfSeqUnlift _ = False
 

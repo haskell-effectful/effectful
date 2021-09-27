@@ -18,7 +18,7 @@ module Effectful.Monad
   , unliftStrategy
   , withUnliftStrategy
   , withEffToIO
-  , EffectfulError(..)
+  , UnliftError(..)
 
   -- * Re-exports
   , MonadIO(..)
@@ -29,5 +29,4 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 
 import Effectful.Internal.Effect
-import Effectful.Internal.Error
 import Effectful.Internal.Monad

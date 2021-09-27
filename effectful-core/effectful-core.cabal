@@ -83,7 +83,6 @@ library
                      Effectful.Fail
                      Effectful.Handler
                      Effectful.Internal.Effect
-                     Effectful.Internal.Error
                      Effectful.Internal.Env
                      Effectful.Internal.Monad
                      Effectful.Internal.Unlift

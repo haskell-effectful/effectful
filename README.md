@@ -166,7 +166,7 @@ readFile path = unsafeEff_ $ do
   -- We are in an IO monad here
   Prelude.readFile path
 
-writeFile :: FileSystem :> es => FilePath -> String -> Eff es ()
+writeFile :: FileSystemStatic :> es => FilePath -> String -> Eff es ()
 writeFile path content = unsafeEff_ $ do
   -- We are in an IO monad here
   Prelude.writeFile path content

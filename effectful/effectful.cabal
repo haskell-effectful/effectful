@@ -64,9 +64,11 @@ library
 
     build-depends:    base >= 4.13 && <5
                     , async
+                    , directory
                     , effectful-core >= 0.1 && <0.1.1
                     , process
                     , resourcet
+                    , time
                     , unliftio
 
     hs-source-dirs:  src
@@ -74,6 +76,7 @@ library
     exposed-modules: Effectful
                      Effectful.Async
                      Effectful.Environment
+                     Effectful.FileSystem
                      Effectful.Process
                      Effectful.Resource
                      Effectful.Temporary

@@ -8,7 +8,6 @@ module Utils
 
 import Control.Exception
 import Control.Monad
-import qualified Control.Exception.Lifted as LE
 import GHC.Stack
 import qualified Test.Tasty.HUnit as T
 
@@ -39,9 +38,9 @@ assertThrows msg p k = withEffToIO $ \runInIO -> do
         void $ runInIO k
         T.assertFailure msg
 
-  k' `LE.catch` \e -> if p e
+  k' `catch` \e -> if p e
     then return ()
-    else LE.throwIO e
+    else throwIO e
 
 data Ex = Ex deriving (Eq, Show)
 instance Exception Ex

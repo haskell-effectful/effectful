@@ -76,6 +76,7 @@ library
                      Effectful.Process
                      Effectful.Resource
                      Effectful.Temporary
+                     Effectful.Timeout
 
     reexported-modules:    Effectful.Error
                          , Effectful.Error.Dynamic
@@ -115,6 +116,7 @@ test-suite test
                     ConcurrencyTests
                     ErrorTests
                     StateTests
+                    TimeoutTests
                     Utils
                     -- These are examples; We do not actually run them but list
                     -- them here in order to check if they compile.

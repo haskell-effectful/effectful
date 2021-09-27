@@ -1,0 +1,42 @@
+module EnvironmentTests (environmentTests) where
+
+import Test.Tasty
+import Test.Tasty.HUnit
+import System.IO.Error (isDoesNotExistError)
+
+import Effectful
+import Effectful.Environment
+import qualified Utils as U
+
+environmentTests :: TestTree
+environmentTests = testGroup "Environment"
+  [ testCase "set and get an environment variable" test_setAndGet
+  , testCase "unset and try to get an environment variable" test_unsetAndGet
+  , testCase "execute effects with custom arguments" test_withArgs
+  , testCase "execute effects with custom program name" test_withProg
+  ]
+
+test_setAndGet :: Assertion
+test_setAndGet = runEff . runEnvironment $ do
+  let n = "EFFECTFUL_TEST1"
+  setEnv n "value"
+  v <- getEnv n
+  U.assertEqual "environment variable not set" v "value"
+
+test_unsetAndGet :: Assertion
+test_unsetAndGet = runEff . runEnvironment $ do
+  let n = "EFFECTFUL_TEST2"
+  unsetEnv n
+  U.assertThrows "environment variable is set" isDoesNotExistError (getEnv n)
+
+test_withArgs :: Assertion
+test_withArgs = runEff . runEnvironment $ do
+  let expected = ["effectful-test"]
+  args <- withArgs expected getArgs
+  U.assertEqual "correct arguments" args expected
+
+test_withProg :: Assertion
+test_withProg = runEff . runEnvironment $ do
+  let expected = "effectful-test"
+  n <- withProgName expected getProgName
+  U.assertEqual "correct program name" n expected

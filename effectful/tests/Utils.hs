@@ -2,10 +2,13 @@ module Utils
   ( assertBool
   , assertEqual
   , assertFailure
+  , assertThrows
   , Ex(..)
   ) where
 
 import Control.Exception
+import Control.Monad
+import qualified Control.Exception.Lifted as LE
 import GHC.Stack
 import qualified Test.Tasty.HUnit as T
 
@@ -24,6 +27,21 @@ assertEqual msg expected given = liftIO $ T.assertEqual msg expected given
 
 assertFailure :: (HasCallStack, IOE :> es) => String -> Eff es a
 assertFailure msg = liftIO $ T.assertFailure msg
+
+assertThrows
+  :: (Exception e, IOE :> es)
+  => String
+  -> (e -> Bool)
+  -> Eff es a
+  -> Eff es ()
+assertThrows msg p k = withEffToIO $ \runInIO -> do
+  let k' = do
+        void $ runInIO k
+        T.assertFailure msg
+
+  k' `LE.catch` \e -> if p e
+    then return ()
+    else LE.throwIO e
 
 data Ex = Ex deriving (Eq, Show)
 instance Exception Ex

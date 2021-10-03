@@ -182,7 +182,7 @@ withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
 --
 -- Exceptions thrown by this function:
 --
---  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread
+--  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread.
 seqUnliftEff
   :: HasCallStack
   => Env es

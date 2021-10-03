@@ -97,7 +97,7 @@ data Limit
 --
 -- Exceptions thrown by this function:
 --
---  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread
+--  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread.
 seqUnliftIO
   :: HasCallStack
   => ((forall r. m r -> IO r) -> IO a)
@@ -140,7 +140,7 @@ concUnliftIO Persistent Unlimited k =
 ephemeralConcUnliftIO
   :: HasCallStack
   => Int
-  -- ^ Number of permitted uses of the unlift function
+  -- ^ Number of permitted uses of the unlift function.
   -> ((forall r. m r -> IO r) -> IO a)
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
@@ -178,7 +178,7 @@ persistentConcUnliftIO
   :: HasCallStack
   => Bool
   -> Int
-  -- ^ Number of threads that are allowed to use the unlift function
+  -- ^ Number of threads that are allowed to use the unlift function.
   -> ((forall r. m r -> IO r) -> IO a)
   -> Env es
   -> (forall r. m r -> Env es -> IO r)

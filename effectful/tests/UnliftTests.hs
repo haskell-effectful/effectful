@@ -9,7 +9,7 @@ import qualified Utils as U
 
 unliftTests :: TestTree
 unliftTests = testGroup "Unlift"
-  [ testCase "reset strategy in new thread" test_resetStrategy
+  [ testCase "Reset strategy in new thread" test_resetStrategy
   , testCase "SeqUnlift in new thread" test_seqUnliftInNewThread
   , testGroup "Ephemeral strategy"
     [ testCase "Invalid limit" test_ephemeral_invalid

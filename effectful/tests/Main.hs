@@ -7,6 +7,7 @@ import ConcurrencyTests
 import EnvironmentTests
 import ErrorTests
 import StateTests
+import TimeoutTests
 
 main :: IO ()
 main = defaultMain $ testGroup "effectful"
@@ -15,4 +16,5 @@ main = defaultMain $ testGroup "effectful"
   , environmentTests
   , errorTests
   , stateTests
+  , timeoutTests
   ]

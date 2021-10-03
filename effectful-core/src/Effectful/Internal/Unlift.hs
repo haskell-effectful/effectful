@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# OPTIONS_HADDOCK not-home #-}
@@ -26,6 +27,7 @@ import Control.Exception
 import Control.Monad
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
+import GHC.Generics (Generic)
 import GHC.IO (IO(..))
 import GHC.Stack (HasCallStack)
 import GHC.Weak (Weak(..))
@@ -49,7 +51,7 @@ data UnliftStrategy
   -- ^ A strategy that makes it possible for the unlifting function to be called
   -- in threads distinct from its creator. See 'Persistence' and 'Limit'
   -- settings for more information.
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Generic, Ord, Show)
 
 -- | Persistence setting for the 'ConcUnlift' strategy.
 --
@@ -69,7 +71,7 @@ data Persistence
   | Persistent
   -- ^ Persist the environment between calls to the unlifting function within a
   -- particular thread.
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Generic, Ord, Show)
 
 -- | Limit setting for the 'ConcUnlift' strategy.
 data Limit
@@ -88,7 +90,7 @@ data Limit
   -- when called in @N@ threads and @K+1@ copies when called in @K < N@ threads.
   | Unlimited
   -- ^ Unlimited use of the unlifting function.
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Generic, Ord, Show)
 
 ----------------------------------------
 -- Unlift functions
@@ -231,7 +233,7 @@ data UnliftError
   | InvalidUseOfSeqUnlift
   | ExceededNumberOfThreads Int
   | ExceededNumberOfUses Int
-  deriving Show
+  deriving (Eq, Generic, Show)
 
 instance Exception UnliftError where
   displayException (InvalidNumberOfThreads threads) =

@@ -73,6 +73,7 @@ library
 
     exposed-modules: Effectful
                      Effectful.Async
+                     Effectful.Environment
                      Effectful.Process
                      Effectful.Resource
                      Effectful.Temporary
@@ -113,6 +114,7 @@ test-suite test
 
     other-modules:  AsyncTests
                     ConcurrencyTests
+                    EnvironmentTests
                     ErrorTests
                     StateTests
                     Utils

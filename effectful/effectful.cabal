@@ -105,6 +105,7 @@ test-suite test
                     , effectful-core
                     , exceptions
                     , lifted-base
+                    , optics-core >= 0.4
                     , tasty
                     , tasty-hunit
                     , unliftio

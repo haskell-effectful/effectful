@@ -1,5 +1,7 @@
+{-# LANGUAGE OverloadedLabels #-}
 module UnliftTests (unliftTests) where
 
+import Optics.Core
 import Test.Tasty
 import Test.Tasty.HUnit
 import qualified UnliftIO.Async as A
@@ -32,38 +34,43 @@ test_reset_strategy = runEff $ do
 
 test_seqUnlift_in_new_thread :: Assertion
 test_seqUnlift_in_new_thread = runEff $ do
-  U.assertThrows "InvalidUseOfSeqUnlift error" isInvalidUseOfSeqUnlift $ do
-    withUnliftStrategy SeqUnlift $ do
-      withEffToIO $ \runInIO -> do
-        inThread $ runInIO $ return ()
+  assertThrowsUnliftError "InvalidUseOfSeqUnlift error"
+    (has #_InvalidUseOfSeqUnlift) $ do
+      withUnliftStrategy SeqUnlift $ do
+        withEffToIO $ \runInIO -> do
+          inThread $ runInIO $ return ()
 
 test_ephemeral_invalid :: Assertion
 test_ephemeral_invalid = runEff $ do
-  U.assertThrows "InvalidNumberOfUses error" isInvalidNumberOfUses $ do
-    withUnliftStrategy (ConcUnlift Ephemeral $ Limited 0) $ do
-      withEffToIO $ \_ -> return ()
+  assertThrowsUnliftError "InvalidNumberOfUses error"
+    (has #_InvalidNumberOfUses) $ do
+      withUnliftStrategy (ConcUnlift Ephemeral $ Limited 0) $ do
+        withEffToIO $ \_ -> return ()
 
 test_ephemeral_same_thread :: Assertion
 test_ephemeral_same_thread = runEff $ do
-  U.assertThrows "ExceededNumberOfUses error" isExceededNumberOfUses $ do
-    withUnliftStrategy (ConcUnlift Ephemeral $ Limited 1) $ do
-      withEffToIO $ \runInIO -> inThread $ do
-        runInIO $ return ()
-        runInIO $ return ()
+  assertThrowsUnliftError "ExceededNumberOfUses error"
+    (has #_ExceededNumberOfUses) $ do
+      withUnliftStrategy (ConcUnlift Ephemeral $ Limited 1) $ do
+        withEffToIO $ \runInIO -> inThread $ do
+          runInIO $ return ()
+          runInIO $ return ()
 
 test_ephemeral_multiple_threads :: Assertion
 test_ephemeral_multiple_threads = runEff $ do
-  U.assertThrows "ExceededNumberOfUses error" isExceededNumberOfUses $ do
-    withUnliftStrategy (ConcUnlift Ephemeral $ Limited 1) $ do
-      withEffToIO $ \runInIO -> do
-        inThread $ runInIO $ return ()
-        inThread $ runInIO $ return ()
+  assertThrowsUnliftError "ExceededNumberOfUses error"
+    (has #_ExceededNumberOfUses) $ do
+      withUnliftStrategy (ConcUnlift Ephemeral $ Limited 1) $ do
+        withEffToIO $ \runInIO -> do
+          inThread $ runInIO $ return ()
+          inThread $ runInIO $ return ()
 
 test_persistent_invalid :: Assertion
 test_persistent_invalid = runEff $ do
-  U.assertThrows "InvalidNumberOfThreads error" isInvalidNumberOfThreads $ do
-    withUnliftStrategy (ConcUnlift Persistent $ Limited 0) $ do
-      withEffToIO $ \_ -> return ()
+  assertThrowsUnliftError "InvalidNumberOfThreads error"
+    (has #_InvalidNumberOfThreads) $ do
+      withUnliftStrategy (ConcUnlift Persistent $ Limited 0) $ do
+        withEffToIO $ \_ -> return ()
 
 test_persistent_same_thread :: Assertion
 test_persistent_same_thread = runEff $ do
@@ -74,37 +81,20 @@ test_persistent_same_thread = runEff $ do
 
 test_persistent_multiple_threads :: Assertion
 test_persistent_multiple_threads = runEff $ do
-  U.assertThrows "ExceededNumberOfThreads error" isExceededNumberOfThreads $ do
-    withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
-      withEffToIO $ \runInIO -> do
-        inThread $ runInIO $ return ()
-        inThread $ runInIO $ return ()
-
-----------------------------------------
--- Predicates
-
-isExceededNumberOfThreads :: UnliftError -> Bool
-isExceededNumberOfThreads (ExceededNumberOfThreads {}) = True
-isExceededNumberOfThreads _ = False
-
-isExceededNumberOfUses :: UnliftError -> Bool
-isExceededNumberOfUses (ExceededNumberOfUses {}) = True
-isExceededNumberOfUses _ = False
-
-isInvalidNumberOfThreads :: UnliftError -> Bool
-isInvalidNumberOfThreads (InvalidNumberOfThreads {}) = True
-isInvalidNumberOfThreads _ = False
-
-isInvalidNumberOfUses :: UnliftError -> Bool
-isInvalidNumberOfUses (InvalidNumberOfUses {}) = True
-isInvalidNumberOfUses _ = False
-
-isInvalidUseOfSeqUnlift :: UnliftError -> Bool
-isInvalidUseOfSeqUnlift (InvalidUseOfSeqUnlift {}) = True
-isInvalidUseOfSeqUnlift _ = False
+  assertThrowsUnliftError "ExceededNumberOfThreads error"
+    (has #_ExceededNumberOfThreads) $ do
+      withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
+        withEffToIO $ \runInIO -> do
+          inThread $ runInIO $ return ()
+          inThread $ runInIO $ return ()
 
 ----------------------------------------
 -- Helpers
+
+assertThrowsUnliftError
+  :: IOE :> es
+  => String -> (UnliftError -> Bool) -> Eff es a -> Eff es ()
+assertThrowsUnliftError = U.assertThrows
 
 inThread :: IO a -> IO a
 inThread k = A.async k >>= A.wait

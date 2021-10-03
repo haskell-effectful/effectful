@@ -228,11 +228,11 @@ persistentConcUnliftIO cleanUp threads k es0 unEff = do
 
 -- | An type used for errors occuring in unlifting functions.
 data UnliftError
-  = InvalidNumberOfThreads Int
-  | InvalidNumberOfUses Int
+  = InvalidNumberOfThreads !Int
+  | InvalidNumberOfUses !Int
   | InvalidUseOfSeqUnlift
-  | ExceededNumberOfThreads Int
-  | ExceededNumberOfUses Int
+  | ExceededNumberOfThreads !Int
+  | ExceededNumberOfUses !Int
   deriving (Eq, Generic, Show)
 
 instance Exception UnliftError where

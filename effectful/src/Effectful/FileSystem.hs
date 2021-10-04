@@ -151,19 +151,15 @@ setCurrentDirectory = unsafeEff_ . D.setCurrentDirectory
 
 -- | Lifted 'D.withCurrentDirectory'.
 withCurrentDirectory :: FileSystem :> es => FilePath -> Eff es a -> Eff es a
-withCurrentDirectory path k = unsafeEff $ \es -> do
-  seqUnliftEff es $ \unlift ->
-    D.withCurrentDirectory path $ unlift k
+withCurrentDirectory path = unsafeLiftMapIO (D.withCurrentDirectory path)
 
 ----------------------------------------
 -- Pre-defined directories
 
--- TODO: Should this have the Environment effect, too?
 -- | Lifted 'D.getHomeDirectory'.
 getHomeDirectory :: FileSystem :> es => Eff es FilePath
 getHomeDirectory = unsafeEff_ D.getHomeDirectory
 
--- TODO: Should this have the Environment effect, too?
 -- | Lifted 'D.getXdgDirectory'.
 getXdgDirectory
   :: FileSystem :> es
@@ -172,7 +168,6 @@ getXdgDirectory
   -> Eff es FilePath
 getXdgDirectory xdgDir = unsafeEff_ . D.getXdgDirectory xdgDir
 
--- TODO: Should this have the Environment effect, too?
 -- | Lifted 'D.getXdgDirectoryList'.
 getXdgDirectoryList
   :: FileSystem :> es
@@ -180,17 +175,14 @@ getXdgDirectoryList
   -> Eff es [FilePath]
 getXdgDirectoryList = unsafeEff_ . D.getXdgDirectoryList
 
--- TODO: Should this have the Environment effect, too?
 -- | Lifted 'D.getAppUserDataDirectory'.
 getAppUserDataDirectory :: FileSystem :> es => FilePath -> Eff es FilePath
 getAppUserDataDirectory = unsafeEff_ . D.getAppUserDataDirectory
 
--- TODO: Should this have the Environment effect, too?
 -- | Lifted 'D.getUserDocumentsDirectory'.
 getUserDocumentsDirectory :: FileSystem :> es => Eff es FilePath
 getUserDocumentsDirectory = unsafeEff_ D.getUserDocumentsDirectory
 
--- TODO: Should this have the Environment effect, too?
 -- | Lifted 'D.getTemporaryDirectory'.
 getTemporaryDirectory :: FileSystem :> es => Eff es FilePath
 getTemporaryDirectory = unsafeEff_ D.getTemporaryDirectory
@@ -285,8 +277,7 @@ findFileWith
   -> String
   -> Eff es (Maybe FilePath)
 findFileWith p dirs n = unsafeEff $ \es -> do
-  seqUnliftEff es $ \unlift ->
-    D.findFileWith (unlift . p) dirs n
+  D.findFileWith ((`unEff` es) . p) dirs n
 
 -- | Lifted 'D.findFilesWith'.
 findFilesWith
@@ -296,8 +287,7 @@ findFilesWith
   -> String
   -> Eff es [FilePath]
 findFilesWith p dirs ns = unsafeEff $ \es -> do
-  seqUnliftEff es $ \unlift ->
-    D.findFilesWith (unlift . p) dirs ns
+  D.findFilesWith ((`unEff` es) . p) dirs ns
 
 ----------------------------------------
 -- Symbolic links

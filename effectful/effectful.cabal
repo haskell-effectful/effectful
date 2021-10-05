@@ -72,12 +72,14 @@ library
     hs-source-dirs:  src
 
     exposed-modules: Effectful
-                     Effectful.Concurrent
+                     Effectful.Concurrent.Async
                      Effectful.Environment
                      Effectful.Process
                      Effectful.Resource
                      Effectful.Temporary
                      Effectful.Timeout
+
+    other-modules: Effectful.Concurrent.Internal
 
     reexported-modules:    Effectful.Error
                          , Effectful.Error.Dynamic

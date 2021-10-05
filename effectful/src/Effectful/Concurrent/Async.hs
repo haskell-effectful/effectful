@@ -1,5 +1,5 @@
 {-# LANGUAGE UndecidableInstances #-}
-module Effectful.Concurrent
+module Effectful.Concurrent.Async
   ( -- * Concurrent effect
     Concurrent
   , runConcurrent
@@ -80,24 +80,10 @@ import qualified Control.Concurrent.Async as A
 import qualified UnliftIO.Async as U
 import qualified UnliftIO.Internals.Async as I
 
+import Effectful.Concurrent.Internal
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
-
--- | Run 'Eff' operations asynchronously via the @async@ library.
---
--- /Note:/ thread local state changes in 'Eff' operations run asynchronously
--- will not affect the parent thread.
---
--- /TODO:/ write about 'Concurrent' not respecting scoped operations.
-data Concurrent :: Effect where
-  Concurrent :: Concurrent m r
-
-runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a
-runConcurrent = evalEffect (IdE Concurrent)
-
-----------------------------------------
--- Operations
 
 -- | Lifted 'A.async'.
 async :: Concurrent :> es => Eff es a -> Eff es (Async a)

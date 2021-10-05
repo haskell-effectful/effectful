@@ -7,7 +7,7 @@ import Test.Tasty.HUnit
 import qualified Data.Set as S
 
 import Effectful
-import Effectful.Concurrent
+import Effectful.Concurrent.Async
 import Effectful.Error
 import Effectful.State.Dynamic
 

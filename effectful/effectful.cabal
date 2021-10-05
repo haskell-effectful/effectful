@@ -73,6 +73,7 @@ library
 
     exposed-modules: Effectful
                      Effectful.Concurrent.Async
+                     Effectful.Concurrent.Base
                      Effectful.Environment
                      Effectful.Process
                      Effectful.Resource

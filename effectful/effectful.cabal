@@ -72,7 +72,7 @@ library
     hs-source-dirs:  src
 
     exposed-modules: Effectful
-                     Effectful.Async
+                     Effectful.Concurrent
                      Effectful.Environment
                      Effectful.Process
                      Effectful.Resource

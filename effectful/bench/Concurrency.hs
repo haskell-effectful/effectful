@@ -11,7 +11,7 @@ import Test.Tasty.Bench hiding (env)
 
 import Control.Concurrent.Async
 import Control.Monad
-import qualified Effectful.Async as A
+import qualified Effectful.Concurrent.Async as A
 
 import Effectful
 import Utils
@@ -25,7 +25,7 @@ concurrencyBenchmark = bgroup "concurrency"
 shallowBench :: Int -> Benchmark
 shallowBench n = bgroup ("unmask " ++ show n ++ "x")
   [ bench "async (IO)" $ nfAppIO (asyncBenchIO n) op
-  , bench "async (Eff)" $ nfAppIO (runShallow . A.runAsyncE . asyncBench n) op
+  , bench "async (Eff)" $ nfAppIO (runShallow . A.runConcurrent . asyncBench n) op
   , bench "Fork (localUnliftIO/withLiftMapIO)" $
     nfAppIO (runShallow . runFork1 . forkBench n) op
   , bench "Fork (localUnlift/withLiftMap)" $
@@ -38,7 +38,7 @@ shallowBench n = bgroup ("unmask " ++ show n ++ "x")
 
 deepBench :: Int -> Benchmark
 deepBench n = bgroup ("unmask " ++ show n ++ "x")
-  [ bench "async (Eff)" $ nfAppIO (runDeep . A.runAsyncE . asyncBench n) op
+  [ bench "async (Eff)" $ nfAppIO (runDeep . A.runConcurrent . asyncBench n) op
   , bench "Fork (localUnliftIO/withLiftMapIO)" $
     nfAppIO (runDeep . runFork1 . forkBench n) op
   , bench "Fork (localUnlift/withLiftMap)" $
@@ -66,7 +66,7 @@ runFork1 = interpret $ \env -> \case
 
 -- | Uses 'localUnlift' and 'withLiftMap'.
 runFork2 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork2 = reinterpret A.runAsyncE $ \env -> \case
+runFork2 = reinterpret A.runConcurrent $ \env -> \case
   ForkWithUnmask m -> withLiftMap env $ \liftMap -> do
     localUnlift env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
       A.asyncWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
@@ -80,7 +80,7 @@ runFork3 = interpret $ \env -> \case
 
 -- | Uses 'localLiftUnlift'.
 runFork4 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork4 = reinterpret A.runAsyncE $ \env -> \case
+runFork4 = reinterpret A.runConcurrent $ \env -> \case
   ForkWithUnmask m -> do
     localLiftUnlift env (ConcUnlift Persistent $ Limited 1) $ \lift unlift -> do
       A.asyncWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift
@@ -94,7 +94,7 @@ asyncBenchIO n f = do
   wait a
 {-# NOINLINE asyncBenchIO #-}
 
-asyncBench :: A.AsyncE :> es => Int -> Eff es Int -> Eff es Int
+asyncBench :: A.Concurrent :> es => Int -> Eff es Int -> Eff es Int
 asyncBench n f = do
   a <- A.asyncWithUnmask $ \unmask -> do
     sum <$> replicateM n (unmask f)

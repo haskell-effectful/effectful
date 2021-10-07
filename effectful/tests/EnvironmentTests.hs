@@ -18,10 +18,11 @@ environmentTests = testGroup "Environment"
 
 test_setAndGet :: Assertion
 test_setAndGet = runEff . runEnvironment $ do
-  let n = "EFFECTFUL_TEST1"
-  setEnv n "value"
+  let expected = "value"
+      n = "EFFECTFUL_TEST1"
+  setEnv n expected
   v <- getEnv n
-  U.assertEqual "environment variable not set" v "value"
+  U.assertEqual "environment variable not set" expected v
 
 test_unsetAndGet :: Assertion
 test_unsetAndGet = runEff . runEnvironment $ do
@@ -33,10 +34,10 @@ test_withArgs :: Assertion
 test_withArgs = runEff . runEnvironment $ do
   let expected = ["effectful-test"]
   args <- withArgs expected getArgs
-  U.assertEqual "correct arguments" args expected
+  U.assertEqual "correct arguments" expected args
 
 test_withProg :: Assertion
 test_withProg = runEff . runEnvironment $ do
   let expected = "effectful-test"
   n <- withProgName expected getProgName
-  U.assertEqual "correct program name" n expected
+  U.assertEqual "correct program name" expected n

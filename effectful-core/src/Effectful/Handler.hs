@@ -129,14 +129,14 @@ localUnliftIO (LocalEnv les) strategy k = case strategy of
 -- /Note:/ the operation must not run its argument in a separate thread,
 -- attempting to do so will result in a runtime error.
 withLiftMap
-  :: (HasCallStack, IOE :> es)
+  :: HasCallStack
   => ((forall a b localEs. (Eff es a -> Eff es b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -- ^ Continuation with the lifting function in scope.
   -> Eff es r
 withLiftMap k = unsafeEff $ \es -> do
   (`unEff` es) $ k $ \mapEff m -> unsafeEff $ \localEs -> do
     seqUnliftEff localEs $ \unlift -> do
-      (`unEff` es) . mapEff . liftIO $ unlift m
+      (`unEff` es) . mapEff . unsafeEff_ $ unlift m
 
 -- | Utility for lifting 'IO' operations of type
 --
@@ -182,7 +182,7 @@ withLiftMapIO k = k $ \mapIO m -> unsafeEff $ \es -> do
 -- /Note:/ depending on the operation you're lifting 'localUnlift' along with
 -- 'withLiftMap' might be enough and is more efficient.
 localLiftUnlift
-  :: (HasCallStack, IOE :> es)
+  :: HasCallStack
   => LocalEnv localEs
   -- ^ Local environment.
   -> UnliftStrategy
@@ -193,11 +193,11 @@ localLiftUnlift (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
     seqUnliftEff es $ \unliftEs -> do
       seqUnliftEff les $ \unliftLocalEs -> do
-        (`unEff` es) $ k (unsafeEff_ . unliftEs) (liftIO . unliftLocalEs)
+        (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
   ConcUnlift p l -> unsafeEff $ \es -> do
     concUnliftEff es p l $ \unliftEs -> do
       concUnliftEff les p l $ \unliftLocalEs -> do
-        (`unEff` es) $ k (unsafeEff_ . unliftEs) (liftIO . unliftLocalEs)
+        (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
 
 -- | Create a local unlifting function with the given strategy along with an
 -- unrestricted lifting function.

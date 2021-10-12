@@ -35,7 +35,7 @@ execLocalWriter = reinterpret L.execWriter localWriter
 
 localWriter
   :: (L.Writer w :> es, Monoid w)
-  => LocalEnv localEs
+  => LocalEnv localEs es
   -> Writer w (Eff localEs) a
   -> Eff es a
 localWriter env = \case
@@ -53,7 +53,7 @@ execSharedWriter = reinterpret S.execWriter sharedWriter
 
 sharedWriter
   :: (S.Writer w :> es, Monoid w)
-  => LocalEnv localEs
+  => LocalEnv localEs es
   -> Writer w (Eff localEs) a
   -> Eff es a
 sharedWriter env = \case

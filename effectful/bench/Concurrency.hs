@@ -60,14 +60,14 @@ data Fork :: Effect where
 -- | Uses 'localUnliftIO' and 'withLiftMapIO'.
 runFork1 :: IOE :> es => Eff (Fork : es) a -> Eff es a
 runFork1 = interpret $ \env -> \case
-  ForkWithUnmask m -> withLiftMapIO $ \liftMap -> do
+  ForkWithUnmask m -> withLiftMapIO env $ \liftMap -> do
     localUnliftIO env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
       asyncWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 
 -- | Uses 'localUnlift' and 'withLiftMap'.
 runFork2 :: IOE :> es => Eff (Fork : es) a -> Eff es a
 runFork2 = reinterpret A.runAsyncE $ \env -> \case
-  ForkWithUnmask m -> withLiftMap $ \liftMap -> do
+  ForkWithUnmask m -> withLiftMap env $ \liftMap -> do
     localUnlift env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
       A.asyncWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 

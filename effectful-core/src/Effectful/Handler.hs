@@ -124,16 +124,20 @@ localUnliftIO (LocalEnv les) strategy k = case strategy of
 --
 -- to
 --
--- @forall localEs. 'Eff' localEs a -> 'Eff' localEs b@
+-- @'Eff' localEs a -> 'Eff' localEs b@
 --
 -- /Note:/ the operation must not run its argument in a separate thread,
 -- attempting to do so will result in a runtime error.
 withLiftMap
   :: HasCallStack
-  => ((forall a b localEs. (Eff es a -> Eff es b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
+  => LocalEnv localEs
+  -- ^ Local environment.
+  -> ((forall a b. (Eff es a -> Eff es b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -- ^ Continuation with the lifting function in scope.
   -> Eff es r
-withLiftMap k = unsafeEff $ \es -> do
+withLiftMap !_ k = unsafeEff $ \es -> do
+  -- The LocalEnv parameter is not used, but we need it to constraint the
+  -- localEs type variable. It's also strict so that callers don't cheat.
   (`unEff` es) $ k $ \mapEff m -> unsafeEff $ \localEs -> do
     seqUnliftEff localEs $ \unlift -> do
       (`unEff` es) . mapEff . unsafeEff_ $ unlift m
@@ -144,7 +148,7 @@ withLiftMap k = unsafeEff $ \es -> do
 --
 -- to
 --
--- @forall localEs. 'Eff' localEs a -> 'Eff' localEs b@
+-- @'Eff' localEs a -> 'Eff' localEs b@
 --
 -- /Note:/ the operation must not run its argument in a separate thread,
 -- attempting to do so will result in a runtime error.
@@ -159,16 +163,20 @@ withLiftMap k = unsafeEff $ \es -> do
 --
 -- >>> :{
 -- runFork :: IOE :> es => Eff (Fork : es) a -> Eff es a
--- runFork = interpret $ \env (ForkWithUnmask m) -> withLiftMapIO $ \liftMap -> do
+-- runFork = interpret $ \env (ForkWithUnmask m) -> withLiftMapIO env $ \liftMap -> do
 --   localUnliftIO env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
 --     forkIOWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 -- :}
 withLiftMapIO
   :: (HasCallStack, IOE :> es)
-  => ((forall a b localEs. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
+  => LocalEnv localEs
+  -- ^ Local environment.
+  -> ((forall a b. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -- ^ Continuation with the lifting function in scope.
   -> Eff es r
-withLiftMapIO k = k $ \mapIO m -> unsafeEff $ \es -> do
+withLiftMapIO !_ k = k $ \mapIO m -> unsafeEff $ \es -> do
+  -- The LocalEnv parameter is not used, but we need it to constraint the
+  -- localEs type variable. It's also strict so that callers don't cheat.
   seqUnliftEff es $ \unlift -> mapIO $ unlift m
 
 ----------------------------------------

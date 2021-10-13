@@ -48,7 +48,7 @@ execLocalState s0 = reinterpret (L.execState s0) localState
 
 localState
   :: L.State s :> es
-  => LocalEnv localEs
+  => LocalEnv localEs es
   -> State s (Eff localEs) a
   -> Eff es a
 localState env = \case
@@ -71,7 +71,7 @@ execSharedState s0 = reinterpret (S.execState s0) sharedState
 
 sharedState
   :: S.State s :> es
-  => LocalEnv localEs
+  => LocalEnv localEs es
   -> State s (Eff localEs) a
   -> Eff es a
 sharedState env = \case

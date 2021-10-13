@@ -398,12 +398,15 @@ withEffToIO f = unliftStrategy >>= \case
 -- | Opaque representation of the 'Eff' environment at the point of calling the
 -- 'send' function, i.e. right before the control is passed to the effect
 -- handler.
-newtype LocalEnv es = LocalEnv (Env es)
+--
+-- The second type variable represents effects of a handler and is needed for
+-- technical reasons to guarantee soundness.
+newtype LocalEnv (localEs :: [Effect]) (handlerEs :: [Effect]) = LocalEnv (Env localEs)
 
 -- | Type signature of the effect handler.
 type EffectHandler e es
   = forall a localEs. HasCallStack
-  => LocalEnv localEs
+  => LocalEnv localEs es
   -- ^ Capture of the local environment for handling local 'Eff' operations when
   -- @e@ is a higher order effect.
   -> e (Eff localEs) a

@@ -10,6 +10,9 @@ module Effectful.Internal.Effect
   , (:>)(..)
   , IdE(..)
 
+  -- * Utils
+  , SuffixOf
+
   -- * Re-exports
   , Type
   ) where
@@ -56,3 +59,11 @@ instance {-# OVERLAPPING #-} e :> (e : es) where
 
 instance e :> es => e :> (x : es) where
   reifyIndex = 1 + reifyIndex @e @es
+
+-- | Require that the second list of effects is a suffix of the first one.
+--
+-- In other words, 'SuffixOf' @es@ @baseEs@ means "a suffix of @es@ is
+-- @baseEs@".
+type family SuffixOf (es :: [Effect]) (baseEs :: [Effect]) :: Constraint where
+  SuffixOf   baseEs baseEs = ()
+  SuffixOf (e : es) baseEs = SuffixOf es baseEs

@@ -227,6 +227,9 @@ persistentConcUnliftIO cleanUp threads k es0 unEff = do
 -- Errors
 
 -- | An type used for errors occuring in unlifting functions.
+--
+-- Use the 'displayException' method of the 'Exception' type class to get
+-- descriptive error messages.
 data UnliftError
   = InvalidNumberOfThreads !Int
   | InvalidNumberOfUses !Int

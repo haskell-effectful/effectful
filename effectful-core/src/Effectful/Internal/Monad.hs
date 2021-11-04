@@ -395,6 +395,8 @@ withEffToIO f = unliftStrategy >>= \case
 ----------------------------------------
 -- Handler
 
+type role LocalEnv nominal nominal
+
 -- | Opaque representation of the 'Eff' environment at the point of calling the
 -- 'send' function, i.e. right before the control is passed to the effect
 -- handler.

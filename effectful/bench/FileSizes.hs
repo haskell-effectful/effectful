@@ -19,6 +19,13 @@ import qualified Effectful.State.Static.Local as E
 import qualified Control.Effect as L
 #endif
 
+-- cleff
+#ifdef VERSION_cleff
+import qualified Cleff as C
+import qualified Cleff.Reader as C
+import qualified Cleff.State as C
+#endif
+
 -- freer-simple
 #ifdef VERSION_freer_simple
 import qualified Control.Monad.Freer as FS
@@ -212,6 +219,66 @@ eff_calculateFileSizesDeep = L.runIO
     runR = L.runReader ()
 
 #endif
+
+----------------------------------------
+-- cleff
+
+data Cleff_File :: C.Effect where
+  Cleff_tryFileSize :: FilePath -> Cleff_File m (Maybe Int)
+
+cleff_tryFileSize :: Cleff_File C.:> es => FilePath -> C.Eff es (Maybe Int)
+cleff_tryFileSize = C.send . Cleff_tryFileSize
+
+cleff_runFile :: C.IOE C.:> es => C.Eff (Cleff_File : es) a -> C.Eff es a
+cleff_runFile = C.interpret \case
+  Cleff_tryFileSize path -> liftIO $ tryGetFileSize path
+
+data Cleff_Logging :: C.Effect where
+  Cleff_logMsg :: String -> Cleff_Logging m ()
+
+cleff_logMsg :: Cleff_Logging C.:> es => String -> C.Eff es ()
+cleff_logMsg = C.send . Cleff_logMsg
+
+cleff_runLogging
+  :: C.Eff (Cleff_Logging : es) a
+  -> C.Eff es (a, [String])
+cleff_runLogging = C.runState [] . C.reinterpret \case
+  Cleff_logMsg msg -> C.modify (msg :)
+
+----------
+
+cleff_calculateFileSize
+  :: (Cleff_File C.:> es, Cleff_Logging C.:> es)
+  => FilePath
+  -> C.Eff es Int
+cleff_calculateFileSize path = do
+  cleff_logMsg $ "Calculating the size of " ++ path
+  cleff_tryFileSize path >>= \case
+    Nothing   -> 0    <$ cleff_logMsg ("Could not calculate the size of " ++ path)
+    Just size -> size <$ cleff_logMsg (path ++ " is " ++ show size ++ " bytes")
+{-# NOINLINE cleff_calculateFileSize #-}
+
+cleff_program
+  :: (Cleff_File C.:> es, Cleff_Logging C.:> es)
+  => [FilePath]
+  -> C.Eff es Int
+cleff_program files = do
+  sizes <- traverse cleff_calculateFileSize files
+  pure $ sum sizes
+{-# NOINLINE cleff_program #-}
+
+cleff_calculateFileSizes :: [FilePath] -> IO (Int, [String])
+cleff_calculateFileSizes =
+  C.runIOE . cleff_runFile . cleff_runLogging . cleff_program
+
+cleff_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
+cleff_calculateFileSizesDeep = C.runIOE
+  . runR . runR . runR . runR . runR
+  . cleff_runFile . cleff_runLogging
+  . runR . runR . runR . runR . runR
+  . cleff_program
+  where
+    runR = C.runReader ()
 
 ----------------------------------------
 -- freer-simple

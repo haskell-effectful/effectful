@@ -9,6 +9,13 @@ import Data.STRef
 import qualified Control.Effect as L
 #endif
 
+-- cleff
+#ifdef VERSION_cleff
+import qualified Cleff as C
+import qualified Cleff.Reader as C
+import qualified Cleff.State as C
+#endif
+
 -- effectful
 import qualified Effectful as E
 import qualified Effectful.Reader.Static as E
@@ -273,6 +280,35 @@ countdownEffDeep n = L.run
   $ programEff
   where
     runR = L.runReader ()
+
+#endif
+
+----------------------------------------
+-- cleff
+
+#ifdef VERSION_cleff
+
+programCleff :: C.State Integer C.:> es => C.Eff es Integer
+programCleff = do
+  n <- C.get @Integer
+  if n <= 0
+    then pure n
+    else do
+      C.put (n - 1)
+      programCleff
+{-# NOINLINE programCleff #-}
+
+countdownCleff :: Integer -> (Integer, Integer)
+countdownCleff n = C.runPure . C.runState n $ programCleff
+
+countdownCleffDeep :: Integer -> (Integer, Integer)
+countdownCleffDeep n = C.runPure
+  . runR . runR . runR . runR . runR
+  . C.runState n
+  . runR . runR . runR . runR . runR
+  $ programCleff
+  where
+    runR = C.runReader ()
 
 #endif
 

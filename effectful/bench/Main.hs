@@ -35,6 +35,9 @@ countdown n = bgroup (show n)
 #ifdef VERSION_freer_simple
     , bench "freer-simple"               $ nf countdownFreerSimple n
 #endif
+#ifdef VERSION_cleff
+    , bench "cleff"                      $ nf countdownCleff n
+#endif
 #ifdef VERSION_eff
     , bench "eff"                        $ nf countdownEff n
 #endif
@@ -53,6 +56,9 @@ countdown n = bgroup (show n)
     , bench "effectful (local/dynamic)"  $ nf countdownEffectfulDynLocalDeep n
     , bench "effectful (shared/static)"  $ nf countdownEffectfulSharedDeep n
     , bench "effectful (shared/dynamic)" $ nf countdownEffectfulDynSharedDeep n
+#ifdef VERSION_cleff
+    , bench "cleff"                      $ nf countdownCleffDeep n
+#endif
 #ifdef VERSION_freer_simple
     , bench "freer-simple"               $ nf countdownFreerSimpleDeep n
 #endif
@@ -76,6 +82,9 @@ filesize n = bgroup (show n)
   [ bench "reference"       $ nfAppIO ref_calculateFileSizes (take n files)
   , bgroup "shallow"
     [ bench "effectful"     $ nfAppIO effectful_calculateFileSizes (take n files)
+#ifdef VERSION_cleff
+    , bench "cleff"         $ nfAppIO cleff_calculateFileSizes (take n files)
+#endif
 #ifdef VERSION_freer_simple
     , bench "freer-simple"  $ nfAppIO fs_calculateFileSizes (take n files)
 #endif
@@ -94,6 +103,9 @@ filesize n = bgroup (show n)
     ]
   , bgroup "deep"
     [ bench "effectful"     $ nfAppIO effectful_calculateFileSizesDeep (take n files)
+#ifdef VERSION_cleff
+    , bench "cleff"         $ nfAppIO cleff_calculateFileSizesDeep (take n files)
+#endif
 #ifdef VERSION_freer_simple
     , bench "freer-simple"  $ nfAppIO fs_calculateFileSizesDeep (take n files)
 #endif

@@ -33,9 +33,11 @@ module Effectful.Internal.Monad
   , unliftStrategy
   , withUnliftStrategy
   , withEffToIO
+  , UnliftError(..)
 
   --- *** Low-level helpers
   , unsafeLiftMapIO
+  , unsafeUnliftToEff
   , seqUnliftEff
   , concUnliftEff
 
@@ -66,7 +68,6 @@ module Effectful.Internal.Monad
   ) where
 
 import Control.Applicative (liftA2)
-import Control.Concurrent (myThreadId)
 import Control.Monad.Base
 import Control.Monad.Fix
 import Control.Monad.IO.Class
@@ -83,7 +84,6 @@ import qualified Control.Monad.Catch as C
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Unlift
-import Effectful.Internal.Utils
 
 type role Eff nominal representational
 
@@ -166,21 +166,30 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 unsafeLiftMapIO :: (IO a -> IO b) -> Eff es a -> Eff es b
 unsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
 
+----------------------------------------
+-- Unlifting Eff
+
+-- | Get the current 'UnliftStrategy'.
+unliftStrategy :: IOE :> es => Eff es UnliftStrategy
+unliftStrategy = do
+  IdE (IOE unlift) <- getEffect
+  pure unlift
+
+-- | Locally override the 'UnliftStrategy' with the given value.
+withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
+withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
+
 -- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
+--
+-- Exceptions thrown by this function:
+--
+--  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread.
 seqUnliftEff
   :: HasCallStack
   => Env es
   -> ((forall r. Eff es r -> IO r) -> IO a)
   -> IO a
-seqUnliftEff es k = do
-  tid0 <- myThreadId
-  k $ \m -> do
-    tid <- myThreadId
-    if tid `eqThreadId` tid0
-      then unEff m es
-      else error
-         $ "If you want to use the unlifting function to run Eff operations "
-        ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
+seqUnliftEff es k = seqUnliftIO k es unEff
 
 -- | Lower 'Eff' operations into 'IO' ('ConcUnlift').
 concUnliftEff
@@ -190,14 +199,33 @@ concUnliftEff
   -> Limit
   -> ((forall r. Eff es r -> IO r) -> IO a)
   -> IO a
-concUnliftEff es Ephemeral (Limited uses) k =
-  ephemeralConcUnliftIO uses k es unEff
-concUnliftEff es Ephemeral Unlimited k =
-  ephemeralConcUnliftIO maxBound k es unEff
-concUnliftEff es Persistent (Limited threads) k =
-  persistentConcUnliftIO False threads k es unEff
-concUnliftEff es Persistent Unlimited k =
-  persistentConcUnliftIO True maxBound k es unEff
+concUnliftEff es persistence limit k = concUnliftIO persistence limit k es unEff
+
+-- | Create an unlifting function with the current 'UnliftStrategy'.
+--
+-- This function is equivalent to 'withRunInIO', but has a 'HasCallStack'
+-- constraint for accurate stack traces in case an insufficiently powerful
+-- 'UnliftStrategy' is used and the unlifting function fails.
+--
+-- /Note:/ the strategy is reset to 'SeqUnlift' for new threads.
+withEffToIO
+  :: (HasCallStack, IOE :> es)
+  => ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
+  -> Eff es a
+withEffToIO f = unliftStrategy >>= \case
+  SeqUnlift -> unsafeEff $ \es -> seqUnliftEff es f
+  ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
+    unsafeEff $ \es -> concUnliftEff es p b f
+
+-- | An unlifing function that lifts a function and its callback from 'IO' to
+-- 'Eff'.
+--
+-- This function is unsafe since there are no checks wrt. to concurrency at all.
+-- Use with care.
+unsafeUnliftToEff :: ((a -> IO b) -> IO c) -> (a -> Eff es b) -> Eff es c
+unsafeUnliftToEff k f = unsafeEff $ \es -> do
+  k ((`unEff` es) . f)
 
 ----------------------------------------
 -- Base
@@ -309,88 +337,6 @@ runPrim = evalEffect (IdE Prim)
 instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
   primitive = unsafeEff_ . IO
-
-----------------------------------------
--- Unlift strategies
-
--- | The strategy to use when unlifting 'Eff' operations via 'withRunInIO' or
--- the 'Effectful.Interpreter.localUnlift' family.
-data UnliftStrategy
-  = SeqUnlift
-  -- ^ The fastest strategy and a default setting for 'IOE'. An attempt to call
-  -- the unlifting function in threads distinct from its creator will result in
-  -- a runtime error.
-  | ConcUnlift !Persistence !Limit
-  -- ^ A strategy that makes it possible for the unlifting function to be called
-  -- in threads distinct from its creator. See 'Persistence' and 'Limit'
-  -- settings for more information.
-  deriving (Eq, Ord, Show)
-
--- | Persistence setting for the 'ConcUnlift' strategy.
---
--- Different functions require different persistence strategies. Examples:
---
--- - Lifting 'pooledMapConcurrentlyN' from the @unliftio@ library requires the
---   'Ephemeral' strategy as we don't want jobs to share environment changes
---   made by previous jobs run in the same worker thread.
---
--- - Lifting 'Control.Concurrent.forkIOWithUnmask' requires the 'Persistent'
---   strategy, otherwise the unmasking function would start with a fresh
---   environment each time it's called.
-data Persistence
-  = Ephemeral
-  -- ^ Don't persist the environment between calls to the unlifting function in
-  -- threads distinct from its creator.
-  | Persistent
-  -- ^ Persist the environment between calls to the unlifting function within a
-  -- particular thread.
-  deriving (Eq, Ord, Show)
-
--- | Limit setting for the 'ConcUnlift' strategy.
-data Limit
-  = Limited !Int
-  -- ^ Behavior dependent on the 'Persistence' setting.
-  --
-  -- For 'Ephemeral', it limits the amount of uses of the unlifting function in
-  -- threads distinct from its creator to @N@. The unlifting function will
-  -- create @N@ copies of the environment when called @N@ times and @K+1@ copies
-  -- when called @K < N@ times.
-  --
-  -- For 'Persistent', it limits the amount of threads, distinct from the
-  -- creator of the unlifting function, it can be called in to @N@. The amount
-  -- of calls to the unlifting function within a particular threads is
-  -- unlimited. The unlifting function will create @N@ copies of the environment
-  -- when called in @N@ threads and @K+1@ copies when called in @K < N@ threads.
-  | Unlimited
-  -- ^ Unlimited use of the unlifting function.
-  deriving (Eq, Ord, Show)
-
--- | Get the current 'UnliftStrategy'.
-unliftStrategy :: IOE :> es => Eff es UnliftStrategy
-unliftStrategy = do
-  IdE (IOE unlift) <- getEffect
-  pure unlift
-
--- | Locally override the 'UnliftStrategy' with the given value.
---
--- /Note:/ the strategy is reset to 'SeqUnlift' for new threads.
-withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
-withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
-
--- | Create an unlifting function with the current 'UnliftStrategy'.
---
--- This function is equivalent to 'withRunInIO', but has a 'HasCallStack'
--- constraint for accurate stack traces in case an insufficiently powerful
--- 'UnliftStrategy' is used and the unlifting function fails.
-withEffToIO
-  :: (HasCallStack, IOE :> es)
-  => ((forall r. Eff es r -> IO r) -> IO a)
-  -- ^ Continuation with the unlifting function in scope.
-  -> Eff es a
-withEffToIO f = unliftStrategy >>= \case
-  SeqUnlift -> unsafeEff $ \es -> seqUnliftEff es f
-  ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
-    unsafeEff $ \es -> concUnliftEff es p b f
 
 ----------------------------------------
 -- Handler

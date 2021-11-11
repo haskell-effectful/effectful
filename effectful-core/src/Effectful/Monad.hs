@@ -18,6 +18,7 @@ module Effectful.Monad
   , unliftStrategy
   , withUnliftStrategy
   , withEffToIO
+  , UnliftError(..)
 
   -- * Re-exports
   , MonadIO(..)

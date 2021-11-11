@@ -8,6 +8,7 @@ import EnvironmentTests
 import ErrorTests
 import StateTests
 import TimeoutTests
+import UnliftTests
 
 main :: IO ()
 main = defaultMain $ testGroup "effectful"
@@ -17,4 +18,5 @@ main = defaultMain $ testGroup "effectful"
   , errorTests
   , stateTests
   , timeoutTests
+  , unliftTests
   ]

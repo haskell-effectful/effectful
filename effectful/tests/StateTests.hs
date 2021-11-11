@@ -97,6 +97,7 @@ test_localEffects = runEff $ do
   where
     expected :: Int
     expected = 4
+
 ----------------------------------------
 -- Helpers
 

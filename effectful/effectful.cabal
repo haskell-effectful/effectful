@@ -102,8 +102,10 @@ test-suite test
     build-depends:    base
                     , containers
                     , effectful
+                    , effectful-core
                     , exceptions
                     , lifted-base
+                    , optics-core >= 0.4
                     , tasty
                     , tasty-hunit
                     , unliftio
@@ -119,6 +121,7 @@ test-suite test
                     ErrorTests
                     StateTests
                     TimeoutTests
+                    UnliftTests
                     Utils
                     -- These are examples; We do not actually run them but list
                     -- them here in order to check if they compile.

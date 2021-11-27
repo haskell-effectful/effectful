@@ -37,7 +37,6 @@ module Effectful.Internal.Monad
 
   --- *** Low-level helpers
   , unsafeLiftMapIO
-  , unsafeUnliftToEff
   , seqUnliftEff
   , concUnliftEff
 
@@ -217,15 +216,6 @@ withEffToIO f = unliftStrategy >>= \case
   SeqUnlift -> unsafeEff $ \es -> seqUnliftEff es f
   ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
     unsafeEff $ \es -> concUnliftEff es p b f
-
--- | An unlifing function that lifts a function and its callback from 'IO' to
--- 'Eff'.
---
--- This function is unsafe since there are no checks wrt. to concurrency at all.
--- Use with care.
-unsafeUnliftToEff :: ((a -> IO b) -> IO c) -> (a -> Eff es b) -> Eff es c
-unsafeUnliftToEff k f = unsafeEff $ \es -> do
-  k ((`unEff` es) . f)
 
 ----------------------------------------
 -- Base

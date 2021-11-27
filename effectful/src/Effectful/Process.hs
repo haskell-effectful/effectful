@@ -130,8 +130,7 @@ withCreateProcess
   -> (Maybe Handle -> Maybe Handle -> Maybe Handle -> P.ProcessHandle -> Eff es a)
   -> Eff es a
 withCreateProcess cp cb = unsafeEff $ \es -> do
-  seqUnliftEff es $ \runInIO -> do
-    P.withCreateProcess cp (\inh outh errh ph -> runInIO $ cb inh outh errh ph)
+  P.withCreateProcess cp $ \inh outh errh ph -> unEff (cb inh outh errh ph) es
 
 -- | Lifted 'P.cleanupProcess'.
 cleanupProcess

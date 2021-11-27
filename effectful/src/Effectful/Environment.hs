@@ -64,12 +64,8 @@ unsetEnv = unsafeEff_ . E.unsetEnv
 
 -- | Lifted 'E.withArgs'.
 withArgs :: Environment :> es => [String] -> Eff es a -> Eff es a
-withArgs env k = unsafeEff $ \es -> do
-  seqUnliftEff es $ \runInIO -> do
-    E.withArgs env (runInIO k)
+withArgs = unsafeLiftMapIO . E.withArgs
 
 -- | Lifted 'E.withProgName'.
 withProgName :: Environment :> es => String -> Eff es a -> Eff es a
-withProgName n k = unsafeEff $ \es -> do
-  seqUnliftEff es $ \runInIO -> do
-    E.withProgName n (runInIO k)
+withProgName = unsafeLiftMapIO . E.withProgName

@@ -30,8 +30,7 @@ withSystemTempFile
   -- ^ Callback that can use the file.
   -> Eff es a
 withSystemTempFile template action = unsafeEff $ \es -> do
-  seqUnliftEff es $ \unlift -> do
-    T.withSystemTempFile template $ \fp handle -> unlift (action fp handle)
+  T.withSystemTempFile template $ \fp handle -> unEff (action fp handle) es
 
 -- | Lifted 'T.withSystemTempDirectory'.
 withSystemTempDirectory
@@ -42,8 +41,7 @@ withSystemTempDirectory
   -- ^ Callback that can use the directory.
   -> Eff es a
 withSystemTempDirectory template action = unsafeEff $ \es -> do
-  seqUnliftEff es $ \unlift -> do
-    T.withSystemTempDirectory template $ \fp -> unlift (action fp)
+  T.withSystemTempDirectory template $ \fp -> unEff (action fp) es
 
 -- | Lifted 'T.withTempFile'.
 withTempFile
@@ -56,8 +54,7 @@ withTempFile
   -- ^ Callback that can use the file.
   -> Eff es a
 withTempFile tmpDir template action = unsafeEff $ \es -> do
-  seqUnliftEff es $ \unlift -> do
-    T.withTempFile tmpDir template $ \fp handle -> unlift (action fp handle)
+  T.withTempFile tmpDir template $ \fp handle -> unEff (action fp handle) es
 
 -- | Lifted 'T.withTempDirectory'.
 withTempDirectory
@@ -70,5 +67,4 @@ withTempDirectory
   -- ^ Callback that can use the directory.
   -> Eff es a
 withTempDirectory tmpDir template action = unsafeEff $ \es -> do
-  seqUnliftEff es $ \unlift -> do
-    T.withTempDirectory tmpDir template $ \fp -> unlift (action fp)
+  T.withTempDirectory tmpDir template $ \fp -> unEff (action fp) es

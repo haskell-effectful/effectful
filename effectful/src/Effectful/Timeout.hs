@@ -25,6 +25,4 @@ timeout
   -> Eff es a
   -- ^ The computation the timeout applies to.
   -> Eff es (Maybe a)
-timeout n k = unsafeEff $ \es -> do
-  seqUnliftEff es $ \unlift -> do
-    T.timeout n $ unlift k
+timeout = unsafeLiftMapIO . T.timeout

@@ -14,7 +14,7 @@ import qualified UnliftIO as U
 import Effectful
 import Effectful.State.Dynamic
 import Utils
-import qualified Effectful.Async as A
+import qualified Effectful.Concurrent.Async as A
 
 unliftBenchmark :: Benchmark
 unliftBenchmark = bgroup "unlifting"
@@ -29,7 +29,7 @@ unliftBenchmark = bgroup "unlifting"
       , bench "seq" $ nfAppIO runShallow benchDummy
       , shallowConc "conc" 1 benchDummyE benchDummy
       ]
-    , shallowConc "async" 1 benchAsyncE benchAsync
+    , shallowConc "async" 1 benchAsyncEff benchAsync
     , shallowConc "concurrently" 2 benchConcurrentlyE benchConcurrently
     ]
   , bgroup "deep"
@@ -38,7 +38,7 @@ unliftBenchmark = bgroup "unlifting"
       , bench "seq" $ nfAppIO runDeep benchDummy
       , deepConc "conc" 1 benchDummyE benchDummy
       ]
-    , deepConc "async" 1 benchAsyncE benchAsync
+    , deepConc "async" 1 benchAsyncEff benchAsync
     , deepConc "concurrently" 2 benchConcurrentlyE benchConcurrently
     ]
   ]
@@ -48,11 +48,11 @@ unliftBenchmark = bgroup "unlifting"
 shallowConc
   :: String
   -> Int
-  -> Eff '[A.AsyncE, IOE] ()
+  -> Eff '[A.Concurrent, IOE] ()
   -> Eff '[IOE] ()
   -> Benchmark
 shallowConc name n r f = bgroup name
-  [ bench "AsyncE" $ nfAppIO (runShallow . A.runAsyncE) r
+  [ bench "Async" $ nfAppIO (runShallow . A.runConcurrent) r
   , bench "ephemeral/limited" $ nfAppIO
     (runShallow . withUnliftStrategy (ConcUnlift Ephemeral $ Limited n)) f
   , bench "ephemeral/unlimited" $ nfAppIO
@@ -66,7 +66,7 @@ shallowConc name n r f = bgroup name
 deepConc
   :: String
   -> Int
-  -> Eff '[ A.AsyncE
+  -> Eff '[ A.Concurrent
           , State (), State (), State (), State (), State ()
           , State (), State (), State (), State (), State ()
           , IOE] ()
@@ -75,7 +75,7 @@ deepConc
           , IOE] ()
   -> Benchmark
 deepConc name n r f = bgroup name
-  [ bench "AsyncE" $ nfAppIO (runDeep . A.runAsyncE) r
+  [ bench "Async" $ nfAppIO (runDeep . A.runConcurrent) r
   , bench "ephemeral/limited" $ nfAppIO
     (runDeep . withUnliftStrategy (ConcUnlift Ephemeral $ Limited n)) f
   , bench "ephemeral/unlimited" $ nfAppIO
@@ -101,10 +101,10 @@ benchDummyE :: Eff es ()
 benchDummyE = pure ()
 {-# NOINLINE benchDummyE #-}
 
-benchAsyncE :: A.AsyncE :> es => Eff es ()
-benchAsyncE = A.withAsync (pure ()) A.wait
-{-# NOINLINE benchAsyncE #-}
+benchAsyncEff :: A.Concurrent :> es => Eff es ()
+benchAsyncEff = A.withAsync (pure ()) A.wait
+{-# NOINLINE benchAsyncEff #-}
 
-benchConcurrentlyE :: A.AsyncE :> es => Eff es ()
+benchConcurrentlyE :: A.Concurrent :> es => Eff es ()
 benchConcurrentlyE = A.concurrently_ (pure ()) (pure ())
 {-# NOINLINE benchConcurrentlyE #-}

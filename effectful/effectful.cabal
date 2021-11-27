@@ -67,6 +67,7 @@ library
                     , process
                     , resourcet
                     , time
+                    , stm >= 2.5.0.0
                     , unliftio
 
     hs-source-dirs:  src
@@ -74,6 +75,11 @@ library
     exposed-modules: Effectful
                      Effectful.Concurrent
                      Effectful.Concurrent.Async
+                     Effectful.Concurrent.Chan
+                     Effectful.Concurrent.MVar
+                     Effectful.Concurrent.STM
+                     Effectful.Concurrent.QSem
+                     Effectful.Concurrent.QSemN
                      Effectful.Environment
                      Effectful.FileSystem
                      Effectful.Process

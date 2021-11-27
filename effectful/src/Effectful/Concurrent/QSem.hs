@@ -9,7 +9,7 @@ module Effectful.Concurrent.QSem
 import Control.Concurrent.QSem (QSem)
 import qualified Control.Concurrent.QSem as Q
 
-import Effectful.Concurrent.Internal
+import Effectful.Concurrent.Effect
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 

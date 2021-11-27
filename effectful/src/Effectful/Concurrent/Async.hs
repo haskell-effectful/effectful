@@ -80,7 +80,7 @@ import qualified Control.Concurrent.Async as A
 import qualified UnliftIO.Async as U
 import qualified UnliftIO.Internals.Async as I
 
-import Effectful.Concurrent.Internal
+import Effectful.Concurrent.Effect
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad

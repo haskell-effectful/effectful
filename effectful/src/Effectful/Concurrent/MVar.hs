@@ -24,7 +24,7 @@ import System.Mem.Weak (Weak)
 import Control.Concurrent.MVar (MVar)
 import qualified Control.Concurrent.MVar as M
 
-import Effectful.Concurrent.Internal
+import Effectful.Concurrent.Effect
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 

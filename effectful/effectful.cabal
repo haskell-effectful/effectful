@@ -87,7 +87,7 @@ library
                      Effectful.Temporary
                      Effectful.Timeout
 
-    other-modules: Effectful.Concurrent.Internal
+    other-modules:   Effectful.Concurrent.Effect
 
     reexported-modules:    Effectful.Error
                          , Effectful.Error.Dynamic

@@ -12,7 +12,7 @@ module Effectful.Concurrent.Chan
 import Control.Concurrent.Chan (Chan)
 import qualified Control.Concurrent.Chan as C
 
-import Effectful.Concurrent.Internal
+import Effectful.Concurrent.Effect
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 

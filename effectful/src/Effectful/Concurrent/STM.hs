@@ -88,7 +88,7 @@ import qualified Control.Concurrent.STM as STM
 import System.Mem.Weak (Weak)
 import GHC.Natural (Natural)
 
-import Effectful.Concurrent.Internal
+import Effectful.Concurrent.Effect
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
 

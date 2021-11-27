@@ -51,7 +51,7 @@ import UnliftIO.STM (STM)
 import qualified Control.Concurrent as C
 import qualified GHC.Conc as GHC
 
-import Effectful.Concurrent.Internal
+import Effectful.Concurrent.Effect
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad

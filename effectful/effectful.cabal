@@ -60,8 +60,6 @@ common language
 library
     import:         language
 
-    ghc-options:    -O2
-
     build-depends:    base >= 4.13 && <5
                     , async
                     , directory

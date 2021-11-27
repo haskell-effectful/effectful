@@ -16,6 +16,7 @@ module Effectful.Concurrent.Base
   , forkOnWithUnmask
   , getNumCapabilities
   , setNumCapabilities
+  , getNumProcessors
   , threadCapability
 
     -- * Scheduling
@@ -42,12 +43,13 @@ module Effectful.Concurrent.Base
   , C.rtsSupportsBoundThreads
   ) where
 
-import qualified Control.Concurrent as C
 import Control.Exception (Exception, SomeException)
 import Data.Bifunctor (second)
 import System.Mem.Weak (Weak)
 import System.Posix.Types (Fd)
 import UnliftIO.STM (STM)
+import qualified Control.Concurrent as C
+import qualified GHC.Conc as GHC
 
 import Effectful.Concurrent.Internal
 import Effectful.Internal.Effect
@@ -121,6 +123,10 @@ getNumCapabilities = unsafeEff_ C.getNumCapabilities
 -- | Lifted 'C.setNumCapabilities'.
 setNumCapabilities :: Concurrent :> es => Int -> Eff es ()
 setNumCapabilities = unsafeEff_ . C.setNumCapabilities
+
+-- | Lifted 'GHC.getNumProcessors'.
+getNumProcessors :: Concurrent :> es => Eff es Int
+getNumProcessors = unsafeEff_ GHC.getNumProcessors
 
 -- | Lifted 'C.threadCapability'.
 threadCapability :: Concurrent :> es => C.ThreadId -> Eff es (Int, Bool)

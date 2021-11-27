@@ -1,4 +1,4 @@
-module Effectful.Concurrent.Base
+module Effectful.Concurrent
   ( -- * Concurrent effect
     Concurrent
   , runConcurrent

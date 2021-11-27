@@ -72,8 +72,8 @@ library
     hs-source-dirs:  src
 
     exposed-modules: Effectful
+                     Effectful.Concurrent
                      Effectful.Concurrent.Async
-                     Effectful.Concurrent.Base
                      Effectful.Environment
                      Effectful.FileSystem
                      Effectful.Process

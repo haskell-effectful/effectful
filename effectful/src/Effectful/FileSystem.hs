@@ -276,8 +276,8 @@ findFileWith
   -> [FilePath]
   -> String
   -> Eff es (Maybe FilePath)
-findFileWith p dirs n = unsafeEff $ \es -> do
-  D.findFileWith ((`unEff` es) . p) dirs n
+findFileWith p dirs n = unsafeUnliftIO $ \unlift -> do
+  D.findFileWith (unlift . p) dirs n
 
 -- | Lifted 'D.findFilesWith'.
 findFilesWith
@@ -286,8 +286,8 @@ findFilesWith
   -> [FilePath]
   -> String
   -> Eff es [FilePath]
-findFilesWith p dirs ns = unsafeEff $ \es -> do
-  D.findFilesWith ((`unEff` es) . p) dirs ns
+findFilesWith p dirs ns = unsafeUnliftIO $ \unlift -> do
+  D.findFilesWith (unlift . p) dirs ns
 
 ----------------------------------------
 -- Symbolic links

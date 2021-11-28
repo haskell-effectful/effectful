@@ -110,7 +110,8 @@ registerDelay = unsafeEff_ . STM.registerDelay
 
 -- | Lifted version of 'STM.mkWeakTVar'
 mkWeakTVar :: Concurrent :> es => TVar a -> Eff es () -> Eff es (Weak (TVar a))
-mkWeakTVar var final = unsafeEff $ STM.mkWeakTVar var . unEff final
+mkWeakTVar var final = unsafeUnliftIO $ \unlift -> do
+  STM.mkWeakTVar var $ unlift final
 
 -- | Lifted version of 'STM.newTMVarIO'
 newTMVarIO :: Concurrent :> es => a -> Eff es (TMVar a)
@@ -122,7 +123,8 @@ newEmptyTMVarIO = unsafeEff_ STM.newEmptyTMVarIO
 
 -- | Lifted version of 'STM.mkWeakTMVar'
 mkWeakTMVar :: Concurrent :> es => TMVar a -> Eff es () -> Eff es (Weak (TMVar a))
-mkWeakTMVar var final = unsafeEff $ STM.mkWeakTMVar var . unEff final
+mkWeakTMVar var final = unsafeUnliftIO $ \unlift -> do
+  STM.mkWeakTMVar var $ unlift final
 
 -- | Lifted version of 'STM.newTChanIO'
 newTChanIO :: Concurrent :> es => Eff es (TChan a)

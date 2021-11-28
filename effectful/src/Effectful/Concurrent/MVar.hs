@@ -70,28 +70,35 @@ tryReadMVar = unsafeEff_ . M.tryReadMVar
 
 -- | Lifted 'M.withMVar'.
 withMVar :: Concurrent :> es => MVar a -> (a -> Eff es b) -> Eff es b
-withMVar var f = unsafeEff $ \es -> M.withMVar var ((`unEff` es) . f)
+withMVar var f = unsafeUnliftIO $ \unlift -> do
+  M.withMVar var $ unlift . f
 
 -- | Lifted 'M.withMVarMasked'.
 withMVarMasked :: Concurrent :> es => MVar a -> (a -> Eff es b) -> Eff es b
-withMVarMasked var f = unsafeEff $ \es -> M.withMVarMasked var ((`unEff` es) . f)
+withMVarMasked var f = unsafeUnliftIO $ \unlift -> do
+  M.withMVarMasked var $ unlift . f
 
 -- | Lifted 'M.modifyMVar_'.
 modifyMVar_ :: Concurrent :> es => MVar a -> (a -> Eff es a) -> Eff es ()
-modifyMVar_ var f = unsafeEff $ \es -> M.modifyMVar_ var ((`unEff` es) . f)
+modifyMVar_ var f = unsafeUnliftIO $ \unlift -> do
+  M.modifyMVar_ var $ unlift . f
 
 -- | Lifted 'M.modifyMVar'.
 modifyMVar :: Concurrent :> es => MVar a -> (a -> Eff es (a, b)) -> Eff es b
-modifyMVar var f = unsafeEff $ \es -> M.modifyMVar var ((`unEff` es) . f)
+modifyMVar var f = unsafeUnliftIO $ \unlift -> do
+  M.modifyMVar var $ unlift . f
 
 -- | Lifted 'M.modifyMVarMasked_'.
 modifyMVarMasked_ :: Concurrent :> es => MVar a -> (a -> Eff es a) -> Eff es ()
-modifyMVarMasked_ var f = unsafeEff $ \es -> M.modifyMVarMasked_ var ((`unEff` es) . f)
+modifyMVarMasked_ var f = unsafeUnliftIO $ \unlift -> do
+  M.modifyMVarMasked_ var $ unlift . f
 
 -- | Lifted 'M.modifyMVarMasked'.
 modifyMVarMasked :: Concurrent :> es => MVar a -> (a -> Eff es (a, b)) -> Eff es b
-modifyMVarMasked var f = unsafeEff $ \es -> M.modifyMVarMasked var ((`unEff` es) . f)
+modifyMVarMasked var f = unsafeUnliftIO $ \unlift -> do
+  M.modifyMVarMasked var $ unlift . f
 
 -- | Lifted 'M.mkWeakMVar'.
 mkWeakMVar :: Concurrent :> es => MVar a -> Eff es () -> Eff es (Weak (MVar a))
-mkWeakMVar var f = unsafeEff $ \es -> M.mkWeakMVar var ((`unEff` es) f)
+mkWeakMVar var f = unsafeUnliftIO $ \unlift -> do
+  M.mkWeakMVar var $ unlift f

@@ -6,7 +6,7 @@ module Effectful.Reader.Dynamic
   , local
   ) where
 
-import Effectful.Handler
+import Effectful.Dispatch.Dynamic
 import Effectful.Monad
 import qualified Effectful.Reader as R
 

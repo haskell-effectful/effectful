@@ -89,8 +89,8 @@ import System.Mem.Weak (Weak)
 import GHC.Natural (Natural)
 
 import Effectful.Concurrent.Effect
-import Effectful.Internal.Effect
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | Lifted version of 'STM.atomically'
 atomically :: Concurrent :> es => STM a -> Eff es a

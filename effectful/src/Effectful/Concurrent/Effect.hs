@@ -4,8 +4,8 @@ module Effectful.Concurrent.Effect
   , runConcurrent
   ) where
 
-import Effectful.Internal.Effect
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | Run 'Eff' operations asynchronously via the @async@ library.
 --

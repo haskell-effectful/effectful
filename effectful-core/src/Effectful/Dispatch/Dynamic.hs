@@ -1,4 +1,4 @@
-module Effectful.Handler
+module Effectful.Dispatch.Dynamic
   ( -- * Sending operations to the handler
     send
 

@@ -25,8 +25,8 @@ import Control.Concurrent.MVar (MVar)
 import qualified Control.Concurrent.MVar as M
 
 import Effectful.Concurrent.Effect
-import Effectful.Internal.Effect
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | Lifted 'M.newEmptyMVar'.
 newEmptyMVar :: Concurrent :> es => Eff es (MVar a)

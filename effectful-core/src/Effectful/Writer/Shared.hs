@@ -10,9 +10,8 @@ module Effectful.Writer.Shared
 import Control.Concurrent.MVar
 import Control.Exception
 
-import Effectful.Internal.Effect
-import Effectful.Internal.Env
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | Provide access to a strict (WHNF), shareable, write only value of type @w@.
 newtype Writer w :: Effect where

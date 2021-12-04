@@ -8,7 +8,7 @@ module Effectful.Error.Dynamic
 
 import Data.Typeable
 
-import Effectful.Handler
+import Effectful.Dispatch.Dynamic
 import Effectful.Monad
 import qualified Effectful.Error as E
 

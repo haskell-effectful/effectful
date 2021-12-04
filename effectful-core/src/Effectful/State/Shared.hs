@@ -22,9 +22,8 @@ module Effectful.State.Shared
 
 import Control.Concurrent.MVar
 
-import Effectful.Internal.Effect
-import Effectful.Internal.Env
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | Provide access to a strict (WHNF), shareable, mutable state of type @s@.
 newtype State s :: Effect where

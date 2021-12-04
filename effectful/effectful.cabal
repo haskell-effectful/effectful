@@ -89,10 +89,11 @@ library
 
     other-modules:   Effectful.Concurrent.Effect
 
-    reexported-modules:    Effectful.Error
+    reexported-modules:    Effectful.Dispatch.Dynamic
+                         , Effectful.Dispatch.Static
+                         , Effectful.Error
                          , Effectful.Error.Dynamic
                          , Effectful.Fail
-                         , Effectful.Handler
                          , Effectful.Monad
                          , Effectful.Prim
                          , Effectful.Reader

@@ -22,7 +22,7 @@ module Effectful.State.Dynamic
   , modifyM
   ) where
 
-import Effectful.Handler
+import Effectful.Dispatch.Dynamic
 import Effectful.Monad
 import qualified Effectful.State.Local as L
 import qualified Effectful.State.Shared as S

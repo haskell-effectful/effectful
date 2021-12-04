@@ -24,9 +24,8 @@ import Control.Exception
 import qualified Control.Monad.Trans.Resource as R
 import qualified Control.Monad.Trans.Resource.Internal as RI
 
-import Effectful.Internal.Effect
-import Effectful.Internal.Env
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | Data tag for a resource effect.
 newtype Resource :: Effect where

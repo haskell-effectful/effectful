@@ -76,14 +76,14 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (Async)
 import Control.Exception (Exception, SomeException)
 import Control.Monad (forever)
+import Data.Kind (Type)
 import qualified Control.Concurrent.Async as A
 import qualified UnliftIO.Async as U
 import qualified UnliftIO.Internals.Async as I
 
 import Effectful.Concurrent.Effect
-import Effectful.Internal.Effect
-import Effectful.Internal.Env
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | Lifted 'A.async'.
 async :: Concurrent :> es => Eff es a -> Eff es (Async a)

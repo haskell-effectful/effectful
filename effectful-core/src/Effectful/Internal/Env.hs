@@ -152,11 +152,11 @@ newForkId (ForkIdGen ref) = do
 -- the environment.
 newtype Relinker :: (Effect -> Type) -> Effect -> Type where
   Relinker
-    :: ((forall es. Env es -> IO (Env es)) -> handler e -> IO (handler e))
-    -> Relinker handler e
+    :: ((forall es. Env es -> IO (Env es)) -> adapter e -> IO (adapter e))
+    -> Relinker adapter e
 
 -- | A dummy 'Relinker' that does nothing.
-noRelinker :: Relinker handler e
+noRelinker :: Relinker adapter e
 noRelinker = Relinker $ \_ -> pure
 
 ----------------------------------------
@@ -344,7 +344,7 @@ checkSizeEnv k (Env (Forks _ baseIx lref _) _ _) = do
 -- This function is __highly unsafe__ because it renders the input 'Env'
 -- unusable until the corresponding 'unsafeTailEnv' call is made, but it's not
 -- checked anywhere.
-unsafeConsEnv :: handler e -> Relinker handler e -> Env es -> IO (Env (e : es))
+unsafeConsEnv :: adapter e -> Relinker adapter e -> Env es -> IO (Env (e : es))
 unsafeConsEnv e f (Env fork gref gen) = case fork of
   NoFork -> do
     extendEnvRef gref
@@ -403,18 +403,18 @@ unsafeTailEnv len (Env fork gref _) = case fork of
 
 -- | Extract a specific data type from the environment.
 getEnv
-  :: forall e es handler. e :> es
+  :: forall e es adapter. e :> es
   => Env es
-  -> IO (handler e)
+  -> IO (adapter e)
 getEnv env = do
   (i, es) <- getLocation (reifyIndex @e @es) env
   fromAny <$> readSmallArray es i
 
 -- | Replace the data type in the environment with a new value (in place).
 putEnv
-  :: forall e es handler. e :> es
+  :: forall e es adapter. e :> es
   => Env es
-  -> handler e
+  -> adapter e
   -> IO ()
 putEnv env e = do
   (i, es) <- getLocation (reifyIndex @e @es) env
@@ -422,9 +422,9 @@ putEnv env e = do
 
 -- | Modify the data type in the environment (in place) and return a value.
 stateEnv
-  :: forall e es handler a. e :> es
+  :: forall e es adapter a. e :> es
   => Env es
-  -> (handler e -> (a, handler e))
+  -> (adapter e -> (a, adapter e))
   -> IO a
 stateEnv env f = do
   (i, es) <- getLocation (reifyIndex @e @es) env
@@ -434,9 +434,9 @@ stateEnv env f = do
 
 -- | Modify the data type in the environment (in place).
 modifyEnv
-  :: forall e es handler. e :> es
+  :: forall e es adapter. e :> es
   => Env es
-  -> (handler e -> handler e)
+  -> (adapter e -> adapter e)
   -> IO ()
 modifyEnv env f = do
   (i, es) <- getLocation (reifyIndex @e @es) env

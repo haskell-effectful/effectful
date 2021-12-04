@@ -23,7 +23,7 @@ import GHC.TypeLits
 -- | The kind of effects.
 type Effect = (Type -> Type) -> Type -> Type
 
--- | Adapter for statically dispatched effects.
+-- | An adapter for statically dispatched effects.
 newtype IdE :: Effect -> Type where
   IdE :: (forall m r. e m r) -> IdE e
 

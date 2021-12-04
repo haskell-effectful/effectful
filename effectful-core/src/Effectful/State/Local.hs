@@ -21,8 +21,8 @@ module Effectful.State.Local
   , modifyM
   ) where
 
-import Effectful.Internal.Effect
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | Provide access to a strict (WHNF), thread local, mutable state of type @s@.
 newtype State s :: Effect where

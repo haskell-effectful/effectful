@@ -91,8 +91,8 @@ module Effectful.FileSystem
 import Data.Time (UTCTime)
 import qualified System.Directory as D
 
-import Effectful.Internal.Effect
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | An effect for interacting with the filesystem.
 data FileSystem :: Effect where

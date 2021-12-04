@@ -3,8 +3,8 @@ module Effectful.Fail
   , runFail
   ) where
 
+import Effectful.Dispatch.Dynamic
 import Effectful.Error
-import Effectful.Handler
 import Effectful.Internal.Monad
 
 -- | Run the 'Fail' effect via 'Error'.

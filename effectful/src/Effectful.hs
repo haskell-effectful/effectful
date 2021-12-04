@@ -55,5 +55,5 @@ module Effectful
   , MonadUnliftIO(..)
   ) where
 
-import Effectful.Handler
+import Effectful.Dispatch.Dynamic
 import Effectful.Monad

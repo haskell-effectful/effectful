@@ -10,8 +10,8 @@ import Control.Concurrent.QSem (QSem)
 import qualified Control.Concurrent.QSem as Q
 
 import Effectful.Concurrent.Effect
-import Effectful.Internal.Effect
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | Lifted 'Q.newQSem'.
 newQSem :: Concurrent :> es => Int -> Eff es QSem

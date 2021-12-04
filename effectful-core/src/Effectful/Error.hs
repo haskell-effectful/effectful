@@ -37,9 +37,8 @@ import Data.Typeable
 import Data.Unique
 import GHC.Stack
 
-import Effectful.Internal.Effect
-import Effectful.Internal.Env
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 newtype Error e :: Effect where
   Error :: ErrorId -> Error e m r

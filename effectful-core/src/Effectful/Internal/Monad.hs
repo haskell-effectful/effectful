@@ -367,7 +367,9 @@ type EffectHandler e es
   -- ^ The effect performed in the local environment.
   -> Eff es a
 
--- | An effect handler bundled along with its environment.
+-- | An adapter for dynamically dispatched effects.
+--
+-- Represents the effect handler bundled along with its environment.
 data Handler :: Effect -> Type where
   Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
 
@@ -387,49 +389,49 @@ runHandler e m = unsafeEff $ \es0 -> do
 -- | Send an operation of the given effect to its handler for execution.
 send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
 send op = unsafeEff $ \es -> do
-  Handler env handle <- getEnv es
-  unEff (handle (LocalEnv es) op) env
+  Handler handlerEs handle <- getEnv es
+  unEff (handle (LocalEnv es) op) handlerEs
 
 ----------------------------------------
 -- Helpers
 
-runEffect :: handler e -> Eff (e : es) a -> Eff es (a, handler e)
+runEffect :: adapter e -> Eff (e : es) a -> Eff es (a, adapter e)
 runEffect e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e0 noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> (,) <$> unEff m es <*> getEnv es)
 
-evalEffect :: handler e -> Eff (e : es) a -> Eff es a
+evalEffect :: adapter e -> Eff (e : es) a -> Eff es a
 evalEffect e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es)
 
-execEffect :: handler e -> Eff (e : es) a -> Eff es (handler e)
+execEffect :: adapter e -> Eff (e : es) a -> Eff es (adapter e)
 execEffect e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e0 noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es *> getEnv es)
 
-getEffect :: e :> es => Eff es (handler e)
+getEffect :: e :> es => Eff es (adapter e)
 getEffect = unsafeEff $ \es -> getEnv es
 
-putEffect :: e :> es => handler e -> Eff es ()
+putEffect :: e :> es => adapter e -> Eff es ()
 putEffect e = unsafeEff $ \es -> putEnv es e
 
-stateEffect :: e :> es => (handler e -> (a, handler e)) -> Eff es a
+stateEffect :: e :> es => (adapter e -> (a, adapter e)) -> Eff es a
 stateEffect f = unsafeEff $ \es -> stateEnv es f
 
-stateEffectM :: e :> es => (handler e -> Eff es (a, handler e)) -> Eff es a
+stateEffectM :: e :> es => (adapter e -> Eff es (a, adapter e)) -> Eff es a
 stateEffectM f = unsafeEff $ \es -> E.mask $ \release -> do
   (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv es
   putEnv es e
   pure a
 
-localEffect :: e :> es => (handler e -> handler e) -> Eff es a -> Eff es a
+localEffect :: e :> es => (adapter e -> adapter e) -> Eff es a -> Eff es a
 localEffect f m = unsafeEff $ \es -> do
   E.bracket (stateEnv es $ \e -> (e, f e))
             (\e -> putEnv es e)

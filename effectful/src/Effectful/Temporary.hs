@@ -10,8 +10,8 @@ module Effectful.Temporary
 import System.IO
 import qualified UnliftIO.Temporary as T
 
-import Effectful.Internal.Effect
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | An effect for interacting with temporary files.
 data Temporary :: Effect where

@@ -13,8 +13,8 @@ import Control.Concurrent.Chan (Chan)
 import qualified Control.Concurrent.Chan as C
 
 import Effectful.Concurrent.Effect
-import Effectful.Internal.Effect
-import Effectful.Internal.Monad
+import Effectful.Dispatch.Static
+import Effectful.Monad
 
 -- | Lifted 'C.newChan'.
 newChan :: Concurrent :> es => Eff es (Chan a)

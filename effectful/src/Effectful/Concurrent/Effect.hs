@@ -1,6 +1,5 @@
 module Effectful.Concurrent.Effect
-  ( -- * Concurrent effect
-    Concurrent
+  ( Concurrent
   , runConcurrent
   ) where
 

@@ -82,12 +82,14 @@ library
                      Effectful.Concurrent.QSemN
                      Effectful.Environment
                      Effectful.FileSystem
+                     Effectful.FileSystem.IO
                      Effectful.Process
                      Effectful.Resource
                      Effectful.Temporary
                      Effectful.Timeout
 
     other-modules:   Effectful.Concurrent.Effect
+                     Effectful.FileSystem.Effect
 
     reexported-modules:    Effectful.Dispatch.Dynamic
                          , Effectful.Dispatch.Static

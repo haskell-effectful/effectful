@@ -13,10 +13,10 @@ module Effectful.Internal.Unlift
   , Limit(..)
 
     -- * Unlifting functions
-  , seqUnliftIO
-  , concUnliftIO
-  , ephemeralConcUnliftIO
-  , persistentConcUnliftIO
+  , seqUnlift
+  , concUnlift
+  , ephemeralConcUnlift
+  , persistentConcUnlift
 
     -- * Unlifting errors
   , UnliftError(..)
@@ -100,13 +100,13 @@ data Limit
 -- Exceptions thrown by this function:
 --
 --  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread.
-seqUnliftIO
+seqUnlift
   :: HasCallStack
   => ((forall r. m r -> IO r) -> IO a)
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
-seqUnliftIO k es unEff = do
+seqUnlift k es unEff = do
   tid0 <- myThreadId
   k $ \m -> do
     tid <- myThreadId
@@ -115,7 +115,7 @@ seqUnliftIO k es unEff = do
       else throwIO InvalidUseOfSeqUnlift
 
 -- | Concurrent unlift for various strategies and limits.
-concUnliftIO
+concUnlift
   :: HasCallStack
   => Persistence
   -> Limit
@@ -123,14 +123,14 @@ concUnliftIO
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
-concUnliftIO Ephemeral (Limited uses) k =
-  ephemeralConcUnliftIO uses k
-concUnliftIO Ephemeral Unlimited k =
-  ephemeralConcUnliftIO maxBound k
-concUnliftIO Persistent (Limited threads) k =
-  persistentConcUnliftIO False threads k
-concUnliftIO Persistent Unlimited k =
-  persistentConcUnliftIO True maxBound k
+concUnlift Ephemeral (Limited uses) k =
+  ephemeralConcUnlift uses k
+concUnlift Ephemeral Unlimited k =
+  ephemeralConcUnlift maxBound k
+concUnlift Persistent (Limited threads) k =
+  persistentConcUnlift False threads k
+concUnlift Persistent Unlimited k =
+  persistentConcUnlift True maxBound k
 
 -- | Concurrent unlift that doesn't preserve the environment between calls to
 -- the unlifting function in threads other than its creator.
@@ -139,7 +139,7 @@ concUnliftIO Persistent Unlimited k =
 --
 --  - 'InvalidNumberOfUses' if the number of uses is less or equal zero.
 --  - 'ExceededNumberOfUses' if the unlift function is called too often.
-ephemeralConcUnliftIO
+ephemeralConcUnlift
   :: HasCallStack
   => Int
   -- ^ Number of permitted uses of the unlift function.
@@ -147,7 +147,7 @@ ephemeralConcUnliftIO
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
-ephemeralConcUnliftIO uses k es0 unEff = do
+ephemeralConcUnlift uses k es0 unEff = do
   unless (uses > 0) $ do
     throwIO $ InvalidNumberOfUses uses
   tid0 <- myThreadId
@@ -176,7 +176,7 @@ ephemeralConcUnliftIO uses k es0 unEff = do
 --  - 'InvalidNumberOfThreads' if the number of threads is less or equal zero.
 --  - 'ExceededNumberOfThreads' if the unlift function is called by too many
 --    threads.
-persistentConcUnliftIO
+persistentConcUnlift
   :: HasCallStack
   => Bool
   -> Int
@@ -185,7 +185,7 @@ persistentConcUnliftIO
   -> Env es
   -> (forall r. m r -> Env es -> IO r)
   -> IO a
-persistentConcUnliftIO cleanUp threads k es0 unEff = do
+persistentConcUnlift cleanUp threads k es0 unEff = do
   unless (threads > 0) $ do
     throwIO $ InvalidNumberOfThreads threads
   tid0 <- myThreadId

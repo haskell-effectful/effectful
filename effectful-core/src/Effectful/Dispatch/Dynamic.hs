@@ -77,7 +77,7 @@ localSeqUnlift
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 localSeqUnlift (LocalEnv les) k = unsafeEff $ \es -> do
-  seqUnliftEff les $ \unlift -> do
+  seqUnliftIO les $ \unlift -> do
     (`unEff` es) $ k $ unsafeEff_ . unlift
 
 -- | Create a local unlifting function with the 'SeqUnlift' strategy. For the
@@ -89,7 +89,7 @@ localSeqUnliftIO
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-localSeqUnliftIO (LocalEnv les) k = liftIO $ seqUnliftEff les k
+localSeqUnliftIO (LocalEnv les) k = liftIO $ seqUnliftIO les k
 
 -- | Create a local unlifting function with the given strategy.
 localUnlift
@@ -102,10 +102,10 @@ localUnlift
   -> Eff es a
 localUnlift (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
-    seqUnliftEff les $ \unlift -> do
+    seqUnliftIO les $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
   ConcUnlift p l -> unsafeEff $ \es -> do
-    concUnliftEff les p l $ \unlift -> do
+    concUnliftIO les p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
 
 -- | Create a local unlifting function with the given strategy.
@@ -118,8 +118,8 @@ localUnliftIO
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 localUnliftIO (LocalEnv les) strategy k = case strategy of
-  SeqUnlift      -> liftIO $ seqUnliftEff les k
-  ConcUnlift p l -> liftIO $ concUnliftEff les p l k
+  SeqUnlift      -> liftIO $ seqUnliftIO les k
+  ConcUnlift p l -> liftIO $ concUnliftIO les p l k
 
 -- | Utility for lifting 'Eff' operations of type
 --
@@ -142,7 +142,7 @@ withLiftMap !_ k = unsafeEff $ \es -> do
   -- The LocalEnv parameter is not used, but we need it to constraint the
   -- localEs type variable. It's also strict so that callers don't cheat.
   (`unEff` es) $ k $ \mapEff m -> unsafeEff $ \localEs -> do
-    seqUnliftEff localEs $ \unlift -> do
+    seqUnliftIO localEs $ \unlift -> do
       (`unEff` es) . mapEff . unsafeEff_ $ unlift m
 
 -- | Utility for lifting 'IO' operations of type
@@ -180,7 +180,7 @@ withLiftMapIO
 withLiftMapIO !_ k = k $ \mapIO m -> unsafeEff $ \es -> do
   -- The LocalEnv parameter is not used, but we need it to constraint the
   -- localEs type variable. It's also strict so that callers don't cheat.
-  seqUnliftEff es $ \unlift -> mapIO $ unlift m
+  seqUnliftIO es $ \unlift -> mapIO $ unlift m
 
 ----------------------------------------
 -- Bidirectional lifts
@@ -202,12 +202,12 @@ localLiftUnlift
   -> Eff es a
 localLiftUnlift (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
-    seqUnliftEff es $ \unliftEs -> do
-      seqUnliftEff les $ \unliftLocalEs -> do
+    seqUnliftIO es $ \unliftEs -> do
+      seqUnliftIO les $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
   ConcUnlift p l -> unsafeEff $ \es -> do
-    concUnliftEff es p l $ \unliftEs -> do
-      concUnliftEff les p l $ \unliftLocalEs -> do
+    concUnliftIO es p l $ \unliftEs -> do
+      concUnliftIO les p l $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
 
 -- | Create a local unlifting function with the given strategy along with an
@@ -227,8 +227,8 @@ localLiftUnliftIO
   -- ^ Continuation with the lifting and unlifting function in scope.
   -> Eff es a
 localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
-  SeqUnlift      -> liftIO $ seqUnliftEff les $ k unsafeEff_
-  ConcUnlift p l -> liftIO $ concUnliftEff les p l $ k unsafeEff_
+  SeqUnlift      -> liftIO $ seqUnliftIO les $ k unsafeEff_
+  ConcUnlift p l -> liftIO $ concUnliftIO les p l $ k unsafeEff_
 
 -- $setup
 -- >>> import Control.Concurrent

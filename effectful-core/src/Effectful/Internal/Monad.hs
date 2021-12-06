@@ -36,10 +36,8 @@ module Effectful.Internal.Monad
   , UnliftError(..)
 
   --- *** Low-level helpers
-  , unsafeLiftMapIO
-  , unsafeUnliftIO
-  , seqUnliftEff
-  , concUnliftEff
+  , seqUnliftIO
+  , concUnliftIO
 
   -- * Effects
 
@@ -148,41 +146,8 @@ unsafeEff m = Eff (oneShot m)
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
 
--- | Utility for lifting 'IO' operations of type
---
--- @'IO' a -> 'IO' b@
---
--- to
---
--- @'Eff' es a -> 'Eff' es b@
---
--- This function is __unsafe__ because:
---
--- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
---   operations.
---
--- - The 'IO' operation must not run its argument in a separate thread, but it's
---   not checked anywhere.
-unsafeLiftMapIO :: (IO a -> IO b) -> Eff es a -> Eff es b
-unsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
-
--- | Utility for running 'Eff' computations locally in the 'IO' monad.
---
--- This function is __unsafe__ because:
---
--- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
---   operations.
---
--- - Unlifted 'Eff' operations must not be run in a thread distinct from the
---   caller of 'unsafeUnliftIO', but it's not checked anywhere.
-unsafeUnliftIO
-  :: HasCallStack
-  => ((forall r. Eff es r -> IO r) -> IO a)
-  -> Eff es a
-unsafeUnliftIO k = unsafeEff $ \es -> k (`unEff` es)
-
 ----------------------------------------
--- Unlifting Eff
+-- Unlifting IO
 
 -- | Get the current 'UnliftStrategy'.
 unliftStrategy :: IOE :> es => Eff es UnliftStrategy
@@ -193,28 +158,6 @@ unliftStrategy = do
 -- | Locally override the 'UnliftStrategy' with the given value.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
 withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
-
--- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
---
--- Exceptions thrown by this function:
---
---  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread.
-seqUnliftEff
-  :: HasCallStack
-  => Env es
-  -> ((forall r. Eff es r -> IO r) -> IO a)
-  -> IO a
-seqUnliftEff es k = seqUnliftIO k es unEff
-
--- | Lower 'Eff' operations into 'IO' ('ConcUnlift').
-concUnliftEff
-  :: HasCallStack
-  => Env es
-  -> Persistence
-  -> Limit
-  -> ((forall r. Eff es r -> IO r) -> IO a)
-  -> IO a
-concUnliftEff es persistence limit k = concUnliftIO persistence limit k es unEff
 
 -- | Create an unlifting function with the current 'UnliftStrategy'.
 --
@@ -229,9 +172,31 @@ withEffToIO
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 withEffToIO f = unliftStrategy >>= \case
-  SeqUnlift -> unsafeEff $ \es -> seqUnliftEff es f
+  SeqUnlift -> unsafeEff $ \es -> seqUnliftIO es f
   ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
-    unsafeEff $ \es -> concUnliftEff es p b f
+    unsafeEff $ \es -> concUnliftIO es p b f
+
+-- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
+--
+-- Exceptions thrown by this function:
+--
+--  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread.
+seqUnliftIO
+  :: HasCallStack
+  => Env es
+  -> ((forall r. Eff es r -> IO r) -> IO a)
+  -> IO a
+seqUnliftIO es k = seqUnlift k es unEff
+
+-- | Lower 'Eff' operations into 'IO' ('ConcUnlift').
+concUnliftIO
+  :: HasCallStack
+  => Env es
+  -> Persistence
+  -> Limit
+  -> ((forall r. Eff es r -> IO r) -> IO a)
+  -> IO a
+concUnliftIO es persistence limit k = concUnlift persistence limit k es unEff
 
 ----------------------------------------
 -- Base

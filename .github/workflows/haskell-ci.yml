@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.13.20211030
+# version: 0.13.20211116
 #
-# REGENDATA ("0.13.20211030",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.13.20211116",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -24,6 +24,8 @@ jobs:
   linux:
     name: Haskell-CI - Linux - ${{ matrix.compiler }}
     runs-on: ubuntu-18.04
+    timeout-minutes:
+      60
     container:
       image: buildpack-deps:bionic
     continue-on-error: ${{ matrix.allow-failure }}
@@ -129,6 +131,10 @@ jobs:
           repository hackage.haskell.org
             url: http://hackage.haskell.org/
           EOF
+          cat >> $CABAL_CONFIG <<EOF
+          program-default-options
+            ghc-options: $GHCJOBS +RTS -M3G -RTS
+          EOF
           cat $CABAL_CONFIG
       - name: versions
         run: |
@@ -141,7 +147,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-b692a344
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-16fe7d6d
           path: ~/.haskell-ci-tools
       - name: install cabal-plan
         run: |
@@ -154,8 +160,8 @@ jobs:
           cabal-plan --version
       - name: install doctest
         run: |
-          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.18' ; fi
-          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest --version ; fi
+          $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.20'
+          doctest --version
       - name: checkout
         uses: actions/checkout@v2
         with:
@@ -163,8 +169,8 @@ jobs:
       - name: initial cabal.project for sdist
         run: |
           touch cabal.project
-          echo "packages: $GITHUB_WORKSPACE/source/./effectful" >> cabal.project
-          echo "packages: $GITHUB_WORKSPACE/source/./effectful-core" >> cabal.project
+          echo "packages: $GITHUB_WORKSPACE/source/effectful" >> cabal.project
+          echo "packages: $GITHUB_WORKSPACE/source/effectful-core" >> cabal.project
           cat cabal.project
       - name: sdist
         run: |
@@ -221,12 +227,12 @@ jobs:
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: doctest
         run: |
-          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
-          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
-          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
-          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
-          if [ $((HCNUMVER < 90200)) -ne 0 ] ; then doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators utils ; fi
+          cd ${PKGDIR_effectful} || false
+          doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
+          cd ${PKGDIR_effectful_core} || false
+          doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
+          cd ${PKGDIR_effectful_core} || false
+          doctest  -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators utils
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful} || false

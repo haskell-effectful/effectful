@@ -1,10 +1,8 @@
 branches:       master
 
-doctest:        <9.2
+doctest:        <9.3
 tests:          True
 benchmarks:     True
-
-ghcup-jobs:     ==8.10.7 || >=9.2
 
 raw-project
   package effectful

@@ -33,7 +33,6 @@ module Effectful.Internal.Monad
   , unliftStrategy
   , withUnliftStrategy
   , withEffToIO
-  , UnliftError(..)
 
   --- *** Low-level helpers
   , seqUnliftIO
@@ -177,10 +176,6 @@ withEffToIO f = unliftStrategy >>= \case
     unsafeEff $ \es -> concUnliftIO es p b f
 
 -- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
---
--- Exceptions thrown by this function:
---
---  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread.
 seqUnliftIO
   :: HasCallStack
   => Env es

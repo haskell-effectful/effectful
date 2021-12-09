@@ -17,13 +17,9 @@ module Effectful.Internal.Unlift
   , concUnlift
   , ephemeralConcUnlift
   , persistentConcUnlift
-
-    -- * Unlifting errors
-  , UnliftError(..)
   ) where
 
 import Control.Concurrent
-import Control.Exception
 import Control.Monad
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
@@ -96,10 +92,6 @@ data Limit
 -- Unlift functions
 
 -- | Sequential unlift.
---
--- Exceptions thrown by this function:
---
---  - 'InvalidUseOfSeqUnlift' if the unlift function is used in another thread.
 seqUnlift
   :: HasCallStack
   => ((forall r. m r -> IO r) -> IO a)
@@ -112,7 +104,9 @@ seqUnlift k es unEff = do
     tid <- myThreadId
     if tid `eqThreadId` tid0
       then unEff m es
-      else throwIO InvalidUseOfSeqUnlift
+      else error
+         $ "If you want to use the unlifting function to run Eff operations "
+        ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
 
 -- | Concurrent unlift for various strategies and limits.
 concUnlift
@@ -134,11 +128,6 @@ concUnlift Persistent Unlimited k =
 
 -- | Concurrent unlift that doesn't preserve the environment between calls to
 -- the unlifting function in threads other than its creator.
---
--- Exceptions thrown by this function:
---
---  - 'InvalidNumberOfUses' if the number of uses is less or equal zero.
---  - 'ExceededNumberOfUses' if the unlift function is called too often.
 ephemeralConcUnlift
   :: HasCallStack
   => Int
@@ -149,7 +138,7 @@ ephemeralConcUnlift
   -> IO a
 ephemeralConcUnlift uses k es0 unEff = do
   unless (uses > 0) $ do
-    throwIO $ InvalidNumberOfUses uses
+    error $ "Invalid number of uses: " ++ show uses
   tid0 <- myThreadId
   -- Create a copy of the environment as a template for the other threads to
   -- use. This can't be done from inside the callback as the environment might
@@ -160,7 +149,10 @@ ephemeralConcUnlift uses k es0 unEff = do
     es <- myThreadId >>= \case
       tid | tid0 `eqThreadId` tid -> pure es0
       _ -> modifyMVar mvUses $ \case
-        0 -> throwIO $ ExceededNumberOfUses uses
+        0 -> error
+           $ "Number of permitted calls (" ++ show uses ++ ") to the unlifting "
+          ++ "function in other threads was exceeded. Please increase the limit "
+          ++ "or use the unlimited variant."
         1 -> pure (0, esTemplate)
         n -> do
           let newUses = n - 1
@@ -170,12 +162,6 @@ ephemeralConcUnlift uses k es0 unEff = do
 
 -- | Concurrent unlift that preserves the environment between calls to the
 -- unlifting function within a particular thread.
---
--- Exceptions thrown by this function:
---
---  - 'InvalidNumberOfThreads' if the number of threads is less or equal zero.
---  - 'ExceededNumberOfThreads' if the unlift function is called by too many
---    threads.
 persistentConcUnlift
   :: HasCallStack
   => Bool
@@ -187,7 +173,7 @@ persistentConcUnlift
   -> IO a
 persistentConcUnlift cleanUp threads k es0 unEff = do
   unless (threads > 0) $ do
-    throwIO $ InvalidNumberOfThreads threads
+    error $ "Invalid number of threads: " ++ show threads
   tid0 <- myThreadId
   -- Create a copy of the environment as a template for the other threads to
   -- use. This can't be done from inside the callback as the environment might
@@ -205,7 +191,10 @@ persistentConcUnlift cleanUp threads k es0 unEff = do
         case mes of
           Just es -> pure (te, es)
           Nothing -> case teCapacity te of
-            0 -> throwIO $ ExceededNumberOfThreads threads
+            0 -> error
+              $ "Number of other threads (" ++ show threads ++ ") permitted to "
+              ++ "use the unlifting function was exceeded. Please increase the "
+              ++ "limit or use the unlimited variant."
             1 -> do
               wkTidEs <- mkWeakThreadIdEnv tid esTemplate wkTid i mvEntries cleanUp
               let newEntries = ThreadEntries
@@ -222,38 +211,6 @@ persistentConcUnlift cleanUp threads k es0 unEff = do
                     }
               newEntries `seq` pure (newEntries, es)
     unEff m es
-
-----------------------------------------
--- Errors
-
--- | An type used for errors occuring in unlifting functions.
---
--- Use the 'displayException' method of the 'Exception' type class to get
--- descriptive error messages.
-data UnliftError
-  = InvalidNumberOfThreads !Int
-  | InvalidNumberOfUses !Int
-  | InvalidUseOfSeqUnlift
-  | ExceededNumberOfThreads !Int
-  | ExceededNumberOfUses !Int
-  deriving (Eq, Generic, Show)
-
-instance Exception UnliftError where
-  displayException (InvalidNumberOfThreads threads) =
-    "Invalid number of threads: " ++ show threads
-  displayException (InvalidNumberOfUses uses) =
-    "Invalid number of uses: " ++ show uses
-  displayException (ExceededNumberOfThreads threads) =
-    "Number of other threads (" ++ show threads ++ ") permitted to use the " ++
-    "unlifting function was exceeded. Please increase the limit or use the " ++
-    "unlimited variant."
-  displayException (ExceededNumberOfUses uses) =
-    "Number of permitted calls (" ++ show uses ++ ") to the unlifting " ++
-    "function in other threads was exceeded. Please increase the limit or " ++
-    "use the unlimited variant."
-  displayException InvalidUseOfSeqUnlift =
-    "If you want to use the unlifting function to run Eff operations in " ++
-    "multiple threads, have a look at UnliftStrategy (ConcUnlift)."
 
 ----------------------------------------
 -- Data types

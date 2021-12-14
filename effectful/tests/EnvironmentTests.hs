@@ -9,12 +9,17 @@ import Effectful.Environment
 import qualified Utils as U
 
 environmentTests :: TestTree
-environmentTests = testGroup "Environment"
-  [ testCase "set and get an environment variable" test_setAndGet
-  , testCase "unset and try to get an environment variable" test_unsetAndGet
-  , testCase "execute effects with custom arguments" test_withArgs
-  , testCase "execute effects with custom program name" test_withProg
-  ]
+environmentTests = testCaseSteps "Environment" $ \step -> do
+  -- These tests need to be run sequentially because of
+  -- https://github.com/arybczak/effectful/issues/39.
+  step "set and get an environment variable"
+  test_setAndGet
+  step "unset and try to get an environment variable"
+  test_unsetAndGet
+  step "execute effects with custom arguments"
+  test_withArgs
+  step "execute effects with custom program name"
+  test_withProg
 
 test_setAndGet :: Assertion
 test_setAndGet = runEff . runEnvironment $ do

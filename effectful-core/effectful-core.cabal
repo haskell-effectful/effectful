@@ -34,6 +34,7 @@ common language
                         ConstraintKinds
                         DataKinds
                         DeriveFunctor
+                        DeriveGeneric
                         FlexibleContexts
                         FlexibleInstances
                         GADTs

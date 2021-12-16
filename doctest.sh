@@ -17,6 +17,7 @@ run_doctest() {
     -XConstraintKinds \
     -XDataKinds \
     -XDeriveFunctor \
+    -XDeriveGeneric \
     -XFlexibleContexts \
     -XFlexibleInstances \
     -XGADTs \
@@ -36,5 +37,5 @@ run_doctest() {
   popd
 }
 
-run_doctest effectful src
 run_doctest effectful-core src
+run_doctest effectful src

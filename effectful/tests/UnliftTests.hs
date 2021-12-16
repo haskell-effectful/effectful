@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedLabels #-}
 module UnliftTests (unliftTests) where
 
 import Control.Exception

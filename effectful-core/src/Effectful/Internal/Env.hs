@@ -4,22 +4,34 @@
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
 module Effectful.Internal.Env
-  ( Env
+  ( -- * The environment
+    Env(..)
+  , Forks(..)
+  , EnvRef(..)
+
+    -- ** ForkId
+  , ForkId(..)
+  , ForkIdGen(..)
+  , newForkIdGen
+  , cloneForkIdGen
+  , newForkId
+
+    -- ** Relinker
   , Relinker(..)
   , noRelinker
 
-  -- * Operations
+    -- * Operations
   , emptyEnv
   , cloneEnv
   , forkEnv
   , sizeEnv
   , checkSizeEnv
 
-  -- ** Extending and shrinking
+    -- ** Extending and shrinking
   , unsafeConsEnv
   , unsafeTailEnv
 
-  -- ** Data retrieval and update
+    -- ** Data retrieval and update
   , getEnv
   , putEnv
   , stateEnv
@@ -116,6 +128,7 @@ data Env (es :: [Effect]) = Env
 -- | Local forks of the environment.
 data Forks = Forks !ForkId !Int !(IORef EnvRef) Forks | NoFork
 
+-- | Data held in the environment.
 data EnvRef = EnvRef
   { _size      :: !Int
   , _data      :: !(SmallMutableArray RealWorld Any)
@@ -125,6 +138,7 @@ data EnvRef = EnvRef
 ----------------------------------------
 -- ForkId
 
+-- | Internal id of the fork.
 newtype ForkId = ForkId { unForkId :: Int }
 
 -- | 'ForkId' generation.

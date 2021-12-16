@@ -346,9 +346,9 @@ runHandler e m = unsafeEff $ \es0 -> do
             (\es -> unEff m es)
   where
     relinker :: Relinker Handler e
-    relinker = Relinker $ \relink (Handler env handle) -> do
-      newEnv <- relink env
-      pure $ Handler newEnv handle
+    relinker = Relinker $ \relink (Handler handlerEs handle) -> do
+      newHandlerEs <- relink handlerEs
+      pure $ Handler newHandlerEs handle
 
 -- | Send an operation of the given effect to its handler for execution.
 send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a

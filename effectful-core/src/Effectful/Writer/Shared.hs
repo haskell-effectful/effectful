@@ -17,23 +17,34 @@ import Effectful.Monad
 newtype Writer w :: Effect where
   Writer :: MVar w -> Writer w m r
 
+-- | Run a 'Writer' effect and return the final value along with the final
+-- output.
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
   v <- unsafeEff_ $ newMVar mempty
   a <- evalEffect (IdE (Writer v)) m
   (a, ) <$> unsafeEff_ (readMVar v)
 
+-- | Run a 'Writer' effect and return the final output, discarding the final
+-- value.
 execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
   v <- unsafeEff_ $ newMVar mempty
   _ <- evalEffect (IdE (Writer v)) m
   unsafeEff_ $ readMVar v
 
+-- | Append the given output to the overall output of the 'Writer'.
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
 tell w1 = unsafeEff $ \es -> do
   IdE (Writer v) <- getEnv es
   modifyMVar_ v $ \w0 -> let w = w0 <> w1 in w `seq` pure w
 
+-- | Execute an action and append its output to the overall output of the
+-- 'Writer'.
+--
+-- /Note:/ if a runtime exception is received while the action is executed, the
+-- partial output of the action will still be appended to the overall output of
+-- the 'Writer'.
 listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
 listen m = unsafeEff $ \es -> do
   -- The mask is uninterruptible because modifyMVar_ v0 in the merge function

@@ -14,6 +14,10 @@ module Effectful.Dispatch.Static
   , stateEffectM
   , localEffect
 
+    -- ** Unlifts
+  , seqUnliftIO
+  , concUnliftIO
+
     -- * Primitive API
   , Env
   , Relinker(..)

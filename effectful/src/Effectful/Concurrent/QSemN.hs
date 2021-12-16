@@ -1,6 +1,11 @@
 -- | Lifted "Control.Concurrent.QSemN".
 module Effectful.Concurrent.QSemN
-  ( QSemN
+  ( -- * The effect
+    Concurrent
+  , runConcurrent
+
+    -- * QSemN
+  , QSemN
   , newQSemN
   , waitQSemN
   , signalQSemN

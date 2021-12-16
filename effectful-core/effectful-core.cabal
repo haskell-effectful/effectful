@@ -66,18 +66,20 @@ library
 
     ghc-options:    -O2
 
-    build-depends:    base >= 4.13 && <5
-                    , containers
-                    , effectful-internal-utils
-                    , exceptions
-                    , monad-control
-                    , primitive
-                    , transformers-base
-                    , unliftio-core
+    build-depends:  effectful-internal-utils
+
+    build-depends:    base                >= 4.13      && < 5
+                    , containers          >= 0.6.5.1
+                    , exceptions          >= 0.10.4
+                    , monad-control       >= 1.0.3
+                    , primitive           >= 0.7.3.0
+                    , transformers-base   >= 0.4.6
+                    , unliftio-core       >= 0.2.0.1
 
     hs-source-dirs:  src
 
-    exposed-modules: Effectful.Dispatch.Dynamic
+    exposed-modules: Effectful
+                     Effectful.Dispatch.Dynamic
                      Effectful.Dispatch.Static
                      Effectful.Error
                      Effectful.Error.Dynamic

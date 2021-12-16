@@ -1,5 +1,5 @@
 module Effectful.Environment
-  ( -- * Environment effect
+  ( -- * The effect
     Environment
   , runEnvironment
 
@@ -27,6 +27,7 @@ import Effectful.Monad
 data Environment :: Effect where
   Environment :: Environment m r
 
+-- | Run the 'Environment' effect.
 runEnvironment :: IOE :> es => Eff (Environment : es) a -> Eff es a
 runEnvironment = evalEffect (IdE Environment)
 

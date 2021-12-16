@@ -1,7 +1,6 @@
-{-# LANGUAGE CPP #-}
-
+-- | Lifted version of "System.Process".
 module Effectful.Process
-  ( -- * Process effect
+  ( -- * The effect
     Process
   , runProcess
 
@@ -31,9 +30,7 @@ module Effectful.Process
   , P.showCommandForUser
   , P.Pid
   , getPid
-#if MIN_VERSION_process(1,6,12)
   , getCurrentPid
-#endif
 
   -- * Process completion
   , waitForProcess
@@ -146,11 +143,9 @@ cleanupProcess = unsafeEff_ . P.cleanupProcess
 getPid :: Process :> es => P.ProcessHandle -> Eff es (Maybe P.Pid)
 getPid = unsafeEff_ . P.getPid
 
-#if MIN_VERSION_process(1,6,12)
 -- | Lifted 'P.getCurrentPid'.
 getCurrentPid :: Process :> es => Eff es P.Pid
 getCurrentPid = unsafeEff_ P.getCurrentPid
-#endif
 
 ----------------------------------------
 -- Process completion

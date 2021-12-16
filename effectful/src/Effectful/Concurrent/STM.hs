@@ -1,7 +1,11 @@
 -- | Lifted version of "Control.Concurrent.STM".
 module Effectful.Concurrent.STM
-  ( -- * Core
-    STM.STM
+  ( -- * The effect
+    Concurrent
+  , runConcurrent
+
+    -- * Core
+  , STM.STM
   , atomically
   , STM.retry
   , STM.orElse

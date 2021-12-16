@@ -1,6 +1,11 @@
 -- | Lifted version of "Control.Concurrent.MVar".
 module Effectful.Concurrent.MVar
-  ( MVar
+  ( -- * The effect
+    Concurrent
+  , runConcurrent
+
+    -- * MVar
+  , MVar
   , newEmptyMVar
   , newMVar
   , takeMVar

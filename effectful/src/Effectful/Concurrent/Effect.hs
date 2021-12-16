@@ -15,5 +15,6 @@ import Effectful.Monad
 data Concurrent :: Effect where
   Concurrent :: Concurrent m r
 
+-- | Run the 'Concurrent' effect.
 runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a
 runConcurrent = evalEffect (IdE Concurrent)

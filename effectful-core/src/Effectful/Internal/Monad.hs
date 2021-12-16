@@ -175,21 +175,25 @@ withEffToIO f = unliftStrategy >>= \case
   ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
     unsafeEff $ \es -> concUnliftIO es p b f
 
--- | Lower 'Eff' operations into 'IO' ('SeqUnlift').
+-- | Create an unlifting function with the 'SeqUnlift' strategy.
 seqUnliftIO
   :: HasCallStack
   => Env es
+  -- ^ The environment.
   -> ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
   -> IO a
 seqUnliftIO es k = seqUnlift k es unEff
 
--- | Lower 'Eff' operations into 'IO' ('ConcUnlift').
+-- | Create an unlifting function with the 'ConcUnlift' strategy.
 concUnliftIO
   :: HasCallStack
   => Env es
+  -- ^ The environment.
   -> Persistence
   -> Limit
   -> ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
   -> IO a
 concUnliftIO es persistence limit k = concUnlift persistence limit k es unEff
 

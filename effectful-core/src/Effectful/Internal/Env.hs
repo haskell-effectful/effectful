@@ -68,17 +68,17 @@ type role Env nominal
 -- @
 --
 -- The point of execution is currently at (*), i.e. the mainline. Moreover,
--- currently:
+-- currently (brackets represent forks):
 --
 -- - Mainline sees @[e00, e01, e05, e07]@.
 --
--- - @e01@ is an interpreted effect, its handler sees @[e00, e02, e03]@.
+-- - @e01@ is an interpreted effect, its handler sees @[e00][e02, e03]@.
 --
--- - @e03@ is an interpreted effect, its handler sees @[e00, e02, e04]@.
+-- - @e03@ is an interpreted effect, its handler sees @[e00][e02][e04]@.
 --
--- - @e05@ is an interpreted effect, its handler sees @[e00, e01, e06]@.
+-- - @e05@ is an interpreted effect, its handler sees @[e00, e01][e06]@.
 --
--- - @e07@ is an interpreted effect, its handler sees @[e00, e01, e05, e08,
+-- - @e07@ is an interpreted effect, its handler sees @[e00, e01, e05][e08,
 --   e09]@.
 --
 -- If an operation from @e01@ is invoked, the environment in the middle of
@@ -101,11 +101,11 @@ type role Env nominal
 -- introduced @e12@), so its local environment was temporarily extended with
 -- it. Moreover, currently:
 --
--- - Handler of @e01@ sees @[e00, e02, e03, e10]@.
+-- - Handler of @e01@ sees @[e00][e02, e03, e10]@.
 --
--- - Handler of @e10@ sees @[e00, e02, e03, e11]@.
+-- - Handler of @e10@ sees @[e00][e02, e03][e11]@.
 --
--- - Handler of @e11@ sees @[e00, e02, e03, e12]@.
+-- - Handler of @e11@ sees @[e00][e02, e03][e12]@.
 --
 data Env (es :: [Effect]) = Env
   { _forks     :: !Forks

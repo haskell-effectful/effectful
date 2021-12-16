@@ -1,6 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 module Effectful.Concurrent.Async
-  ( -- * Concurrent effect
+  ( -- * The effect
     Concurrent
   , runConcurrent
 

@@ -1,6 +1,11 @@
 -- | Lifted version of "Control.Concurrent.Chan".
 module Effectful.Concurrent.Chan
-  ( Chan
+  ( -- * The effect
+    Concurrent
+  , runConcurrent
+
+    -- * Chan
+  , Chan
   , newChan
   , writeChan
   , readChan

@@ -1,5 +1,5 @@
 module Effectful.Concurrent
-  ( -- * Concurrent effect
+  ( -- * The effect
     Concurrent
   , runConcurrent
 

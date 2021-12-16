@@ -1,7 +1,10 @@
 -- | Lifted version of "System.IO".
 module Effectful.FileSystem.IO
-  ( FileSystem
+  ( -- * The effect
+    FileSystem
   , runFileSystem
+
+    -- * IO
   , IOMode (..)
   , Handle
   , IO.stdin

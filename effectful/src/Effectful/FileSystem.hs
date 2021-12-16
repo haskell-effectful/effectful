@@ -1,5 +1,6 @@
 module Effectful.FileSystem
-    ( FileSystem
+    ( -- * The effect
+      FileSystem
     , runFileSystem
 
       -- * Actions on directories

@@ -50,8 +50,6 @@ module Effectful.Dispatch.Static
   , unEff
   ) where
 
-import GHC.Stack (HasCallStack)
-
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
@@ -83,8 +81,5 @@ unsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
 --
 -- - Unlifted 'Eff' operations must not be run in a thread distinct from the
 --   caller of 'unsafeUnliftIO', but it's not checked anywhere.
-unsafeUnliftIO
-  :: HasCallStack
-  => ((forall r. Eff es r -> IO r) -> IO a)
-  -> Eff es a
+unsafeUnliftIO :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
 unsafeUnliftIO k = unsafeEff $ \es -> k (`unEff` es)

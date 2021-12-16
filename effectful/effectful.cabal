@@ -153,7 +153,7 @@ benchmark bench
        if impl(ghc < 9.2)
           build-depends: fused-effects
 
-       if impl(ghc < 9.2)
+       if impl(ghc < 9.3)
           build-depends: polysemy
 
     build-depends:    base

@@ -69,7 +69,7 @@ library
     build-depends:  effectful-internal-utils
 
     build-depends:    base                >= 4.13      && < 5
-                    , containers          >= 0.6.5.1
+                    , containers          >= 0.6
                     , exceptions          >= 0.10.4
                     , monad-control       >= 1.0.3
                     , primitive           >= 0.7.3.0

@@ -16,7 +16,7 @@
 -- @transformers@ package includes additional operations
 -- 'Control.Monad.Trans.Writer.Strict.pass' and
 -- 'Control.Monad.Trans.Writer.Strict.censor', they don't cooperate with runtime
--- exceptions very well, so they're deliberately omitted here.
+-- exceptions very well, so they're deliberately omitted.
 module Effectful.Writer.Local
   ( Writer
   , runWriter

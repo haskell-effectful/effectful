@@ -1,25 +1,25 @@
--- | Support for checked exceptions.
+-- | Support for handling errors of a particular type, i.e. checked exceptions.
 --
--- /Note:/ the 'Error' effect provided by this module is a suitable replacement
--- for the "Control.Monad.Trans.Except" monad transformer found in the
+-- /Note:/ the 'Error' effect is a suitable replacement for the
+-- 'Control.Monad.Trans.Except.ExceptT' monad transformer from the
 -- @transformers@ library. It is __not__ a general mechanism for handling
--- exceptions, that's what functions from the "Control.Monad.Catch" module are
--- for.
+-- exceptions, that's what functions from the @exceptions@ library are for (see
+-- "Control.Monad.Catch" for more information).
 --
--- For example, if you want to catch an unchecked exception like
--- 'Control.Exception.ErrorCall' you could use 'Control.Monad.Catch.catch':
+-- In particular, exceptions of type @e@ are distinct from errors of type @e@
+-- and will __not__ be caught by functions from this module:
 --
 -- >>> import qualified Control.Monad.Catch as E
 -- >>> let boom = error "BOOM!"
--- >>> runEff $ boom `E.catch` \(_::ErrorCall) -> pure "caught an error"
--- "caught an error"
---
--- In particular, unchecked exceptions of type @e@ are distinct from errors of
--- type @e@ and will __not__ be caught by functions from this module:
---
--- >>> runEff . runError @ErrorCall $ boom `catchError` \_ (_::ErrorCall) -> pure "caught an error"
+-- >>> runEff . runError @ErrorCall $ boom `catchError` \_ (_::ErrorCall) -> pure "caught"
 -- *** Exception: BOOM!
 -- ...
+--
+-- If you want to catch regular exceptions, you should use
+-- 'Control.Monad.Catch.catch' (or a similar function):
+--
+-- >>> runEff $ boom `E.catch` \(_::ErrorCall) -> pure "caught"
+-- "caught"
 --
 -- On the other hand, functions for safe finalization and management of
 -- resources such as 'Control.Monad.Catch.finally' and
@@ -27,7 +27,7 @@
 --
 -- >>> let display = liftIO . putStrLn
 -- >>> :{
--- runEff . fmap (first snd) . runError @String $ do
+-- runEff . fmap (either (Left . snd) Right) . runError @String $ do
 --   E.bracket_ (display "Beginning.")
 --              (display "Cleaning up.")
 --              (display "Computing." >> throwError "oops" >> display "More.")
@@ -61,7 +61,7 @@ import GHC.Stack
 import Effectful.Dispatch.Static
 import Effectful.Monad
 
--- | Provide the capability of handling errors of type @e@.
+-- | Provide the ability to handle errors of type @e@.
 newtype Error e :: Effect where
   Error :: ErrorId -> Error e m r
 
@@ -167,6 +167,3 @@ catchErrorIO eid m handler = do
     if eid == etag
       then handler e cs
       else throwIO err
-
--- $setup
--- >>> import Data.Bifunctor

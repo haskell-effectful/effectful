@@ -296,7 +296,7 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
 ----------------------------------------
 -- Primitive
 
--- | An effect to perform primitive state-transformer actions.
+-- | Provide the ability to perform primitive state-transformer actions.
 data Prim :: Effect where
   Prim :: Prim m r
 

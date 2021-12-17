@@ -1,3 +1,21 @@
+-- | The 'Writer' effect.
+--
+-- Represented as an 'MVar' underneath, therefore:
+--
+-- - shareable between multiple threads,
+--
+-- - slower than "Effectful.Writer.Local".
+--
+-- /Warning:/ 'Writer'\'s state will be accumulated via __left-associated__ uses
+-- of '<>', which makes it unsuitable for use with types for which such pattern
+-- is inefficient. __This applies, in particular, to the standard list type__,
+-- which makes the 'Writer' effect pretty niche.
+--
+-- /Note:/ while the 'Control.Monad.Trans.Writer.Strict.Writer' from the
+-- @transformers@ package includes additional operations
+-- 'Control.Monad.Trans.Writer.Strict.pass' and
+-- 'Control.Monad.Trans.Writer.Strict.censor', they don't cooperate with runtime
+-- exceptions very well, so they're deliberately omitted.
 module Effectful.Writer.Shared
   ( Writer
   , runWriter

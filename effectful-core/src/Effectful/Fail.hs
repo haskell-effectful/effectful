@@ -1,3 +1,4 @@
+-- | Provider of the 'MonadFail' instance for 'Eff'.
 module Effectful.Fail
   ( Fail(..)
   , runFail

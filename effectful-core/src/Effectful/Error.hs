@@ -1,28 +1,49 @@
-{- | Support for checked exceptions.
-
-The 'Error' effect provided by this module is a suitable replacement for the
-'Control.Monad.Except.ExceptT' monad transformer found in the @mtl@ library. It
-is __not__ intended to be a general mechanism for catching errors, that's what
-functions from the "Control.Monad.Catch" module are for.
-
-For example, if you want to catch an unchecked exception like
-'Control.Exception.ErrorCall' you could use 'Control.Monad.Catch.catch':
-
->>> import qualified Control.Monad.Catch as E
->>> :{
-  let boom :: Eff es String
-      boom = error "BOOM!"
-  in
-  runEff $ boom `E.catch` \(e :: ErrorCall) -> pure "caught some error"
-:}
-"caught some error"
-
--}
+-- | Support for checked exceptions.
+--
+-- /Note:/ the 'Error' effect provided by this module is a suitable replacement
+-- for the "Control.Monad.Trans.Except" monad transformer found in the
+-- @transformers@ library. It is __not__ a general mechanism for handling
+-- exceptions, that's what functions from the "Control.Monad.Catch" module are
+-- for.
+--
+-- For example, if you want to catch an unchecked exception like
+-- 'Control.Exception.ErrorCall' you could use 'Control.Monad.Catch.catch':
+--
+-- >>> import qualified Control.Monad.Catch as E
+-- >>> let boom = error "BOOM!"
+-- >>> runEff $ boom `E.catch` \(_::ErrorCall) -> pure "caught an error"
+-- "caught an error"
+--
+-- In particular, unchecked exceptions of type @e@ are distinct from errors of
+-- type @e@ and will __not__ be caught by functions from this module:
+--
+-- >>> runEff . runError @ErrorCall $ boom `catchError` \_ (_::ErrorCall) -> pure "caught an error"
+-- *** Exception: BOOM!
+-- ...
+--
+-- On the other hand, functions for safe finalization and management of
+-- resources such as 'Control.Monad.Catch.finally' and
+-- 'Control.Monad.Catch.bracket' work as expected:
+--
+-- >>> let display = liftIO . putStrLn
+-- >>> :{
+-- runEff . fmap (first snd) . runError @String $ do
+--   E.bracket_ (display "Beginning.")
+--              (display "Cleaning up.")
+--              (display "Computing." >> throwError "oops" >> display "More.")
+-- :}
+-- Beginning.
+-- Computing.
+-- Cleaning up.
+-- Left "oops"
+--
 module Effectful.Error
- ( Error
+ ( -- * The effect
+   Error
  , runError
  , throwError
  , catchError
+ , handleError
  , tryError
 
  -- * Re-exports
@@ -40,9 +61,11 @@ import GHC.Stack
 import Effectful.Dispatch.Static
 import Effectful.Monad
 
+-- | Provide the capability of handling errors of type @e@.
 newtype Error e :: Effect where
   Error :: ErrorId -> Error e m r
 
+-- | Handle errors of type @e@.
 runError
   :: forall e es a. Typeable e
   => Eff (Error e : es) a
@@ -60,18 +83,23 @@ runError m = unsafeEff $ \es0 -> mask $ \release -> do
       Left ex -> tryHandler ex eid (\cs e -> Left (cs, e))
                $ throwIO ex
 
+-- | Throw an error of type @e@.
 throwError
   :: forall e es a. (HasCallStack, Typeable e, Error e :> es)
   => e
+  -- ^ The error.
   -> Eff es a
 throwError e = unsafeEff $ \es -> do
   IdE (Error eid) <- getEnv @(Error e) es
   throwIO $ ErrorEx eid callStack e
 
+-- | Handle an error of type @e@.
 catchError
   :: forall e es a. (Typeable e, Error e :> es)
   => Eff es a
+  -- ^ The inner computation.
   -> (CallStack -> e -> Eff es a)
+  -- ^ A handler for errors in the inner computation.
   -> Eff es a
 catchError m handler = unsafeEff $ \es -> do
   IdE (Error eid) <- getEnv @(Error e) es
@@ -80,9 +108,23 @@ catchError m handler = unsafeEff $ \es -> do
     checkSizeEnv size es
     unEff (handler cs e) es
 
+-- | The same as @'flip' 'catchError'@, which is useful in situations where the
+-- code for the handler is shorter.
+handleError
+  :: forall e es a. (Typeable e, Error e :> es)
+  => (CallStack -> e -> Eff es a)
+  -- ^ A handler for errors in the inner computation.
+  -> Eff es a
+  -- ^ The inner computation.
+  -> Eff es a
+handleError = flip catchError
+
+-- | Similar to 'catchError', but returns an 'Either' result which is a 'Right'
+-- if no error was thrown and a 'Left' otherwise.
 tryError
   :: forall e es a. (Typeable e, Error e :> es)
   => Eff es a
+  -- ^ The inner computation.
   -> Eff es (Either (CallStack, e) a)
 tryError m = (Right <$> m) `catchError` \es e -> pure $ Left (es, e)
 
@@ -125,3 +167,6 @@ catchErrorIO eid m handler = do
     if eid == etag
       then handler e cs
       else throwIO err
+
+-- $setup
+-- >>> import Data.Bifunctor

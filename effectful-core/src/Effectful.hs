@@ -8,10 +8,10 @@ module Effectful
 
   -- * Running the 'Eff' monad
 
-  -- ** Pure operations
+  -- ** Pure computations
   , runPureEff
 
-  -- ** Operations with side effects
+  -- ** Computations with side effects
   , IOE
   , runEff
 
@@ -32,7 +32,7 @@ module Effectful
   , interpret
   , reinterpret
 
-  -- ** Handling local 'Eff' operations
+  -- ** Handling local 'Eff' computations
   , LocalEnv
 
   -- *** Unlifts

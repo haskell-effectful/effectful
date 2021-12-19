@@ -6,15 +6,74 @@ module Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
 import Effectful.Monad
 
--- | Run 'Eff' operations asynchronously via the @async@ library.
+-- | Provide the ability to run 'Eff' computations concurrently in multiple
+-- threads and communicate between them.
 --
--- /Note:/ thread local state changes in 'Eff' operations run asynchronously
--- will not affect the parent thread.
+-- /Warning:/ unless you stick to high level functions from the
+-- 'Effectful.Concurrent.Async.withAsync' family, the 'Concurrent' effect makes
+-- it possible to escape the scope of any scoped effect operation. Consider the
+-- following:
 --
--- /TODO:/ write about 'Concurrent' not respecting scoped operations.
+-- >>> import qualified Effectful.Reader as R
+-- >>> let printAsk msg = liftIO . putStrLn . (msg ++) . (": " ++) =<< R.ask
+-- >>> :{
+--   runEff . R.runReader "GLOBAL" . runConcurrent $ do
+--     a <- R.local (const "LOCAL") $ do
+--       a <- async $ do
+--         printAsk "child (first)"
+--         threadDelay 20000
+--         printAsk "child (second)"
+--       threadDelay 10000
+--       printAsk "parent (inside)"
+--       pure a
+--     printAsk "parent (outside)"
+--     wait a
+-- :}
+-- child (first): LOCAL
+-- parent (inside): LOCAL
+-- parent (outside): GLOBAL
+-- child (second): LOCAL
+--
+-- Note that the asynchronous computation doesn't respect the scope of
+-- 'Effectful.Reader.local', i.e. the child thread still behaves like it's
+-- inside the 'Effectful.Reader.local' block, even though the parent thread
+-- already got out of it.
+--
+-- This is because the value provided by the 'Effectful.Reader.Reader' effect is
+-- thread local, i.e. each thread manages its own version of it. For the
+-- 'Effectful.Reader.Reader' it is the only reasonable behavior, it wouldn't be
+-- very useful if its "read only" value was affected by calls to
+-- 'Effectful.Reader.local' from its parent or child threads.
+--
+-- However, the cut isn't so clear if it comes to effects that provide access to
+-- a mutable state. That's why the @State@ and the @Writer@ effects come in two
+-- flavors, thread local and shared:
+--
+-- >>> import qualified Effectful.State.Local as SL
+-- >>> :{
+--   runEff . SL.execState "Hi" . runConcurrent $ do
+--     replicateConcurrently_ 3 $ SL.modify (++ "!")
+-- :}
+-- "Hi"
+--
+-- >>> import qualified Effectful.State.Shared as SS
+-- >>> :{
+--   runEff . SS.execState "Hi" . runConcurrent $ do
+--     replicateConcurrently_ 3 $ SS.modify (++ "!")
+-- :}
+-- "Hi!!!"
+--
+-- In the first example state modification made concurrently are not reflected
+-- in the parent thread because the value is thread local, but in the second
+-- example they are, because the value is shared.
+--
 data Concurrent :: Effect where
   Concurrent :: Concurrent m r
 
 -- | Run the 'Concurrent' effect.
 runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a
 runConcurrent = evalEffect (IdA Concurrent)
+
+-- $setup
+-- >>> import Effectful.Concurrent
+-- >>> import Effectful.Concurrent.Async

@@ -1,93 +1,92 @@
 module Effectful.FileSystem
-    ( -- * The effect
-      FileSystem
-    , runFileSystem
+  ( FileSystem
+  , runFileSystem
 
-      -- * Actions on directories
-    , createDirectory
-    , createDirectoryIfMissing
-    , removeDirectory
-    , removeDirectoryRecursive
-    , removePathForcibly
-    , renameDirectory
-    , listDirectory
-    , getDirectoryContents
+    -- * Actions on directories
+  , createDirectory
+  , createDirectoryIfMissing
+  , removeDirectory
+  , removeDirectoryRecursive
+  , removePathForcibly
+  , renameDirectory
+  , listDirectory
+  , getDirectoryContents
 
-      -- ** Current working directory
-    , getCurrentDirectory
-    , setCurrentDirectory
-    , withCurrentDirectory
+    -- ** Current working directory
+  , getCurrentDirectory
+  , setCurrentDirectory
+  , withCurrentDirectory
 
-      -- * Pre-defined directories
-    , getHomeDirectory
-    , getXdgDirectory
-    , getXdgDirectoryList
-    , getAppUserDataDirectory
-    , getUserDocumentsDirectory
-    , getTemporaryDirectory
+    -- * Pre-defined directories
+  , getHomeDirectory
+  , getXdgDirectory
+  , getXdgDirectoryList
+  , getAppUserDataDirectory
+  , getUserDocumentsDirectory
+  , getTemporaryDirectory
 
-      -- * Actions on files
-    , removeFile
-    , renameFile
-    , renamePath
-    , copyFile
-    , copyFileWithMetadata
-    , getFileSize
-    , canonicalizePath
-    , makeAbsolute
-    , makeRelativeToCurrentDirectory
+    -- * Actions on files
+  , removeFile
+  , renameFile
+  , renamePath
+  , copyFile
+  , copyFileWithMetadata
+  , getFileSize
+  , canonicalizePath
+  , makeAbsolute
+  , makeRelativeToCurrentDirectory
 
-      -- * Existence tests
-    , doesPathExist
-    , doesFileExist
-    , doesDirectoryExist
-    , findExecutable
-    , findExecutables
-    , findExecutablesInDirectories
-    , findFile
-    , findFiles
-    , findFileWith
-    , findFilesWith
+    -- * Existence tests
+  , doesPathExist
+  , doesFileExist
+  , doesDirectoryExist
+  , findExecutable
+  , findExecutables
+  , findExecutablesInDirectories
+  , findFile
+  , findFiles
+  , findFileWith
+  , findFilesWith
 
-      -- * Symbolic links
-    , createFileLink
-    , createDirectoryLink
-    , removeDirectoryLink
-    , pathIsSymbolicLink
-    , getSymbolicLinkTarget
+    -- * Symbolic links
+  , createFileLink
+  , createDirectoryLink
+  , removeDirectoryLink
+  , pathIsSymbolicLink
+  , getSymbolicLinkTarget
 
-      -- * Permissions
-    , getPermissions
-    , setPermissions
-    , copyPermissions
+    -- * Permissions
+  , getPermissions
+  , setPermissions
+  , copyPermissions
 
-      -- * Timestamps
-    , getAccessTime
-    , getModificationTime
-    , setAccessTime
-    , setModificationTime
+    -- * Timestamps
+  , getAccessTime
+  , getModificationTime
+  , setAccessTime
+  , setModificationTime
 
-      -- * Re-exports
+    -- * Re-exports
 
-      -- ** Pre-defined directories
-    , D.XdgDirectory(..)
-    , D.XdgDirectoryList(..)
+    -- ** Pre-defined directories
+  , D.XdgDirectory(..)
+  , D.XdgDirectoryList(..)
 
-      -- ** Existence tests
-    , D.exeExtension
+    -- ** Existence tests
+  , D.exeExtension
 
-      -- ** Permissions
-    , D.Permissions
-    , D.emptyPermissions
-    , D.readable
-    , D.writable
-    , D.executable
-    , D.searchable
-    , D.setOwnerReadable
-    , D.setOwnerWritable
-    , D.setOwnerExecutable
-    , D.setOwnerSearchable
-    ) where
+    -- ** Permissions
+  , D.Permissions
+  , D.emptyPermissions
+  , D.readable
+  , D.writable
+  , D.executable
+  , D.searchable
+  , D.setOwnerReadable
+  , D.setOwnerWritable
+  , D.setOwnerExecutable
+  , D.setOwnerSearchable
+  ) where
 
 import Data.Time (UTCTime)
 import qualified System.Directory as D

@@ -29,10 +29,10 @@ newtype IdA :: Effect -> Type where
 
 -- | A constraint that requires that a particular effect @e@ is a member of the
 -- type-level list @es@. This is used to parameterize an 'Effectful.Monad.Eff'
--- operation over an arbitrary list of effects, so long as @e@ is /somewhere/ in
--- the list.
+-- computation over an arbitrary list of effects, so long as @e@ is /somewhere/
+-- in the list.
 --
--- For example, an operation that only needs access to a mutable value of type
+-- For example, a computation that only needs access to a mutable value of type
 -- 'Integer' would likely use the following type:
 --
 -- @

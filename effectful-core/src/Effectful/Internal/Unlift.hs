@@ -35,7 +35,7 @@ import Effectful.Internal.Utils
 ----------------------------------------
 -- Unlift strategies
 
--- | The strategy to use when unlifting 'Eff' operations via 'withRunInIO',
+-- | The strategy to use when unlifting 'Eff' computations via 'withRunInIO',
 -- 'Effectful.Monad.withEffToIO' or the 'Effectful.Dispatch.Dynamic.localUnlift'
 -- family.
 data UnliftStrategy
@@ -105,7 +105,7 @@ seqUnlift k es unEff = do
     if tid `eqThreadId` tid0
       then unEff m es
       else error
-         $ "If you want to use the unlifting function to run Eff operations "
+         $ "If you want to use the unlifting function to run Eff computations "
         ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
 
 -- | Concurrent unlift for various strategies and limits.

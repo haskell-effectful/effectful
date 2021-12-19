@@ -25,12 +25,12 @@
 -- resources such as 'Control.Monad.Catch.finally' and
 -- 'Control.Monad.Catch.bracket' work as expected:
 --
--- >>> let display = liftIO . putStrLn
+-- >>> let msg = liftIO . putStrLn
 -- >>> :{
 -- runEff . fmap (either (Left . snd) Right) . runError @String $ do
---   E.bracket_ (display "Beginning.")
---              (display "Cleaning up.")
---              (display "Computing." >> throwError "oops" >> display "More.")
+--   E.bracket_ (msg "Beginning.")
+--              (msg "Cleaning up.")
+--              (msg "Computing." >> throwError "oops" >> msg "More.")
 -- :}
 -- Beginning.
 -- Computing.

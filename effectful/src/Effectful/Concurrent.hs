@@ -1,6 +1,19 @@
+-- | Lifted version of "Control.Concurrent".
+--
+-- For functions that spawn threads, the order of preference for their usage is
+-- recommended as follows:
+--
+-- 1) High level functions from "Effectful.Concurrent.Async" such as
+--    'Effectful.Concurrent.Async.withAsync',
+--    'Effectful.Concurrent.Async.concurrently' or
+--    'Effectful.Concurrent.Async.mapConcurrently'.
+--
+-- 2) Low level functions from "Effectful.Concurrent.Async" such as
+--    'Effectful.Concurrent.Async.async'.
+--
+-- 3) Low level functions from "Effectful.Concurrent" such as 'forkIO'.
 module Effectful.Concurrent
-  ( -- * The effect
-    Concurrent
+  ( Concurrent
   , runConcurrent
 
     -- * Basic concurrency operations

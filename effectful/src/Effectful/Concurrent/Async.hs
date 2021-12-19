@@ -1,7 +1,7 @@
 {-# LANGUAGE UndecidableInstances #-}
+-- | Lifted version of "Control.Concurrent.Async".
 module Effectful.Concurrent.Async
-  ( -- * The effect
-    Concurrent
+  ( Concurrent
   , runConcurrent
 
   -- * Asynchronous actions

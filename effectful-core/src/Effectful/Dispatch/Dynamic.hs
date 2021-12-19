@@ -7,7 +7,7 @@ module Effectful.Dispatch.Dynamic
   , interpret
   , reinterpret
 
-  -- ** Handling local 'Eff' operations
+  -- ** Handling local 'Eff' computations
   , LocalEnv
 
   -- *** Unlifts
@@ -121,7 +121,7 @@ localUnliftIO (LocalEnv les) strategy k = case strategy of
   SeqUnlift      -> liftIO $ seqUnliftIO les k
   ConcUnlift p l -> liftIO $ concUnliftIO les p l k
 
--- | Utility for lifting 'Eff' operations of type
+-- | Utility for lifting 'Eff' computations of type
 --
 -- @'Eff' es a -> 'Eff' es b@
 --
@@ -129,7 +129,7 @@ localUnliftIO (LocalEnv les) strategy k = case strategy of
 --
 -- @'Eff' localEs a -> 'Eff' localEs b@
 --
--- /Note:/ the operation must not run its argument in a separate thread,
+-- /Note:/ the computation must not run its argument in a separate thread,
 -- attempting to do so will result in a runtime error.
 withLiftMap
   :: (HasCallStack, SuffixOf es handlerEs)
@@ -145,7 +145,7 @@ withLiftMap !_ k = unsafeEff $ \es -> do
     seqUnliftIO localEs $ \unlift -> do
       (`unEff` es) . mapEff . unsafeEff_ $ unlift m
 
--- | Utility for lifting 'IO' operations of type
+-- | Utility for lifting 'IO' computations of type
 --
 -- @'IO' a -> 'IO' b@
 --
@@ -153,11 +153,11 @@ withLiftMap !_ k = unsafeEff $ \es -> do
 --
 -- @'Eff' localEs a -> 'Eff' localEs b@
 --
--- /Note:/ the operation must not run its argument in a separate thread,
+-- /Note:/ the computation must not run its argument in a separate thread,
 -- attempting to do so will result in a runtime error.
 --
 -- Useful e.g. for lifting the unmasking function in
--- 'Control.Exception.mask'-like operations:
+-- 'Control.Exception.mask'-like computations:
 --
 -- >>> :{
 -- data Fork :: Effect where
@@ -187,10 +187,10 @@ withLiftMapIO !_ k = k $ \mapIO m -> unsafeEff $ \es -> do
 
 -- | Create a local lifting and unlifting function with the given strategy.
 --
--- Useful for lifting complicated 'Eff' operations where the monadic action
+-- Useful for lifting complicated 'Eff' computations where the monadic action
 -- shows in both positive (as a result) and negative (as an argument) position.
 --
--- /Note:/ depending on the operation you're lifting 'localUnlift' along with
+-- /Note:/ depending on the computation you're lifting 'localUnlift' along with
 -- 'withLiftMap' might be enough and is more efficient.
 localLiftUnlift
   :: (HasCallStack, SuffixOf es handlerEs)
@@ -213,11 +213,11 @@ localLiftUnlift (LocalEnv les) strategy k = case strategy of
 -- | Create a local unlifting function with the given strategy along with an
 -- unrestricted lifting function.
 --
--- Useful for lifting complicated 'IO' operations where the monadic action shows
--- in both positive (as a result) and negative (as an argument) position.
+-- Useful for lifting complicated 'IO' computations where the monadic action
+-- shows in both positive (as a result) and negative (as an argument) position.
 --
--- /Note:/ depending on the operation you're lifting 'localUnliftIO' along with
--- 'withLiftMapIO' might be enough and is more efficient.
+-- /Note:/ depending on the computation you're lifting 'localUnliftIO' along
+-- with 'withLiftMapIO' might be enough and is more efficient.
 localLiftUnliftIO
   :: (HasCallStack, SuffixOf es handlerEs, IOE :> es)
   => LocalEnv localEs handlerEs

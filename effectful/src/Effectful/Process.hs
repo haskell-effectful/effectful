@@ -1,8 +1,7 @@
 {-# LANGUAGE CPP #-}
 -- | Lifted version of "System.Process".
 module Effectful.Process
-  ( -- * The effect
-    Process
+  ( Process
   , runProcess
 
   -- * Running sub-processes

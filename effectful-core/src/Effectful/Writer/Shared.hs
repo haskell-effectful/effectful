@@ -1,7 +1,7 @@
 -- | Support for access to a write only value of a particular type, which is:
 --
--- - shareable between multiple threads (if you want each thead to manage their
---   own version of the value, see "Effectful.Writer.Local").
+-- - shared between multiple threads (if you want each thead to manage its own
+--   version of the value, see "Effectful.Writer.Local").
 --
 -- - slower than "Effectful.Writer.Local".
 --
@@ -30,7 +30,7 @@ import Control.Exception
 import Effectful.Dispatch.Static
 import Effectful.Monad
 
--- | Provide access to a strict (WHNF), shareable, write only value of type @w@.
+-- | Provide access to a strict (WHNF), shared, write only value of type @w@.
 newtype Writer w :: Effect where
   Writer :: MVar w -> Writer w m r
 

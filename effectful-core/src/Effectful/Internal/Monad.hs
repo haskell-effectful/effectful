@@ -84,12 +84,12 @@ import Effectful.Internal.Unlift
 
 type role Eff nominal representational
 
--- | The 'Eff' monad provides the implementation of an operation that performs
+-- | The 'Eff' monad provides the implementation of a computation that performs
 -- an arbitrary set of effects. In @'Eff' es a@, @es@ is a type-level list that
--- contains all the effects that the operation may perform. For example, an
--- operation that produces an 'Integer' by consuming a 'String' from the global
--- environment and acting upon a single mutable value of type 'Bool' would have
--- the following type:
+-- contains all the effects that the computation may perform. For example, a
+-- computation that produces an 'Integer' by consuming a 'String' from the
+-- global environment and acting upon a single mutable value of type 'Bool'
+-- would have the following type:
 --
 -- @
 -- 'Eff' '['Effectful.Reader.Reader' 'String', 'Effectful.State.State' 'Bool'] 'Integer'
@@ -97,7 +97,7 @@ type role Eff nominal representational
 --
 -- Normally, a concrete list of effects is not used to parameterize 'Eff'.
 -- Instead, the '(:>)' type class is used to express constraints on the list of
--- effects without coupling an operation to a concrete list of effects. For
+-- effects without coupling a computation to a concrete list of effects. For
 -- example, the above example would more commonly be expressed with the
 -- following type:
 --
@@ -105,15 +105,15 @@ type role Eff nominal representational
 -- ('Effectful.Reader.Reader' 'String' ':>' es, 'Effectful.State.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
 -- @
 --
--- This abstraction allows the operation to be used in functions that may
+-- This abstraction allows the computation to be used in functions that may
 -- perform other effects, and it also allows the effects to be handled in any
 -- order.
 newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
   deriving (Monoid, Semigroup)
 
--- | Run a pure 'Eff' operation.
+-- | Run a pure 'Eff' computation.
 --
--- For running operations with side effects see 'runEff'.
+-- For running computations with side effects see 'runEff'.
 runPureEff :: Eff '[] a -> a
 runPureEff (Eff m) =
   -- unsafePerformIO is safe here since IOE was not on the stack, so no IO with
@@ -134,14 +134,14 @@ unEff (Eff m) = m
 -- | Access the underlying 'IO' monad along with the environment.
 --
 -- This function is __unsafe__ because it can be used to introduce arbitrary
--- 'IO' actions into pure 'Eff' operations.
+-- 'IO' actions into pure 'Eff' computations.
 unsafeEff :: (Env es -> IO a) -> Eff es a
 unsafeEff m = Eff (oneShot m)
 
 -- | Access the underlying 'IO' monad.
 --
 -- This function is __unsafe__ because it can be used to introduce arbitrary
--- 'IO' actions into pure 'Eff' operations.
+-- 'IO' actions into pure 'Eff' computations.
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
 
@@ -264,13 +264,13 @@ instance Fail :> es => MonadFail (Eff es) where
 ----------------------------------------
 -- IO
 
--- | Run arbitrary 'IO' operations via 'MonadIO' or 'MonadUnliftIO'.
+-- | Run arbitrary 'IO' computations via 'MonadIO' or 'MonadUnliftIO'.
 newtype IOE :: Effect where
   IOE :: UnliftStrategy -> IOE m r
 
--- | Run an 'Eff' operation with side effects.
+-- | Run an 'Eff' computation with side effects.
 --
--- For running pure operations see 'runPureEff'.
+-- For running pure computations see 'runPureEff'.
 runEff :: Eff '[IOE] a -> IO a
 runEff m = unEff (evalEffect (IdA (IOE SeqUnlift)) m) =<< emptyEnv
 
@@ -300,7 +300,7 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
 data Prim :: Effect where
   Prim :: Prim m r
 
--- | Run an 'Eff' operation with primitive state-transformer actions.
+-- | Run an 'Eff' computation with primitive state-transformer actions.
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
 runPrim = evalEffect (IdA Prim)
 
@@ -325,8 +325,8 @@ newtype LocalEnv (localEs :: [Effect]) (handlerEs :: [Effect]) = LocalEnv (Env l
 type EffectHandler e es
   = forall a localEs. HasCallStack
   => LocalEnv localEs es
-  -- ^ Capture of the local environment for handling local 'Eff' operations when
-  -- @e@ is a higher order effect.
+  -- ^ Capture of the local environment for handling local 'Eff' computations
+  -- when @e@ is a higher order effect.
   -> e (Eff localEs) a
   -- ^ The effect performed in the local environment.
   -> Eff es a

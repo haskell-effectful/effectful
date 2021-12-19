@@ -12,4 +12,4 @@ data FileSystem :: Effect where
 
 -- | Run the 'FileSystem' effect.
 runFileSystem :: IOE :> es => Eff (FileSystem : es) a -> Eff es a
-runFileSystem = evalEffect (IdE FileSystem)
+runFileSystem = evalEffect (IdA FileSystem)

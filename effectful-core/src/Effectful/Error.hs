@@ -72,7 +72,7 @@ runError
 runError m = unsafeEff $ \es0 -> mask $ \release -> do
   eid <- newErrorId
   size0 <- sizeEnv es0
-  es <- unsafeConsEnv (IdE (Error @e eid)) noRelinker es0
+  es <- unsafeConsEnv (IdA (Error @e eid)) noRelinker es0
   r <- tryErrorIO release eid es `onException` unsafeTailEnv size0 es
   unsafeTailEnv size0 es
   pure r
@@ -89,7 +89,7 @@ throwError
   -- ^ The error.
   -> Eff es a
 throwError e = unsafeEff $ \es -> do
-  IdE (Error eid) <- getEnv @(Error e) es
+  IdA (Error eid) <- getEnv @(Error e) es
   throwIO $ ErrorEx eid callStack e
 
 -- | Handle an error of type @e@.
@@ -101,7 +101,7 @@ catchError
   -- ^ A handler for errors in the inner computation.
   -> Eff es a
 catchError m handler = unsafeEff $ \es -> do
-  IdE (Error eid) <- getEnv @(Error e) es
+  IdA (Error eid) <- getEnv @(Error e) es
   size <- sizeEnv es
   catchErrorIO eid (unEff m es) $ \cs e -> do
     checkSizeEnv size es

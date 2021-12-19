@@ -17,4 +17,4 @@ data Concurrent :: Effect where
 
 -- | Run the 'Concurrent' effect.
 runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a
-runConcurrent = evalEffect (IdE Concurrent)
+runConcurrent = evalEffect (IdA Concurrent)

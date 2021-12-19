@@ -43,8 +43,8 @@ module Effectful.Internal.Monad
   -- ** Handler
   , EffectHandler
   , LocalEnv(..)
-  , Handler(..)
-  , runHandler
+  , HandlerA(..)
+  , runHandlerA
 
   -- *** Sending operations
   , send
@@ -151,12 +151,12 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 -- | Get the current 'UnliftStrategy'.
 unliftStrategy :: IOE :> es => Eff es UnliftStrategy
 unliftStrategy = do
-  IdE (IOE unlift) <- getEffect
+  IdA (IOE unlift) <- getEffect
   pure unlift
 
 -- | Locally override the 'UnliftStrategy' with the given value.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
-withUnliftStrategy unlift = localEffect $ \_ -> IdE (IOE unlift)
+withUnliftStrategy unlift = localEffect $ \_ -> IdA (IOE unlift)
 
 -- | Create an unlifting function with the current 'UnliftStrategy'.
 --
@@ -272,7 +272,7 @@ newtype IOE :: Effect where
 --
 -- For running pure operations see 'runPureEff'.
 runEff :: Eff '[IOE] a -> IO a
-runEff m = unEff (evalEffect (IdE (IOE SeqUnlift)) m) =<< emptyEnv
+runEff m = unEff (evalEffect (IdA (IOE SeqUnlift)) m) =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
@@ -302,7 +302,7 @@ data Prim :: Effect where
 
 -- | Run an 'Eff' operation with primitive state-transformer actions.
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
-runPrim = evalEffect (IdE Prim)
+runPrim = evalEffect (IdA Prim)
 
 instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
@@ -334,26 +334,26 @@ type EffectHandler e es
 -- | An adapter for dynamically dispatched effects.
 --
 -- Represents the effect handler bundled along with its environment.
-data Handler :: Effect -> Type where
-  Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
+data HandlerA :: Effect -> Type where
+  HandlerA :: !(Env es) -> !(EffectHandler e es) -> HandlerA e
 
 -- | Run the effect with the given handler.
-runHandler :: Handler e -> Eff (e : es) a -> Eff es a
-runHandler e m = unsafeEff $ \es0 -> do
+runHandlerA :: HandlerA e -> Eff (e : es) a -> Eff es a
+runHandlerA e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e relinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es)
   where
-    relinker :: Relinker Handler e
-    relinker = Relinker $ \relink (Handler handlerEs handle) -> do
+    relinker :: Relinker HandlerA e
+    relinker = Relinker $ \relink (HandlerA handlerEs handle) -> do
       newHandlerEs <- relink handlerEs
-      pure $ Handler newHandlerEs handle
+      pure $ HandlerA newHandlerEs handle
 
 -- | Send an operation of the given effect to its handler for execution.
 send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
 send op = unsafeEff $ \es -> do
-  Handler handlerEs handle <- getEnv es
+  HandlerA handlerEs handle <- getEnv es
   unEff (handle (LocalEnv es) op) handlerEs
 
 ----------------------------------------

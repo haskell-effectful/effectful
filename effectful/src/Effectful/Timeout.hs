@@ -15,7 +15,7 @@ data Timeout :: Effect where
 
 -- | Run the 'Timeout' effect.
 runTimeout :: IOE :> es => Eff (Timeout : es) a -> Eff es a
-runTimeout = evalEffect (IdE Timeout)
+runTimeout = evalEffect (IdA Timeout)
 
 -- | Lifted 'T.timeout'.
 timeout

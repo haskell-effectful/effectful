@@ -1,6 +1,6 @@
 module Effectful.Dispatch.Static
   ( -- * Low level API
-    IdE(..)
+    IdA(..)
 
     -- ** Running
   , runEffect

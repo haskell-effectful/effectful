@@ -37,7 +37,7 @@ runResource m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   istate <- R.createInternalState
   mask $ \restore -> do
-    es <- unsafeConsEnv (IdE (Resource istate)) noRelinker es0
+    es <- unsafeConsEnv (IdA (Resource istate)) noRelinker es0
     a <- restore (unEff m es) `catch` \e -> do
       unsafeTailEnv size0 es
       RI.stateCleanupChecked (Just e) istate
@@ -52,18 +52,18 @@ runResource m = unsafeEff $ \es0 -> do
 -- | Get the 'R.InternalState' of the current 'Resource' effect.
 getInternalState :: Resource :> es => Eff es R.InternalState
 getInternalState = do
-  IdE (Resource istate) <- getEffect
+  IdA (Resource istate) <- getEffect
   pure istate
 
 -- | Run the 'Resource' effect with existing 'R.InternalState'.
 --
 -- /Note:/ the 'R.InternalState' will not be closed at the end.
 runInternalState :: R.InternalState -> Eff (Resource : es) a -> Eff es a
-runInternalState istate = evalEffect $ IdE (Resource istate)
+runInternalState istate = evalEffect $ IdA (Resource istate)
 
 ----------------------------------------
 -- Orphan instance
 
 instance (IOE :> es, Resource :> es) => R.MonadResource (Eff es) where
   liftResourceT (RI.ResourceT m) = unsafeEff $ \es -> do
-    getEnv es >>= \(IdE (Resource istate)) -> m istate
+    getEnv es >>= \(IdA (Resource istate)) -> m istate

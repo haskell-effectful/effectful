@@ -82,6 +82,11 @@ listen m = unsafeEff $ \es -> do
       modifyMVar_ v0 $ \w0 -> let w = w0 <> w1 in w `seq` pure w
       pure w1
 
+-- | Execute an action and append its output to the overall output of the
+-- 'Writer', then return the final value along with a function of the recorded
+-- output.
+--
+-- @'listens' f m ≡ 'Data.Bifunctor.second' f '<$>' 'listen' m@
 listens :: (Writer w :> es, Monoid w) => (w -> b) -> Eff es a -> Eff es (a, b)
 listens f m = do
   (a, w) <- listen m

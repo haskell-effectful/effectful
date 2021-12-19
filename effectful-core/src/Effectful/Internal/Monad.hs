@@ -88,8 +88,8 @@ type role Eff nominal representational
 -- an arbitrary set of effects. In @'Eff' es a@, @es@ is a type-level list that
 -- contains all the effects that the operation may perform. For example, an
 -- operation that produces an 'Integer' by consuming a 'String' from the global
--- environment and acting upon a single mutable cell containing a 'Bool' would
--- have the following type:
+-- environment and acting upon a single mutable value of type 'Bool' would have
+-- the following type:
 --
 -- @
 -- 'Eff' '['Effectful.Reader.Reader' 'String', 'Effectful.State.State' 'Bool'] 'Integer'

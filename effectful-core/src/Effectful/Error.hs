@@ -6,8 +6,8 @@
 -- exceptions, that's what functions from the @exceptions@ library are for (see
 -- "Control.Monad.Catch" for more information).
 --
--- In particular, exceptions of type @e@ are distinct from errors of type @e@
--- and will __not__ be caught by functions from this module:
+-- In particular, regular exceptions of type @e@ are distinct from errors of
+-- type @e@ and will __not__ be caught by functions from this module:
 --
 -- >>> import qualified Control.Monad.Catch as E
 -- >>> let boom = error "BOOM!"
@@ -38,8 +38,7 @@
 -- Left "oops"
 --
 module Effectful.Error
- ( -- * The effect
-   Error
+ ( Error
  , runError
  , throwError
  , catchError

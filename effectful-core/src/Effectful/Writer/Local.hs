@@ -1,8 +1,6 @@
--- | The 'Writer' effect.
+-- | Support for access to a write only value of a particular type, which is:
 --
--- Represented as a pure value underneath, therefore:
---
--- - thread local (if you need the state to be shared between threads, have a
+-- - thread local (if you want the value to be shared between threads, have a
 --   look at "Effectful.Writer.Shared"),
 --
 -- - very fast.
@@ -16,7 +14,7 @@
 -- @transformers@ package includes additional operations
 -- 'Control.Monad.Trans.Writer.Strict.pass' and
 -- 'Control.Monad.Trans.Writer.Strict.censor', they don't cooperate with runtime
--- exceptions very well, so they're deliberately omitted.
+-- exceptions very well, so they're deliberately omitted here.
 module Effectful.Writer.Local
   ( Writer
   , runWriter

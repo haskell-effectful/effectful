@@ -1,4 +1,4 @@
--- | The 'Reader' effect.
+-- | Support for access to a read only value of a particular type.
 module Effectful.Reader
   ( Reader
   , runReader

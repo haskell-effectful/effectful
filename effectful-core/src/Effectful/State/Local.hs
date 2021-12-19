@@ -1,8 +1,6 @@
--- | The 'State' effect.
+-- | Support for access to a mutable value of a particular type, which is:
 --
--- Represented as a pure value underneath, therefore:
---
--- - thread local (if you need the state to be shared between threads, have a
+-- - thread local (if you want the value to be shared between threads, have a
 --   look at "Effectful.State.Shared"),
 --
 -- - very fast.
@@ -24,7 +22,7 @@ module Effectful.State.Local
 import Effectful.Dispatch.Static
 import Effectful.Monad
 
--- | Provide access to a strict (WHNF), thread local, mutable state of type @s@.
+-- | Provide access to a strict (WHNF), thread local, mutable value of type @s@.
 newtype State s :: Effect where
   State :: s -> State s m r
 

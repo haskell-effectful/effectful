@@ -1,8 +1,7 @@
--- | The 'State' effect.
+-- | Support for access to a mutable value of a particular type, which is:
 --
--- Represented as an 'MVar' underneath, therefore:
---
--- - shareable between multiple threads,
+-- - shareable between multiple threads (if you want each thead to manage their
+--   own version of the value, see "Effectful.State.Local").
 --
 -- - slower than "Effectful.State.Local".
 --
@@ -25,7 +24,7 @@ import Control.Concurrent.MVar
 import Effectful.Dispatch.Static
 import Effectful.Monad
 
--- | Provide access to a strict (WHNF), shareable, mutable state of type @s@.
+-- | Provide access to a strict (WHNF), shareable, mutable value of type @s@.
 newtype State s :: Effect where
   State :: MVar s -> State s m r
 

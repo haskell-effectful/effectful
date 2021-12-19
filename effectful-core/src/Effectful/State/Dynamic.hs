@@ -27,7 +27,7 @@ import Effectful.Monad
 import qualified Effectful.State.Local as L
 import qualified Effectful.State.Shared as S
 
--- | Provide access to a mutable state of type @s@.
+-- | Provide access to a mutable value of type @s@.
 data State s :: Effect where
   Get    :: State s m s
   Put    :: s -> State s m ()

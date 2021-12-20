@@ -46,8 +46,8 @@ import Effectful.Monad
 -- 'Effectful.Reader.local' from its parent or child threads.
 --
 -- However, the cut isn't so clear if it comes to effects that provide access to
--- a mutable state. That's why the @State@ and the @Writer@ effects come in two
--- flavors, thread local and shared:
+-- a mutable state. That's why primitive @State@ and @Writer@ effects come in
+-- two flavors, local and shared:
 --
 -- >>> import qualified Effectful.State.Local as SL
 -- >>> :{

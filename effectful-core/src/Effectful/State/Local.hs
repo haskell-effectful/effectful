@@ -5,6 +5,26 @@
 --
 -- - very fast.
 --
+-- /Note:/ unlike 'Control.Monad.Trans.State.StateT', the 'State' effect doesn't
+-- lose state modifications in presence of runtime exceptions:
+--
+-- >>> import Control.Exception (ErrorCall)
+-- >>> import Control.Monad.Catch
+--
+-- >>> import qualified Control.Monad.Trans.State.Strict as S
+-- >>> :{
+--   (`S.execStateT` "Hi") . handle (\(_::ErrorCall) -> pure ()) $ do
+--     S.modify (++ " there!")
+--     error "oops"
+-- :}
+-- "Hi"
+--
+-- >>> :{
+--   runEff . execState "Hi" . handle (\(_::ErrorCall) -> pure ()) $ do
+--     modify (++ " there!")
+--     error "oops"
+-- :}
+-- "Hi there!"
 module Effectful.State.Local
   ( State
   , runState

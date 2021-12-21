@@ -5,13 +5,12 @@
 --
 -- - very fast.
 --
--- /Note:/ unlike 'Control.Monad.Trans.State.StateT', the 'State' effect doesn't
--- lose state modifications in presence of runtime exceptions:
---
--- >>> import Control.Exception (ErrorCall)
--- >>> import Control.Monad.Catch
+-- /Note:/ unlike the 'Control.Monad.Trans.State.StateT' monad transformer from
+-- the @transformers@ library, the 'State' effect doesn't lose state
+-- modifications when an exception is received:
 --
 -- >>> import qualified Control.Monad.Trans.State.Strict as S
+--
 -- >>> :{
 --   (`S.execStateT` "Hi") . handle (\(_::ErrorCall) -> pure ()) $ do
 --     S.modify (++ " there!")
@@ -126,3 +125,7 @@ modifyM
   => (s -> Eff es s) -- ^ The monadic function to modify the state.
   -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)
+
+-- $setup
+-- >>> import Control.Exception (ErrorCall)
+-- >>> import Control.Monad.Catch

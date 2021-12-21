@@ -24,7 +24,7 @@ module Effectful.Writer.Local
   , listens
   ) where
 
-import Control.Exception
+import Control.Exception (onException, mask)
 
 import Effectful.Dispatch.Static
 import Effectful.Monad
@@ -57,7 +57,18 @@ tell w = stateEffect $ \(IdA (Writer w0)) -> ((), IdA (Writer (w0 <> w)))
 --
 -- /Note:/ if a runtime exception is received while the action is executed, the
 -- partial output of the action will still be appended to the overall output of
--- the 'Writer'.
+-- the 'Writer':
+--
+-- >>> :{
+--   runEff . execWriter @String $ do
+--     tell "Hi"
+--     handle (\(_::ErrorCall) -> pure ((), "")) $ do
+--       tell " there"
+--       listen $ do
+--         tell "!"
+--         error "oops"
+-- :}
+-- "Hi there!"
 listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
 listen m = unsafeEff $ \es -> mask $ \restore -> do
   w0 <- stateEnv es $ \(IdA (Writer w)) -> (w, IdA (Writer mempty))
@@ -77,3 +88,7 @@ listens :: (Writer w :> es, Monoid w) => (w -> b) -> Eff es a -> Eff es (a, b)
 listens f m = do
   (a, w) <- listen m
   pure (a, f w)
+
+-- $setup
+-- >>> import Control.Monad.Catch
+-- >>> import Control.Exception (ErrorCall)

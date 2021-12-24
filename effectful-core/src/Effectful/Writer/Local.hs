@@ -90,5 +90,5 @@ listens f m = do
   pure (a, f w)
 
 -- $setup
--- >>> import Control.Monad.Catch
 -- >>> import Control.Exception (ErrorCall)
+-- >>> import Control.Monad.Catch

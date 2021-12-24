@@ -3,7 +3,7 @@
 -- - shared between multiple threads (if you want each thead to manage its own
 --   version of the value, see "Effectful.Writer.Local").
 --
--- - slower than "Effectful.Writer.Local".
+-- - slightly slower than "Effectful.Writer.Local".
 --
 -- /Warning:/ 'Writer'\'s state will be accumulated via __left-associated__ uses
 -- of '<>', which makes it unsuitable for use with types for which such pattern
@@ -25,7 +25,7 @@ module Effectful.Writer.Shared
   ) where
 
 import Control.Concurrent.MVar
-import Control.Exception
+import Control.Exception (onException, uninterruptibleMask)
 
 import Effectful.Dispatch.Static
 import Effectful.Monad
@@ -61,7 +61,18 @@ tell w1 = unsafeEff $ \es -> do
 --
 -- /Note:/ if a runtime exception is received while the action is executed, the
 -- partial output of the action will still be appended to the overall output of
--- the 'Writer'.
+-- the 'Writer':
+--
+-- >>> :{
+--   runEff . execWriter @String $ do
+--     tell "Hi"
+--     handle (\(_::ErrorCall) -> pure ((), "")) $ do
+--       tell " there"
+--       listen $ do
+--         tell "!"
+--         error "oops"
+-- :}
+-- "Hi there!"
 listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
 listen m = unsafeEff $ \es -> do
   -- The mask is uninterruptible because modifyMVar_ v0 in the merge function
@@ -91,3 +102,7 @@ listens :: (Writer w :> es, Monoid w) => (w -> b) -> Eff es a -> Eff es (a, b)
 listens f m = do
   (a, w) <- listen m
   pure (a, f w)
+
+-- $setup
+-- >>> import Control.Exception (ErrorCall)
+-- >>> import Control.Monad.Catch

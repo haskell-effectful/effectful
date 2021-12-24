@@ -3,8 +3,27 @@
 -- - shared between multiple threads (if you want each thead to manage its own
 --   version of the value, see "Effectful.State.Local").
 --
--- - slower than "Effectful.State.Local".
+-- - slightly slower than "Effectful.State.Local".
 --
+-- /Note:/ unlike the 'Control.Monad.Trans.State.StateT' monad transformer from
+-- the @transformers@ library, the 'State' effect doesn't lose state
+-- modifications when an exception is received:
+--
+-- >>> import qualified Control.Monad.Trans.State.Strict as S
+--
+-- >>> :{
+--   (`S.execStateT` "Hi") . handle (\(_::ErrorCall) -> pure ()) $ do
+--     S.modify (++ " there!")
+--     error "oops"
+-- :}
+-- "Hi"
+--
+-- >>> :{
+--   runEff . execState "Hi" . handle (\(_::ErrorCall) -> pure ()) $ do
+--     modify (++ " there!")
+--     error "oops"
+-- :}
+-- "Hi there!"
 module Effectful.State.Shared
   ( State
   , runState
@@ -102,3 +121,7 @@ stateM f = unsafeEff $ \es -> do
 -- /Note:/ this function gets an exclusive access to the state for its duration.
 modifyM :: State s :> es => (s -> Eff es s) -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)
+
+-- $setup
+-- >>> import Control.Exception (ErrorCall)
+-- >>> import Control.Monad.Catch

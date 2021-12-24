@@ -1,8 +1,6 @@
 -- | Support for handling errors of a particular type, i.e. checked exceptions.
 --
--- /Note:/ the 'Error' effect is a suitable replacement for the
--- 'Control.Monad.Trans.Except.ExceptT' monad transformer from the
--- @transformers@ library. It is __not__ a general mechanism for handling
+-- The 'Error' effect is __not__ a general mechanism for handling regular
 -- exceptions, that's what functions from the @exceptions@ library are for (see
 -- "Control.Monad.Catch" for more information).
 --
@@ -37,6 +35,38 @@
 -- Cleaning up.
 -- Left "oops"
 --
+-- /Note:/ unlike the 'Control.Monad.Trans.Except.ExceptT' monad transformer
+-- from the @transformers@ library, the order in which you handle the 'Error'
+-- effect with regard to other stateful effects does not matter. Consider the
+-- following:
+--
+-- >>> import qualified Control.Monad.State.Strict as T
+-- >>> import qualified Control.Monad.Except as T
+--
+-- >>> let m1 = (T.modify (++ " there!") >> T.throwError "oops") `T.catchError` \_ -> pure ()
+--
+-- >>> (`T.runStateT` "Hi") . T.runExceptT $ m1
+-- (Right (),"Hi there!")
+--
+-- >>> T.runExceptT . (`T.runStateT` "Hi") $ m1
+-- Right ((),"Hi")
+--
+-- Here, whether state modifications within the @catchError@ block are lost or
+-- not depends on the shape of the monad transformer stack, which is surprising
+-- and can be a source of subtle bugs. On the other hand:
+--
+-- >>> import Effectful.State.Local
+--
+-- >>> let m2 = (modify (++ " there!") >> throwError "oops") `catchError` \_ (_::String) -> pure ()
+--
+-- >>> runEff . runState "Hi" . runError @String $ m2
+-- (Right (),"Hi there!")
+--
+-- >>> runEff . runError @String . runState "Hi" $ m2
+-- Right ((),"Hi there!")
+--
+-- Here, no matter the order of effects, state modifications within the
+-- @catchError@ block always persist, giving predictable behavior.
 module Effectful.Error
  ( Error
  , runError

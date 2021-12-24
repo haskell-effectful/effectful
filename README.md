@@ -20,8 +20,8 @@ Main features:
 
 2. Easy to use API (no boilerplate code and dealing with arcane types).
 
-3. Correct semantics in presence of runtime exceptions (no more lost or
-   discarded state).
+3. Correct semantics in presence of runtime exceptions (no more lost state
+   modifications).
 
 4. Seamless integration with the existing ecosystem (`exceptions`,
    `monad-control`, `unliftio-core`, `resourcet` etc.).

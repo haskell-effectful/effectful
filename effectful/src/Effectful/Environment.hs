@@ -28,7 +28,7 @@ data Environment :: Effect where
 
 -- | Run the 'Environment' effect.
 runEnvironment :: IOE :> es => Eff (Environment : es) a -> Eff es a
-runEnvironment = evalEffect (IdA Environment)
+runEnvironment = evalData (DataA Environment)
 
 -- | Lifted 'E.getArgs'.
 getArgs :: Environment :> es => Eff es [String]

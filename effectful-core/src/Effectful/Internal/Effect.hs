@@ -8,7 +8,7 @@
 module Effectful.Internal.Effect
   ( Effect
   , (:>)(..)
-  , IdA(..)
+  , DataA(..)
 
   -- * Utils
   , SuffixOf
@@ -24,8 +24,8 @@ import GHC.TypeLits
 type Effect = (Type -> Type) -> Type -> Type
 
 -- | An adapter for statically dispatched effects.
-newtype IdA :: Effect -> Type where
-  IdA :: (forall m r. e m r) -> IdA e
+newtype DataA :: Effect -> Type where
+  DataA :: (forall m r. e m r) -> DataA e
 
 -- | A constraint that requires that a particular effect @e@ is a member of the
 -- type-level list @es@. This is used to parameterize an 'Effectful.Monad.Eff'

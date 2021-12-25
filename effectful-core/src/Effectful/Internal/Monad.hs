@@ -44,7 +44,7 @@ module Effectful.Internal.Monad
   , EffectHandler
   , LocalEnv(..)
   , HandlerA(..)
-  , runHandlerA
+  , runHandler
 
   -- *** Sending operations
   , send
@@ -52,16 +52,16 @@ module Effectful.Internal.Monad
   -- ** Primitive
 
   -- *** Running
-  , runEffect
-  , evalEffect
-  , execEffect
+  , runData
+  , evalData
+  , execData
 
   -- *** Modification
-  , getEffect
-  , putEffect
-  , stateEffect
-  , stateEffectM
-  , localEffect
+  , getData
+  , putData
+  , stateData
+  , stateDataM
+  , localData
   ) where
 
 import Control.Applicative (liftA2)
@@ -151,12 +151,12 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 -- | Get the current 'UnliftStrategy'.
 unliftStrategy :: IOE :> es => Eff es UnliftStrategy
 unliftStrategy = do
-  IdA (IOE unlift) <- getEffect
+  DataA (IOE unlift) <- getData
   pure unlift
 
 -- | Locally override the 'UnliftStrategy' with the given value.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
-withUnliftStrategy unlift = localEffect $ \_ -> IdA (IOE unlift)
+withUnliftStrategy unlift = localData $ \_ -> DataA (IOE unlift)
 
 -- | Create an unlifting function with the current 'UnliftStrategy'.
 --
@@ -272,7 +272,7 @@ newtype IOE :: Effect where
 --
 -- For running pure computations see 'runPureEff'.
 runEff :: Eff '[IOE] a -> IO a
-runEff m = unEff (evalEffect (IdA (IOE SeqUnlift)) m) =<< emptyEnv
+runEff m = unEff (evalData (DataA (IOE SeqUnlift)) m) =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
@@ -302,7 +302,7 @@ data Prim :: Effect where
 
 -- | Run an 'Eff' computation with primitive state-transformer actions.
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
-runPrim = evalEffect (IdA Prim)
+runPrim = evalData (DataA Prim)
 
 instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
@@ -338,8 +338,8 @@ data HandlerA :: Effect -> Type where
   HandlerA :: !(Env es) -> !(EffectHandler e es) -> HandlerA e
 
 -- | Run the effect with the given handler.
-runHandlerA :: HandlerA e -> Eff (e : es) a -> Eff es a
-runHandlerA e m = unsafeEff $ \es0 -> do
+runHandler :: HandlerA e -> Eff (e : es) a -> Eff es a
+runHandler e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e relinker es0)
             (unsafeTailEnv size0)
@@ -359,44 +359,44 @@ send op = unsafeEff $ \es -> do
 ----------------------------------------
 -- Helpers
 
-runEffect :: adapter e -> Eff (e : es) a -> Eff es (a, adapter e)
-runEffect e0 m = unsafeEff $ \es0 -> do
+runData :: DataA e -> Eff (e : es) a -> Eff es (a, DataA e)
+runData e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e0 noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> (,) <$> unEff m es <*> getEnv es)
 
-evalEffect :: adapter e -> Eff (e : es) a -> Eff es a
-evalEffect e m = unsafeEff $ \es0 -> do
+evalData :: DataA e -> Eff (e : es) a -> Eff es a
+evalData e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es)
 
-execEffect :: adapter e -> Eff (e : es) a -> Eff es (adapter e)
-execEffect e0 m = unsafeEff $ \es0 -> do
+execData :: DataA e -> Eff (e : es) a -> Eff es (DataA e)
+execData e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e0 noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es *> getEnv es)
 
-getEffect :: e :> es => Eff es (adapter e)
-getEffect = unsafeEff $ \es -> getEnv es
+getData :: e :> es => Eff es (DataA e)
+getData = unsafeEff $ \es -> getEnv es
 
-putEffect :: e :> es => adapter e -> Eff es ()
-putEffect e = unsafeEff $ \es -> putEnv es e
+putData :: e :> es => DataA e -> Eff es ()
+putData e = unsafeEff $ \es -> putEnv es e
 
-stateEffect :: e :> es => (adapter e -> (a, adapter e)) -> Eff es a
-stateEffect f = unsafeEff $ \es -> stateEnv es f
+stateData :: e :> es => (DataA e -> (a, DataA e)) -> Eff es a
+stateData f = unsafeEff $ \es -> stateEnv es f
 
-stateEffectM :: e :> es => (adapter e -> Eff es (a, adapter e)) -> Eff es a
-stateEffectM f = unsafeEff $ \es -> E.mask $ \release -> do
+stateDataM :: e :> es => (DataA e -> Eff es (a, DataA e)) -> Eff es a
+stateDataM f = unsafeEff $ \es -> E.mask $ \release -> do
   (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv es
   putEnv es e
   pure a
 
-localEffect :: e :> es => (adapter e -> adapter e) -> Eff es a -> Eff es a
-localEffect f m = unsafeEff $ \es -> do
+localData :: e :> es => (DataA e -> DataA e) -> Eff es a -> Eff es a
+localData f m = unsafeEff $ \es -> do
   E.bracket (stateEnv es $ \e -> (e, f e))
             (\e -> putEnv es e)
             (\_ -> unEff m es)

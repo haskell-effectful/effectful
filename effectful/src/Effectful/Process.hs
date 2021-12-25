@@ -58,7 +58,7 @@ data Process :: Effect where
   Process :: Process m r
 
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
-runProcess = evalEffect (IdA Process)
+runProcess = evalData (DataA Process)
 
 ----------------------------------------
 -- Running sub-processes

@@ -19,7 +19,7 @@ data Temporary :: Effect where
 
 -- | Run the 'Temporary' effect.
 runTemporary :: IOE :> es => Eff (Temporary : es) a -> Eff es a
-runTemporary = evalEffect (IdA Temporary)
+runTemporary = evalData (DataA Temporary)
 
 -- | Lifted 'T.withSystemTempFile'.
 withSystemTempFile

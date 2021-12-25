@@ -100,7 +100,7 @@ data FileSystem :: Effect where
 
 -- | Run the 'FileSystem' effect.
 runFileSystem :: IOE :> es => Eff (FileSystem : es) a -> Eff es a
-runFileSystem = evalEffect (IdA FileSystem)
+runFileSystem = evalData (DataA FileSystem)
 
 ----------------------------------------
 -- Actions on directories

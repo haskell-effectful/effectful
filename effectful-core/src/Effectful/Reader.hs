@@ -20,12 +20,12 @@ runReader
   :: r -- ^ An initial environment.
   -> Eff (Reader r : es) a
   -> Eff es a
-runReader r = evalEffect (IdA (Reader r))
+runReader r = evalData (DataA (Reader r))
 
 -- | Fetch the value of the environment.
 ask :: Reader r :> es => Eff es r
 ask = do
-  IdA (Reader r) <- getEffect
+  DataA (Reader r) <- getData
   pure r
 
 -- | Retrieve a function of the current environment.
@@ -46,4 +46,4 @@ local
   => (r -> r) -- ^ The function to modify the environment.
   -> Eff es a
   -> Eff es a
-local f = localEffect $ \(IdA (Reader r)) -> IdA (Reader (f r))
+local f = localData $ \(DataA (Reader r)) -> DataA (Reader (f r))

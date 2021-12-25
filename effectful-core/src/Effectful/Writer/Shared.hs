@@ -39,7 +39,7 @@ newtype Writer w :: Effect where
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
   v <- unsafeEff_ $ newMVar mempty
-  a <- evalEffect (IdA (Writer v)) m
+  a <- evalData (DataA (Writer v)) m
   (a, ) <$> unsafeEff_ (readMVar v)
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
@@ -47,13 +47,13 @@ runWriter m = do
 execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
   v <- unsafeEff_ $ newMVar mempty
-  _ <- evalEffect (IdA (Writer v)) m
+  _ <- evalData (DataA (Writer v)) m
   unsafeEff_ $ readMVar v
 
 -- | Append the given output to the overall output of the 'Writer'.
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
 tell w1 = unsafeEff $ \es -> do
-  IdA (Writer v) <- getEnv es
+  DataA (Writer v) <- getEnv es
   modifyMVar_ v $ \w0 -> let w = w0 <> w1 in w `seq` pure w
 
 -- | Execute an action and append its output to the overall output of the
@@ -81,14 +81,14 @@ listen m = unsafeEff $ \es -> do
   uninterruptibleMask $ \restore -> do
     v1 <- newMVar mempty
     -- Replace thread local MVar with a fresh one for isolated listening.
-    v0 <- stateEnv es $ \(IdA (Writer v)) -> (v, IdA (Writer v1))
+    v0 <- stateEnv es $ \(DataA (Writer v)) -> (v, DataA (Writer v1))
     a <- restore (unEff m es) `onException` merge es v0 v1
     (a, ) <$> merge es v0 v1
   where
     -- Merge results accumulated in the local MVar with the mainline. If an
     -- exception was received while listening, merge results recorded so far.
     merge es v0 v1 = do
-      putEnv es $ IdA (Writer v0)
+      putEnv es $ DataA (Writer v0)
       w1 <- readMVar v1
       modifyMVar_ v0 $ \w0 -> let w = w0 <> w1 in w `seq` pure w
       pure w1

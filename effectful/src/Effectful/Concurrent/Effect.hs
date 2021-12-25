@@ -72,7 +72,7 @@ data Concurrent :: Effect where
 
 -- | Run the 'Concurrent' effect.
 runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a
-runConcurrent = evalEffect (IdA Concurrent)
+runConcurrent = evalData (DataA Concurrent)
 
 -- $setup
 -- >>> import Effectful.Concurrent

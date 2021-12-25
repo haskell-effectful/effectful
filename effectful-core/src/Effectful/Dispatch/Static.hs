@@ -1,18 +1,18 @@
 module Effectful.Dispatch.Static
   ( -- * Low level API
-    IdA(..)
+    DataA(..)
 
     -- ** Running
-  , runEffect
-  , evalEffect
-  , execEffect
+  , runData
+  , evalData
+  , execData
 
     -- ** Modification
-  , getEffect
-  , putEffect
-  , stateEffect
-  , stateEffectM
-  , localEffect
+  , getData
+  , putData
+  , stateData
+  , stateDataM
+  , localData
 
     -- ** Unlifts
   , seqUnliftIO

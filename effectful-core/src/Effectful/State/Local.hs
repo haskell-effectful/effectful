@@ -52,7 +52,7 @@ runState
   -> Eff (State s : es) a
   -> Eff es (a, s)
 runState s0 m = do
-  (a, IdA (State s)) <- runEffect (IdA (State s0)) m
+  (a, DataA (State s)) <- runData (DataA (State s0)) m
   pure (a, s)
 
 -- | Run a 'State' effect with the given initial state and return the final
@@ -61,7 +61,7 @@ evalState
   :: s -- ^ An initial state.
   -> Eff (State s : es) a
   -> Eff es a -- ^ A return value.
-evalState s = evalEffect (IdA (State s))
+evalState s = evalData (DataA (State s))
 
 -- | Run a 'State' effect with the given initial state and return the final
 -- state, discarding the final value.
@@ -70,13 +70,13 @@ execState
   -> Eff (State s : es) a
   -> Eff es s
 execState s0 m = do
-  IdA (State s) <- execEffect (IdA (State s0)) m
+  DataA (State s) <- execData (DataA (State s0)) m
   pure s
 
 -- | Fetch the current value of the state.
 get :: State s :> es => Eff es s
 get = do
-  IdA (State s) <- getEffect
+  DataA (State s) <- getData
   pure s
 
 -- | Get a function of the current state.
@@ -90,14 +90,14 @@ gets f = f <$> get
 
 -- | Set the current state to the given value.
 put :: State s :> es => s -> Eff es ()
-put s = putEffect (IdA (State s))
+put s = putData (DataA (State s))
 
 -- | Apply the function to the current state and return a value.
 state
   :: State s :> es
   => (s -> (a, s)) -- ^ The function to modify the state.
   -> Eff es a
-state f = stateEffect $ \(IdA (State s0)) -> let (a, s) = f s0 in (a, IdA (State s))
+state f = stateData $ \(DataA (State s0)) -> let (a, s) = f s0 in (a, DataA (State s))
 
 -- | Apply the function to the current state.
 --
@@ -113,9 +113,9 @@ stateM
   :: State s :> es
   => (s -> Eff es (a, s)) -- ^ The function to modify the state.
   -> Eff es a
-stateM f = stateEffectM $ \(IdA (State s0)) -> do
+stateM f = stateDataM $ \(DataA (State s0)) -> do
   (a, s) <- f s0
-  pure (a, IdA (State s))
+  pure (a, DataA (State s))
 
 -- | Apply the monadic function to the current state.
 --

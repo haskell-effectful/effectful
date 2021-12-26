@@ -2,12 +2,12 @@ module Effectful.Dispatch.Static
   ( -- * Low level API
     DataA(..)
 
-    -- ** Running
+    -- ** Extending the environment
   , runData
   , evalData
   , execData
 
-    -- ** Modification
+    -- ** Data retrieval and update
   , getData
   , putData
   , stateData
@@ -17,6 +17,13 @@ module Effectful.Dispatch.Static
     -- ** Unlifts
   , seqUnliftIO
   , concUnliftIO
+
+    -- ** Utils
+  , unEff
+  , unsafeEff
+  , unsafeEff_
+  , unsafeLiftMapIO
+  , unsafeUnliftIO
 
     -- * Primitive API
   , Env
@@ -39,18 +46,8 @@ module Effectful.Dispatch.Static
   , putEnv
   , stateEnv
   , modifyEnv
-
-    -- * Unsafe 'Eff' operations
-  , unsafeEff
-  , unsafeEff_
-  , unsafeLiftMapIO
-  , unsafeUnliftIO
-
-    -- * Utils
-  , unEff
   ) where
 
-import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
 

@@ -6,7 +6,7 @@
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
 module Effectful.Internal.Monad
-  ( -- * Monad
+  ( -- * The 'Eff' monad
     Eff
   , runPureEff
 
@@ -22,11 +22,11 @@ module Effectful.Internal.Monad
   , IOE
   , runEff
 
-  -- * Primitive
+  -- * Prim
   , Prim
   , runPrim
 
-  -- ** Unlift strategies
+  -- * Unlift strategies
   , UnliftStrategy(..)
   , Persistence(..)
   , Limit(..)
@@ -34,29 +34,24 @@ module Effectful.Internal.Monad
   , withUnliftStrategy
   , withEffToIO
 
-  --- *** Low-level helpers
+  -- ** Low-level unlifts
   , seqUnliftIO
   , concUnliftIO
 
   -- * Effects
 
-  -- ** Handler
+  -- ** Dynamic dispatch
   , EffectHandler
   , LocalEnv(..)
   , HandlerA(..)
   , runHandler
-
-  -- *** Sending operations
   , send
 
-  -- ** Primitive
-
-  -- *** Running
+  -- ** Static dispatch
+  , DataA(..)
   , runData
   , evalData
   , execData
-
-  -- *** Modification
   , getData
   , putData
   , stateData
@@ -92,17 +87,16 @@ type role Eff nominal representational
 -- would have the following type:
 --
 -- @
--- 'Eff' '['Effectful.Reader.Reader' 'String', 'Effectful.State.State' 'Bool'] 'Integer'
+-- 'Eff' '['Effectful.Reader.Reader' 'String', 'Effectful.State.Local.State' 'Bool'] 'Integer'
 -- @
 --
 -- Normally, a concrete list of effects is not used to parameterize 'Eff'.
 -- Instead, the '(:>)' type class is used to express constraints on the list of
 -- effects without coupling a computation to a concrete list of effects. For
--- example, the above example would more commonly be expressed with the
--- following type:
+-- example, the above example would be expressed with the following type:
 --
 -- @
--- ('Effectful.Reader.Reader' 'String' ':>' es, 'Effectful.State.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
+-- ('Effectful.Reader.Reader' 'String' ':>' es, 'Effectful.State.Local.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
 -- @
 --
 -- This abstraction allows the computation to be used in functions that may
@@ -116,12 +110,12 @@ newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
 -- For running computations with side effects see 'runEff'.
 runPureEff :: Eff '[] a -> a
 runPureEff (Eff m) =
-  -- unsafePerformIO is safe here since IOE was not on the stack, so no IO with
-  -- side effects was performed (unless someone sneakily introduced side effects
-  -- with unsafeEff, but then all bets are off).
+  -- unsafeDupablePerformIO is safe here since IOE was not on the stack, so no
+  -- IO with side effects was performed (unless someone sneakily introduced side
+  -- effects with unsafeEff, but then all bets are off).
   --
   -- Moreover, internals don't allocate any resources that require explicit
-  -- cleanup actions to run, so the "Dupable" part should also be just fine.
+  -- cleanup actions to run.
   unsafeDupablePerformIO $ m =<< emptyEnv
 
 ----------------------------------------
@@ -164,7 +158,7 @@ withUnliftStrategy unlift = localData $ \_ -> DataA (IOE unlift)
 -- constraint for accurate stack traces in case an insufficiently powerful
 -- 'UnliftStrategy' is used and the unlifting function fails.
 --
--- /Note:/ the strategy is reset to 'SeqUnlift' for new threads.
+-- /Note:/ the strategy is reset to 'SeqUnlift' inside the continuation.
 withEffToIO
   :: (HasCallStack, IOE :> es)
   => ((forall r. Eff es r -> IO r) -> IO a)
@@ -309,7 +303,7 @@ instance Prim :> es => PrimMonad (Eff es) where
   primitive = unsafeEff_ . IO
 
 ----------------------------------------
--- Handler
+-- Dynamic dispatch
 
 type role LocalEnv nominal nominal
 
@@ -333,11 +327,11 @@ type EffectHandler e es
 
 -- | An adapter for dynamically dispatched effects.
 --
--- Represents the effect handler bundled along with its environment.
+-- Represents the effect handler bundled with its environment.
 data HandlerA :: Effect -> Type where
   HandlerA :: !(Env es) -> !(EffectHandler e es) -> HandlerA e
 
--- | Run the effect with the given handler.
+-- | Run a dynamically dispatched effect with the given handler.
 runHandler :: HandlerA e -> Eff (e : es) a -> Eff es a
 runHandler e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
@@ -357,8 +351,17 @@ send op = unsafeEff $ \es -> do
   unEff (handle (LocalEnv es) op) handlerEs
 
 ----------------------------------------
--- Helpers
+-- Static dispatch
 
+-- | An adapter for statically dispatched effects.
+--
+-- Represents an arbitrary data type with the appropriate number of phantom type
+-- parameters.
+newtype DataA :: Effect -> Type where
+  DataA :: (forall m r. e m r) -> DataA e
+
+-- | Run a statically dispatched effect with the given initial state and return
+-- the final value along with the final state.
 runData :: DataA e -> Eff (e : es) a -> Eff es (a, DataA e)
 runData e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
@@ -366,6 +369,8 @@ runData e0 m = unsafeEff $ \es0 -> do
             (unsafeTailEnv size0)
             (\es -> (,) <$> unEff m es <*> getEnv es)
 
+-- | Run a statically dispatched effect with the given initial state and return
+-- the final value, discarding the final state.
 evalData :: DataA e -> Eff (e : es) a -> Eff es a
 evalData e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
@@ -373,6 +378,8 @@ evalData e m = unsafeEff $ \es0 -> do
             (unsafeTailEnv size0)
             (\es -> unEff m es)
 
+-- | Run a statically dispatched effect with the given initial state and return
+-- the final state, discarding the final value.
 execData :: DataA e -> Eff (e : es) a -> Eff es (DataA e)
 execData e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
@@ -380,21 +387,27 @@ execData e0 m = unsafeEff $ \es0 -> do
             (unsafeTailEnv size0)
             (\es -> unEff m es *> getEnv es)
 
+-- | Fetch the current state of the effect.
 getData :: e :> es => Eff es (DataA e)
 getData = unsafeEff $ \es -> getEnv es
 
+-- | Set the current state of the effect to the given value.
 putData :: e :> es => DataA e -> Eff es ()
 putData e = unsafeEff $ \es -> putEnv es e
 
+-- | Apply the function to the current state of the effect and return a value.
 stateData :: e :> es => (DataA e -> (a, DataA e)) -> Eff es a
 stateData f = unsafeEff $ \es -> stateEnv es f
 
+-- | Apply the monadic function to the current state of the effect and return a
+-- value.
 stateDataM :: e :> es => (DataA e -> Eff es (a, DataA e)) -> Eff es a
 stateDataM f = unsafeEff $ \es -> E.mask $ \release -> do
   (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv es
   putEnv es e
   pure a
 
+-- | Execute a computation with a temporarily modified state of the effect.
 localData :: e :> es => (DataA e -> DataA e) -> Eff es a -> Eff es a
 localData f m = unsafeEff $ \es -> do
   E.bracket (stateEnv es $ \e -> (e, f e))

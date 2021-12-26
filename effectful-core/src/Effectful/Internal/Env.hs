@@ -417,7 +417,7 @@ unsafeTailEnv len (Env fork gref _) = case fork of
 
 -- | Extract a specific data type from the environment.
 getEnv
-  :: forall e es adapter. e :> es
+  :: forall e adapter es. e :> es
   => Env es
   -> IO (adapter e)
 getEnv env = do
@@ -426,7 +426,7 @@ getEnv env = do
 
 -- | Replace the data type in the environment with a new value (in place).
 putEnv
-  :: forall e es adapter. e :> es
+  :: forall e adapter es. e :> es
   => Env es
   -> adapter e
   -> IO ()
@@ -436,7 +436,7 @@ putEnv env e = do
 
 -- | Modify the data type in the environment (in place) and return a value.
 stateEnv
-  :: forall e es adapter a. e :> es
+  :: forall e adapter es a. e :> es
   => Env es
   -> (adapter e -> (a, adapter e))
   -> IO a
@@ -448,7 +448,7 @@ stateEnv env f = do
 
 -- | Modify the data type in the environment (in place).
 modifyEnv
-  :: forall e es adapter. e :> es
+  :: forall e adapter es. e :> es
   => Env es
   -> (adapter e -> adapter e)
   -> IO ()

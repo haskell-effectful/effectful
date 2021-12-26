@@ -32,7 +32,8 @@ module Effectful.Dispatch.Dynamic
   ) where
 
 import Control.Monad.IO.Unlift
-import GHC.Stack
+import Data.Kind
+import GHC.Stack (HasCallStack)
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
@@ -229,6 +230,17 @@ localLiftUnliftIO
 localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
   SeqUnlift      -> liftIO $ seqUnliftIO les $ k unsafeEff_
   ConcUnlift p l -> liftIO $ concUnliftIO les p l $ k unsafeEff_
+
+----------------------------------------
+-- Utils
+
+-- | Require that the second list of effects is a suffix of the first one.
+--
+-- In other words, 'SuffixOf' @es@ @baseEs@ means "a suffix of @es@ is
+-- @baseEs@".
+type family SuffixOf (es :: [Effect]) (baseEs :: [Effect]) :: Constraint where
+  SuffixOf   baseEs baseEs = ()
+  SuffixOf (e : es) baseEs = SuffixOf es baseEs
 
 -- $setup
 -- >>> import Control.Concurrent

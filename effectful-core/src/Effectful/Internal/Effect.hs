@@ -8,10 +8,6 @@
 module Effectful.Internal.Effect
   ( Effect
   , (:>)(..)
-  , DataA(..)
-
-  -- * Utils
-  , SuffixOf
 
   -- * Re-exports
   , Type
@@ -23,10 +19,6 @@ import GHC.TypeLits
 -- | The kind of effects.
 type Effect = (Type -> Type) -> Type -> Type
 
--- | An adapter for statically dispatched effects.
-newtype DataA :: Effect -> Type where
-  DataA :: (forall m r. e m r) -> DataA e
-
 -- | A constraint that requires that a particular effect @e@ is a member of the
 -- type-level list @es@. This is used to parameterize an 'Effectful.Monad.Eff'
 -- computation over an arbitrary list of effects, so long as @e@ is /somewhere/
@@ -36,7 +28,7 @@ newtype DataA :: Effect -> Type where
 -- 'Integer' would likely use the following type:
 --
 -- @
--- 'Effectful.State.State' 'Integer' ':>' es => 'Effectful.Monad.Eff' es ()
+-- 'Effectful.State.Local.State' 'Integer' ':>' es => 'Effectful.Monad.Eff' es ()
 -- @
 class (e :: Effect) :> (es :: [Effect]) where
   -- | Get the position of @e@ in @es@.
@@ -59,11 +51,3 @@ instance {-# OVERLAPPING #-} e :> (e : es) where
 
 instance e :> es => e :> (x : es) where
   reifyIndex = 1 + reifyIndex @e @es
-
--- | Require that the second list of effects is a suffix of the first one.
---
--- In other words, 'SuffixOf' @es@ @baseEs@ means "a suffix of @es@ is
--- @baseEs@".
-type family SuffixOf (es :: [Effect]) (baseEs :: [Effect]) :: Constraint where
-  SuffixOf   baseEs baseEs = ()
-  SuffixOf (e : es) baseEs = SuffixOf es baseEs

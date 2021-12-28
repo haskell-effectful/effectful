@@ -1,3 +1,4 @@
+{-# LANGUAGE MagicHash #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- | The environment for the 'Effectful.Internal.Monad.Eff' monad.
 --
@@ -42,7 +43,7 @@ import Control.Monad
 import Control.Monad.Primitive
 import Data.IORef
 import Data.Primitive.SmallArray
-import GHC.Exts (Any)
+import GHC.Exts (Any, SmallMutableArray#)
 import GHC.Stack (HasCallStack)
 import Unsafe.Coerce
 import qualified Data.IntMap.Strict as IM
@@ -421,7 +422,7 @@ getEnv
   => Env es
   -> IO (adapter e)
 getEnv env = do
-  (i, es) <- getLocation (reifyIndex @e @es) env
+  Location i es <- getLocation (reifyIndex @e @es) env
   fromAny <$> readSmallArray es i
 
 -- | Replace the data type in the environment with a new value (in place).
@@ -431,7 +432,7 @@ putEnv
   -> adapter e
   -> IO ()
 putEnv env e = do
-  (i, es) <- getLocation (reifyIndex @e @es) env
+  Location i es <- getLocation (reifyIndex @e @es) env
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place) and return a value.
@@ -441,7 +442,7 @@ stateEnv
   -> (adapter e -> (a, adapter e))
   -> IO a
 stateEnv env f = do
-  (i, es) <- getLocation (reifyIndex @e @es) env
+  Location i es <- getLocation (reifyIndex @e @es) env
   (a, e) <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
   pure a
@@ -453,7 +454,7 @@ modifyEnv
   -> (adapter e -> adapter e)
   -> IO ()
 modifyEnv env f = do
-  (i, es) <- getLocation (reifyIndex @e @es) env
+  Location i es <- getLocation (reifyIndex @e @es) env
   e <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
 
@@ -469,13 +470,17 @@ emptyEnvRef = do
   fs <- newSmallArray 0 undefinedData
   newIORef $ EnvRef 0 es fs
 
+-- | Location with unboxed fields to make GHC generate Core without unnecessary
+-- reboxing around the local 'go' function from 'getLocation'.
+data Location = Location !Int !(SmallMutableArray RealWorld Any)
+
 -- | Determine location of the data type in the environment.
 getLocation
   :: Int
   -> Env es
-  -> IO (Int, SmallMutableArray RealWorld Any)
+  -> IO Location
 getLocation ixE (Env fork ref _) = do
-  EnvRef n es _ <- readIORef ref
+  EnvRef n es@(SmallMutableArray es#) _ <- readIORef ref
   -- Optimized for the common access pattern:
   --
   -- - Most application code has no access to forks, in which case we look at
@@ -484,25 +489,25 @@ getLocation ixE (Env fork ref _) = do
   -- - Effect handlers will most likely access the newest fork with handler
   --   specific effects for reinterpretation.
   case fork of
-    NoFork -> pure (ix n, es)
+    NoFork -> pure $ Location (ix n) es
     Forks _ baseIx lref forks -> do
       EnvRef ln les _ <- readIORef lref
       let i = ix (baseIx + ln)
       if i >= baseIx
-        then pure (i - baseIx, les)
-        else go es i forks
+        then pure $ Location (i - baseIx) les
+        else go es# i forks
   where
-    go :: SmallMutableArray RealWorld Any
+    go :: SmallMutableArray# RealWorld Any
        -> Int
        -> Forks
-       -> IO (Int, SmallMutableArray RealWorld Any)
-    go es i = \case
-      NoFork -> pure (i, es)
+       -> IO Location
+    go es# i = \case
+      NoFork -> pure $ Location i (SmallMutableArray es#)
       Forks _ baseIx lref forks -> do
         EnvRef _ les _ <- readIORef lref
         if i >= baseIx
-          then pure (i - baseIx, les)
-          else go es i forks
+          then pure $ Location (i - baseIx) les
+          else go es# i forks
 
     ix :: Int -> Int
     ix n = n - ixE - 1

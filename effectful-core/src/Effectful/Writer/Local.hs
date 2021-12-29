@@ -55,9 +55,9 @@ tell w = stateData $ \(DataA (Writer w0)) -> ((), DataA (Writer (w0 <> w)))
 -- | Execute an action and append its output to the overall output of the
 -- 'Writer'.
 --
--- /Note:/ if a runtime exception is received while the action is executed, the
--- partial output of the action will still be appended to the overall output of
--- the 'Writer':
+-- /Note:/ if an exception is received while the action is executed, the partial
+-- output of the action will still be appended to the overall output of the
+-- 'Writer':
 --
 -- >>> :{
 --   runEff . execWriter @String $ do

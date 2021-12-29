@@ -97,11 +97,11 @@ filesize n = bgroup (show n)
 #ifdef VERSION_eff
     , bench "eff"          $ nfAppIO eff_calculateFileSizesDeep (take n files)
 #endif
-#ifdef VERSION_polysemy
-    , bench "polysemy"     $ nfAppIO poly_calculateFileSizesDeep (take n files)
-#endif
 #ifdef VERSION_mtl
     , bench "mtl"          $ nfAppIO mtl_calculateFileSizesDeep (take n files)
+#endif
+#ifdef VERSION_polysemy
+    , bench "polysemy"     $ nfAppIO poly_calculateFileSizesDeep (take n files)
 #endif
     ]
   ]

@@ -43,7 +43,7 @@ module Effectful.Internal.Monad
   , EffectStyle
 
   -- ** Dynamic dispatch
-  , EffectHandler
+  , DynamicEffectHandler
   , LocalEnv(..)
   , DynamicEffect(..)
   , runHandler
@@ -324,7 +324,7 @@ type role LocalEnv nominal nominal
 newtype LocalEnv (localEs :: [Effect]) (handlerEs :: [Effect]) = LocalEnv (Env localEs)
 
 -- | Type signature of the effect handler.
-type EffectHandler e es
+type DynamicEffectHandler e es
   = forall a localEs. HasCallStack
   => LocalEnv localEs es
   -- ^ Capture of the local environment for handling local 'Eff' computations
@@ -337,7 +337,7 @@ type EffectHandler e es
 --
 -- Represents the effect handler bundled with its environment.
 data DynamicEffect :: Effect -> Type where
-  DynamicEffect :: !(Env es) -> !(EffectHandler e es) -> DynamicEffect e
+  DynamicEffect :: !(Env es) -> !(DynamicEffectHandler e es) -> DynamicEffect e
 
 -- | Run a dynamically dispatched effect with the given handler.
 runHandler

@@ -26,16 +26,29 @@ module Effectful
   -- * 'Effect' handlers
   , EffectStyle
   , DynamicEffect
-  , StaticEffect
+  , StaticEffect(..)
 
   -- ** Sending operations to the handler
   , send
 
   -- ** Basic handlers
+  , DynamicEffectHandler
   , runDynamic
   , rerunDynamic
   , interpretDynamic
   , reinterpretDynamic
+
+    -- ** Extending the environment
+  , runStatic
+  , evalStatic
+  , execStatic
+
+    -- ** Static retrieval and update
+  , getStatic
+  , putStatic
+  , stateStatic
+  , stateStaticM
+  , localStatic
 
   -- ** Handling local 'Eff' computations
   , LocalEnv

@@ -8,7 +8,7 @@ module Effectful.Dispatch.Static
   , evalStatic
   , execStatic
 
-    -- ** Data retrieval and update
+    -- ** Static retrieval and update
   , getStatic
   , putStatic
   , stateStatic

@@ -4,7 +4,7 @@ module Effectful.Dispatch.Dynamic
   , EffectStyle
 
   -- * Handling effects
-  , EffectHandler
+  , DynamicEffectHandler
   , DynamicEffect(..)
   , runDynamic
   , rerunDynamic
@@ -63,7 +63,7 @@ rerunDynamic inF f = reinterpretDynamic inF (const f)
 -- | Interpret an effect.
 interpretDynamic
   :: (EffectStyle e ~ DynamicEffect)
-  => EffectHandler e es
+  => DynamicEffectHandler e es
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
@@ -76,7 +76,7 @@ reinterpretDynamic
   :: (EffectStyle e ~ DynamicEffect)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
-  -> EffectHandler e handlerEs
+  -> DynamicEffectHandler e handlerEs
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b

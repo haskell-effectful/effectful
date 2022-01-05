@@ -74,7 +74,7 @@ type instance EffectStyle Concurrent = StaticEffect
 
 -- | Run the 'Concurrent' effect.
 runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a
-runConcurrent = evalData Concurrent
+runConcurrent = evalStatic Concurrent
 
 -- $setup
 -- >>> import Effectful.Concurrent

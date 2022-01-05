@@ -17,7 +17,7 @@ type instance EffectStyle Timeout = StaticEffect
 
 -- | Run the 'Timeout' effect.
 runTimeout :: IOE :> es => Eff (Timeout : es) a -> Eff es a
-runTimeout = evalData Timeout
+runTimeout = evalStatic Timeout
 
 -- | Lifted 'T.timeout'.
 timeout

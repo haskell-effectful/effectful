@@ -4,16 +4,16 @@ module Effectful.Dispatch.Static
   , EffectStyle
 
     -- ** Extending the environment
-  , runData
-  , evalData
-  , execData
+  , runStatic
+  , evalStatic
+  , execStatic
 
     -- ** Data retrieval and update
-  , getData
-  , putData
-  , stateData
-  , stateDataM
-  , localData
+  , getStatic
+  , putStatic
+  , stateStatic
+  , stateStaticM
+  , localStatic
 
     -- ** Unlifts
   , seqUnliftIO

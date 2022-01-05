@@ -51,14 +51,14 @@ module Effectful.Internal.Monad
 
   -- ** Static dispatch
   , StaticEffect(..)
-  , runData
-  , evalData
-  , execData
-  , getData
-  , putData
-  , stateData
-  , stateDataM
-  , localData
+  , runStatic
+  , evalStatic
+  , execStatic
+  , getStatic
+  , putStatic
+  , stateStatic
+  , stateStaticM
+  , localStatic
   ) where
 
 import Control.Applicative (liftA2)
@@ -147,12 +147,12 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 -- | Get the current 'UnliftStrategy'.
 unliftStrategy :: IOE :> es => Eff es UnliftStrategy
 unliftStrategy = do
-  StaticEffect (IOE unlift) <- getData
+  StaticEffect (IOE unlift) <- getStatic
   pure unlift
 
 -- | Locally override the 'UnliftStrategy' with the given value.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
-withUnliftStrategy unlift = localData $ \_ -> StaticEffect (IOE unlift)
+withUnliftStrategy unlift = localStatic $ \_ -> StaticEffect (IOE unlift)
 
 -- | Create an unlifting function with the current 'UnliftStrategy'.
 --
@@ -272,7 +272,7 @@ type instance EffectStyle IOE = StaticEffect
 --
 -- For running pure computations see 'runPureEff'.
 runEff :: Eff '[IOE] a -> IO a
-runEff m = unEff (evalData (IOE SeqUnlift) m) =<< emptyEnv
+runEff m = unEff (evalStatic (IOE SeqUnlift) m) =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
@@ -304,7 +304,7 @@ type instance EffectStyle Prim = StaticEffect
 
 -- | Run an 'Eff' computation with primitive state-transformer actions.
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
-runPrim = evalData Prim
+runPrim = evalStatic Prim
 
 instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
@@ -372,23 +372,26 @@ send op = unsafeEff $ \es -> do
 newtype StaticEffect :: Effect -> Type where
   StaticEffect :: (forall m r. e m r) -> StaticEffect e
 
+unStaticEffect :: StaticEffect a -> a m r
+unStaticEffect (StaticEffect e) = e
+
 -- | Run a statically dispatched effect with the given initial state and return
 -- the final value along with the final state.
-runData
-  :: forall e es a. (EffectStyle e ~ StaticEffect)
-  => (forall m r. e m r) -> Eff (e : es) a -> Eff es (a, StaticEffect e)
-runData e0 m = unsafeEff $ \es0 -> do
+runStatic
+  :: forall e es a m r. (EffectStyle e ~ StaticEffect)
+  => (forall m' r'. e m' r') -> Eff (e : es) a -> Eff es (a, e m r)
+runStatic e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv (StaticEffect e0) noRelinker es0)
             (unsafeTailEnv size0)
-            (\es -> (,) <$> unEff m es <*> getEnv @e es)
+            (\es -> (,) <$> unEff m es <*> (unStaticEffect <$> getEnv @e es))
 
 -- | Run a statically dispatched effect with the given initial state and return
 -- the final value, discarding the final state.
-evalData
+evalStatic
   :: EffectStyle e ~ StaticEffect
   => (forall m r. e m r) -> Eff (e : es) a -> Eff es a
-evalData e m = unsafeEff $ \es0 -> do
+evalStatic e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv (StaticEffect e) noRelinker es0)
             (unsafeTailEnv size0)
@@ -396,48 +399,48 @@ evalData e m = unsafeEff $ \es0 -> do
 
 -- | Run a statically dispatched effect with the given initial state and return
 -- the final state, discarding the final value.
-execData
-  :: forall e es a. (EffectStyle e ~ StaticEffect)
-  => StaticEffect e -> Eff (e : es) a -> Eff es (StaticEffect e)
-execData e0 m = unsafeEff $ \es0 -> do
+execStatic
+  :: forall e es a m r. (EffectStyle e ~ StaticEffect)
+  => (forall m' r'. e m' r') -> Eff (e : es) a -> Eff es (e m r)
+execStatic e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e0 noRelinker es0)
+  E.bracket (unsafeConsEnv (StaticEffect e0) noRelinker es0)
             (unsafeTailEnv size0)
-            (\es -> unEff m es *> getEnv @e es)
+            (\es -> unEff m es *> (unStaticEffect <$> getEnv @e es))
 
 -- | Fetch the current state of the effect.
-getData
+getStatic
   :: forall e es. (e :> es, EffectStyle e ~ StaticEffect)
   => Eff es (StaticEffect e)
-getData = unsafeEff $ \es -> getEnv @e es
+getStatic = unsafeEff $ \es -> getEnv @e es
 
 -- | Set the current state of the effect to the given value.
-putData
+putStatic
   :: forall e es. (e :> es, EffectStyle e ~ StaticEffect)
   => StaticEffect e -> Eff es ()
-putData e = unsafeEff $ \es -> putEnv @e es e
+putStatic e = unsafeEff $ \es -> putEnv @e es e
 
 -- | Apply the function to the current state of the effect and return a value.
-stateData
+stateStatic
   :: forall e es a. (e :> es, EffectStyle e ~ StaticEffect)
   => (StaticEffect e -> (a, StaticEffect e)) -> Eff es a
-stateData f = unsafeEff $ \es -> stateEnv @e es f
+stateStatic f = unsafeEff $ \es -> stateEnv @e es f
 
 -- | Apply the monadic function to the current state of the effect and return a
 -- value.
-stateDataM
+stateStaticM
   :: forall e es a. (e :> es, EffectStyle e ~ StaticEffect)
   => (StaticEffect e -> Eff es (a, StaticEffect e)) -> Eff es a
-stateDataM f = unsafeEff $ \es -> E.mask $ \release -> do
+stateStaticM f = unsafeEff $ \es -> E.mask $ \release -> do
   (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv @e es
   putEnv @e es e
   pure a
 
 -- | Execute a computation with a temporarily modified state of the effect.
-localData
+localStatic
   :: forall e es a. (e :> es, EffectStyle e ~ StaticEffect)
   => (StaticEffect e -> StaticEffect e) -> Eff es a -> Eff es a
-localData f m = unsafeEff $ \es -> do
+localStatic f m = unsafeEff $ \es -> do
   E.bracket (stateEnv @e es $ \e -> (e, f e))
             (\e -> putEnv @e es e)
             (\_ -> unEff m es)

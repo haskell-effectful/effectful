@@ -22,12 +22,12 @@ runReader
   :: r -- ^ An initial environment.
   -> Eff (Reader r : es) a
   -> Eff es a
-runReader r = evalData (Reader r)
+runReader r = evalStatic (Reader r)
 
 -- | Fetch the value of the environment.
 ask :: Reader r :> es => Eff es r
 ask = do
-  StaticEffect (Reader r) <- getData
+  StaticEffect (Reader r) <- getStatic
   pure r
 
 -- | Retrieve a function of the current environment.
@@ -48,4 +48,4 @@ local
   => (r -> r) -- ^ The function to modify the environment.
   -> Eff es a
   -> Eff es a
-local f = localData $ \(StaticEffect (Reader r)) -> StaticEffect (Reader (f r))
+local f = localStatic $ \(StaticEffect (Reader r)) -> StaticEffect (Reader (f r))

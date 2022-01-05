@@ -40,19 +40,19 @@ type instance EffectStyle (Writer w) = StaticEffect
 -- output.
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
-  (a, StaticEffect (Writer w)) <- runData (Writer mempty) m
+  (a, Writer w) <- runStatic (Writer mempty) m
   pure (a, w)
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
 -- value.
 execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
-  StaticEffect (Writer w) <- execData (StaticEffect (Writer mempty)) m
+  Writer w <- execStatic (Writer mempty) m
   pure w
 
 -- | Append the given output to the overall output of the 'Writer'.
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
-tell w = stateData $ \(StaticEffect (Writer w0)) -> ((), StaticEffect (Writer (w0 <> w)))
+tell w = stateStatic $ \(StaticEffect (Writer w0)) -> ((), StaticEffect (Writer (w0 <> w)))
 
 -- | Execute an action and append its output to the overall output of the
 -- 'Writer'.

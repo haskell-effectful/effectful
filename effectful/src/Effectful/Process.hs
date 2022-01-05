@@ -60,7 +60,7 @@ data Process :: Effect where
 type instance EffectStyle Process = StaticEffect
 
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
-runProcess = evalData Process
+runProcess = evalStatic Process
 
 ----------------------------------------
 -- Running sub-processes

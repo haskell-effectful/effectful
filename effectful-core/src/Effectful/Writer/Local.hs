@@ -34,6 +34,8 @@ import Effectful.Monad
 newtype Writer w :: Effect where
   Writer :: w -> Writer w m r
 
+type instance EffectStyle (Writer w) = DataA
+
 -- | Run a 'Writer' effect and return the final value along with the final
 -- output.
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)

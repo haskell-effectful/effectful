@@ -33,6 +33,8 @@ module Effectful.Internal.Env
   , unsafeTailEnv
 
     -- ** Data retrieval and update
+  , EffectStyle
+  , EffectImplementation
   , getEnv
   , putEnv
   , stateEnv
@@ -165,13 +167,15 @@ newForkId (ForkIdGen ref) = do
 
 -- | A function for relinking 'Env' objects stored in the handlers when cloning
 -- the environment.
-newtype Relinker :: (Effect -> Type) -> Effect -> Type where
+newtype Relinker :: Effect -> Type where
   Relinker
-    :: ((forall es. Env es -> IO (Env es)) -> adapter e -> IO (adapter e))
-    -> Relinker adapter e
+    :: ((forall es. Env es -> IO (Env es))
+    -> EffectImplementation e
+    -> IO (EffectImplementation e))
+    -> Relinker e
 
 -- | A dummy 'Relinker' that does nothing.
-noRelinker :: Relinker adapter e
+noRelinker :: Relinker e
 noRelinker = Relinker $ \_ -> pure
 
 ----------------------------------------
@@ -359,7 +363,7 @@ checkSizeEnv k (Env (Forks _ baseIx lref _) _ _) = do
 -- This function is __highly unsafe__ because it renders the input 'Env'
 -- unusable until the corresponding 'unsafeTailEnv' call is made, but it's not
 -- checked anywhere.
-unsafeConsEnv :: adapter e -> Relinker adapter e -> Env es -> IO (Env (e : es))
+unsafeConsEnv :: EffectImplementation e -> Relinker e -> Env es -> IO (Env (e : es))
 unsafeConsEnv e f (Env fork gref gen) = case fork of
   NoFork -> do
     extendEnvRef gref
@@ -416,20 +420,26 @@ unsafeTailEnv len (Env fork gref _) = case fork of
 ----------------------------------------
 -- Data retrieval and update
 
+-- | The style of the effect.
+-- It can be either 'Static' or 'Dynamic.
+type family EffectStyle (e :: Effect) :: Effect -> Type
+
+type EffectImplementation (e :: Effect) = EffectStyle e e
+
 -- | Extract a specific data type from the environment.
 getEnv
-  :: forall e adapter es. e :> es
+  :: forall e es. e :> es
   => Env es
-  -> IO (adapter e)
+  -> IO (EffectImplementation e)
 getEnv env = do
   Location i es <- getLocation (reifyIndex @e @es) env
   fromAny <$> readSmallArray es i
 
 -- | Replace the data type in the environment with a new value (in place).
 putEnv
-  :: forall e adapter es. e :> es
+  :: forall e es. e :> es
   => Env es
-  -> adapter e
+  -> EffectImplementation e
   -> IO ()
 putEnv env e = do
   Location i es <- getLocation (reifyIndex @e @es) env
@@ -437,9 +447,9 @@ putEnv env e = do
 
 -- | Modify the data type in the environment (in place) and return a value.
 stateEnv
-  :: forall e adapter es a. e :> es
+  :: forall e es a. e :> es
   => Env es
-  -> (adapter e -> (a, adapter e))
+  -> (EffectImplementation e -> (a, EffectImplementation e))
   -> IO a
 stateEnv env f = do
   Location i es <- getLocation (reifyIndex @e @es) env
@@ -449,9 +459,9 @@ stateEnv env f = do
 
 -- | Modify the data type in the environment (in place).
 modifyEnv
-  :: forall e adapter es. e :> es
+  :: forall e es. e :> es
   => Env es
-  -> (adapter e -> adapter e)
+  -> (EffectImplementation e -> EffectImplementation e)
   -> IO ()
 modifyEnv env f = do
   Location i es <- getLocation (reifyIndex @e @es) env

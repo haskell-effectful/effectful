@@ -47,6 +47,8 @@ import Effectful.Monad
 newtype State s :: Effect where
   State :: MVar s -> State s m r
 
+type instance EffectStyle (State s) = DataA
+
 -- | Run a 'State' effect with the given initial state and return the final
 -- value along with the final state.
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)

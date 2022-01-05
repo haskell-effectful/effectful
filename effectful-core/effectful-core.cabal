@@ -51,6 +51,7 @@ common language
                         TypeApplications
                         TypeFamilies
                         TypeOperators
+                        AllowAmbiguousTypes
 
 library effectful-internal-utils
     import:          language

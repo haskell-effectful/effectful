@@ -26,6 +26,8 @@ import Effectful.Monad
 data Environment :: Effect where
   Environment :: Environment m r
 
+type instance EffectStyle Environment = DataA
+
 -- | Run the 'Environment' effect.
 runEnvironment :: IOE :> es => Eff (Environment : es) a -> Eff es a
 runEnvironment = evalData (DataA Environment)

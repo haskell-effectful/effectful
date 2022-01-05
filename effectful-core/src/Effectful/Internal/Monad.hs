@@ -40,6 +40,8 @@ module Effectful.Internal.Monad
 
   -- * Effects
 
+  , EffectStyle
+
   -- ** Dynamic dispatch
   , EffectHandler
   , LocalEnv(..)
@@ -252,6 +254,8 @@ instance C.MonadMask (Eff es) where
 data Fail :: Effect where
   Fail :: String -> Fail m a
 
+type instance EffectStyle Fail = HandlerA
+
 instance Fail :> es => MonadFail (Eff es) where
   fail = send . Fail
 
@@ -261,6 +265,8 @@ instance Fail :> es => MonadFail (Eff es) where
 -- | Run arbitrary 'IO' computations via 'MonadIO' or 'MonadUnliftIO'.
 newtype IOE :: Effect where
   IOE :: UnliftStrategy -> IOE m r
+
+type instance EffectStyle IOE = DataA
 
 -- | Run an 'Eff' computation with side effects.
 --
@@ -294,6 +300,8 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
 data Prim :: Effect where
   Prim :: Prim m r
 
+type instance EffectStyle Prim = DataA
+
 -- | Run an 'Eff' computation with primitive state-transformer actions.
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
 runPrim = evalData (DataA Prim)
@@ -325,35 +333,39 @@ type EffectHandler e es
   -- ^ The effect performed in the local environment.
   -> Eff es a
 
--- | An adapter for dynamically dispatched effects.
+-- | An effect implementation for dynamically dispatched effects.
 --
 -- Represents the effect handler bundled with its environment.
 data HandlerA :: Effect -> Type where
   HandlerA :: !(Env es) -> !(EffectHandler e es) -> HandlerA e
 
 -- | Run a dynamically dispatched effect with the given handler.
-runHandler :: HandlerA e -> Eff (e : es) a -> Eff es a
+runHandler
+  :: forall e es a. (EffectStyle e ~ HandlerA)
+  => HandlerA e -> Eff (e : es) a -> Eff es a
 runHandler e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e relinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es)
   where
-    relinker :: Relinker HandlerA e
+    relinker :: Relinker e
     relinker = Relinker $ \relink (HandlerA handlerEs handle) -> do
       newHandlerEs <- relink handlerEs
       pure $ HandlerA newHandlerEs handle
 
 -- | Send an operation of the given effect to its handler for execution.
-send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
+send
+  :: forall e es a. (HasCallStack, e :> es, EffectStyle e ~ HandlerA)
+  => e (Eff es) a -> Eff es a
 send op = unsafeEff $ \es -> do
-  HandlerA handlerEs handle <- getEnv es
+  HandlerA handlerEs handle <- getEnv @e es
   unEff (handle (LocalEnv es) op) handlerEs
 
 ----------------------------------------
 -- Static dispatch
 
--- | An adapter for statically dispatched effects.
+-- | An effect implementation for statically dispatched effects.
 --
 -- Represents an arbitrary data type with the appropriate number of phantom type
 -- parameters.
@@ -362,16 +374,20 @@ newtype DataA :: Effect -> Type where
 
 -- | Run a statically dispatched effect with the given initial state and return
 -- the final value along with the final state.
-runData :: DataA e -> Eff (e : es) a -> Eff es (a, DataA e)
+runData
+  :: forall e es a. (EffectStyle e ~ DataA)
+  => DataA e -> Eff (e : es) a -> Eff es (a, DataA e)
 runData e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e0 noRelinker es0)
             (unsafeTailEnv size0)
-            (\es -> (,) <$> unEff m es <*> getEnv es)
+            (\es -> (,) <$> unEff m es <*> getEnv @e es)
 
 -- | Run a statically dispatched effect with the given initial state and return
 -- the final value, discarding the final state.
-evalData :: DataA e -> Eff (e : es) a -> Eff es a
+evalData
+  :: EffectStyle e ~ DataA
+  => DataA e -> Eff (e : es) a -> Eff es a
 evalData e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e noRelinker es0)
@@ -380,36 +396,48 @@ evalData e m = unsafeEff $ \es0 -> do
 
 -- | Run a statically dispatched effect with the given initial state and return
 -- the final state, discarding the final value.
-execData :: DataA e -> Eff (e : es) a -> Eff es (DataA e)
+execData
+  :: forall e es a. (EffectStyle e ~ DataA)
+  => DataA e -> Eff (e : es) a -> Eff es (DataA e)
 execData e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e0 noRelinker es0)
             (unsafeTailEnv size0)
-            (\es -> unEff m es *> getEnv es)
+            (\es -> unEff m es *> getEnv @e es)
 
 -- | Fetch the current state of the effect.
-getData :: e :> es => Eff es (DataA e)
-getData = unsafeEff $ \es -> getEnv es
+getData
+  :: forall e es. (e :> es, EffectStyle e ~ DataA)
+  => Eff es (DataA e)
+getData = unsafeEff $ \es -> getEnv @e es
 
 -- | Set the current state of the effect to the given value.
-putData :: e :> es => DataA e -> Eff es ()
-putData e = unsafeEff $ \es -> putEnv es e
+putData
+  :: forall e es. (e :> es, EffectStyle e ~ DataA)
+  => DataA e -> Eff es ()
+putData e = unsafeEff $ \es -> putEnv @e es e
 
 -- | Apply the function to the current state of the effect and return a value.
-stateData :: e :> es => (DataA e -> (a, DataA e)) -> Eff es a
-stateData f = unsafeEff $ \es -> stateEnv es f
+stateData
+  :: forall e es a. (e :> es, EffectStyle e ~ DataA)
+  => (DataA e -> (a, DataA e)) -> Eff es a
+stateData f = unsafeEff $ \es -> stateEnv @e es f
 
 -- | Apply the monadic function to the current state of the effect and return a
 -- value.
-stateDataM :: e :> es => (DataA e -> Eff es (a, DataA e)) -> Eff es a
+stateDataM
+  :: forall e es a. (e :> es, EffectStyle e ~ DataA)
+  => (DataA e -> Eff es (a, DataA e)) -> Eff es a
 stateDataM f = unsafeEff $ \es -> E.mask $ \release -> do
-  (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv es
-  putEnv es e
+  (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv @e es
+  putEnv @e es e
   pure a
 
 -- | Execute a computation with a temporarily modified state of the effect.
-localData :: e :> es => (DataA e -> DataA e) -> Eff es a -> Eff es a
+localData
+  :: forall e es a. (e :> es, EffectStyle e ~ DataA)
+  => (DataA e -> DataA e) -> Eff es a -> Eff es a
 localData f m = unsafeEff $ \es -> do
-  E.bracket (stateEnv es $ \e -> (e, f e))
-            (\e -> putEnv es e)
+  E.bracket (stateEnv @e es $ \e -> (e, f e))
+            (\e -> putEnv @e es e)
             (\_ -> unEff m es)

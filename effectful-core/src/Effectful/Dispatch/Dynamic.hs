@@ -1,9 +1,11 @@
 module Effectful.Dispatch.Dynamic
   ( -- * Sending operations to the handler
     send
+  , EffectStyle
 
   -- * Handling effects
   , EffectHandler
+  , HandlerA(..)
   , interpret
   , reinterpret
 
@@ -44,7 +46,8 @@ import Effectful.Internal.Monad
 
 -- | Interpret an effect.
 interpret
-  :: EffectHandler e es
+  :: (EffectStyle e ~ HandlerA)
+  => EffectHandler e es
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
@@ -54,7 +57,8 @@ interpret handler m = unsafeEff $ \es -> do
 
 -- | Interpret an effect using other effects.
 reinterpret
-  :: (Eff handlerEs a -> Eff es b)
+  :: (EffectStyle e ~ HandlerA)
+  => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> EffectHandler e handlerEs
   -- ^ The effect handler.

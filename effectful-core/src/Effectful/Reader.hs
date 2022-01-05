@@ -15,6 +15,8 @@ import Effectful.Monad
 newtype Reader r :: Effect where
   Reader :: r -> Reader r m a
 
+type instance EffectStyle (Reader r) = DataA
+
 -- | Run a 'Reader' effect with the given initial environment.
 runReader
   :: r -- ^ An initial environment.

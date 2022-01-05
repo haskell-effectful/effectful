@@ -57,6 +57,8 @@ import Effectful.Monad
 data Process :: Effect where
   Process :: Process m r
 
+type instance EffectStyle Process = DataA
+
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
 runProcess = evalData (DataA Process)
 

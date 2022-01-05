@@ -13,6 +13,8 @@ import Effectful.Monad
 data Timeout :: Effect where
   Timeout :: Timeout m r
 
+type instance EffectStyle Timeout = DataA
+
 -- | Run the 'Timeout' effect.
 runTimeout :: IOE :> es => Eff (Timeout : es) a -> Eff es a
 runTimeout = evalData (DataA Timeout)

@@ -94,6 +94,8 @@ import Effectful.Monad
 newtype Error e :: Effect where
   Error :: ErrorId -> Error e m r
 
+type instance EffectStyle (Error e) = DataA
+
 -- | Handle errors of type @e@.
 runError
   :: forall e es a. Typeable e

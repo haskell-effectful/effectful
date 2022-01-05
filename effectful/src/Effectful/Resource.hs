@@ -31,6 +31,8 @@ import Effectful.Monad
 newtype Resource :: Effect where
   Resource :: R.InternalState -> Resource m r
 
+type instance EffectStyle Resource = DataA
+
 -- | Run the resource effect.
 runResource :: IOE :> es => Eff (Resource : es) a -> Eff es a
 runResource m = unsafeEff $ \es0 -> do

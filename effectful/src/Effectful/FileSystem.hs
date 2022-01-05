@@ -98,6 +98,8 @@ import Effectful.Monad
 data FileSystem :: Effect where
   FileSystem :: FileSystem m r
 
+type instance EffectStyle FileSystem = DataA
+
 -- | Run the 'FileSystem' effect.
 runFileSystem :: IOE :> es => Eff (FileSystem : es) a -> Eff es a
 runFileSystem = evalData (DataA FileSystem)

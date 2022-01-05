@@ -7,3 +7,4 @@ dist
 stack.yaml
 stack.yaml.lock
 cabal.project.local
+.vscode

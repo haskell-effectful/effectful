@@ -24,6 +24,9 @@ module Effectful
   , withEffToIO
 
   -- * 'Effect' handlers
+  , EffectStyle
+  , DynamicEffect
+  , StaticEffect
 
   -- ** Sending operations to the handler
   , send
@@ -55,4 +58,5 @@ module Effectful
   ) where
 
 import Effectful.Dispatch.Dynamic
+import Effectful.Dispatch.Static
 import Effectful.Monad

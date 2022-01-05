@@ -22,6 +22,8 @@ data FileSystem :: Effect where
   ReadFile  :: FilePath -> FileSystem m String
   WriteFile :: FilePath -> String -> FileSystem m ()
 
+type instance EffectStyle FileSystem = DynamicEffect
+
 --- | File system error.
 newtype FsError = FsError String
 

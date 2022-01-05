@@ -77,6 +77,9 @@ ref_calculateFileSizes files = do
 data Effectful_File :: E.Effect where
   Effectful_tryFileSize :: FilePath -> Effectful_File m (Maybe Int)
 
+type instance E.EffectStyle Effectful_File = E.DynamicEffect
+
+
 effectful_tryFileSize :: Effectful_File E.:> es => FilePath -> E.Eff es (Maybe Int)
 effectful_tryFileSize = E.send . Effectful_tryFileSize
 
@@ -86,6 +89,8 @@ effectful_runFile = E.interpret \_ -> \case
 
 data Effectful_Logging :: E.Effect where
   Effectful_logMsg :: String -> Effectful_Logging m ()
+
+type instance E.EffectStyle Effectful_Logging = E.DynamicEffect
 
 effectful_logMsg :: Effectful_Logging E.:> es => String -> E.Eff es ()
 effectful_logMsg = E.send . Effectful_logMsg

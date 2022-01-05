@@ -6,8 +6,10 @@ module Effectful.Dispatch.Dynamic
   -- * Handling effects
   , EffectHandler
   , DynamicEffect(..)
-  , interpret
-  , reinterpret
+  , runDynamic
+  , rerunDynamic
+  , interpretDynamic
+  , reinterpretDynamic
 
   -- ** Handling local 'Eff' computations
   , LocalEnv
@@ -44,19 +46,33 @@ import Effectful.Internal.Monad
 ----------------------------------------
 -- Handling effects
 
+runDynamic
+  :: (EffectStyle e ~ DynamicEffect, HasCallStack)
+  => (forall es' a. HasCallStack => e (Eff es') a -> Eff es a)
+  -> Eff (e : es) x -> Eff es x
+runDynamic f = interpretDynamic (const f)
+
+rerunDynamic
+  :: EffectStyle e ~ DynamicEffect
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handler.
+  -> (forall es' x. HasCallStack => e (Eff es') x -> Eff handlerEs x)
+  -> Eff (e : es) a -> Eff es b
+rerunDynamic inF f = reinterpretDynamic inF (const f)
+
 -- | Interpret an effect.
-interpret
+interpretDynamic
   :: (EffectStyle e ~ DynamicEffect)
   => EffectHandler e es
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
-interpret handler m = unsafeEff $ \es -> do
+interpretDynamic handler m = unsafeEff $ \es -> do
   les <- forkEnv es
   (`unEff` es) $ runHandler (DynamicEffect les handler) m
 
 -- | Interpret an effect using other effects.
-reinterpret
+reinterpretDynamic
   :: (EffectStyle e ~ DynamicEffect)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
@@ -64,7 +80,7 @@ reinterpret
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b
-reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
+reinterpretDynamic runHandlerEs handler m = unsafeEff $ \es -> do
   les0 <- forkEnv es
   (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
     (`unEff` es) $ runHandler (DynamicEffect les handler) m
@@ -171,7 +187,7 @@ withLiftMap !_ k = unsafeEff $ \es -> do
 --
 -- >>> :{
 -- runFork :: IOE :> es => Eff (Fork : es) a -> Eff es a
--- runFork = interpret $ \env (ForkWithUnmask m) -> withLiftMapIO env $ \liftMap -> do
+-- runFork = interpretDynamic $ \env (ForkWithUnmask m) -> withLiftMapIO env $ \liftMap -> do
 --   localUnliftIO env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
 --     forkIOWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 -- :}

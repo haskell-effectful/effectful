@@ -8,7 +8,7 @@ import Effectful.Error
 
 errorTests :: TestTree
 errorTests = testGroup "Error"
-  [ testCase "error from interpret" test_errorFromInterpret
+  [ testCase "error from interpretDynamic" test_errorFromInterpret
   ]
 
 test_errorFromInterpret :: Assertion
@@ -32,5 +32,5 @@ nestedErr :: (HasCallStack, NestedErr :> es) => Eff es ()
 nestedErr = send NestedErr
 
 runNestedErr :: Error String :> es => Eff (NestedErr : es) a -> Eff es a
-runNestedErr = interpret $ \_ -> \case
+runNestedErr = runDynamic $ \case
   NestedErr -> throwError "nested error"

@@ -32,8 +32,10 @@ module Effectful
   , send
 
   -- ** Basic handlers
-  , interpret
-  , reinterpret
+  , runDynamic
+  , rerunDynamic
+  , interpretDynamic
+  , reinterpretDynamic
 
   -- ** Handling local 'Eff' computations
   , LocalEnv

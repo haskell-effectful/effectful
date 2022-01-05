@@ -61,28 +61,28 @@ type instance EffectStyle Fork = DynamicEffect
 
 -- | Uses 'localUnliftIO' and 'withLiftMapIO'.
 runFork1 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork1 = interpret $ \env -> \case
+runFork1 = interpretDynamic $ \env -> \case
   ForkWithUnmask m -> withLiftMapIO env $ \liftMap -> do
     localUnliftIO env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
       asyncWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 
 -- | Uses 'localUnlift' and 'withLiftMap'.
 runFork2 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork2 = reinterpret A.runConcurrent $ \env -> \case
+runFork2 = reinterpretDynamic A.runConcurrent $ \env -> \case
   ForkWithUnmask m -> withLiftMap env $ \liftMap -> do
     localUnlift env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
       A.asyncWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 
 -- | Uses 'localLiftUnliftIO'.
 runFork3 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork3 = interpret $ \env -> \case
+runFork3 = interpretDynamic $ \env -> \case
   ForkWithUnmask m -> do
     localLiftUnliftIO env (ConcUnlift Persistent $ Limited 1) $ \lift unlift -> do
       asyncWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift
 
 -- | Uses 'localLiftUnlift'.
 runFork4 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork4 = reinterpret A.runConcurrent $ \env -> \case
+runFork4 = reinterpretDynamic A.runConcurrent $ \env -> \case
   ForkWithUnmask m -> do
     localLiftUnlift env (ConcUnlift Persistent $ Limited 1) $ \lift unlift -> do
       A.asyncWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift

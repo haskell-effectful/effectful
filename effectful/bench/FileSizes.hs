@@ -84,7 +84,7 @@ effectful_tryFileSize :: Effectful_File E.:> es => FilePath -> E.Eff es (Maybe I
 effectful_tryFileSize = E.send . Effectful_tryFileSize
 
 effectful_runFile :: E.IOE E.:> es => E.Eff (Effectful_File : es) a -> E.Eff es a
-effectful_runFile = E.interpret \_ -> \case
+effectful_runFile = E.runDynamic \case
   Effectful_tryFileSize path -> liftIO $ tryGetFileSize path
 
 data Effectful_Logging :: E.Effect where
@@ -98,7 +98,7 @@ effectful_logMsg = E.send . Effectful_logMsg
 effectful_runLogging
   :: E.Eff (Effectful_Logging : es) a
   -> E.Eff es (a, [String])
-effectful_runLogging = E.reinterpret (E.runState []) \_ -> \case
+effectful_runLogging = E.rerunDynamic (E.runState []) \case
   Effectful_logMsg msg -> E.modify (msg :)
 
 ----------
@@ -148,7 +148,7 @@ eff_tryFileSize :: Eff_File L.:< es => FilePath -> L.Eff es (Maybe Int)
 eff_tryFileSize = L.send . Eff_tryFileSize
 
 eff_runFile :: L.IOE L.:< es => L.Eff (Eff_File : es) a -> L.Eff es a
-eff_runFile = L.interpret \case
+eff_runFile = L.interpretDynamic \case
   Eff_tryFileSize path -> liftIO $ tryGetFileSize path
 
 data Eff_Logging :: L.Effect where
@@ -161,7 +161,7 @@ eff_runLogging
   :: L.Eff (Eff_Logging : es) a
   -> L.Eff es (a, [String])
 eff_runLogging
-  = fmap eff_swap . L.runState [] . L.interpret \case
+  = fmap eff_swap . L.runState [] . L.interpretDynamic \case
       Eff_logMsg msg -> L.modify (msg :)
   . L.lift
 
@@ -217,7 +217,7 @@ fs_tryFileSize :: FS.Member FS_File es => FilePath -> FS.Eff es (Maybe Int)
 fs_tryFileSize = FS.send . FS_tryFileSize
 
 fs_runFile :: FS.LastMember IO es => FS.Eff (FS_File : es) a -> FS.Eff es a
-fs_runFile = FS.interpret \case
+fs_runFile = FS.interpretDynamic \case
   FS_tryFileSize path -> liftIO $ tryGetFileSize path
 
 data FS_Logging r where
@@ -229,7 +229,7 @@ fs_logMsg = FS.send . FS_logMsg
 fs_runLogging
   :: FS.Eff (FS_Logging : es) a
   -> FS.Eff es (a, [String])
-fs_runLogging = FS.runState [] . FS.reinterpret \case
+fs_runLogging = FS.runState [] . FS.reinterpretDynamic \case
   FS_logMsg msg -> FS.modify (msg :)
 
 ----------
@@ -354,7 +354,7 @@ poly_tryFileSize :: P.Member Poly_File es => FilePath -> P.Sem es (Maybe Int)
 poly_tryFileSize = P.send . Poly_tryFileSize
 
 poly_runFile :: P.Member (P.Embed IO) es => P.Sem (Poly_File : es) a -> P.Sem es a
-poly_runFile = P.interpret \case
+poly_runFile = P.interpretDynamic \case
   Poly_tryFileSize path -> P.embed $ tryGetFileSize path
 
 data Poly_Logging :: E.Effect where
@@ -364,7 +364,7 @@ poly_logMsg :: P.Member Poly_Logging es => String -> P.Sem es ()
 poly_logMsg = P.send . Poly_logMsg
 
 poly_runLogging :: P.Sem (Poly_Logging : es) a -> P.Sem es (a, [String])
-poly_runLogging = fmap poly_swap . P.runState [] . P.reinterpret \case
+poly_runLogging = fmap poly_swap . P.runState [] . P.reinterpretDynamic \case
   Poly_logMsg msg -> P.modify (msg :)
 
 poly_swap :: (a, b) -> (b, a)

@@ -40,13 +40,13 @@ type instance EffectStyle (State s) = DynamicEffect
 -- Local
 
 runLocalState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runLocalState s0 = reinterpret (L.runState s0) localState
+runLocalState s0 = reinterpretDynamic (L.runState s0) localState
 
 evalLocalState :: s -> Eff (State s : es) a -> Eff es a
-evalLocalState s0 = reinterpret (L.evalState s0) localState
+evalLocalState s0 = reinterpretDynamic (L.evalState s0) localState
 
 execLocalState :: s -> Eff (State s : es) a -> Eff es s
-execLocalState s0 = reinterpret (L.execState s0) localState
+execLocalState s0 = reinterpretDynamic (L.execState s0) localState
 
 localState
   :: L.State s :> es
@@ -63,13 +63,13 @@ localState env = \case
 -- Shared
 
 runSharedState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runSharedState s0 = reinterpret (S.runState s0) sharedState
+runSharedState s0 = reinterpretDynamic (S.runState s0) sharedState
 
 evalSharedState :: s -> Eff (State s : es) a -> Eff es a
-evalSharedState s0 = reinterpret (S.evalState s0) sharedState
+evalSharedState s0 = reinterpretDynamic (S.evalState s0) sharedState
 
 execSharedState :: s -> Eff (State s : es) a -> Eff es s
-execSharedState s0 = reinterpret (S.execState s0) sharedState
+execSharedState s0 = reinterpretDynamic (S.execState s0) sharedState
 
 sharedState
   :: S.State s :> es

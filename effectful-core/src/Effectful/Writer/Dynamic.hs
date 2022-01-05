@@ -30,10 +30,10 @@ type instance EffectStyle (Writer w) = DynamicEffect
 -- Local
 
 runLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runLocalWriter = reinterpret L.runWriter localWriter
+runLocalWriter = reinterpretDynamic L.runWriter localWriter
 
 execLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execLocalWriter = reinterpret L.execWriter localWriter
+execLocalWriter = reinterpretDynamic L.execWriter localWriter
 
 localWriter
   :: (L.Writer w :> es, Monoid w)
@@ -48,10 +48,10 @@ localWriter env = \case
 -- Shared
 
 runSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runSharedWriter = reinterpret S.runWriter sharedWriter
+runSharedWriter = reinterpretDynamic S.runWriter sharedWriter
 
 execSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execSharedWriter = reinterpret S.execWriter sharedWriter
+execSharedWriter = reinterpretDynamic S.execWriter sharedWriter
 
 sharedWriter
   :: (S.Writer w :> es, Monoid w)

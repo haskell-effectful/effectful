@@ -17,7 +17,7 @@ data Reader r :: Effect where
 type instance EffectStyle (Reader r) = DynamicEffect
 
 runReader :: r -> Eff (Reader r : es) a -> Eff es a
-runReader r = reinterpret (R.runReader r) $ \env -> \case
+runReader r = reinterpretDynamic (R.runReader r) $ \env -> \case
   Ask       -> R.ask
   Local f m -> localSeqUnlift env $ \unlift -> R.local f (unlift m)
 

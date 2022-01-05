@@ -61,7 +61,7 @@ getInternalState = do
 --
 -- /Note:/ the 'R.InternalState' will not be closed at the end.
 runInternalState :: R.InternalState -> Eff (Resource : es) a -> Eff es a
-runInternalState istate = evalData (StaticEffect (Resource istate))
+runInternalState istate = evalData (Resource istate)
 
 ----------------------------------------
 -- Orphan instance

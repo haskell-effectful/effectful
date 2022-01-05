@@ -102,7 +102,7 @@ type instance EffectStyle FileSystem = StaticEffect
 
 -- | Run the 'FileSystem' effect.
 runFileSystem :: IOE :> es => Eff (FileSystem : es) a -> Eff es a
-runFileSystem = evalData (StaticEffect FileSystem)
+runFileSystem = evalData FileSystem
 
 ----------------------------------------
 -- Actions on directories

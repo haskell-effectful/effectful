@@ -272,7 +272,7 @@ type instance EffectStyle IOE = StaticEffect
 --
 -- For running pure computations see 'runPureEff'.
 runEff :: Eff '[IOE] a -> IO a
-runEff m = unEff (evalData (StaticEffect (IOE SeqUnlift)) m) =<< emptyEnv
+runEff m = unEff (evalData (IOE SeqUnlift) m) =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
@@ -304,7 +304,7 @@ type instance EffectStyle Prim = StaticEffect
 
 -- | Run an 'Eff' computation with primitive state-transformer actions.
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
-runPrim = evalData (StaticEffect Prim)
+runPrim = evalData Prim
 
 instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
@@ -376,10 +376,10 @@ newtype StaticEffect :: Effect -> Type where
 -- the final value along with the final state.
 runData
   :: forall e es a. (EffectStyle e ~ StaticEffect)
-  => StaticEffect e -> Eff (e : es) a -> Eff es (a, StaticEffect e)
+  => (forall m r. e m r) -> Eff (e : es) a -> Eff es (a, StaticEffect e)
 runData e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e0 noRelinker es0)
+  E.bracket (unsafeConsEnv (StaticEffect e0) noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> (,) <$> unEff m es <*> getEnv @e es)
 
@@ -387,10 +387,10 @@ runData e0 m = unsafeEff $ \es0 -> do
 -- the final value, discarding the final state.
 evalData
   :: EffectStyle e ~ StaticEffect
-  => StaticEffect e -> Eff (e : es) a -> Eff es a
+  => (forall m r. e m r) -> Eff (e : es) a -> Eff es a
 evalData e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e noRelinker es0)
+  E.bracket (unsafeConsEnv (StaticEffect e) noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es)
 

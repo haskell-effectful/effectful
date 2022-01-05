@@ -22,7 +22,7 @@ runReader
   :: r -- ^ An initial environment.
   -> Eff (Reader r : es) a
   -> Eff es a
-runReader r = evalData (StaticEffect (Reader r))
+runReader r = evalData (Reader r)
 
 -- | Fetch the value of the environment.
 ask :: Reader r :> es => Eff es r

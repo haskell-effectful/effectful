@@ -40,7 +40,7 @@ type instance EffectStyle (Writer w) = StaticEffect
 -- output.
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
-  (a, StaticEffect (Writer w)) <- runData (StaticEffect (Writer mempty)) m
+  (a, StaticEffect (Writer w)) <- runData (Writer mempty) m
   pure (a, w)
 
 -- | Run a 'Writer' effect and return the final output, discarding the final

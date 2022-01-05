@@ -54,7 +54,7 @@ runState
   -> Eff (State s : es) a
   -> Eff es (a, s)
 runState s0 m = do
-  (a, StaticEffect (State s)) <- runData (StaticEffect (State s0)) m
+  (a, StaticEffect (State s)) <- runData (State s0) m
   pure (a, s)
 
 -- | Run a 'State' effect with the given initial state and return the final
@@ -63,7 +63,7 @@ evalState
   :: s -- ^ An initial state.
   -> Eff (State s : es) a
   -> Eff es a -- ^ A return value.
-evalState s = evalData (StaticEffect (State s))
+evalState s = evalData (State s)
 
 -- | Run a 'State' effect with the given initial state and return the final
 -- state, discarding the final value.

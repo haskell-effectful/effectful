@@ -21,7 +21,7 @@ type instance EffectStyle Temporary = StaticEffect
 
 -- | Run the 'Temporary' effect.
 runTemporary :: IOE :> es => Eff (Temporary : es) a -> Eff es a
-runTemporary = evalData (StaticEffect Temporary)
+runTemporary = evalData Temporary
 
 -- | Lifted 'T.withSystemTempFile'.
 withSystemTempFile

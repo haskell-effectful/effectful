@@ -41,7 +41,7 @@ type instance EffectStyle (Writer w) = StaticEffect
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
   v <- unsafeEff_ $ newMVar mempty
-  a <- evalData (StaticEffect (Writer v)) m
+  a <- evalData (Writer v) m
   (a, ) <$> unsafeEff_ (readMVar v)
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
@@ -49,7 +49,7 @@ runWriter m = do
 execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
   v <- unsafeEff_ $ newMVar mempty
-  _ <- evalData (StaticEffect (Writer v)) m
+  _ <- evalData (Writer v) m
   unsafeEff_ $ readMVar v
 
 -- | Append the given output to the overall output of the 'Writer'.

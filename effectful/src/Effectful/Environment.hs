@@ -30,7 +30,7 @@ type instance EffectStyle Environment = StaticEffect
 
 -- | Run the 'Environment' effect.
 runEnvironment :: IOE :> es => Eff (Environment : es) a -> Eff es a
-runEnvironment = evalData (StaticEffect Environment)
+runEnvironment = evalData Environment
 
 -- | Lifted 'E.getArgs'.
 getArgs :: Environment :> es => Eff es [String]

@@ -47,14 +47,14 @@ import Effectful.Monad
 newtype State s :: Effect where
   State :: MVar s -> State s m r
 
-type instance EffectStyle (State s) = DataA
+type instance EffectStyle (State s) = StaticEffect
 
 -- | Run a 'State' effect with the given initial state and return the final
 -- value along with the final state.
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = do
   v <- unsafeEff_ $ newMVar s
-  a <- evalData (DataA (State v)) m
+  a <- evalData (StaticEffect (State v)) m
   (a, ) <$> unsafeEff_ (readMVar v)
 
 -- | Run a 'State' effect with the given initial state and return the final
@@ -62,20 +62,20 @@ runState s m = do
 evalState :: s -> Eff (State s : es) a -> Eff es a
 evalState s m = do
   v <- unsafeEff_ $ newMVar s
-  evalData (DataA (State v)) m
+  evalData (StaticEffect (State v)) m
 
 -- | Run a 'State' effect with the given initial state and return the final
 -- state, discarding the final value.
 execState :: s -> Eff (State s : es) a -> Eff es s
 execState s m = do
   v <- unsafeEff_ $ newMVar s
-  _ <- evalData (DataA (State v)) m
+  _ <- evalData (StaticEffect (State v)) m
   unsafeEff_ $ readMVar v
 
 -- | Fetch the current value of the state.
 get :: State s :> es => Eff es s
 get = unsafeEff $ \es -> do
-  DataA (State v) <- getEnv es
+  StaticEffect (State v) <- getEnv es
   readMVar v
 
 -- | Get a function of the current state.
@@ -87,7 +87,7 @@ gets f = f <$> get
 -- | Set the current state to the given value.
 put :: State s :> es => s -> Eff es ()
 put s = unsafeEff $ \es -> do
-  DataA (State v) <- getEnv es
+  StaticEffect (State v) <- getEnv es
   modifyMVar_ v $ \_ -> s `seq` pure s
 
 -- | Apply the function to the current state and return a value.
@@ -95,7 +95,7 @@ put s = unsafeEff $ \es -> do
 -- /Note:/ this function gets an exclusive access to the state for its duration.
 state :: State s :> es => (s -> (a, s)) -> Eff es a
 state f = unsafeEff $ \es -> do
-  DataA (State v) <- getEnv es
+  StaticEffect (State v) <- getEnv es
   modifyMVar v $ \s0 -> let (a, s) = f s0 in s `seq` pure (s, a)
 
 -- | Apply the function to the current state.
@@ -111,7 +111,7 @@ modify f = state (\s -> ((), f s))
 -- /Note:/ this function gets an exclusive access to the state for its duration.
 stateM :: State s :> es => (s -> Eff es (a, s)) -> Eff es a
 stateM f = unsafeEff $ \es -> do
-  DataA (State v) <- getEnv es
+  StaticEffect (State v) <- getEnv es
   modifyMVar v $ \s0 -> do
     (a, s) <- unEff (f s0) es
     s `seq` pure (s, a)

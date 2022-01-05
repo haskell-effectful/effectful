@@ -5,7 +5,7 @@ module Effectful.Dispatch.Dynamic
 
   -- * Handling effects
   , EffectHandler
-  , HandlerA(..)
+  , DynamicEffect(..)
   , interpret
   , reinterpret
 
@@ -46,18 +46,18 @@ import Effectful.Internal.Monad
 
 -- | Interpret an effect.
 interpret
-  :: (EffectStyle e ~ HandlerA)
+  :: (EffectStyle e ~ DynamicEffect)
   => EffectHandler e es
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
 interpret handler m = unsafeEff $ \es -> do
   les <- forkEnv es
-  (`unEff` es) $ runHandler (HandlerA les handler) m
+  (`unEff` es) $ runHandler (DynamicEffect les handler) m
 
 -- | Interpret an effect using other effects.
 reinterpret
-  :: (EffectStyle e ~ HandlerA)
+  :: (EffectStyle e ~ DynamicEffect)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> EffectHandler e handlerEs
@@ -67,7 +67,7 @@ reinterpret
 reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
   les0 <- forkEnv es
   (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
-    (`unEff` es) $ runHandler (HandlerA les handler) m
+    (`unEff` es) $ runHandler (DynamicEffect les handler) m
 
 ----------------------------------------
 -- Unlifts

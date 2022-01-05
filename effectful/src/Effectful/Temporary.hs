@@ -17,11 +17,11 @@ import Effectful.Monad
 data Temporary :: Effect where
   Temporary :: Temporary m r
 
-type instance EffectStyle Temporary = DataA
+type instance EffectStyle Temporary = StaticEffect
 
 -- | Run the 'Temporary' effect.
 runTemporary :: IOE :> es => Eff (Temporary : es) a -> Eff es a
-runTemporary = evalData (DataA Temporary)
+runTemporary = evalData (StaticEffect Temporary)
 
 -- | Lifted 'T.withSystemTempFile'.
 withSystemTempFile

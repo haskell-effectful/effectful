@@ -14,7 +14,7 @@ data Reader r :: Effect where
   Ask   :: Reader r m r
   Local :: (r -> r) -> m a -> Reader r m a
 
-type instance EffectStyle (Reader r) = HandlerA
+type instance EffectStyle (Reader r) = DynamicEffect
 
 runReader :: r -> Eff (Reader r : es) a -> Eff es a
 runReader r = reinterpret (R.runReader r) $ \env -> \case

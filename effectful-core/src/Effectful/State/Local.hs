@@ -45,7 +45,7 @@ import Effectful.Monad
 newtype State s :: Effect where
   State :: s -> State s m r
 
-type instance EffectStyle (State s) = DataA
+type instance EffectStyle (State s) = StaticEffect
 
 -- | Run a 'State' effect with the given initial state and return the final
 -- value along with the final state.
@@ -54,7 +54,7 @@ runState
   -> Eff (State s : es) a
   -> Eff es (a, s)
 runState s0 m = do
-  (a, DataA (State s)) <- runData (DataA (State s0)) m
+  (a, StaticEffect (State s)) <- runData (StaticEffect (State s0)) m
   pure (a, s)
 
 -- | Run a 'State' effect with the given initial state and return the final
@@ -63,7 +63,7 @@ evalState
   :: s -- ^ An initial state.
   -> Eff (State s : es) a
   -> Eff es a -- ^ A return value.
-evalState s = evalData (DataA (State s))
+evalState s = evalData (StaticEffect (State s))
 
 -- | Run a 'State' effect with the given initial state and return the final
 -- state, discarding the final value.
@@ -72,13 +72,13 @@ execState
   -> Eff (State s : es) a
   -> Eff es s
 execState s0 m = do
-  DataA (State s) <- execData (DataA (State s0)) m
+  StaticEffect (State s) <- execData (StaticEffect (State s0)) m
   pure s
 
 -- | Fetch the current value of the state.
 get :: State s :> es => Eff es s
 get = do
-  DataA (State s) <- getData
+  StaticEffect (State s) <- getData
   pure s
 
 -- | Get a function of the current state.
@@ -92,14 +92,14 @@ gets f = f <$> get
 
 -- | Set the current state to the given value.
 put :: State s :> es => s -> Eff es ()
-put s = putData (DataA (State s))
+put s = putData (StaticEffect (State s))
 
 -- | Apply the function to the current state and return a value.
 state
   :: State s :> es
   => (s -> (a, s)) -- ^ The function to modify the state.
   -> Eff es a
-state f = stateData $ \(DataA (State s0)) -> let (a, s) = f s0 in (a, DataA (State s))
+state f = stateData $ \(StaticEffect (State s0)) -> let (a, s) = f s0 in (a, StaticEffect (State s))
 
 -- | Apply the function to the current state.
 --
@@ -115,9 +115,9 @@ stateM
   :: State s :> es
   => (s -> Eff es (a, s)) -- ^ The function to modify the state.
   -> Eff es a
-stateM f = stateDataM $ \(DataA (State s0)) -> do
+stateM f = stateDataM $ \(StaticEffect (State s0)) -> do
   (a, s) <- f s0
-  pure (a, DataA (State s))
+  pure (a, StaticEffect (State s))
 
 -- | Apply the monadic function to the current state.
 --

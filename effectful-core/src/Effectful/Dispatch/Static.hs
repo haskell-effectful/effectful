@@ -1,6 +1,6 @@
 module Effectful.Dispatch.Static
   ( -- * Low level API
-    DataA(..)
+    StaticEffect(..)
   , EffectStyle
 
     -- ** Extending the environment

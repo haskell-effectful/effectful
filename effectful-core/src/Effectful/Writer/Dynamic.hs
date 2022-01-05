@@ -24,7 +24,7 @@ data Writer w :: Effect where
   Tell   :: w   -> Writer w m ()
   Listen :: m a -> Writer w m (a, w)
 
-type instance EffectStyle (Writer w) = HandlerA
+type instance EffectStyle (Writer w) = DynamicEffect
 
 ----------------------------------------
 -- Local

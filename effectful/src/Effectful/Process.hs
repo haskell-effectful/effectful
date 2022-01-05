@@ -57,10 +57,10 @@ import Effectful.Monad
 data Process :: Effect where
   Process :: Process m r
 
-type instance EffectStyle Process = DataA
+type instance EffectStyle Process = StaticEffect
 
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
-runProcess = evalData (DataA Process)
+runProcess = evalData (StaticEffect Process)
 
 ----------------------------------------
 -- Running sub-processes

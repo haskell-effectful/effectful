@@ -16,7 +16,7 @@ data Error e :: Effect where
   ThrowError :: e -> Error e m a
   CatchError :: m a -> (E.CallStack -> e -> m a) -> Error e m a
 
-type instance EffectStyle (Error e) = HandlerA
+type instance EffectStyle (Error e) = DynamicEffect
 
 runError
   :: Typeable e

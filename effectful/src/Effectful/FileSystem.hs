@@ -92,15 +92,8 @@ import Data.Time (UTCTime)
 import qualified System.Directory as D
 
 import Effectful.Dispatch.Static
+import Effectful.FileSystem.Effect
 import Effectful.Monad
-
--- | An effect for interacting with the filesystem.
-data FileSystem :: Effect where
-  FileSystem :: FileSystem m r
-
--- | Run the 'FileSystem' effect.
-runFileSystem :: IOE :> es => Eff (FileSystem : es) a -> Eff es a
-runFileSystem = evalData (DataA FileSystem)
 
 ----------------------------------------
 -- Actions on directories

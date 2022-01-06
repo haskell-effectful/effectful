@@ -54,13 +54,13 @@ import Effectful.Dispatch.Static
 import Effectful.Monad
 
 -- | An effect for running child processes using the @process@ library.
-data Process :: Effect where
-  Process :: Process m r
+data Process :: Effect
 
 type instance DispatchOf Process = 'Static
+data instance DataR Process = Process
 
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
-runProcess = evalData (DataR Process)
+runProcess = evalData Process
 
 ----------------------------------------
 -- Running sub-processes

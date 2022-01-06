@@ -54,7 +54,7 @@ module Effectful.Internal.Monad
   , send
 
   -- ** Static dispatch
-  , DataR(..)
+  , DataR
   , runData
   , evalData
   , execData
@@ -157,12 +157,12 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 -- | Get the current 'UnliftStrategy'.
 unliftStrategy :: IOE :> es => Eff es UnliftStrategy
 unliftStrategy = do
-  DataR (IOE unlift) <- getData
+  IOE unlift <- getData
   pure unlift
 
 -- | Locally override the 'UnliftStrategy' with the given value.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
-withUnliftStrategy unlift = localData $ \_ -> DataR (IOE unlift)
+withUnliftStrategy unlift = localData $ \_ -> IOE unlift
 
 -- | Create an unlifting function with the current 'UnliftStrategy'.
 --
@@ -273,16 +273,16 @@ instance Fail :> es => MonadFail (Eff es) where
 -- IO
 
 -- | Run arbitrary 'IO' computations via 'MonadIO' or 'MonadUnliftIO'.
-newtype IOE :: Effect where
-  IOE :: UnliftStrategy -> IOE m r
+data IOE :: Effect
 
 type instance DispatchOf IOE = 'Static
+newtype instance DataR IOE = IOE UnliftStrategy
 
 -- | Run an 'Eff' computation with side effects.
 --
 -- For running pure computations see 'runPureEff'.
 runEff :: Eff '[IOE] a -> IO a
-runEff m = unEff (evalData (DataR (IOE SeqUnlift)) m) =<< emptyEnv
+runEff m = unEff (evalData (IOE SeqUnlift) m) =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
@@ -307,14 +307,14 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
 -- Primitive
 
 -- | Provide the ability to perform primitive state-transformer actions.
-data Prim :: Effect where
-  Prim :: Prim m r
+data Prim :: Effect
 
 type instance DispatchOf Prim = 'Static
+data instance DataR Prim = Prim
 
 -- | Run an 'Eff' computation with primitive state-transformer actions.
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
-runPrim = evalData (DataR Prim)
+runPrim = evalData Prim
 
 instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
@@ -330,7 +330,7 @@ data Dispatch = Dynamic | Static
 -- | A dispatch type of a particular effect.
 type family DispatchOf (e :: Effect) :: Dispatch
 
--- | An internal representation of a particular effect.
+-- | Internal representations of effects.
 type family EffectR (d :: Dispatch) = (r :: Effect -> Type) | r -> d where
   EffectR 'Dynamic = HandlerR
   EffectR 'Static  = DataR
@@ -385,10 +385,8 @@ send op = unsafeEff $ \es -> do
 ----------------------------------------
 -- Static dispatch
 
--- | An internal representation of statically dispatched effects, i.e. an
--- arbitrary data type with the appropriate number of phantom type parameters.
-newtype DataR :: Effect -> Type where
-  DataR :: (forall m r. e m r) -> DataR e
+-- | Internal states of statically dispatched effects.
+data family DataR (e :: Effect) :: Type
 
 -- | Run a statically dispatched effect with the given initial state and return
 -- the final value along with the final state.
@@ -435,7 +433,7 @@ getData = unsafeEff $ \es -> getEnv es
 
 -- | Set the current state of the effect to the given value.
 putData :: (DispatchOf e ~ 'Static, e :> es) => DataR e -> Eff es ()
-putData e = unsafeEff $ \es -> putEnv es e
+putData s = unsafeEff $ \es -> putEnv es s
 
 -- | Apply the function to the current state of the effect and return a value.
 stateData
@@ -451,8 +449,8 @@ stateDataM
   => (DataR e -> Eff es (a, DataR e)) -- ^ The function to modify the state.
   -> Eff es a
 stateDataM f = unsafeEff $ \es -> E.mask $ \release -> do
-  (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv es
-  putEnv es e
+  (a, s) <- (\s0 -> release $ unEff (f s0) es) =<< getEnv es
+  putEnv es s
   pure a
 
 -- | Execute a computation with a temporarily modified state of the effect.
@@ -462,8 +460,8 @@ localData
   -> Eff es a
   -> Eff es a
 localData f m = unsafeEff $ \es -> do
-  E.bracket (stateEnv es $ \e -> (e, f e))
-            (\e -> putEnv es e)
+  E.bracket (stateEnv es $ \s -> (s, f s))
+            (\s -> putEnv es s)
             (\_ -> unEff m es)
 
 ----------------------------------------

@@ -67,14 +67,14 @@ import Effectful.Monad
 -- in the parent thread because the value is thread local, but in the second
 -- example they are, because the value is shared.
 --
-data Concurrent :: Effect where
-  Concurrent :: Concurrent m r
+data Concurrent :: Effect
 
 type instance DispatchOf Concurrent = 'Static
+data instance DataR Concurrent = Concurrent
 
 -- | Run the 'Concurrent' effect.
 runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a
-runConcurrent = evalData (DataR Concurrent)
+runConcurrent = evalData Concurrent
 
 -- $setup
 -- >>> import Effectful.Concurrent

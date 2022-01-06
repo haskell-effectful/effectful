@@ -23,14 +23,14 @@ import Effectful.Dispatch.Static hiding (getEnv)
 import Effectful.Monad
 
 -- | An effect for querying and modifying the system environment.
-data Environment :: Effect where
-  Environment :: Environment m r
+data Environment :: Effect
 
 type instance DispatchOf Environment = 'Static
+data instance DataR Environment = Environment
 
 -- | Run the 'Environment' effect.
 runEnvironment :: IOE :> es => Eff (Environment : es) a -> Eff es a
-runEnvironment = evalData (DataR Environment)
+runEnvironment = evalData Environment
 
 -- | Lifted 'E.getArgs'.
 getArgs :: Environment :> es => Eff es [String]

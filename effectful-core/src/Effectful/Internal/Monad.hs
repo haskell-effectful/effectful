@@ -44,7 +44,7 @@ module Effectful.Internal.Monad
   -- * Dispatch
   , Dispatch(..)
   , DispatchOf
-  , Rep
+  , EffectR
 
   -- ** Dynamic dispatch
   , EffectHandler
@@ -331,9 +331,9 @@ data Dispatch = Dynamic | Static
 type family DispatchOf (e :: Effect) :: Dispatch
 
 -- | An internal representation of a particular effect.
-type family Rep (d :: Dispatch) = (r :: Effect -> Type) | r -> d where
-  Rep 'Dynamic = HandlerR
-  Rep 'Static  = DataR
+type family EffectR (d :: Dispatch) = (r :: Effect -> Type) | r -> d where
+  EffectR 'Dynamic = HandlerR
+  EffectR 'Static  = DataR
 
 ----------------------------------------
 -- Dynamic dispatch
@@ -469,18 +469,18 @@ localData f m = unsafeEff $ \es -> do
 ----------------------------------------
 
 -- | Extract a specific data type from the environment.
-getEnv :: e :> es => Env es -> IO (Rep (DispatchOf e) e)
+getEnv :: e :> es => Env es -> IO (EffectR (DispatchOf e) e)
 getEnv = unsafeGetEnv
 
 -- | Replace the data type in the environment with a new value (in place).
-putEnv :: e :> es => Env es -> Rep (DispatchOf e) e -> IO ()
+putEnv :: e :> es => Env es -> EffectR (DispatchOf e) e -> IO ()
 putEnv = unsafePutEnv
 
 -- | Modify the data type in the environment (in place) and return a value.
 stateEnv
   :: e :> es
   => Env es
-  -> (Rep (DispatchOf e) e -> (a, Rep (DispatchOf e) e))
+  -> (EffectR (DispatchOf e) e -> (a, EffectR (DispatchOf e) e))
   -- ^ The function to modify the data type.
   -> IO a
 stateEnv = unsafeStateEnv
@@ -489,7 +489,7 @@ stateEnv = unsafeStateEnv
 modifyEnv
   :: e :> es
   => Env es
-  -> (Rep (DispatchOf e) e -> Rep (DispatchOf e) e)
+  -> (EffectR (DispatchOf e) e -> EffectR (DispatchOf e) e)
   -- ^ The function to modify the data type.
   -> IO ()
 modifyEnv = unsafeModifyEnv

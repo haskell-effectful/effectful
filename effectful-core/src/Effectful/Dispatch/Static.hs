@@ -42,7 +42,7 @@ module Effectful.Dispatch.Static
   , unsafeTailEnv
 
     -- ** Data retrieval and update
-  , Rep
+  , EffectR
   , getEnv
   , putEnv
   , stateEnv

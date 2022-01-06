@@ -5,6 +5,8 @@ module Effectful.Monad
 
   -- ** Effect constraints
   , Effect
+  , Dispatch(..)
+  , DispatchOf
   , (:>)
 
   -- * Arbitrary I/O

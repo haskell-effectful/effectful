@@ -10,6 +10,8 @@ import Effectful.Monad
 data FileSystem :: Effect where
   FileSystem :: FileSystem m r
 
+type instance DispatchOf FileSystem = 'Static
+
 -- | Run the 'FileSystem' effect.
 runFileSystem :: IOE :> es => Eff (FileSystem : es) a -> Eff es a
-runFileSystem = evalData (DataA FileSystem)
+runFileSystem = evalData (DataR FileSystem)

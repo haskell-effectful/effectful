@@ -1,6 +1,6 @@
 module Effectful.Dispatch.Static
   ( -- * Low level API
-    DataA(..)
+    DataR(..)
 
     -- ** Extending the environment
   , runData
@@ -42,6 +42,7 @@ module Effectful.Dispatch.Static
   , unsafeTailEnv
 
     -- ** Data retrieval and update
+  , Rep
   , getEnv
   , putEnv
   , stateEnv

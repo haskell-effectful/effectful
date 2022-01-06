@@ -26,9 +26,11 @@ import Effectful.Monad
 data Environment :: Effect where
   Environment :: Environment m r
 
+type instance DispatchOf Environment = 'Static
+
 -- | Run the 'Environment' effect.
 runEnvironment :: IOE :> es => Eff (Environment : es) a -> Eff es a
-runEnvironment = evalData (DataA Environment)
+runEnvironment = evalData (DataR Environment)
 
 -- | Lifted 'E.getArgs'.
 getArgs :: Environment :> es => Eff es [String]

@@ -14,6 +14,8 @@ data Reader r :: Effect where
   Ask   :: Reader r m r
   Local :: (r -> r) -> m a -> Reader r m a
 
+type instance DispatchOf (Reader r) = 'Dynamic
+
 runReader :: r -> Eff (Reader r : es) a -> Eff es a
 runReader r = reinterpret (R.runReader r) $ \env -> \case
   Ask       -> R.ask

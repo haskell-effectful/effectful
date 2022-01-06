@@ -33,10 +33,10 @@ module Effectful.Internal.Env
   , unsafeTailEnv
 
     -- ** Data retrieval and update
-  , getEnv
-  , putEnv
-  , stateEnv
-  , modifyEnv
+  , unsafeGetEnv
+  , unsafePutEnv
+  , unsafeStateEnv
+  , unsafeModifyEnv
   ) where
 
 import Control.Monad
@@ -167,11 +167,11 @@ newForkId (ForkIdGen ref) = do
 -- the environment.
 newtype Relinker :: (Effect -> Type) -> Effect -> Type where
   Relinker
-    :: ((forall es. Env es -> IO (Env es)) -> adapter e -> IO (adapter e))
-    -> Relinker adapter e
+    :: ((forall es. Env es -> IO (Env es)) -> rep e -> IO (rep e))
+    -> Relinker rep e
 
 -- | A dummy 'Relinker' that does nothing.
-noRelinker :: Relinker adapter e
+noRelinker :: Relinker rep e
 noRelinker = Relinker $ \_ -> pure
 
 ----------------------------------------
@@ -359,7 +359,7 @@ checkSizeEnv k (Env (Forks _ baseIx lref _) _ _) = do
 -- This function is __highly unsafe__ because it renders the input 'Env'
 -- unusable until the corresponding 'unsafeTailEnv' call is made, but it's not
 -- checked anywhere.
-unsafeConsEnv :: adapter e -> Relinker adapter e -> Env es -> IO (Env (e : es))
+unsafeConsEnv :: rep e -> Relinker rep e -> Env es -> IO (Env (e : es))
 unsafeConsEnv e f (Env fork gref gen) = case fork of
   NoFork -> do
     extendEnvRef gref
@@ -417,43 +417,63 @@ unsafeTailEnv len (Env fork gref _) = case fork of
 -- Data retrieval and update
 
 -- | Extract a specific data type from the environment.
-getEnv
-  :: forall e adapter es. e :> es
+--
+-- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
+-- to retrieve a different data type that was put in.
+--
+-- For a safe variant see 'Effectful.Dispatch.Static.getEnv'.
+unsafeGetEnv
+  :: forall e rep es. e :> es
   => Env es
-  -> IO (adapter e)
-getEnv env = do
+  -> IO (rep e)
+unsafeGetEnv env = do
   Location i es <- getLocation (reifyIndex @e @es) env
   fromAny <$> readSmallArray es i
 
 -- | Replace the data type in the environment with a new value (in place).
-putEnv
-  :: forall e adapter es. e :> es
+--
+-- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
+-- to retrieve a different data type that was put in.
+--
+-- For a safe variant see 'Effectful.Dispatch.Static.putEnv'.
+unsafePutEnv
+  :: forall e rep es. e :> es
   => Env es
-  -> adapter e
+  -> rep e
   -> IO ()
-putEnv env e = do
+unsafePutEnv env e = do
   Location i es <- getLocation (reifyIndex @e @es) env
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place) and return a value.
-stateEnv
-  :: forall e adapter es a. e :> es
+--
+-- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
+-- to retrieve a different data type that was put in.
+--
+-- For a safe variant see 'Effectful.Dispatch.Static.stateEnv'.
+unsafeStateEnv
+  :: forall e rep es a. e :> es
   => Env es
-  -> (adapter e -> (a, adapter e))
+  -> (rep e -> (a, rep e))
   -> IO a
-stateEnv env f = do
+unsafeStateEnv env f = do
   Location i es <- getLocation (reifyIndex @e @es) env
   (a, e) <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
   pure a
 
 -- | Modify the data type in the environment (in place).
-modifyEnv
-  :: forall e adapter es. e :> es
+--
+-- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
+-- to retrieve a different data type that was put in.
+--
+-- For a safe variant see 'Effectful.Dispatch.Static.modifyEnv'.
+unsafeModifyEnv
+  :: forall e rep es. e :> es
   => Env es
-  -> (adapter e -> adapter e)
+  -> (rep e -> rep e)
   -> IO ()
-modifyEnv env f = do
+unsafeModifyEnv env f = do
   Location i es <- getLocation (reifyIndex @e @es) env
   e <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)

@@ -4,6 +4,8 @@ module Effectful
 
   -- ** Effect constraints
   , Effect
+  , Dispatch(..)
+  , DispatchOf
   , (:>)
 
   -- * Running the 'Eff' monad

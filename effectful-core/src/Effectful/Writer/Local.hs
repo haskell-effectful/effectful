@@ -34,23 +34,25 @@ import Effectful.Monad
 newtype Writer w :: Effect where
   Writer :: w -> Writer w m r
 
+type instance DispatchOf (Writer w) = 'Static
+
 -- | Run a 'Writer' effect and return the final value along with the final
 -- output.
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
-  (a, DataA (Writer w)) <- runData (DataA (Writer mempty)) m
+  (a, DataR (Writer w)) <- runData (DataR (Writer mempty)) m
   pure (a, w)
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
 -- value.
 execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
-  DataA (Writer w) <- execData (DataA (Writer mempty)) m
+  DataR (Writer w) <- execData (DataR (Writer mempty)) m
   pure w
 
 -- | Append the given output to the overall output of the 'Writer'.
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
-tell w = stateData $ \(DataA (Writer w0)) -> ((), DataA (Writer (w0 <> w)))
+tell w = stateData $ \(DataR (Writer w0)) -> ((), DataR (Writer (w0 <> w)))
 
 -- | Execute an action and append its output to the overall output of the
 -- 'Writer'.
@@ -71,13 +73,13 @@ tell w = stateData $ \(DataA (Writer w0)) -> ((), DataA (Writer (w0 <> w)))
 -- "Hi there!"
 listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
 listen m = unsafeEff $ \es -> mask $ \restore -> do
-  w0 <- stateEnv es $ \(DataA (Writer w)) -> (w, DataA (Writer mempty))
+  w0 <- stateEnv es $ \(DataR (Writer w)) -> (w, DataR (Writer mempty))
   a <- restore (unEff m es) `onException` merge es w0
   (a, ) <$> merge es w0
   where
     merge es w0 =
       -- If an exception is thrown, restore w0 and keep parts of w1.
-      stateEnv es $ \(DataA (Writer w1)) -> (w1, DataA (Writer (w0 <> w1)))
+      stateEnv es $ \(DataR (Writer w1)) -> (w1, DataR (Writer (w0 <> w1)))
 
 -- | Execute an action and append its output to the overall output of the
 -- 'Writer', then return the final value along with a function of the recorded

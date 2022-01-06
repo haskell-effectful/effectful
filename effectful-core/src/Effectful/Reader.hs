@@ -15,17 +15,19 @@ import Effectful.Monad
 newtype Reader r :: Effect where
   Reader :: r -> Reader r m a
 
+type instance DispatchOf (Reader r) = 'Static
+
 -- | Run a 'Reader' effect with the given initial environment.
 runReader
   :: r -- ^ An initial environment.
   -> Eff (Reader r : es) a
   -> Eff es a
-runReader r = evalData (DataA (Reader r))
+runReader r = evalData (DataR (Reader r))
 
 -- | Fetch the value of the environment.
 ask :: Reader r :> es => Eff es r
 ask = do
-  DataA (Reader r) <- getData
+  DataR (Reader r) <- getData
   pure r
 
 -- | Retrieve a function of the current environment.
@@ -46,4 +48,4 @@ local
   => (r -> r) -- ^ The function to modify the environment.
   -> Eff es a
   -> Eff es a
-local f = localData $ \(DataA (Reader r)) -> DataA (Reader (f r))
+local f = localData $ \(DataR (Reader r)) -> DataR (Reader (f r))

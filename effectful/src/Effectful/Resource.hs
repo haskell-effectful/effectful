@@ -31,13 +31,15 @@ import Effectful.Monad
 newtype Resource :: Effect where
   Resource :: R.InternalState -> Resource m r
 
+type instance DispatchOf Resource = 'Static
+
 -- | Run the resource effect.
 runResource :: IOE :> es => Eff (Resource : es) a -> Eff es a
 runResource m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   istate <- R.createInternalState
   mask $ \restore -> do
-    es <- unsafeConsEnv (DataA (Resource istate)) noRelinker es0
+    es <- unsafeConsEnv (DataR (Resource istate)) noRelinker es0
     a <- restore (unEff m es) `catch` \e -> do
       unsafeTailEnv size0 es
       RI.stateCleanupChecked (Just e) istate
@@ -52,18 +54,18 @@ runResource m = unsafeEff $ \es0 -> do
 -- | Get the 'R.InternalState' of the current 'Resource' effect.
 getInternalState :: Resource :> es => Eff es R.InternalState
 getInternalState = do
-  DataA (Resource istate) <- getData
+  DataR (Resource istate) <- getData
   pure istate
 
 -- | Run the 'Resource' effect with existing 'R.InternalState'.
 --
 -- /Note:/ the 'R.InternalState' will not be closed at the end.
 runInternalState :: R.InternalState -> Eff (Resource : es) a -> Eff es a
-runInternalState istate = evalData (DataA (Resource istate))
+runInternalState istate = evalData (DataR (Resource istate))
 
 ----------------------------------------
 -- Orphan instance
 
 instance (IOE :> es, Resource :> es) => R.MonadResource (Eff es) where
   liftResourceT (RI.ResourceT m) = unsafeEff $ \es -> do
-    getEnv es >>= \(DataA (Resource istate)) -> m istate
+    getEnv es >>= \(DataR (Resource istate)) -> m istate

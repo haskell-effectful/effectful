@@ -57,8 +57,10 @@ import Effectful.Monad
 data Process :: Effect where
   Process :: Process m r
 
+type instance DispatchOf Process = 'Static
+
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
-runProcess = evalData (DataA Process)
+runProcess = evalData (DataR Process)
 
 ----------------------------------------
 -- Running sub-processes

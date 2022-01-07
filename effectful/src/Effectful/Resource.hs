@@ -54,14 +54,14 @@ runResource m = unsafeEff $ \es0 -> do
 -- | Get the 'R.InternalState' of the current 'Resource' effect.
 getInternalState :: Resource :> es => Eff es R.InternalState
 getInternalState = do
-  Resource istate <- getData
+  Resource istate <- getStaticRep
   pure istate
 
 -- | Run the 'Resource' effect with existing 'R.InternalState'.
 --
 -- /Note:/ the 'R.InternalState' will not be closed at the end.
 runInternalState :: R.InternalState -> Eff (Resource : es) a -> Eff es a
-runInternalState istate = evalData (Resource istate)
+runInternalState istate = evalStaticRep (Resource istate)
 
 ----------------------------------------
 -- Orphan instance

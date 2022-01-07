@@ -54,7 +54,7 @@ newtype instance StaticRep (State s) = State (MVar s)
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = do
   v <- unsafeEff_ $ newMVar s
-  a <- evalData (State v) m
+  a <- evalStaticRep (State v) m
   (a, ) <$> unsafeEff_ (readMVar v)
 
 -- | Run a 'State' effect with the given initial state and return the final
@@ -62,14 +62,14 @@ runState s m = do
 evalState :: s -> Eff (State s : es) a -> Eff es a
 evalState s m = do
   v <- unsafeEff_ $ newMVar s
-  evalData (State v) m
+  evalStaticRep (State v) m
 
 -- | Run a 'State' effect with the given initial state and return the final
 -- state, discarding the final value.
 execState :: s -> Eff (State s : es) a -> Eff es s
 execState s m = do
   v <- unsafeEff_ $ newMVar s
-  _ <- evalData (State v) m
+  _ <- evalStaticRep (State v) m
   unsafeEff_ $ readMVar v
 
 -- | Fetch the current value of the state.

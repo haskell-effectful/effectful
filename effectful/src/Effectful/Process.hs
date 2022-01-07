@@ -60,7 +60,7 @@ type instance DispatchOf Process = 'Static
 data instance StaticRep Process = Process
 
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
-runProcess = evalData Process
+runProcess = evalStaticRep Process
 
 ----------------------------------------
 -- Running sub-processes

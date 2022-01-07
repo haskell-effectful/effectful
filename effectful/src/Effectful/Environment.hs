@@ -30,7 +30,7 @@ data instance StaticRep Environment = Environment
 
 -- | Run the 'Environment' effect.
 runEnvironment :: IOE :> es => Eff (Environment : es) a -> Eff es a
-runEnvironment = evalData Environment
+runEnvironment = evalStaticRep Environment
 
 -- | Lifted 'E.getArgs'.
 getArgs :: Environment :> es => Eff es [String]

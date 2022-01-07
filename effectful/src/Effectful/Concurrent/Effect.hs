@@ -74,7 +74,7 @@ data instance StaticRep Concurrent = Concurrent
 
 -- | Run the 'Concurrent' effect.
 runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a
-runConcurrent = evalData Concurrent
+runConcurrent = evalStaticRep Concurrent
 
 -- $setup
 -- >>> import Effectful.Concurrent

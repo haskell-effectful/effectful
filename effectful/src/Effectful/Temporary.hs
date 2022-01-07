@@ -21,7 +21,7 @@ data instance StaticRep Temporary = Temporary
 
 -- | Run the 'Temporary' effect.
 runTemporary :: IOE :> es => Eff (Temporary : es) a -> Eff es a
-runTemporary = evalData Temporary
+runTemporary = evalStaticRep Temporary
 
 -- | Lifted 'T.withSystemTempFile'.
 withSystemTempFile

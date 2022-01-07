@@ -17,7 +17,7 @@ data instance StaticRep Timeout = Timeout
 
 -- | Run the 'Timeout' effect.
 runTimeout :: IOE :> es => Eff (Timeout : es) a -> Eff es a
-runTimeout = evalData Timeout
+runTimeout = evalStaticRep Timeout
 
 -- | Lifted 'T.timeout'.
 timeout

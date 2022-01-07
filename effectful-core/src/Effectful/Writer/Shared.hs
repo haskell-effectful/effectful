@@ -41,7 +41,7 @@ newtype instance StaticRep (Writer w) = Writer (MVar w)
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
   v <- unsafeEff_ $ newMVar mempty
-  a <- evalData (Writer v) m
+  a <- evalStaticRep (Writer v) m
   (a, ) <$> unsafeEff_ (readMVar v)
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
@@ -49,7 +49,7 @@ runWriter m = do
 execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
   v <- unsafeEff_ $ newMVar mempty
-  _ <- evalData (Writer v) m
+  _ <- evalStaticRep (Writer v) m
   unsafeEff_ $ readMVar v
 
 -- | Append the given output to the overall output of the 'Writer'.

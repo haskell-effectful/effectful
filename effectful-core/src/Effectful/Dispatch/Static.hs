@@ -3,16 +3,16 @@ module Effectful.Dispatch.Static
     StaticRep
 
     -- ** Extending the environment
-  , runData
-  , evalData
-  , execData
+  , runStaticRep
+  , evalStaticRep
+  , execStaticRep
 
     -- ** Data retrieval and update
-  , getData
-  , putData
-  , stateData
-  , stateDataM
-  , localData
+  , getStaticRep
+  , putStaticRep
+  , stateStaticRep
+  , stateStaticRepM
+  , localStaticRep
 
     -- ** Unlifts
   , seqUnliftIO

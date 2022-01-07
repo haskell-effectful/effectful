@@ -40,19 +40,19 @@ newtype instance StaticRep (Writer w) = Writer w
 -- output.
 runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
-  (a, Writer w) <- runData (Writer mempty) m
+  (a, Writer w) <- runStaticRep (Writer mempty) m
   pure (a, w)
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
 -- value.
 execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
-  Writer w <- execData (Writer mempty) m
+  Writer w <- execStaticRep (Writer mempty) m
   pure w
 
 -- | Append the given output to the overall output of the 'Writer'.
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
-tell w = stateData $ \(Writer w0) -> ((), Writer (w0 <> w))
+tell w = stateStaticRep $ \(Writer w0) -> ((), Writer (w0 <> w))
 
 -- | Execute an action and append its output to the overall output of the
 -- 'Writer'.

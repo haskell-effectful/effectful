@@ -359,7 +359,7 @@ checkSizeEnv k (Env (Forks _ baseIx lref _) _ _) = do
 -- This function is __highly unsafe__ because:
 --
 -- - The @rep@ type variable is unrestricted, so it's possible to put in a
---   different data type that will be retrieved later.
+--   different data type than the one retrieved later.
 --
 -- - It renders the input 'Env' unusable until the corresponding 'unsafeTailEnv'
 --   call is made, but it's not checked anywhere.

@@ -389,11 +389,11 @@ send op = unsafeEff $ \es -> do
 -- | Internal representations of statically dispatched effects.
 data family StaticRep (e :: Effect) :: Type
 
--- | Run a statically dispatched effect with the given initial state and return
--- the final value along with the final state.
+-- | Run a statically dispatched effect with the given initial representation
+-- and return the final value along with the final state.
 runData
   :: DispatchOf e ~ 'Static
-  => StaticRep e -- ^ An initial state.
+  => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es (a, StaticRep e)
 runData e0 m = unsafeEff $ \es0 -> do
@@ -402,11 +402,11 @@ runData e0 m = unsafeEff $ \es0 -> do
             (unsafeTailEnv size0)
             (\es -> (,) <$> unEff m es <*> getEnv es)
 
--- | Run a statically dispatched effect with the given initial state and return
--- the final value, discarding the final state.
+-- | Run a statically dispatched effect with the given initial representation
+-- and return the final value, discarding the final state.
 evalData
   :: DispatchOf e ~ 'Static
-  => StaticRep e -- ^ An initial state.
+  => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es a
 evalData e m = unsafeEff $ \es0 -> do
@@ -415,11 +415,11 @@ evalData e m = unsafeEff $ \es0 -> do
             (unsafeTailEnv size0)
             (\es -> unEff m es)
 
--- | Run a statically dispatched effect with the given initial state and return
--- the final state, discarding the final value.
+-- | Run a statically dispatched effect with the given initial representation
+-- and return the final state, discarding the final value.
 execData
   :: DispatchOf e ~ 'Static
-  => StaticRep e -- ^ An initial state.
+  => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es (StaticRep e)
 execData e0 m = unsafeEff $ \es0 -> do
@@ -428,36 +428,40 @@ execData e0 m = unsafeEff $ \es0 -> do
             (unsafeTailEnv size0)
             (\es -> unEff m es *> getEnv es)
 
--- | Fetch the current state of the effect.
+-- | Fetch the current representation of the effect.
 getData :: (DispatchOf e ~ 'Static, e :> es) => Eff es (StaticRep e)
 getData = unsafeEff $ \es -> getEnv es
 
--- | Set the current state of the effect to the given value.
+-- | Set the current representation of the effect to the given value.
 putData :: (DispatchOf e ~ 'Static, e :> es) => StaticRep e -> Eff es ()
 putData s = unsafeEff $ \es -> putEnv es s
 
--- | Apply the function to the current state of the effect and return a value.
+-- | Apply the function to the current representation of the effect and return a
+-- value.
 stateData
   :: (DispatchOf e ~ 'Static, e :> es)
   => (StaticRep e -> (a, StaticRep e)) -- ^ The function to modify the state.
   -> Eff es a
 stateData f = unsafeEff $ \es -> stateEnv es f
 
--- | Apply the monadic function to the current state of the effect and return a
--- value.
+-- | Apply the monadic function to the current representation of the effect and
+-- return a value.
 stateDataM
   :: (DispatchOf e ~ 'Static, e :> es)
-  => (StaticRep e -> Eff es (a, StaticRep e)) -- ^ The function to modify the state.
+  => (StaticRep e -> Eff es (a, StaticRep e))
+  -- ^ The function to modify the representation.
   -> Eff es a
 stateDataM f = unsafeEff $ \es -> E.mask $ \release -> do
   (a, s) <- (\s0 -> release $ unEff (f s0) es) =<< getEnv es
   putEnv es s
   pure a
 
--- | Execute a computation with a temporarily modified state of the effect.
+-- | Execute a computation with a temporarily modified representation of the
+-- effect.
 localData
   :: (DispatchOf e ~ 'Static, e :> es)
-  => (StaticRep e -> StaticRep e) -- ^ The function to temporarily modify the state.
+  => (StaticRep e -> StaticRep e)
+  -- ^ The function to temporarily modify the representation.
   -> Eff es a
   -> Eff es a
 localData f m = unsafeEff $ \es -> do
@@ -466,41 +470,45 @@ localData f m = unsafeEff $ \es -> do
             (\_ -> unEff m es)
 
 ----------------------------------------
+-- Safer interface for Env
 
--- | Extend the environment with a new data type (in place).
+-- | Extend the environment with a new effect (in place).
 --
 -- This function is __highly unsafe__ because it renders the input 'Env'
 -- unusable until the corresponding 'unsafeTailEnv' call is made, but it's not
 -- checked anywhere.
 unsafeConsEnv
   :: EffectRep (DispatchOf e) e
+  -- ^ The representation of the effect.
   -> Relinker (EffectRep (DispatchOf e)) e
   -> Env es
   -> IO (Env (e : es))
 unsafeConsEnv = veryUnsafeConsEnv
 
--- | Extract a specific data type from the environment.
+-- | Extract a specific representation of the effect from the environment.
 getEnv :: e :> es => Env es -> IO (EffectRep (DispatchOf e) e)
 getEnv = unsafeGetEnv
 
--- | Replace the data type in the environment with a new value (in place).
+-- | Replace the representation of the effect in the environment with a new
+-- value (in place).
 putEnv :: e :> es => Env es -> EffectRep (DispatchOf e) e -> IO ()
 putEnv = unsafePutEnv
 
--- | Modify the data type in the environment (in place) and return a value.
+-- | Modify the representation of the effect in the environment (in place) and
+-- return a value.
 stateEnv
   :: e :> es
   => Env es
   -> (EffectRep (DispatchOf e) e -> (a, EffectRep (DispatchOf e) e))
-  -- ^ The function to modify the data type.
+  -- ^ The function to modify the representation.
   -> IO a
 stateEnv = unsafeStateEnv
 
--- | Modify the data type in the environment (in place).
+-- | Modify the representation of the effect in the environment (in place).
 modifyEnv
   :: e :> es
   => Env es
   -> (EffectRep (DispatchOf e) e -> EffectRep (DispatchOf e) e)
-  -- ^ The function to modify the data type.
+  -- ^ The function to modify the representation.
   -> IO ()
 modifyEnv = unsafeModifyEnv

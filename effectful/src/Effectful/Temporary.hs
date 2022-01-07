@@ -14,12 +14,14 @@ import Effectful.Dispatch.Static
 import Effectful.Monad
 
 -- | An effect for interacting with temporary files.
-data Temporary :: Effect where
-  Temporary :: Temporary m r
+data Temporary :: Effect
+
+type instance DispatchOf Temporary = 'Static
+data instance StaticRep Temporary = Temporary
 
 -- | Run the 'Temporary' effect.
 runTemporary :: IOE :> es => Eff (Temporary : es) a -> Eff es a
-runTemporary = evalData (DataA Temporary)
+runTemporary = evalStaticRep Temporary
 
 -- | Lifted 'T.withSystemTempFile'.
 withSystemTempFile

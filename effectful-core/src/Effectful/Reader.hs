@@ -12,20 +12,22 @@ import Effectful.Monad
 
 -- | Provide access to a strict (WHNF), thread local, read only value of type
 -- @r@.
-newtype Reader r :: Effect where
-  Reader :: r -> Reader r m a
+data Reader r :: Effect
+
+type instance DispatchOf (Reader r) = 'Static
+newtype instance StaticRep (Reader r) = Reader r
 
 -- | Run a 'Reader' effect with the given initial environment.
 runReader
   :: r -- ^ An initial environment.
   -> Eff (Reader r : es) a
   -> Eff es a
-runReader r = evalData (DataA (Reader r))
+runReader r = evalStaticRep (Reader r)
 
 -- | Fetch the value of the environment.
 ask :: Reader r :> es => Eff es r
 ask = do
-  DataA (Reader r) <- getData
+  Reader r <- getStaticRep
   pure r
 
 -- | Retrieve a function of the current environment.
@@ -46,4 +48,4 @@ local
   => (r -> r) -- ^ The function to modify the environment.
   -> Eff es a
   -> Eff es a
-local f = localData $ \(DataA (Reader r)) -> DataA (Reader (f r))
+local f = localStaticRep $ \(Reader r) -> Reader (f r)

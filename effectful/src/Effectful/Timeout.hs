@@ -10,12 +10,14 @@ import Effectful.Dispatch.Static
 import Effectful.Monad
 
 -- | An effect for timing out computations.
-data Timeout :: Effect where
-  Timeout :: Timeout m r
+data Timeout :: Effect
+
+type instance DispatchOf Timeout = 'Static
+data instance StaticRep Timeout = Timeout
 
 -- | Run the 'Timeout' effect.
 runTimeout :: IOE :> es => Eff (Timeout : es) a -> Eff es a
-runTimeout = evalData (DataA Timeout)
+runTimeout = evalStaticRep Timeout
 
 -- | Lifted 'T.timeout'.
 timeout

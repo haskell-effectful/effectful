@@ -1,18 +1,18 @@
 module Effectful.Dispatch.Static
   ( -- * Low level API
-    DataA(..)
+    StaticRep
 
     -- ** Extending the environment
-  , runData
-  , evalData
-  , execData
+  , runStaticRep
+  , evalStaticRep
+  , execStaticRep
 
     -- ** Data retrieval and update
-  , getData
-  , putData
-  , stateData
-  , stateDataM
-  , localData
+  , getStaticRep
+  , putStaticRep
+  , stateStaticRep
+  , stateStaticRepM
+  , localStaticRep
 
     -- ** Unlifts
   , seqUnliftIO
@@ -29,6 +29,9 @@ module Effectful.Dispatch.Static
   , Env
   , Relinker(..)
   , noRelinker
+
+    -- ** Representation of effects
+  , EffectRep
 
     -- ** Operations
   , emptyEnv

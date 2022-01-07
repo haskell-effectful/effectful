@@ -91,8 +91,10 @@ import Effectful.Dispatch.Static
 import Effectful.Monad
 
 -- | Provide the ability to handle errors of type @e@.
-newtype Error e :: Effect where
-  Error :: ErrorId -> Error e m r
+data Error e :: Effect
+
+type instance DispatchOf (Error e) = 'Static
+newtype instance StaticRep (Error e) = Error ErrorId
 
 -- | Handle errors of type @e@.
 runError
@@ -102,7 +104,7 @@ runError
 runError m = unsafeEff $ \es0 -> mask $ \release -> do
   eid <- newErrorId
   size0 <- sizeEnv es0
-  es <- unsafeConsEnv (DataA (Error @e eid)) noRelinker es0
+  es <- unsafeConsEnv (Error @e eid) noRelinker es0
   r <- tryErrorIO release eid es `onException` unsafeTailEnv size0 es
   unsafeTailEnv size0 es
   pure r
@@ -119,7 +121,7 @@ throwError
   -- ^ The error.
   -> Eff es a
 throwError e = unsafeEff $ \es -> do
-  DataA (Error eid) <- getEnv @(Error e) es
+  Error eid <- getEnv @(Error e) es
   throwIO $ ErrorEx eid callStack e
 
 -- | Handle an error of type @e@.
@@ -131,7 +133,7 @@ catchError
   -- ^ A handler for errors in the inner computation.
   -> Eff es a
 catchError m handler = unsafeEff $ \es -> do
-  DataA (Error eid) <- getEnv @(Error e) es
+  Error eid <- getEnv @(Error e) es
   size <- sizeEnv es
   catchErrorIO eid (unEff m es) $ \cs e -> do
     checkSizeEnv size es

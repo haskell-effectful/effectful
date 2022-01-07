@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-noncanonical-monad-instances #-}
 {-# OPTIONS_HADDOCK not-home #-}
@@ -40,23 +41,35 @@ module Effectful.Internal.Monad
 
   -- * Effects
 
+  -- * Dispatch
+  , Dispatch(..)
+  , DispatchOf
+  , EffectRep
+
   -- ** Dynamic dispatch
   , EffectHandler
   , LocalEnv(..)
-  , HandlerA(..)
+  , Handler(..)
   , runHandler
   , send
 
   -- ** Static dispatch
-  , DataA(..)
-  , runData
-  , evalData
-  , execData
-  , getData
-  , putData
-  , stateData
-  , stateDataM
-  , localData
+  , StaticRep
+  , runStaticRep
+  , evalStaticRep
+  , execStaticRep
+  , getStaticRep
+  , putStaticRep
+  , stateStaticRep
+  , stateStaticRepM
+  , localStaticRep
+
+  -- *** Primitive operations
+  , unsafeConsEnv
+  , getEnv
+  , putEnv
+  , stateEnv
+  , modifyEnv
   ) where
 
 import Control.Applicative (liftA2)
@@ -145,12 +158,12 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 -- | Get the current 'UnliftStrategy'.
 unliftStrategy :: IOE :> es => Eff es UnliftStrategy
 unliftStrategy = do
-  DataA (IOE unlift) <- getData
+  IOE unlift <- getStaticRep
   pure unlift
 
 -- | Locally override the 'UnliftStrategy' with the given value.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
-withUnliftStrategy unlift = localData $ \_ -> DataA (IOE unlift)
+withUnliftStrategy unlift = localStaticRep $ \_ -> IOE unlift
 
 -- | Create an unlifting function with the current 'UnliftStrategy'.
 --
@@ -252,6 +265,8 @@ instance C.MonadMask (Eff es) where
 data Fail :: Effect where
   Fail :: String -> Fail m a
 
+type instance DispatchOf Fail = 'Dynamic
+
 instance Fail :> es => MonadFail (Eff es) where
   fail = send . Fail
 
@@ -259,14 +274,16 @@ instance Fail :> es => MonadFail (Eff es) where
 -- IO
 
 -- | Run arbitrary 'IO' computations via 'MonadIO' or 'MonadUnliftIO'.
-newtype IOE :: Effect where
-  IOE :: UnliftStrategy -> IOE m r
+data IOE :: Effect
+
+type instance DispatchOf IOE = 'Static
+newtype instance StaticRep IOE = IOE UnliftStrategy
 
 -- | Run an 'Eff' computation with side effects.
 --
 -- For running pure computations see 'runPureEff'.
 runEff :: Eff '[IOE] a -> IO a
-runEff m = unEff (evalData (DataA (IOE SeqUnlift)) m) =<< emptyEnv
+runEff m = unEff (evalStaticRep (IOE SeqUnlift) m) =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
@@ -291,16 +308,33 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
 -- Primitive
 
 -- | Provide the ability to perform primitive state-transformer actions.
-data Prim :: Effect where
-  Prim :: Prim m r
+data Prim :: Effect
+
+type instance DispatchOf Prim = 'Static
+data instance StaticRep Prim = Prim
 
 -- | Run an 'Eff' computation with primitive state-transformer actions.
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
-runPrim = evalData (DataA Prim)
+runPrim = evalStaticRep Prim
 
 instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
   primitive = unsafeEff_ . IO
+
+----------------------------------------
+-- Dispatch
+
+-- | A type of dispatch. For more information consult the documentation in
+-- "Effectful.Dispatch.Dynamic" and "Effectful.Dispatch.Static".
+data Dispatch = Dynamic | Static
+
+-- | Dispatch types of effects.
+type family DispatchOf (e :: Effect) :: Dispatch
+
+-- | Internal representations of effects.
+type family EffectRep (d :: Dispatch) = (r :: Effect -> Type) | r -> d where
+  EffectRep 'Dynamic = Handler
+  EffectRep 'Static  = StaticRep
 
 ----------------------------------------
 -- Dynamic dispatch
@@ -325,91 +359,157 @@ type EffectHandler e es
   -- ^ The effect performed in the local environment.
   -> Eff es a
 
--- | An adapter for dynamically dispatched effects.
---
--- Represents the effect handler bundled with its environment.
-data HandlerA :: Effect -> Type where
-  HandlerA :: !(Env es) -> !(EffectHandler e es) -> HandlerA e
+-- | An internal representation of dynamically dispatched effects, i.e. the
+-- effect handler bundled with its environment.
+data Handler :: Effect -> Type where
+  Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
 
 -- | Run a dynamically dispatched effect with the given handler.
-runHandler :: HandlerA e -> Eff (e : es) a -> Eff es a
+runHandler :: DispatchOf e ~ 'Dynamic => Handler e -> Eff (e : es) a -> Eff es a
 runHandler e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e relinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es)
   where
-    relinker :: Relinker HandlerA e
-    relinker = Relinker $ \relink (HandlerA handlerEs handle) -> do
+    relinker :: Relinker Handler e
+    relinker = Relinker $ \relink (Handler handlerEs handle) -> do
       newHandlerEs <- relink handlerEs
-      pure $ HandlerA newHandlerEs handle
+      pure $ Handler newHandlerEs handle
 
 -- | Send an operation of the given effect to its handler for execution.
-send :: (HasCallStack, e :> es) => e (Eff es) a -> Eff es a
+send :: (HasCallStack, DispatchOf e ~ 'Dynamic, e :> es) => e (Eff es) a -> Eff es a
 send op = unsafeEff $ \es -> do
-  HandlerA handlerEs handle <- getEnv es
+  Handler handlerEs handle <- getEnv es
   unEff (handle (LocalEnv es) op) handlerEs
 
 ----------------------------------------
 -- Static dispatch
 
--- | An adapter for statically dispatched effects.
---
--- Represents an arbitrary data type with the appropriate number of phantom type
--- parameters.
-newtype DataA :: Effect -> Type where
-  DataA :: (forall m r. e m r) -> DataA e
+-- | Internal representations of statically dispatched effects.
+data family StaticRep (e :: Effect) :: Type
 
--- | Run a statically dispatched effect with the given initial state and return
--- the final value along with the final state.
-runData :: DataA e -> Eff (e : es) a -> Eff es (a, DataA e)
-runData e0 m = unsafeEff $ \es0 -> do
+-- | Run a statically dispatched effect with the given initial representation
+-- and return the final value along with the final representation.
+runStaticRep
+  :: DispatchOf e ~ 'Static
+  => StaticRep e -- ^ The initial representation.
+  -> Eff (e : es) a
+  -> Eff es (a, StaticRep e)
+runStaticRep e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e0 noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> (,) <$> unEff m es <*> getEnv es)
 
--- | Run a statically dispatched effect with the given initial state and return
--- the final value, discarding the final state.
-evalData :: DataA e -> Eff (e : es) a -> Eff es a
-evalData e m = unsafeEff $ \es0 -> do
+-- | Run a statically dispatched effect with the given initial representation
+-- and return the final value, discarding the final representation.
+evalStaticRep
+  :: DispatchOf e ~ 'Static
+  => StaticRep e -- ^ The initial representation.
+  -> Eff (e : es) a
+  -> Eff es a
+evalStaticRep e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es)
 
--- | Run a statically dispatched effect with the given initial state and return
--- the final state, discarding the final value.
-execData :: DataA e -> Eff (e : es) a -> Eff es (DataA e)
-execData e0 m = unsafeEff $ \es0 -> do
+-- | Run a statically dispatched effect with the given initial representation
+-- and return the final representation, discarding the final value.
+execStaticRep
+  :: DispatchOf e ~ 'Static
+  => StaticRep e -- ^ The initial representation.
+  -> Eff (e : es) a
+  -> Eff es (StaticRep e)
+execStaticRep e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e0 noRelinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es *> getEnv es)
 
--- | Fetch the current state of the effect.
-getData :: e :> es => Eff es (DataA e)
-getData = unsafeEff $ \es -> getEnv es
+-- | Fetch the current representation of the effect.
+getStaticRep :: (DispatchOf e ~ 'Static, e :> es) => Eff es (StaticRep e)
+getStaticRep = unsafeEff $ \es -> getEnv es
 
--- | Set the current state of the effect to the given value.
-putData :: e :> es => DataA e -> Eff es ()
-putData e = unsafeEff $ \es -> putEnv es e
+-- | Set the current representation of the effect to the given value.
+putStaticRep :: (DispatchOf e ~ 'Static, e :> es) => StaticRep e -> Eff es ()
+putStaticRep s = unsafeEff $ \es -> putEnv es s
 
--- | Apply the function to the current state of the effect and return a value.
-stateData :: e :> es => (DataA e -> (a, DataA e)) -> Eff es a
-stateData f = unsafeEff $ \es -> stateEnv es f
-
--- | Apply the monadic function to the current state of the effect and return a
+-- | Apply the function to the current representation of the effect and return a
 -- value.
-stateDataM :: e :> es => (DataA e -> Eff es (a, DataA e)) -> Eff es a
-stateDataM f = unsafeEff $ \es -> E.mask $ \release -> do
-  (a, e) <- (\e -> release $ unEff (f e) es) =<< getEnv es
-  putEnv es e
+stateStaticRep
+  :: (DispatchOf e ~ 'Static, e :> es)
+  => (StaticRep e -> (a, StaticRep e))
+  -- ^ The function to modify the representation.
+  -> Eff es a
+stateStaticRep f = unsafeEff $ \es -> stateEnv es f
+
+-- | Apply the monadic function to the current representation of the effect and
+-- return a value.
+stateStaticRepM
+  :: (DispatchOf e ~ 'Static, e :> es)
+  => (StaticRep e -> Eff es (a, StaticRep e))
+  -- ^ The function to modify the representation.
+  -> Eff es a
+stateStaticRepM f = unsafeEff $ \es -> E.mask $ \release -> do
+  (a, s) <- (\s0 -> release $ unEff (f s0) es) =<< getEnv es
+  putEnv es s
   pure a
 
--- | Execute a computation with a temporarily modified state of the effect.
-localData :: e :> es => (DataA e -> DataA e) -> Eff es a -> Eff es a
-localData f m = unsafeEff $ \es -> do
-  E.bracket (stateEnv es $ \e -> (e, f e))
-            (\e -> putEnv es e)
+-- | Execute a computation with a temporarily modified representation of the
+-- effect.
+localStaticRep
+  :: (DispatchOf e ~ 'Static, e :> es)
+  => (StaticRep e -> StaticRep e)
+  -- ^ The function to temporarily modify the representation.
+  -> Eff es a
+  -> Eff es a
+localStaticRep f m = unsafeEff $ \es -> do
+  E.bracket (stateEnv es $ \s -> (s, f s))
+            (\s -> putEnv es s)
             (\_ -> unEff m es)
+
+----------------------------------------
+-- Safer interface for Env
+
+-- | Extend the environment with a new effect (in place).
+--
+-- This function is __highly unsafe__ because it renders the input 'Env'
+-- unusable until the corresponding 'unsafeTailEnv' call is made, but it's not
+-- checked anywhere.
+unsafeConsEnv
+  :: EffectRep (DispatchOf e) e
+  -- ^ The representation of the effect.
+  -> Relinker (EffectRep (DispatchOf e)) e
+  -> Env es
+  -> IO (Env (e : es))
+unsafeConsEnv = veryUnsafeConsEnv
+
+-- | Extract a specific representation of the effect from the environment.
+getEnv :: e :> es => Env es -> IO (EffectRep (DispatchOf e) e)
+getEnv = unsafeGetEnv
+
+-- | Replace the representation of the effect in the environment with a new
+-- value (in place).
+putEnv :: e :> es => Env es -> EffectRep (DispatchOf e) e -> IO ()
+putEnv = unsafePutEnv
+
+-- | Modify the representation of the effect in the environment (in place) and
+-- return a value.
+stateEnv
+  :: e :> es
+  => Env es
+  -> (EffectRep (DispatchOf e) e -> (a, EffectRep (DispatchOf e) e))
+  -- ^ The function to modify the representation.
+  -> IO a
+stateEnv = unsafeStateEnv
+
+-- | Modify the representation of the effect in the environment (in place).
+modifyEnv
+  :: e :> es
+  => Env es
+  -> (EffectRep (DispatchOf e) e -> EffectRep (DispatchOf e) e)
+  -- ^ The function to modify the representation.
+  -> IO ()
+modifyEnv = unsafeModifyEnv

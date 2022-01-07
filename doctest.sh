@@ -13,6 +13,7 @@ run_doctest() {
   pushd "${1}"
   doctest \
     "${2}" \
+    -XHaskell2010 \
     -XBangPatterns \
     -XConstraintKinds \
     -XDataKinds \

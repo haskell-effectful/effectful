@@ -44,17 +44,19 @@ import Effectful.Internal.Monad
 
 -- | Interpret an effect.
 interpret
-  :: EffectHandler e es
+  :: DispatchOf e ~ 'Dynamic
+  => EffectHandler e es
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
 interpret handler m = unsafeEff $ \es -> do
   les <- forkEnv es
-  (`unEff` es) $ runHandler (HandlerA les handler) m
+  (`unEff` es) $ runHandler (Handler les handler) m
 
 -- | Interpret an effect using other effects.
 reinterpret
-  :: (Eff handlerEs a -> Eff es b)
+  :: DispatchOf e ~ 'Dynamic
+  => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> EffectHandler e handlerEs
   -- ^ The effect handler.
@@ -63,7 +65,7 @@ reinterpret
 reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
   les0 <- forkEnv es
   (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
-    (`unEff` es) $ runHandler (HandlerA les handler) m
+    (`unEff` es) $ runHandler (Handler les handler) m
 
 ----------------------------------------
 -- Unlifts
@@ -163,6 +165,7 @@ withLiftMap !_ k = unsafeEff $ \es -> do
 -- >>> :{
 -- data Fork :: Effect where
 --   ForkWithUnmask :: ((forall a. m a -> m a) -> m ()) -> Fork m ThreadId
+-- type instance DispatchOf Fork = 'Dynamic
 -- :}
 --
 -- >>> :{

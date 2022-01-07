@@ -29,7 +29,7 @@ module Effectful.Internal.Env
   , checkSizeEnv
 
     -- ** Extending and shrinking
-  , unsafeConsEnv
+  , veryUnsafeConsEnv
   , unsafeTailEnv
 
     -- ** Data retrieval and update
@@ -356,11 +356,15 @@ checkSizeEnv k (Env (Forks _ baseIx lref _) _ _) = do
 
 -- | Extend the environment with a new data type (in place).
 --
--- This function is __highly unsafe__ because it renders the input 'Env'
--- unusable until the corresponding 'unsafeTailEnv' call is made, but it's not
--- checked anywhere.
-unsafeConsEnv :: rep e -> Relinker rep e -> Env es -> IO (Env (e : es))
-unsafeConsEnv e f (Env fork gref gen) = case fork of
+-- This function is __highly unsafe__ because:
+--
+-- - The @rep@ type variable is unrestricted, so it's possible to put in a
+--   different data type that will be retrieved later.
+--
+-- - It renders the input 'Env' unusable until the corresponding 'unsafeTailEnv'
+--   call is made, but it's not checked anywhere.
+veryUnsafeConsEnv :: rep e -> Relinker rep e -> Env es -> IO (Env (e : es))
+veryUnsafeConsEnv e f (Env fork gref gen) = case fork of
   NoFork -> do
     extendEnvRef gref
     pure $ Env NoFork gref gen
@@ -390,7 +394,7 @@ unsafeConsEnv e f (Env fork gref gen) = case fork of
 
     doubleCapacity :: Int -> Int
     doubleCapacity n = max 1 n * 2
-{-# NOINLINE unsafeConsEnv #-}
+{-# NOINLINE veryUnsafeConsEnv #-}
 
 -- | Shrink the environment by one data type (in place). Makes sure the size of
 -- the environment is as expected.

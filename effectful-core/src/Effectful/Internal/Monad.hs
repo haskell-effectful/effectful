@@ -65,6 +65,7 @@ module Effectful.Internal.Monad
   , localData
 
   -- *** Primitive operations
+  , unsafeConsEnv
   , getEnv
   , putEnv
   , stateEnv
@@ -465,6 +466,18 @@ localData f m = unsafeEff $ \es -> do
             (\_ -> unEff m es)
 
 ----------------------------------------
+
+-- | Extend the environment with a new data type (in place).
+--
+-- This function is __highly unsafe__ because it renders the input 'Env'
+-- unusable until the corresponding 'unsafeTailEnv' call is made, but it's not
+-- checked anywhere.
+unsafeConsEnv
+  :: EffectRep (DispatchOf e) e
+  -> Relinker (EffectRep (DispatchOf e)) e
+  -> Env es
+  -> IO (Env (e : es))
+unsafeConsEnv = veryUnsafeConsEnv
 
 -- | Extract a specific data type from the environment.
 getEnv :: e :> es => Env es -> IO (EffectRep (DispatchOf e) e)

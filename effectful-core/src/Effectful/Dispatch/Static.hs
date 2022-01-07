@@ -30,6 +30,9 @@ module Effectful.Dispatch.Static
   , Relinker(..)
   , noRelinker
 
+    -- ** Representation of effects
+  , EffectRep
+
     -- ** Operations
   , emptyEnv
   , cloneEnv
@@ -42,7 +45,6 @@ module Effectful.Dispatch.Static
   , unsafeTailEnv
 
     -- ** Data retrieval and update
-  , EffectRep
   , getEnv
   , putEnv
   , stateEnv

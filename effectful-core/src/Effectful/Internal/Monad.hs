@@ -390,7 +390,7 @@ send op = unsafeEff $ \es -> do
 data family StaticRep (e :: Effect) :: Type
 
 -- | Run a statically dispatched effect with the given initial representation
--- and return the final value along with the final state.
+-- and return the final value along with the final representation.
 runStaticRep
   :: DispatchOf e ~ 'Static
   => StaticRep e -- ^ The initial representation.
@@ -403,7 +403,7 @@ runStaticRep e0 m = unsafeEff $ \es0 -> do
             (\es -> (,) <$> unEff m es <*> getEnv es)
 
 -- | Run a statically dispatched effect with the given initial representation
--- and return the final value, discarding the final state.
+-- and return the final value, discarding the final representation.
 evalStaticRep
   :: DispatchOf e ~ 'Static
   => StaticRep e -- ^ The initial representation.
@@ -416,7 +416,7 @@ evalStaticRep e m = unsafeEff $ \es0 -> do
             (\es -> unEff m es)
 
 -- | Run a statically dispatched effect with the given initial representation
--- and return the final state, discarding the final value.
+-- and return the final representation, discarding the final value.
 execStaticRep
   :: DispatchOf e ~ 'Static
   => StaticRep e -- ^ The initial representation.

@@ -440,7 +440,8 @@ putStaticRep s = unsafeEff $ \es -> putEnv es s
 -- value.
 stateStaticRep
   :: (DispatchOf e ~ 'Static, e :> es)
-  => (StaticRep e -> (a, StaticRep e)) -- ^ The function to modify the state.
+  => (StaticRep e -> (a, StaticRep e))
+  -- ^ The function to modify the representation.
   -> Eff es a
 stateStaticRep f = unsafeEff $ \es -> stateEnv es f
 

@@ -34,7 +34,7 @@ import Effectful.Monad
 data Writer w :: Effect
 
 type instance DispatchOf (Writer w) = 'Static
-newtype instance DataR (Writer w) = Writer (MVar w)
+newtype instance StaticRep (Writer w) = Writer (MVar w)
 
 -- | Run a 'Writer' effect and return the final value along with the final
 -- output.

@@ -13,7 +13,7 @@ import Effectful.Monad
 data Timeout :: Effect
 
 type instance DispatchOf Timeout = 'Static
-data instance DataR Timeout = Timeout
+data instance StaticRep Timeout = Timeout
 
 -- | Run the 'Timeout' effect.
 runTimeout :: IOE :> es => Eff (Timeout : es) a -> Eff es a

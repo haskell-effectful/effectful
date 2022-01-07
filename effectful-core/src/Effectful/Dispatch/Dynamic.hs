@@ -51,7 +51,7 @@ interpret
   -> Eff      es  a
 interpret handler m = unsafeEff $ \es -> do
   les <- forkEnv es
-  (`unEff` es) $ runHandler (HandlerR les handler) m
+  (`unEff` es) $ runHandler (Handler les handler) m
 
 -- | Interpret an effect using other effects.
 reinterpret
@@ -65,7 +65,7 @@ reinterpret
 reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
   les0 <- forkEnv es
   (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
-    (`unEff` es) $ runHandler (HandlerR les handler) m
+    (`unEff` es) $ runHandler (Handler les handler) m
 
 ----------------------------------------
 -- Unlifts

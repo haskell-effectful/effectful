@@ -17,7 +17,7 @@ import Effectful.Monad
 data Temporary :: Effect
 
 type instance DispatchOf Temporary = 'Static
-data instance DataR Temporary = Temporary
+data instance StaticRep Temporary = Temporary
 
 -- | Run the 'Temporary' effect.
 runTemporary :: IOE :> es => Eff (Temporary : es) a -> Eff es a

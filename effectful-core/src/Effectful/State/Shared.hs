@@ -47,7 +47,7 @@ import Effectful.Monad
 data State s :: Effect
 
 type instance DispatchOf (State s) = 'Static
-newtype instance DataR (State s) = State (MVar s)
+newtype instance StaticRep (State s) = State (MVar s)
 
 -- | Run a 'State' effect with the given initial state and return the final
 -- value along with the final state.

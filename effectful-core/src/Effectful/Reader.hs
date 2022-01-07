@@ -15,7 +15,7 @@ import Effectful.Monad
 data Reader r :: Effect
 
 type instance DispatchOf (Reader r) = 'Static
-newtype instance DataR (Reader r) = Reader r
+newtype instance StaticRep (Reader r) = Reader r
 
 -- | Run a 'Reader' effect with the given initial environment.
 runReader

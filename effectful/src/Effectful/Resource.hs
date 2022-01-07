@@ -31,7 +31,7 @@ import Effectful.Monad
 data Resource :: Effect
 
 type instance DispatchOf Resource = 'Static
-newtype instance DataR Resource = Resource R.InternalState
+newtype instance StaticRep Resource = Resource R.InternalState
 
 -- | Run the resource effect.
 runResource :: IOE :> es => Eff (Resource : es) a -> Eff es a

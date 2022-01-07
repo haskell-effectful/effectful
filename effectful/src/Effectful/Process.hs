@@ -57,7 +57,7 @@ import Effectful.Monad
 data Process :: Effect
 
 type instance DispatchOf Process = 'Static
-data instance DataR Process = Process
+data instance StaticRep Process = Process
 
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
 runProcess = evalData Process

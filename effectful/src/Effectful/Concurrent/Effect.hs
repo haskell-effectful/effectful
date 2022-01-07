@@ -70,7 +70,7 @@ import Effectful.Monad
 data Concurrent :: Effect
 
 type instance DispatchOf Concurrent = 'Static
-data instance DataR Concurrent = Concurrent
+data instance StaticRep Concurrent = Concurrent
 
 -- | Run the 'Concurrent' effect.
 runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a

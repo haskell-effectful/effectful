@@ -26,7 +26,7 @@ import Effectful.Monad
 data Environment :: Effect
 
 type instance DispatchOf Environment = 'Static
-data instance DataR Environment = Environment
+data instance StaticRep Environment = Environment
 
 -- | Run the 'Environment' effect.
 runEnvironment :: IOE :> es => Eff (Environment : es) a -> Eff es a

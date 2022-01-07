@@ -94,7 +94,7 @@ import Effectful.Monad
 data Error e :: Effect
 
 type instance DispatchOf (Error e) = 'Static
-newtype instance DataR (Error e) = Error ErrorId
+newtype instance StaticRep (Error e) = Error ErrorId
 
 -- | Handle errors of type @e@.
 runError

@@ -20,19 +20,15 @@ Main features:
 
 2. Easy to use API (no boilerplate code and dealing with arcane types).
 
-3. Correct semantics in presence of runtime exceptions (no more lost state
-   modifications).
+3. Correct semantics in presence of runtime exceptions (no more discarded state
+   updates).
 
 4. Seamless integration with the existing ecosystem (`exceptions`,
    `monad-control`, `unliftio-core`, `resourcet` etc.).
 
-5. Effects can be defined for either
+5. Support for thread local and shared state.
 
-   - static dispatch (as fast as it gets, single interpretation) or
-
-   - dynamic dispatch (a bit slower, multiple interpretations),
-
-   depending on your needs.
+6. Support for statically and dynamically dispatched effects.
 
 ## Motivation
 
@@ -48,8 +44,8 @@ below for more information) and potential for good interoperability with the
 existing ecosystem.
 
 The second point is arguably the most important, because it allows focusing on
-things that matter instead of reinventing all kinds of wheels and is crucial for
-adoption of the library.
+things that matter instead of reinventing all kinds of wheels, hence being a
+necessary condition for broader adoption of the library.
 
 However, `eff` uses delimited continuations underneath, which:
 
@@ -70,9 +66,8 @@ monad, then the ability to define effects with non-linear control flow (such as
 `NonDet`) is lost. Arguably it's a small price to pay for predictability,
 because such specialized effects are needed rarely and locally, at which point a
 dedicated, well established solution such as
-[conduit](https://hackage.haskell.org/package/conduit),
-[list-t](https://hackage.haskell.org/package/list-t) or
-[logict](https://hackage.haskell.org/package/logict) can be used.
+[conduit](https://hackage.haskell.org/package/conduit) or
+[list-t](https://hackage.haskell.org/package/list-t) can be used.
 
 This is where `effectful` comes in. The `Eff` monad it uses is essentially a
 `ReaderT` over `IO` on steroids, allowing us to dynamically extend its
@@ -84,8 +79,8 @@ Because this concept is so simple:
 
 - The `Eff` monad being a reader allows for seamless interoperability with
   ubiquitous classes such as `MonadBaseControl` and `MonadUnliftIO` as well as
-  support for handling runtime exceptions without worrying about lost or
-  discarded state (see the talk "Monad Transformer State" linked below for more
+  support for handling runtime exceptions without worrying about discarded state
+  updates (see the talk "Monad Transformer State" linked below for more
   information).
 
 What is more:
@@ -95,8 +90,9 @@ What is more:
   need to mark every function `INLINE` or enable additional optimization passes,
   it just works.
 
-- If an advanced effect with non-linear control flow is needed, you can always
-  stick a transformer that implements it on top of `Eff` in a local context.
+- If an advanced capability with non-linear control flow is needed, you can
+  always stick a transformer that implements it on top of `Eff` in a local
+  context.
 
 In conclusion, `effectful` aims to reduce duplication and bring back performance
 to "boring" transformer stacks, most of which are a dozen of newtype'd `StateT`
@@ -108,14 +104,12 @@ to a type class), not to replace monad transformers altogether.
 The effect system and its effects are split among several libraries:
 
 - The `effectful-core` library contains the main machinery of the effect system
-  itself and a few basic effects.
-  It aims for a small dependency footprint and provides the building blocks for
-  more advanced effects.
+  itself and basic effects. It aims for a small dependency footprint and
+  provides building blocks for more advanced effects.
 
-- _TBD_ `effectful-resource`, `effectful-process`, ...
-
-- Finally, the `effectful` library which comes with 'batteries included'. It is
-  build on top of the other libraries and re-exports the functionality of those.
+- The `effectful` library re-exports public modules of `effectful-core` and in
+  addition provides functionality of the `unliftio` package divided into
+  appropriate effects.
 
 ## Example
 

@@ -11,10 +11,10 @@ import qualified Control.Effect as L
 
 -- effectful
 import qualified Effectful as E
-import qualified Effectful.Reader as E
+import qualified Effectful.Reader.Static as E
 import qualified Effectful.State.Dynamic as ED
-import qualified Effectful.State.Local as EL
-import qualified Effectful.State.Shared as ES
+import qualified Effectful.State.Static.Local as EL
+import qualified Effectful.State.Static.Shared as ES
 
 -- freer-simple
 #ifdef VERSION_freer_simple

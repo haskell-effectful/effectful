@@ -1,5 +1,5 @@
 -- | Support for access to a read only value of a particular type.
-module Effectful.Reader
+module Effectful.Reader.Static
   ( Reader
   , runReader
   , ask

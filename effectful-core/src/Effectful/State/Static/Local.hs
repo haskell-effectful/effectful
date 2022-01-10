@@ -1,9 +1,7 @@
--- | Support for access to a mutable value of a particular type, which is:
+-- | Support for access to a mutable value of a particular type.
 --
--- - thread local (if you want the value to be shared between threads, have a
---   look at "Effectful.State.Shared"),
---
--- - very fast.
+-- The value is thread local. If you want it to be shared between threads, see
+-- "Effectful.State.Static.Shared".
 --
 -- /Note:/ unlike the 'Control.Monad.Trans.State.StateT' monad transformer from
 -- the @transformers@ library, the 'State' effect doesn't lose state
@@ -24,7 +22,7 @@
 --     error "oops"
 -- :}
 -- "Hi there!"
-module Effectful.State.Local
+module Effectful.State.Static.Local
   ( State
   , runState
   , evalState

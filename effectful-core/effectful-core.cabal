@@ -82,8 +82,8 @@ library
     exposed-modules: Effectful
                      Effectful.Dispatch.Dynamic
                      Effectful.Dispatch.Static
-                     Effectful.Error
                      Effectful.Error.Dynamic
+                     Effectful.Error.Static
                      Effectful.Fail
                      Effectful.Internal.Effect
                      Effectful.Internal.Env
@@ -91,13 +91,13 @@ library
                      Effectful.Internal.Unlift
                      Effectful.Monad
                      Effectful.Prim
-                     Effectful.Reader
                      Effectful.Reader.Dynamic
+                     Effectful.Reader.Static
                      Effectful.State.Dynamic
-                     Effectful.State.Local
-                     Effectful.State.Shared
+                     Effectful.State.Static.Local
+                     Effectful.State.Static.Shared
                      Effectful.Writer.Dynamic
-                     Effectful.Writer.Local
-                     Effectful.Writer.Shared
+                     Effectful.Writer.Static.Local
+                     Effectful.Writer.Static.Shared
 
     reexported-modules: Effectful.Internal.Utils

@@ -4,7 +4,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Effectful
-import Effectful.Error
+import Effectful.Error.Static
 
 errorTests :: TestTree
 errorTests = testGroup "Error"

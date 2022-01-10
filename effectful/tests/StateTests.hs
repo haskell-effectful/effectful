@@ -7,7 +7,7 @@ import qualified Control.Exception.Lifted as LE
 import qualified UnliftIO.Exception as UE
 
 import Effectful
-import Effectful.State.Local
+import Effectful.State.Static.Local
 import qualified Utils as U
 
 stateTests :: TestTree

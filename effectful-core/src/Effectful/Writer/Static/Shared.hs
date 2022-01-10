@@ -1,9 +1,7 @@
--- | Support for access to a write only value of a particular type, which is:
+-- | Support for access to a write only value of a particular type.
 --
--- - shared between multiple threads (if you want each thead to manage its own
---   version of the value, see "Effectful.Writer.Local").
---
--- - slightly slower than "Effectful.Writer.Local".
+-- The value is shared between multiple threads. If you want each thead to
+-- manage its own version of the value, see "Effectful.Writer.Static.Local".
 --
 -- /Warning:/ 'Writer'\'s state will be accumulated via __left-associated__ uses
 -- of '<>', which makes it unsuitable for use with types for which such pattern
@@ -15,7 +13,7 @@
 -- 'Control.Monad.Trans.Writer.Strict.pass' and
 -- 'Control.Monad.Trans.Writer.Strict.censor', they don't cooperate with runtime
 -- exceptions very well, so they're deliberately omitted here.
-module Effectful.Writer.Shared
+module Effectful.Writer.Static.Shared
   ( Writer
   , runWriter
   , execWriter

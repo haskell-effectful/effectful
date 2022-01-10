@@ -8,7 +8,7 @@ import UnliftIO
 import qualified Data.Set as S
 
 import Effectful
-import Effectful.Error
+import Effectful.Error.Static
 import Effectful.State.Dynamic
 import qualified Utils as U
 

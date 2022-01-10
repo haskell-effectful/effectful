@@ -14,8 +14,8 @@ import qualified Data.Map.Strict as M
 import qualified System.IO as IO
 
 import Effectful
-import Effectful.Error
-import Effectful.State.Local
+import Effectful.Error.Static
+import Effectful.State.Static.Local
 
 -- | An effect for reading and writing files.
 data FileSystem :: Effect where

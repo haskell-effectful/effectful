@@ -10,8 +10,8 @@ import System.Posix
 
 -- effectful
 import qualified Effectful as E
-import qualified Effectful.Reader as E
-import qualified Effectful.State.Local as E
+import qualified Effectful.Reader.Static as E
+import qualified Effectful.State.Static.Local as E
 
 -- eff
 #ifdef VERSION_eff

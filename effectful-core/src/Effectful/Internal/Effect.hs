@@ -28,7 +28,7 @@ type Effect = (Type -> Type) -> Type -> Type
 -- 'Integer' would likely use the following type:
 --
 -- @
--- 'Effectful.State.Local.State' 'Integer' ':>' es => 'Effectful.Monad.Eff' es ()
+-- 'Effectful.State.Static.Local.State' 'Integer' ':>' es => 'Effectful.Monad.Eff' es ()
 -- @
 class (e :: Effect) :> (es :: [Effect]) where
   -- | Get the position of @e@ in @es@.

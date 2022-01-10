@@ -14,7 +14,7 @@ import Effectful.Monad
 -- it possible to escape the scope of any scoped effect operation. Consider the
 -- following:
 --
--- >>> import qualified Effectful.Reader as R
+-- >>> import qualified Effectful.Reader.Static as R
 -- >>> let printAsk msg = liftIO . putStrLn . (msg ++) . (": " ++) =<< R.ask
 -- >>> :{
 --   runEff . R.runReader "GLOBAL" . runConcurrent $ do
@@ -35,28 +35,28 @@ import Effectful.Monad
 -- child (second): LOCAL
 --
 -- Note that the asynchronous computation doesn't respect the scope of
--- 'Effectful.Reader.local', i.e. the child thread still behaves like it's
--- inside the 'Effectful.Reader.local' block, even though the parent thread
--- already got out of it.
+-- 'Effectful.Reader.Static.local', i.e. the child thread still behaves like
+-- it's inside the 'Effectful.Reader.Static.local' block, even though the parent
+-- thread already got out of it.
 --
--- This is because the value provided by the 'Effectful.Reader.Reader' effect is
--- thread local, i.e. each thread manages its own version of it. For the
--- 'Effectful.Reader.Reader' it is the only reasonable behavior, it wouldn't be
--- very useful if its "read only" value was affected by calls to
--- 'Effectful.Reader.local' from its parent or child threads.
+-- This is because the value provided by the 'Effectful.Reader.Static.Reader'
+-- effect is thread local, i.e. each thread manages its own version of it. For
+-- the 'Effectful.Reader.Static.Reader' it is the only reasonable behavior, it
+-- wouldn't be very useful if its "read only" value was affected by calls to
+-- 'Effectful.Reader.Static.local' from its parent or child threads.
 --
 -- However, the cut isn't so clear if it comes to effects that provide access to
--- a mutable state. That's why primitive @State@ and @Writer@ effects come in
--- two flavors, local and shared:
+-- a mutable state. That's why statically dispatched @State@ and @Writer@
+-- effects come in two flavors, local and shared:
 --
--- >>> import qualified Effectful.State.Local as SL
+-- >>> import qualified Effectful.State.Static.Local as SL
 -- >>> :{
 --   runEff . SL.execState "Hi" . runConcurrent $ do
 --     replicateConcurrently_ 3 $ SL.modify (++ "!")
 -- :}
 -- "Hi"
 --
--- >>> import qualified Effectful.State.Shared as SS
+-- >>> import qualified Effectful.State.Static.Shared as SS
 -- >>> :{
 --   runEff . SS.execState "Hi" . runConcurrent $ do
 --     replicateConcurrently_ 3 $ SS.modify (++ "!")

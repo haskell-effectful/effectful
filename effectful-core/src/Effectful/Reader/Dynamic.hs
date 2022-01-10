@@ -8,7 +8,7 @@ module Effectful.Reader.Dynamic
 
 import Effectful.Dispatch.Dynamic
 import Effectful.Monad
-import qualified Effectful.Reader as R
+import qualified Effectful.Reader.Static as R
 
 data Reader r :: Effect where
   Ask   :: Reader r m r

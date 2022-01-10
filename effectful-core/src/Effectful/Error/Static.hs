@@ -55,7 +55,7 @@
 -- not depends on the shape of the monad transformer stack, which is surprising
 -- and can be a source of subtle bugs. On the other hand:
 --
--- >>> import Effectful.State.Local
+-- >>> import Effectful.State.Static.Local
 --
 -- >>> let m2 = (modify (++ " there!") >> throwError "oops") `catchError` \_ (_::String) -> pure ()
 --
@@ -67,7 +67,7 @@
 --
 -- Here, no matter the order of effects, state modifications within the
 -- @catchError@ block always persist, giving predictable behavior.
-module Effectful.Error
+module Effectful.Error.Static
  ( Error
  , runError
  , throwError

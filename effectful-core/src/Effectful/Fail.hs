@@ -5,7 +5,7 @@ module Effectful.Fail
   ) where
 
 import Effectful.Dispatch.Dynamic
-import Effectful.Error
+import Effectful.Error.Static
 import Effectful.Internal.Monad
 
 -- | Run the 'Fail' effect via 'Error'.

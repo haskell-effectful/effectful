@@ -100,7 +100,7 @@ type role Eff nominal representational
 -- would have the following type:
 --
 -- @
--- 'Eff' '['Effectful.Reader.Reader' 'String', 'Effectful.State.Local.State' 'Bool'] 'Integer'
+-- 'Eff' '['Effectful.Reader.Static.Reader' 'String', 'Effectful.State.Static.Local.State' 'Bool'] 'Integer'
 -- @
 --
 -- Normally, a concrete list of effects is not used to parameterize 'Eff'.
@@ -109,7 +109,7 @@ type role Eff nominal representational
 -- example, the above example would be expressed with the following type:
 --
 -- @
--- ('Effectful.Reader.Reader' 'String' ':>' es, 'Effectful.State.Local.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
+-- ('Effectful.Reader.Static.Reader' 'String' ':>' es, 'Effectful.State.Static.Local.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
 -- @
 --
 -- This abstraction allows the computation to be used in functions that may

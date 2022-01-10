@@ -17,8 +17,8 @@ module Effectful.Writer.Dynamic
 
 import Effectful.Dispatch.Dynamic
 import Effectful.Monad
-import qualified Effectful.Writer.Local as L
-import qualified Effectful.Writer.Shared as S
+import qualified Effectful.Writer.Static.Local as L
+import qualified Effectful.Writer.Static.Shared as S
 
 data Writer w :: Effect where
   Tell   :: w   -> Writer w m ()

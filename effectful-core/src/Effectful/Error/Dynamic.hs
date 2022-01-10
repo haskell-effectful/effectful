@@ -10,7 +10,7 @@ import Data.Typeable
 
 import Effectful.Dispatch.Dynamic
 import Effectful.Monad
-import qualified Effectful.Error as E
+import qualified Effectful.Error.Static as E
 
 data Error e :: Effect where
   ThrowError :: e -> Error e m a

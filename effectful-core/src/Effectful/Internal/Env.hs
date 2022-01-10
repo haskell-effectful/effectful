@@ -19,7 +19,7 @@ module Effectful.Internal.Env
 
     -- ** Relinker
   , Relinker(..)
-  , noRelinker
+  , dummyRelinker
 
     -- * Operations
   , emptyEnv
@@ -163,16 +163,16 @@ newForkId (ForkIdGen ref) = do
 ----------------------------------------
 -- Relinker
 
--- | A function for relinking 'Env' objects stored in the handlers when cloning
--- the environment.
+-- | A function for relinking 'Env' objects stored in the handlers and/or making
+-- a deep copy of the representation of the effect when cloning the environment.
 newtype Relinker :: (Effect -> Type) -> Effect -> Type where
   Relinker
     :: ((forall es. Env es -> IO (Env es)) -> rep e -> IO (rep e))
     -> Relinker rep e
 
--- | A dummy 'Relinker' that does nothing.
-noRelinker :: Relinker rep e
-noRelinker = Relinker $ \_ -> pure
+-- | A dummy 'Relinker'.
+dummyRelinker :: Relinker rep e
+dummyRelinker = Relinker $ \_ -> pure
 
 ----------------------------------------
 -- Operations

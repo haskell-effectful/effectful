@@ -39,7 +39,7 @@ runResource m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   istate <- R.createInternalState
   mask $ \restore -> do
-    es <- unsafeConsEnv (Resource istate) noRelinker es0
+    es <- unsafeConsEnv (Resource istate) dummyRelinker es0
     a <- restore (unEff m es) `catch` \e -> do
       unsafeTailEnv size0 es
       RI.stateCleanupChecked (Just e) istate

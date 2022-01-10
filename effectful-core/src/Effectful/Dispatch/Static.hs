@@ -28,7 +28,7 @@ module Effectful.Dispatch.Static
     -- * Primitive API
   , Env
   , Relinker(..)
-  , noRelinker
+  , dummyRelinker
 
     -- ** Representation of effects
   , EffectRep

@@ -104,7 +104,7 @@ runError
 runError m = unsafeEff $ \es0 -> mask $ \release -> do
   eid <- newErrorId
   size0 <- sizeEnv es0
-  es <- unsafeConsEnv (Error @e eid) noRelinker es0
+  es <- unsafeConsEnv (Error @e eid) dummyRelinker es0
   r <- tryErrorIO release eid es `onException` unsafeTailEnv size0 es
   unsafeTailEnv size0 es
   pure r

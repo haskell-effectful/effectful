@@ -398,7 +398,7 @@ runStaticRep
   -> Eff es (a, StaticRep e)
 runStaticRep e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e0 noRelinker es0)
+  E.bracket (unsafeConsEnv e0 dummyRelinker es0)
             (unsafeTailEnv size0)
             (\es -> (,) <$> unEff m es <*> getEnv es)
 
@@ -411,7 +411,7 @@ evalStaticRep
   -> Eff es a
 evalStaticRep e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e noRelinker es0)
+  E.bracket (unsafeConsEnv e dummyRelinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es)
 
@@ -424,7 +424,7 @@ execStaticRep
   -> Eff es (StaticRep e)
 execStaticRep e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e0 noRelinker es0)
+  E.bracket (unsafeConsEnv e0 dummyRelinker es0)
             (unsafeTailEnv size0)
             (\es -> unEff m es *> getEnv es)
 

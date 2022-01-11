@@ -254,7 +254,6 @@ instance C.MonadMask (Eff es) where
       checkSizeEnv size es
       _ <- unEff (release resource $ C.ExitCaseException e) es
       E.throwIO e
-    checkSizeEnv size es
     c <- unEff (release resource $ C.ExitCaseSuccess b) es
     pure (b, c)
 

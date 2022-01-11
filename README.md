@@ -6,7 +6,9 @@
 
 <img src="https://user-images.githubusercontent.com/387658/127747903-f728437f-2ee4-47b8-9f0c-5102fd44c8e4.png" width="128">
 
-*Note:* this is a pre-release.
+*Note:* this is a pre-release of the 0.1 version. Please disregard the 0.0.0.0
+version available on Hackage as the API has been completely redesigned since
+then.
 
 An easy to use, performant extensible effects library with seamless integration
 with the existing Haskell ecosystem.

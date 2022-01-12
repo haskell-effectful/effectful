@@ -148,10 +148,10 @@ benchmark bench
     if flag(benchmark-foreign-libraries)
        build-depends: mtl
 
-       if impl(ghc < 9)
+       if impl(ghc < 9.3)
           build-depends: freer-simple
 
-       if impl(ghc < 9.2)
+       if impl(ghc < 9.1)
           build-depends: fused-effects
 
        if impl(ghc < 9.3)

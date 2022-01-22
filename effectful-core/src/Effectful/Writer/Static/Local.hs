@@ -1,6 +1,6 @@
 -- | Support for access to a write only value of a particular type.
 --
--- The value is thread local. If you want it to be shared between threads, see
+-- The value is thread local. If you want it to be shared between threads, use
 -- "Effectful.Writer.Static.Shared".
 --
 -- /Warning:/ 'Writer'\'s state will be accumulated via __left-associated__ uses

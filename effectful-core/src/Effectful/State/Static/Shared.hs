@@ -1,7 +1,7 @@
 -- | Support for access to a shared, mutable value of a particular type.
 --
 -- The value is shared between multiple threads. If you want each thead to
--- manage its own version of the value, see "Effectful.State.Static.Local".
+-- manage its own version of the value, use "Effectful.State.Static.Local".
 --
 -- /Note:/ unlike the 'Control.Monad.Trans.State.StateT' monad transformer from
 -- the @transformers@ library, the 'State' effect doesn't lose state

@@ -1,7 +1,7 @@
 -- | Support for access to a write only value of a particular type.
 --
 -- The value is shared between multiple threads. If you want each thead to
--- manage its own version of the value, see "Effectful.Writer.Static.Local".
+-- manage its own version of the value, use "Effectful.Writer.Static.Local".
 --
 -- /Warning:/ 'Writer'\'s state will be accumulated via __left-associated__ uses
 -- of '<>', which makes it unsuitable for use with types for which such pattern

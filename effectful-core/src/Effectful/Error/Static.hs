@@ -8,7 +8,9 @@
 -- type @e@ and will __not__ be caught by functions from this module:
 --
 -- >>> import qualified Control.Monad.Catch as E
--- >>> let boom = error "BOOM!"
+--
+-- >>> boom = error "BOOM!"
+--
 -- >>> runEff . runError @ErrorCall $ boom `catchError` \_ (_::ErrorCall) -> pure "caught"
 -- *** Exception: BOOM!
 -- ...
@@ -23,9 +25,10 @@
 -- resources such as 'Control.Monad.Catch.finally' and
 -- 'Control.Monad.Catch.bracket' work as expected:
 --
--- >>> let msg = liftIO . putStrLn
+-- >>> msg = liftIO . putStrLn
+--
 -- >>> :{
--- runEff . fmap (either (Left . snd) Right) . runError @String $ do
+-- runEff . runErrorNoCallStack @String $ do
 --   E.bracket_ (msg "Beginning.")
 --              (msg "Cleaning up.")
 --              (msg "Computing." >> throwError "oops" >> msg "More.")
@@ -43,7 +46,7 @@
 -- >>> import qualified Control.Monad.State.Strict as T
 -- >>> import qualified Control.Monad.Except as T
 --
--- >>> let m1 = (T.modify (++ " there!") >> T.throwError "oops") `T.catchError` \_ -> pure ()
+-- >>> m1 = (T.modify (++ " there!") >> T.throwError "oops") `T.catchError` \_ -> pure ()
 --
 -- >>> (`T.runStateT` "Hi") . T.runExceptT $ m1
 -- (Right (),"Hi there!")
@@ -57,7 +60,7 @@
 --
 -- >>> import Effectful.State.Static.Local
 --
--- >>> let m2 = (modify (++ " there!") >> throwError "oops") `catchError` \_ (_::String) -> pure ()
+-- >>> m2 = (modify (++ " there!") >> throwError "oops") `catchError` \_ (_::String) -> pure ()
 --
 -- >>> runEff . runState "Hi" . runError @String $ m2
 -- (Right (),"Hi there!")
@@ -70,6 +73,7 @@
 module Effectful.Error.Static
  ( Error
  , runError
+ , runErrorNoCallStack
  , throwError
  , catchError
  , handleError
@@ -113,6 +117,13 @@ runError m = unsafeEff $ \es0 -> mask $ \release -> do
       Right a -> pure $ Right a
       Left ex -> tryHandler ex eid (\cs e -> Left (cs, e))
                $ throwIO ex
+
+-- | Handle errors of type @e@. In case of error, discard the 'CallStack'.
+runErrorNoCallStack
+  :: forall e es a. Typeable e
+  => Eff (Error e : es) a
+  -> Eff es (Either e a)
+runErrorNoCallStack = fmap (either (Left . snd) Right) . runError
 
 -- | Throw an error of type @e@.
 throwError

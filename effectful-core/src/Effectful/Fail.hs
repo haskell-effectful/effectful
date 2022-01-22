@@ -12,12 +12,10 @@ import Effectful.Monad
 
 -- | Run the 'Fail' effect via 'Error'.
 runFail :: Eff (Fail : es) a -> Eff es (Either String a)
-runFail = reinterpret eff $ \_ -> \case
+runFail = reinterpret runErrorNoCallStack $ \_ -> \case
   Fail msg -> throwError msg
-  where
-    eff = fmap (either (Left . snd) Right) . runError
 
--- | Run the 'Fail' effect by using the 'MonadFail' instance for 'IO'.
+-- | Run the 'Fail' effect via the 'MonadFail' instance for 'IO'.
 runFailIO :: IOE :> es => Eff (Fail : es) a -> Eff es a
 runFailIO = interpret $ \_ -> \case
   Fail msg -> liftIO $ fail msg

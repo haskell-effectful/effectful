@@ -100,21 +100,15 @@ type role Eff nominal representational
 -- would have the following type:
 --
 -- @
--- 'Eff' '['Effectful.Reader.Static.Reader' 'String', 'Effectful.State.Static.Local.State' 'Bool'] 'Integer'
--- @
---
--- Normally, a concrete list of effects is not used to parameterize 'Eff'.
--- Instead, the '(:>)' type class is used to express constraints on the list of
--- effects without coupling a computation to a concrete list of effects. For
--- example, the above example would be expressed with the following type:
---
--- @
 -- ('Effectful.Reader.Static.Reader' 'String' ':>' es, 'Effectful.State.Static.Local.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
 -- @
 --
--- This abstraction allows the computation to be used in functions that may
--- perform other effects, and it also allows the effects to be handled in any
--- order.
+-- Abstracting over the list of effects with '(:>)':
+--
+-- - Allows the computation to be used in functions that may perform other
+-- effects.
+--
+-- - Allows the effects to be handled in any order.
 newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
   deriving (Monoid, Semigroup)
 
@@ -273,6 +267,10 @@ instance Fail :> es => MonadFail (Eff es) where
 -- IO
 
 -- | Run arbitrary 'IO' computations via 'MonadIO' or 'MonadUnliftIO'.
+--
+-- /Note:/ it is not recommended to use this effect in application code as it is
+-- too liberal. Ideally, this is only used in handlers of more fine-grained
+-- effects.
 data IOE :: Effect
 
 type instance DispatchOf IOE = 'Static

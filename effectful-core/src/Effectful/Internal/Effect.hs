@@ -26,7 +26,7 @@ type Effect = (Type -> Type) -> Type -> Type
 -- in the list.
 --
 -- For example, a computation that only needs access to a mutable value of type
--- 'Integer' would likely use the following type:
+-- 'Integer' would have the following type:
 --
 -- @
 -- 'Effectful.State.Static.Local.State' 'Integer' ':>' es => 'Effectful.Monad.Eff' es ()
@@ -59,6 +59,6 @@ instance e :> es => e :> (x : es) where
 -- in a more concise way than enumerating them all with '(:>)'.
 --
 -- @[E1, E2, ..., En] ':>>' es ≡ (E1 ':>' es, E2 ':>' es, ..., En :> es)@
-type family effs :>> es :: Constraint where
-  '[]        :>> es = ()
-  (e : effs) :>> es = (e :> es, effs :>> es)
+type family xs :>> es :: Constraint where
+  '[]      :>> es = ()
+  (x : xs) :>> es = (x :> es, xs :>> es)

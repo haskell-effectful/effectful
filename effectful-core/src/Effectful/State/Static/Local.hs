@@ -1,6 +1,6 @@
 -- | Support for access to a mutable value of a particular type.
 --
--- The value is thread local. If you want it to be shared between threads, see
+-- The value is thread local. If you want it to be shared between threads, use
 -- "Effectful.State.Static.Shared".
 --
 -- /Note:/ unlike the 'Control.Monad.Trans.State.StateT' monad transformer from

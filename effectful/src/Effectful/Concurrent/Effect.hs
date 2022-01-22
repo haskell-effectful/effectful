@@ -15,7 +15,9 @@ import Effectful.Monad
 -- following:
 --
 -- >>> import qualified Effectful.Reader.Static as R
--- >>> let printAsk msg = liftIO . putStrLn . (msg ++) . (": " ++) =<< R.ask
+--
+-- >>> printAsk msg = liftIO . putStrLn . (msg ++) . (": " ++) =<< R.ask
+--
 -- >>> :{
 --   runEff . R.runReader "GLOBAL" . runConcurrent $ do
 --     a <- R.local (const "LOCAL") $ do

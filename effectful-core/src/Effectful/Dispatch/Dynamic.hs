@@ -1,33 +1,41 @@
+-- | Dynamically dispatched effects.
 module Effectful.Dispatch.Dynamic
-  ( -- * Sending operations to the handler
+  ( -- * Introduction
+    -- ** An example
+    -- $example
+
+    -- ** First order and higher order effects
+    -- $order
+
+    -- * Sending operations to the handler
     send
 
-  -- * Handling effects
+    -- * Handling effects
   , EffectHandler
   , interpret
   , reinterpret
 
-  -- ** Handling local 'Eff' computations
+    -- ** Handling local 'Eff' computations
   , LocalEnv
 
-  -- *** Unlifts
+    -- *** Unlifts
   , localSeqUnlift
   , localSeqUnliftIO
   , localUnlift
   , localUnliftIO
 
-  -- *** Lifts
+    -- *** Lifts
   , withLiftMap
   , withLiftMapIO
 
-  -- *** Bidirectional lifts
+    -- *** Bidirectional lifts
   , localLiftUnlift
   , localLiftUnliftIO
 
-  -- *** Utils
+    -- *** Utils
   , SuffixOf
 
-  -- * Re-exports
+    -- * Re-exports
   , HasCallStack
   ) where
 
@@ -38,6 +46,207 @@ import GHC.Stack (HasCallStack)
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
+
+-- $example
+--
+-- Let's create an effect for basic file access, i.e. writing and reading files.
+--
+-- First, we need to define a generalized algebraic data type of kind 'Effect',
+-- where each constructor corresponds to a specific operation of the effect in
+-- question.
+--
+-- >>> :{
+--   data FileSystem :: Effect where
+--     ReadFile  :: FilePath -> FileSystem m String
+--     WriteFile :: FilePath -> String -> FileSystem m ()
+-- :}
+--
+-- >>> type instance DispatchOf FileSystem = 'Dynamic
+--
+-- The @FileSystem@ effect has two operations:
+--
+-- - @ReadFile@, which takes a @FilePath@ and returns a @String@ in the monadic
+--   context.
+--
+-- - @WriteFile@, which takes a @FilePath@, a @String@ and returns a @()@ in the
+--   monadic context.
+--
+-- For people familiar with the @mtl@ style effects, note that the syntax looks
+-- very similar to defining an appropriate type class:
+--
+-- @
+-- class FileSystem m where
+--   readFile  :: FilePath -> m String
+--   writeFile :: FilePath -> String -> m ()
+-- @
+--
+-- The biggest difference between these two is that the definition of a type
+-- class gives us operations as functions, while the definition of an effect
+-- gives us operations as data constructors. They can be turned into functions
+-- with the help of 'send':
+--
+-- >>> :{
+--   readFile :: (HasCallStack, FileSystem :> es) => FilePath -> Eff es String
+--   readFile path = send (ReadFile path)
+-- :}
+--
+-- >>> :{
+--   writeFile :: (HasCallStack, FileSystem :> es) => FilePath -> String -> Eff es ()
+--   writeFile path content = send (WriteFile path content)
+-- :}
+--
+-- The following defines an 'EffectHandler' that reads and writes files from the
+-- drive:
+--
+-- >>> import Control.Exception (IOException)
+-- >>> import Control.Monad.Catch (catch)
+-- >>> import qualified System.IO as IO
+--
+-- >>> import Effectful.Error.Static
+--
+-- >>> newtype FsError = FsError String deriving Show
+--
+-- >>> :{
+--  runFileSystemIO
+--    :: (IOE :> es, Error FsError :> es)
+--    => Eff (FileSystem : es) a
+--    -> Eff es a
+--  runFileSystemIO = interpret $ \_ -> \case
+--    ReadFile path           -> adapt $ IO.readFile path
+--    WriteFile path contents -> adapt $ IO.writeFile path contents
+--    where
+--      adapt m = liftIO m `catch` \(e::IOException) -> throwError . FsError $ show e
+-- :}
+--
+-- Here, we use 'interpret' and simply execute corresponding 'IO' actions for
+-- each operation, additionally doing a bit of error management.
+--
+-- On the other hand, maybe there is a situation in which instead of interacting
+-- with the outside world, a pure, in-memory storage is preferred:
+--
+-- >>> import qualified Data.Map.Strict as M
+--
+-- >>> import Effectful.State.Static.Local
+--
+-- >>> :{
+--   runFileSystemPure
+--     :: Error FsError :> es
+--     => M.Map FilePath String
+--     -> Eff (FileSystem : es) a
+--     -> Eff es a
+--   runFileSystemPure fs0 = reinterpret (evalState fs0) $ \_ -> \case
+--     ReadFile path -> gets (M.lookup path) >>= \case
+--       Just contents -> pure contents
+--       Nothing       -> throwError . FsError $ "File not found: " ++ show path
+--     WriteFile path contents -> modify $ M.insert path contents
+-- :}
+--
+-- Here, we use 'reinterpret' and introduce a 'State' effect for the storage
+-- that is private to the effect handler and cannot be accessed outside of it.
+--
+-- Let's compare how these differ.
+--
+-- >>> :{
+--   action = do
+--     file <- readFile "effectful-core.cabal"
+--     pure $ length file > 0
+-- :}
+--
+-- >>> :t action
+-- action :: (FileSystem :> es) => Eff es Bool
+--
+-- >>> runEff . runError @FsError . runFileSystemIO $ action
+-- Right True
+--
+-- >>> runPureEff . runErrorNoCallStack @FsError . runFileSystemPure M.empty $ action
+-- Left (FsError "File not found: \"effectful-core.cabal\"")
+--
+
+-- $order
+--
+-- Note that the definition of the @FileSystem@ effect from the previous section
+-- doesn't use the @m@ type parameter. What is more, when the effect is
+-- interpreted, the 'LocalEnv' argument of the 'EffectHandler' is also not
+-- used. Such effects are /first order/.
+--
+-- If an effect makes use of the @m@ parameter, i.e. it takes a monadic action
+-- as an argument, it is a /higher order effect/.
+--
+-- Interpretation of higher order effects is slightly more involved. To see why,
+-- let's consider the @Profiling@ effect for logging how much time a specific
+-- action took to run:
+--
+-- >>> :{
+--   data Profiling :: Effect where
+--     Profile :: String -> m a -> Profiling m a
+-- :}
+--
+-- >>> type instance DispatchOf Profiling = 'Dynamic
+--
+-- >>> :{
+--   profile :: (HasCallStack, Profiling :> es) => String -> Eff es a -> Eff es a
+--   profile label action = send (Profile label action)
+-- :}
+--
+-- If we naively try to interpret it, we will run into trouble:
+--
+-- >>> import GHC.Clock (getMonotonicTime)
+--
+-- >>> :{
+--  runProfiling :: IOE :> es => Eff (Profiling : es) a -> Eff es a
+--  runProfiling = interpret $ \_ -> \case
+--    Profile label action -> do
+--      t1 <- liftIO getMonotonicTime
+--      r <- action
+--      t2 <- liftIO getMonotonicTime
+--      liftIO . putStrLn $ label ++ "' took " ++ show (t2 - t1) ++ " seconds"
+--      pure r
+-- :}
+-- ...
+-- ... Couldn't match type ‘localEs’ with ‘es’
+-- ...
+--
+-- The problem is that @action@ has a type @Eff localEs a@, while the monad of
+-- the effect handler is @Eff es@. @localEs@ represents the /local environment/
+-- in which the @Profile@ operation was called, which is opaque as the effect
+-- handler cannot possibly know how it looks like.
+--
+-- The solution is to use the 'LocalEnv' that an 'EffectHandler' is given to run
+-- the action using one of the functions from the 'localUnlift' family:
+--
+-- >>> :{
+--  runProfiling :: IOE :> es => Eff (Profiling : es) a -> Eff es a
+--  runProfiling = interpret $ \env -> \case
+--    Profile label action -> localSeqUnliftIO env $ \unlift -> do
+--      t1 <- getMonotonicTime
+--      r <- unlift action
+--      t2 <- getMonotonicTime
+--      putStrLn $ "Action '" ++ label ++ "' took " ++ show (t2 - t1) ++ " seconds."
+--      pure r
+-- :}
+--
+-- In a similar way we can define a dummy interpreter that does no profiling:
+--
+-- >>> :{
+--  runNoProfiling :: Eff (Profiling : es) a -> Eff es a
+--  runNoProfiling = interpret $ \env -> \case
+--    Profile label action -> localSeqUnlift env $ \unlift -> unlift action
+-- :}
+--
+-- ...and it's done.
+--
+-- >>> action = profile "greet" . liftIO $ putStrLn "Hello!"
+--
+-- >>> :t action
+-- action :: (Profiling :> es, IOE :> es) => Eff es ()
+--
+-- >>> runEff . runProfiling $ action
+-- Hello!
+-- Action 'greet' took ... seconds.
+--
+-- >>> runEff . runNoProfiling $ action
+-- Hello!
+--
 
 ----------------------------------------
 -- Handling effects
@@ -246,4 +455,4 @@ type family SuffixOf (es :: [Effect]) (baseEs :: [Effect]) :: Constraint where
   SuffixOf (e : es) baseEs = SuffixOf es baseEs
 
 -- $setup
--- >>> import Control.Concurrent
+-- >>> import Control.Concurrent (ThreadId, forkIOWithUnmask)

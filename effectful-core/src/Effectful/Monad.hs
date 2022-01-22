@@ -1,7 +1,6 @@
 module Effectful.Monad
   ( -- * The 'Eff' monad
     Eff
-  , runPureEff
 
   -- ** Effect constraints
   , Effect
@@ -10,7 +9,12 @@ module Effectful.Monad
   , (:>)
   , (:>>)
 
-  -- * Arbitrary I/O
+  -- * Running the 'Eff' monad
+
+  -- ** Pure computations
+  , runPureEff
+
+  -- ** Computations with side effects
   , IOE
   , runEff
 

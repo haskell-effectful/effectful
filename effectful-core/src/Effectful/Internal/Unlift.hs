@@ -35,9 +35,9 @@ import Effectful.Internal.Utils
 ----------------------------------------
 -- Unlift strategies
 
--- | The strategy to use when unlifting 'Eff' computations via 'withRunInIO',
--- 'Effectful.Monad.withEffToIO' or the 'Effectful.Dispatch.Dynamic.localUnlift'
--- family.
+-- | The strategy to use when unlifting 'Effectful.Monad.Eff' computations via
+-- 'Control.Monad.IO.Unlift.withRunInIO', 'Effectful.Monad.withEffToIO' or the
+-- 'Effectful.Dispatch.Dynamic.localUnlift' family.
 data UnliftStrategy
   = SeqUnlift
   -- ^ The fastest strategy and a default setting for 'IOE'. An attempt to call

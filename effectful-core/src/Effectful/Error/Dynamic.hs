@@ -1,6 +1,7 @@
 module Effectful.Error.Dynamic
   ( Error(..)
   , runError
+  , runErrorNoCallStack
   , throwError
   , catchError
   , tryError
@@ -26,6 +27,12 @@ runError = reinterpret E.runError $ \env -> \case
   ThrowError e   -> E.throwError e
   CatchError m h -> localSeqUnlift env $ \unlift -> do
     E.catchError (unlift m) (\cs -> unlift . h cs)
+
+runErrorNoCallStack
+  :: forall e es a. Typeable e
+  => Eff (Error e : es) a
+  -> Eff es (Either e a)
+runErrorNoCallStack = fmap (either (Left . snd) Right) . runError
 
 throwError
   :: (HasCallStack, Error e :> es)

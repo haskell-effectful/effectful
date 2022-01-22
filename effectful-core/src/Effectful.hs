@@ -7,6 +7,7 @@ module Effectful
   , Dispatch(..)
   , DispatchOf
   , (:>)
+  , (:>>)
 
   -- * Running the 'Eff' monad
 

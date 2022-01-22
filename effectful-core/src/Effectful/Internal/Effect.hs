@@ -8,6 +8,7 @@
 module Effectful.Internal.Effect
   ( Effect
   , (:>)(..)
+  , (:>>)
 
   -- * Re-exports
   , Type
@@ -51,3 +52,13 @@ instance {-# OVERLAPPING #-} e :> (e : es) where
 
 instance e :> es => e :> (x : es) where
   reifyIndex = 1 + reifyIndex @e @es
+
+----------------------------------------
+
+-- | Convenience operator for expressing that a function uses multiple effects
+-- in a more concise way than enumerating them all with '(:>)'.
+--
+-- @[E1, E2, ..., En] ':>>' es ≡ (E1 ':>' es, E2 ':>' es, ..., En :> es)@
+type family effs :>> es :: Constraint where
+  '[]        :>> es = ()
+  (e : effs) :>> es = (e :> es, effs :>> es)

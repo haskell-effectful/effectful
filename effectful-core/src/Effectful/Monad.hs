@@ -8,6 +8,7 @@ module Effectful.Monad
   , Dispatch(..)
   , DispatchOf
   , (:>)
+  , (:>>)
 
   -- * Arbitrary I/O
   , IOE

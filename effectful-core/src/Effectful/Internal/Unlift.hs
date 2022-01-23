@@ -35,8 +35,8 @@ import Effectful.Internal.Utils
 ----------------------------------------
 -- Unlift strategies
 
--- | The strategy to use when unlifting 'Effectful.Monad.Eff' computations via
--- 'Control.Monad.IO.Unlift.withRunInIO', 'Effectful.Monad.withEffToIO' or the
+-- | The strategy to use when unlifting 'Effectful.Eff' computations via
+-- 'withRunInIO', 'Effectful.withEffToIO' or the
 -- 'Effectful.Dispatch.Dynamic.localUnlift' family.
 data UnliftStrategy
   = SeqUnlift

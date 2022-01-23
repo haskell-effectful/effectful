@@ -21,7 +21,7 @@ import GHC.TypeLits
 type Effect = (Type -> Type) -> Type -> Type
 
 -- | A constraint that requires that a particular effect @e@ is a member of the
--- type-level list @es@. This is used to parameterize an 'Effectful.Monad.Eff'
+-- type-level list @es@. This is used to parameterize an 'Effectful.Eff'
 -- computation over an arbitrary list of effects, so long as @e@ is /somewhere/
 -- in the list.
 --
@@ -29,7 +29,7 @@ type Effect = (Type -> Type) -> Type -> Type
 -- 'Integer' would have the following type:
 --
 -- @
--- 'Effectful.State.Static.Local.State' 'Integer' ':>' es => 'Effectful.Monad.Eff' es ()
+-- 'Effectful.State.Static.Local.State' 'Integer' ':>' es => 'Effectful.Eff' es ()
 -- @
 class (e :: Effect) :> (es :: [Effect]) where
   -- | Get the position of @e@ in @es@.

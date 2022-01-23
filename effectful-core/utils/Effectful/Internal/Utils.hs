@@ -4,11 +4,17 @@
 module Effectful.Internal.Utils
   ( weakThreadId
   , eqThreadId
+
+  -- * Utils for 'Any'
+  , Any
+  , toAny
+  , fromAny
   ) where
 
 import Foreign.C.Types
 import GHC.Conc.Sync (ThreadId(..))
-import GHC.Exts (ThreadId#)
+import GHC.Exts (Any, ThreadId#)
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Get an id of a thread that doesn't prevent its garbage collection.
 weakThreadId :: ThreadId -> Int
@@ -28,3 +34,11 @@ eqThreadId (ThreadId t1#) (ThreadId t2#) = eq_thread t1# t2# == 1
 
 foreign import ccall unsafe "effectful_eq_thread"
   eq_thread :: ThreadId# -> ThreadId# -> CLong
+
+----------------------------------------
+
+toAny :: a -> Any
+toAny = unsafeCoerce
+
+fromAny :: Any -> a
+fromAny = unsafeCoerce

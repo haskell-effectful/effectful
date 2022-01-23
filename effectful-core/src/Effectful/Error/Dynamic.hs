@@ -7,8 +7,6 @@ module Effectful.Error.Dynamic
   , tryError
   ) where
 
-import Data.Typeable
-
 import Effectful
 import Effectful.Dispatch.Dynamic
 import qualified Effectful.Error.Static as E
@@ -20,8 +18,7 @@ data Error e :: Effect where
 type instance DispatchOf (Error e) = 'Dynamic
 
 runError
-  :: Typeable e
-  => Eff (Error e : es) a
+  :: Eff (Error e : es) a
   -> Eff es (Either (E.CallStack, e) a)
 runError = reinterpret E.runError $ \env -> \case
   ThrowError e   -> E.throwError e
@@ -29,8 +26,7 @@ runError = reinterpret E.runError $ \env -> \case
     E.catchError (unlift m) (\cs -> unlift . h cs)
 
 runErrorNoCallStack
-  :: forall e es a. Typeable e
-  => Eff (Error e : es) a
+  :: Eff (Error e : es) a
   -> Eff es (Either e a)
 runErrorNoCallStack = fmap (either (Left . snd) Right) . runError
 

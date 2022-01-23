@@ -87,12 +87,12 @@ module Effectful.Error.Static
  ) where
 
 import Control.Exception
-import Data.Typeable
 import Data.Unique
 import GHC.Stack
 
 import Effectful
 import Effectful.Dispatch.Static
+import Effectful.Internal.Utils
 
 -- | Provide the ability to handle errors of type @e@.
 data Error e :: Effect
@@ -102,8 +102,8 @@ newtype instance StaticRep (Error e) = Error ErrorId
 
 -- | Handle errors of type @e@.
 runError
-  :: forall e es a. Typeable e
-  => Eff (Error e : es) a
+  :: forall e es a
+  .  Eff (Error e : es) a
   -> Eff es (Either (CallStack, e) a)
 runError m = unsafeEff $ \es0 -> mask $ \release -> do
   eid <- newErrorId
@@ -118,26 +118,26 @@ runError m = unsafeEff $ \es0 -> mask $ \release -> do
       Left ex -> tryHandler ex eid (\cs e -> Left (cs, e))
                $ throwIO ex
 
--- | Handle errors of type @e@. In case of error, discard the 'CallStack'.
+-- | Handle errors of type @e@. In case of error discard the 'CallStack'.
 runErrorNoCallStack
-  :: forall e es a. Typeable e
-  => Eff (Error e : es) a
+  :: forall e es a
+  .  Eff (Error e : es) a
   -> Eff es (Either e a)
 runErrorNoCallStack = fmap (either (Left . snd) Right) . runError
 
 -- | Throw an error of type @e@.
 throwError
-  :: forall e es a. (HasCallStack, Typeable e, Error e :> es)
+  :: forall e es a. (HasCallStack, Error e :> es)
   => e
   -- ^ The error.
   -> Eff es a
 throwError e = unsafeEff $ \es -> do
   Error eid <- getEnv @(Error e) es
-  throwIO $ ErrorEx eid callStack e
+  throwIO $ ErrorWrapper eid callStack (toAny e)
 
 -- | Handle an error of type @e@.
 catchError
-  :: forall e es a. (Typeable e, Error e :> es)
+  :: forall e es a. Error e :> es
   => Eff es a
   -- ^ The inner computation.
   -> (CallStack -> e -> Eff es a)
@@ -153,7 +153,7 @@ catchError m handler = unsafeEff $ \es -> do
 -- | The same as @'flip' 'catchError'@, which is useful in situations where the
 -- code for the handler is shorter.
 handleError
-  :: forall e es a. (Typeable e, Error e :> es)
+  :: forall e es a. Error e :> es
   => (CallStack -> e -> Eff es a)
   -- ^ A handler for errors in the inner computation.
   -> Eff es a
@@ -164,7 +164,7 @@ handleError = flip catchError
 -- | Similar to 'catchError', but returns an 'Either' result which is a 'Right'
 -- if no error was thrown and a 'Left' otherwise.
 tryError
-  :: forall e es a. (Typeable e, Error e :> es)
+  :: forall e es a. Error e :> es
   => Eff es a
   -- ^ The inner computation.
   -> Eff es (Either (CallStack, e) a)
@@ -182,30 +182,31 @@ newErrorId :: IO ErrorId
 newErrorId = ErrorId <$> newUnique
 
 tryHandler
-  :: Typeable e
-  => SomeException
+  :: SomeException
   -> ErrorId
   -> (CallStack -> e -> r)
   -> IO r
   -> IO r
 tryHandler ex eid0 handler next = case fromException ex of
-  Just (ErrorEx eid cs e)
-    | eid0 == eid -> pure $ handler cs e
+  Just (ErrorWrapper eid cs e)
+    | eid0 == eid -> pure $ handler cs (fromAny e)
     | otherwise   -> next
   Nothing -> next
 
-data ErrorEx e = ErrorEx !ErrorId CallStack e
-instance Typeable e => Show (ErrorEx e) where
-  showsPrec p (ErrorEx _ cs e)
-    = ("Effectful.Error.ErrorEx (" ++)
-    . showsPrec p (typeOf e)
-    . (") " ++)
-    . showsPrec p cs
-instance Typeable e => Exception (ErrorEx e)
+data ErrorWrapper = ErrorWrapper !ErrorId CallStack Any
+instance Show ErrorWrapper where
+  showsPrec p (ErrorWrapper _ cs _)
+    = ("Effectful.Error.Static.ErrorWrapper\n\n" ++)
+    . ("If you see this, most likely there is a stray 'Async' action that\n" ++)
+    . ("outlived the scope of the 'Error' effect, was interacted with and threw\n" ++)
+    . ("an error to the parent thread. If that scenario sounds unlikely, please\n" ++)
+    . ("file a ticket at https://github.com/arybczak/effectful/issues.\n\n" ++)
+    . showsPrec p (prettyCallStack cs)
+instance Exception ErrorWrapper
 
-catchErrorIO :: Typeable e => ErrorId -> IO a -> (CallStack -> e -> IO a) -> IO a
+catchErrorIO :: ErrorId -> IO a -> (CallStack -> e -> IO a) -> IO a
 catchErrorIO eid m handler = do
-  m `catch` \err@(ErrorEx etag e cs) -> do
+  m `catch` \err@(ErrorWrapper etag cs e) -> do
     if eid == etag
-      then handler e cs
+      then handler cs (fromAny e)
       else throwIO err

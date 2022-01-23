@@ -43,12 +43,12 @@ import Control.Monad
 import Control.Monad.Primitive
 import Data.IORef
 import Data.Primitive.SmallArray
-import GHC.Exts (Any, SmallMutableArray#)
+import GHC.Exts (SmallMutableArray#)
 import GHC.Stack (HasCallStack)
-import Unsafe.Coerce
 import qualified Data.IntMap.Strict as IM
 
 import Effectful.Internal.Effect
+import Effectful.Internal.Utils
 
 type role Env nominal
 
@@ -535,9 +535,3 @@ getLocation ixE (Env fork ref _) = do
 
     ix :: Int -> Int
     ix n = n - ixE - 1
-
-toAny :: a -> Any
-toAny = unsafeCoerce
-
-fromAny :: Any -> a
-fromAny = unsafeCoerce

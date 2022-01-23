@@ -155,20 +155,20 @@ import Effectful.Internal.Monad
 --     log "Computing things..."
 --     log "Sleeping..."
 --     log "Computing more things..."
---     pure "Done"
+--     pure True
 -- :}
 --
 -- >>> :t action
--- action :: (Log :> es) => Eff es [Char]
+-- action :: (Log :> es) => Eff es Bool
 --
 -- >>> runEff . runLog stdoutLogger $ action
 -- Computing things...
 -- Sleeping...
 -- Computing more things...
--- "Done"
+-- True
 --
 -- >>> runEff . runLog dummyLogger $ action
--- "Done"
+-- True
 --
 
 -- | Utility for lifting 'IO' computations of type

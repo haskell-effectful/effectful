@@ -1,26 +1,38 @@
 module Effectful
-  ( -- * Overview
-    -- $overview
+  ( -- * The 'Eff' monad
+    Eff
 
-    -- * The 'Eff' monad
-    module Effectful.Monad
+  -- ** Effect constraints
+  , Effect
+  , Dispatch(..)
+  , DispatchOf
+  , (:>)
+  , (:>>)
 
-    -- * Effects
+  -- * Running the 'Eff' monad
 
-    -- ** Dynamic dispatch
-  , module Effectful.Dispatch.Dynamic
+  -- ** Pure computations
+  , runPureEff
 
-    -- ** Static dispatch
-    -- $static
+  -- ** Computations with side effects
+  , IOE
+  , runEff
+
+  -- ** Unlift strategies
+  , UnliftStrategy(..)
+  , Persistence(..)
+  , Limit(..)
+  , unliftStrategy
+  , withUnliftStrategy
+  , withEffToIO
+
+  -- * Re-exports
+  , MonadIO(..)
+  , MonadUnliftIO(..)
   ) where
 
-import Effectful.Dispatch.Dynamic
-import Effectful.Monad
+import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 
--- $overview
--- TODO
-
--- $static
---
--- Documentation for statically dispatched effects and the API for defining them
--- is available in "Effectful.Dispatch.Static".
+import Effectful.Internal.Effect
+import Effectful.Internal.Monad

@@ -91,9 +91,9 @@ import qualified Control.Concurrent.STM as STM
 import System.Mem.Weak (Weak)
 import GHC.Natural (Natural)
 
+import Effectful
 import Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 -- | Lifted version of 'STM.atomically'
 atomically :: Concurrent :> es => STM a -> Eff es a

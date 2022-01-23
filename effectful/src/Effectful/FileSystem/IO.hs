@@ -38,9 +38,9 @@ module Effectful.FileSystem.IO
 import qualified System.IO as IO
 import System.IO (Handle, IOMode (..))
 
+import Effectful
 import Effectful.Dispatch.Static
 import Effectful.FileSystem.Effect
-import Effectful.Monad
 
 -- | Lifted version of 'IO.withFile'.
 withFile

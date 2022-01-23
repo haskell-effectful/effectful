@@ -50,8 +50,8 @@ import System.IO (Handle)
 import System.Posix.Internals (FD)
 import qualified System.Process as P
 
+import Effectful
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 -- | An effect for running child processes using the @process@ library.
 data Process :: Effect

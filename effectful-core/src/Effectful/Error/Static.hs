@@ -91,8 +91,8 @@ import Data.Typeable
 import Data.Unique
 import GHC.Stack
 
+import Effectful
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 -- | Provide the ability to handle errors of type @e@.
 data Error e :: Effect

@@ -64,9 +64,9 @@ import UnliftIO.STM (STM)
 import qualified Control.Concurrent as C
 import qualified GHC.Conc as GHC
 
+import Effectful
 import Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 ----------------------------------------
 -- Basic concurrency operations

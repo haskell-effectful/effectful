@@ -9,8 +9,8 @@ module Effectful.Error.Dynamic
 
 import Data.Typeable
 
+import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Monad
 import qualified Effectful.Error.Static as E
 
 data Error e :: Effect where

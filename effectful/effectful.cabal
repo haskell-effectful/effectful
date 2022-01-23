@@ -97,7 +97,6 @@ library
                          , Effectful.Error.Static
                          , Effectful.Error.Dynamic
                          , Effectful.Fail
-                         , Effectful.Monad
                          , Effectful.Prim
                          , Effectful.Reader.Dynamic
                          , Effectful.Reader.Static

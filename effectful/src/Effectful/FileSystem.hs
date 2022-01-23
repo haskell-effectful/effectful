@@ -91,9 +91,9 @@ module Effectful.FileSystem
 import Data.Time (UTCTime)
 import qualified System.Directory as D
 
+import Effectful
 import Effectful.Dispatch.Static
 import Effectful.FileSystem.Effect
-import Effectful.Monad
 
 ----------------------------------------
 -- Actions on directories

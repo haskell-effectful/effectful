@@ -13,9 +13,9 @@ module Effectful.Concurrent.QSemN
 import Control.Concurrent.QSemN (QSemN)
 import qualified Control.Concurrent.QSemN as Q
 
+import Effectful
 import Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 -- | Lifted 'Q.newQSemN'.
 newQSemN :: Concurrent :> es => Int -> Eff es QSemN

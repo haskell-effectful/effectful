@@ -7,8 +7,8 @@ module Effectful.Reader.Static
   , local
   ) where
 
+import Effectful
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 -- | Provide access to a strict (WHNF), thread local, read only value of type
 -- @r@.

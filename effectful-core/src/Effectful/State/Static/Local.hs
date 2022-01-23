@@ -36,8 +36,8 @@ module Effectful.State.Static.Local
   , modifyM
   ) where
 
+import Effectful
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 -- | Provide access to a strict (WHNF), thread local, mutable value of type @s@.
 data State s :: Effect

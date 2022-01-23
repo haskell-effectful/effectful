@@ -14,6 +14,7 @@ import qualified Data.Map.Strict as M
 import qualified System.IO as IO
 
 import Effectful
+import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.State.Static.Local
 

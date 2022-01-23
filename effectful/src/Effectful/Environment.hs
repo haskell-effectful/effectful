@@ -19,8 +19,8 @@ module Effectful.Environment
 
 import qualified System.Environment as E
 
+import Effectful
 import Effectful.Dispatch.Static hiding (getEnv)
-import Effectful.Monad
 
 -- | An effect for querying and modifying the system environment.
 data Environment :: Effect

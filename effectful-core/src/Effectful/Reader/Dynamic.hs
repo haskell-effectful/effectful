@@ -6,8 +6,8 @@ module Effectful.Reader.Dynamic
   , local
   ) where
 
+import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Monad
 import qualified Effectful.Reader.Static as R
 
 data Reader r :: Effect where

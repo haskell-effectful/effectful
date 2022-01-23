@@ -3,8 +3,8 @@ module Effectful.Concurrent.Effect
   , runConcurrent
   ) where
 
+import Effectful
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 -- | Provide the ability to run 'Eff' computations concurrently in multiple
 -- threads and communicate between them.

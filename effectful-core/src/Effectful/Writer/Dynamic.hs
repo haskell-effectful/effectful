@@ -15,8 +15,8 @@ module Effectful.Writer.Dynamic
   , listens
   ) where
 
+import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Monad
 import qualified Effectful.Writer.Static.Local as L
 import qualified Effectful.Writer.Static.Shared as S
 

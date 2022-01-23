@@ -14,6 +14,7 @@ import Control.Monad
 import qualified Effectful.Concurrent.Async as A
 
 import Effectful
+import Effectful.Dispatch.Dynamic
 import Utils
 
 concurrencyBenchmark :: Benchmark

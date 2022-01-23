@@ -3,8 +3,8 @@ module Effectful.FileSystem.Effect
   , runFileSystem
   ) where
 
+import Effectful
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 -- | An effect for interacting with the filesystem.
 data FileSystem :: Effect

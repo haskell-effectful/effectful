@@ -6,8 +6,8 @@ module Effectful.Timeout
 
 import qualified System.Timeout as T
 
+import Effectful
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 -- | An effect for timing out computations.
 data Timeout :: Effect

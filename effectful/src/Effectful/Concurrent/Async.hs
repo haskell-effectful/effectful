@@ -81,9 +81,9 @@ import qualified Control.Concurrent.Async as A
 import qualified UnliftIO.Async as U
 import qualified UnliftIO.Internals.Async as I
 
+import Effectful
 import Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
-import Effectful.Monad
 
 -- | Lifted 'A.async'.
 async :: Concurrent :> es => Eff es a -> Eff es (Async a)

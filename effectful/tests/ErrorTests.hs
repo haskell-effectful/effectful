@@ -4,6 +4,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Effectful
+import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 
 errorTests :: TestTree

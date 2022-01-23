@@ -7,6 +7,7 @@ import qualified Control.Exception.Lifted as LE
 import qualified UnliftIO.Exception as UE
 
 import Effectful
+import Effectful.Dispatch.Dynamic
 import Effectful.State.Static.Local
 import qualified Utils as U
 

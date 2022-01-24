@@ -131,7 +131,8 @@ import Effectful.Internal.Monad
 --    unsafeEff_ $ logMessage logger msg
 -- :}
 --
--- However, in order for this approach to be sound, the function that introduces the @Log@ effect needs to require 'IOE':
+-- However, in order for this approach to be sound, the function that introduces
+-- the @Log@ effect needs to require 'IOE':
 --
 -- >>> :{
 --  runLog :: IOE :> es => Logger -> Eff (Log : es) a -> Eff es a

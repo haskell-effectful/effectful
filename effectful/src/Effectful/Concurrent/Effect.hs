@@ -65,9 +65,9 @@ import Effectful.Dispatch.Static
 -- :}
 -- "Hi!!!"
 --
--- In the first example state modification made concurrently are not reflected
--- in the parent thread because the value is thread local, but in the second
--- example they are, because the value is shared.
+-- In the first example state updates made concurrently are not reflected in the
+-- parent thread because the value is thread local, but in the second example
+-- they are, because the value is shared.
 --
 data Concurrent :: Effect
 

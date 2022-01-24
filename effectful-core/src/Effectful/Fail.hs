@@ -1,6 +1,9 @@
 -- | Provider of the 'MonadFail' instance for 'Eff'.
 module Effectful.Fail
-  ( Fail(..)
+  ( -- * Effect
+    Fail(..)
+
+    -- ** Handlers
   , runFail
   , runFailIO
   ) where

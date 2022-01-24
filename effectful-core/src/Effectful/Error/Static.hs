@@ -54,7 +54,7 @@
 -- >>> T.runExceptT . (`T.runStateT` "Hi") $ m1
 -- Right ((),"Hi")
 --
--- Here, whether state modifications within the @catchError@ block are lost or
+-- Here, whether state updates within the 'catchError' block are discarded or
 -- not depends on the shape of the monad transformer stack, which is surprising
 -- and can be a source of subtle bugs. On the other hand:
 --
@@ -68,23 +68,33 @@
 -- >>> runEff . runError @String . runState "Hi" $ m2
 -- Right ((),"Hi there!")
 --
--- Here, no matter the order of effects, state modifications within the
--- @catchError@ block always persist, giving predictable behavior.
+-- Here, no matter the order of effects, state updates made within the
+-- @catchError@ block before the error happens always persist, giving
+-- predictable behavior.
+--
+-- /Hint:/ if you'd like to reproduce the transactional behavior with the
+-- 'Effectful.State.Static.Local.State' effect, appropriate usage of
+-- 'Control.Monad.Catch.bracketOnError' will do the trick.
 module Effectful.Error.Static
- ( Error
- , runError
- , runErrorNoCallStack
- , throwError
- , catchError
- , handleError
- , tryError
+  ( -- * Effect
+    Error
 
- -- * Re-exports
- , HasCallStack
- , CallStack
- , getCallStack
- , prettyCallStack
- ) where
+    -- ** Handlers
+  , runError
+  , runErrorNoCallStack
+
+    -- ** Operations
+  , throwError
+  , catchError
+  , handleError
+  , tryError
+
+  -- * Re-exports
+  , HasCallStack
+  , CallStack
+  , getCallStack
+  , prettyCallStack
+  ) where
 
 import Control.Exception
 import Data.Unique
@@ -118,7 +128,7 @@ runError m = unsafeEff $ \es0 -> mask $ \release -> do
       Left ex -> tryHandler ex eid (\cs e -> Left (cs, e))
                $ throwIO ex
 
--- | Handle errors of type @e@. In case of error discard the 'CallStack'.
+-- | Handle errors of type @e@. In case of an error discard the 'CallStack'.
 runErrorNoCallStack
   :: forall e es a
   .  Eff (Error e : es) a

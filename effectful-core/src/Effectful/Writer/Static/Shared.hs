@@ -14,9 +14,14 @@
 -- 'Control.Monad.Trans.Writer.Strict.censor', they don't cooperate with runtime
 -- exceptions very well, so they're deliberately omitted here.
 module Effectful.Writer.Static.Shared
-  ( Writer
+  ( -- * Effect
+    Writer
+
+    -- ** Handlers
   , runWriter
   , execWriter
+
+    -- ** Operations
   , tell
   , listen
   , listens

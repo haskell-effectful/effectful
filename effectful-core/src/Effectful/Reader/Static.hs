@@ -1,7 +1,12 @@
 -- | Support for access to a read only value of a particular type.
 module Effectful.Reader.Static
-  ( Reader
+  ( -- * Effect
+    Reader
+
+    -- ** Handlers
   , runReader
+
+    -- ** Operations
   , ask
   , asks
   , local
@@ -19,7 +24,7 @@ newtype instance StaticRep (Reader r) = Reader r
 
 -- | Run a 'Reader' effect with the given initial environment.
 runReader
-  :: r -- ^ An initial environment.
+  :: r -- ^ The initial environment.
   -> Eff (Reader r : es) a
   -> Eff es a
 runReader r = evalStaticRep (Reader r)

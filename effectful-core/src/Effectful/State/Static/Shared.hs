@@ -4,8 +4,8 @@
 -- manage its own version of the value, use "Effectful.State.Static.Local".
 --
 -- /Note:/ unlike the 'Control.Monad.Trans.State.StateT' monad transformer from
--- the @transformers@ library, the 'State' effect doesn't lose state
--- modifications when an exception is received:
+-- the @transformers@ library, the 'State' effect doesn't discard state updates
+-- when an exception is received:
 --
 -- >>> import qualified Control.Monad.Trans.State.Strict as S
 --
@@ -23,10 +23,15 @@
 -- :}
 -- "Hi there!"
 module Effectful.State.Static.Shared
-  ( State
+  ( -- * Effect
+    State
+
+    -- ** Handlers
   , runState
   , evalState
   , execState
+
+    -- ** Operations
   , get
   , gets
   , put
@@ -47,7 +52,7 @@ data State s :: Effect
 type instance DispatchOf (State s) = 'Static
 newtype instance StaticRep (State s) = State (MVar s)
 
--- | Run a 'State' effect with the given initial state and return the final
+-- | Run the 'State' effect with the given initial state and return the final
 -- value along with the final state.
 runState :: s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = do
@@ -55,14 +60,14 @@ runState s m = do
   a <- evalStaticRep (State v) m
   (a, ) <$> unsafeEff_ (readMVar v)
 
--- | Run a 'State' effect with the given initial state and return the final
+-- | Run the 'State' effect with the given initial state and return the final
 -- value, discarding the final state.
 evalState :: s -> Eff (State s : es) a -> Eff es a
 evalState s m = do
   v <- unsafeEff_ $ newMVar s
   evalStaticRep (State v) m
 
--- | Run a 'State' effect with the given initial state and return the final
+-- | Run the 'State' effect with the given initial state and return the final
 -- state, discarding the final value.
 execState :: s -> Eff (State s : es) a -> Eff es s
 execState s m = do

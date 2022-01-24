@@ -1,24 +1,27 @@
 module Effectful
-  ( -- * The 'Eff' monad
+  ( -- * Introduction
+    -- $intro
+
+    -- * The 'Eff' monad
     Eff
 
-  -- ** Effect constraints
+    -- ** Effect constraints
   , Effect
   , Dispatch(..)
   , DispatchOf
   , (:>)
   , (:>>)
 
-  -- * Running the 'Eff' monad
+    -- * Running the 'Eff' monad
 
-  -- ** Pure computations
+    -- ** Pure computations
   , runPureEff
 
-  -- ** Computations with side effects
+    -- ** Computations with side effects
   , IOE
   , runEff
 
-  -- ** Unlift strategies
+    -- ** Unlift strategies
   , UnliftStrategy(..)
   , Persistence(..)
   , Limit(..)
@@ -26,7 +29,7 @@ module Effectful
   , withUnliftStrategy
   , withEffToIO
 
-  -- * Re-exports
+    -- * Re-exports
   , MonadIO(..)
   , MonadUnliftIO(..)
   ) where
@@ -36,3 +39,8 @@ import Control.Monad.IO.Unlift
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Monad
+
+-- $intro
+--
+-- TODO
+--

@@ -1,6 +1,8 @@
 -- | Dynamically dispatched effects.
 module Effectful.Dispatch.Dynamic
   ( -- * Introduction
+    -- $intro
+
     -- ** An example
     -- $example
 
@@ -46,6 +48,19 @@ import GHC.Stack (HasCallStack)
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
+
+-- $intro
+--
+-- A dynamically dispatched effect is a collection of operations that can be
+-- interpreted in different ways at runtime, depending on the handler that is
+-- used to run the effect.
+--
+-- This allows a programmer to separate the __what__ from the __how__,
+-- i.e. define effects that model what the code should do, while providing
+-- handlers that determine how it should do it later. Moreover, different
+-- environments can use different handlers to change the behavior of specific
+-- parts of the application if appropriate.
+--
 
 -- $example
 --

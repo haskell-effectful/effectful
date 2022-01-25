@@ -94,12 +94,11 @@ forkFinally k cleanup = unsafeEff $ \es -> do
 -- | Lifted 'C.forkIOWithUnmask'.
 forkIOWithUnmask
   :: Concurrent :> es
-  => ((forall a es'. IOE :> es' => Eff es' a -> Eff es' a)
-  -> Eff es ())
+  => ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
 forkIOWithUnmask f = unsafeEff $ \es -> do
   esF <- cloneEnv es
-  C.forkIOWithUnmask (\restore -> unEff (f (unsafeLiftMapIO restore)) esF)
+  C.forkIOWithUnmask $ \unmask -> unEff (f $ unsafeLiftMapIO unmask) esF
 
 -- | Lifted 'C.killThread'.
 killThread :: Concurrent :> es => C.ThreadId -> Eff es ()
@@ -122,11 +121,11 @@ forkOn n k = unsafeEff $ \es -> do
 forkOnWithUnmask
   :: Concurrent :> es
   => Int
-  -> ((forall a es'. IOE :> es' => Eff es' a -> Eff es' a) -> Eff es ())
+  -> ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
 forkOnWithUnmask n f = unsafeEff $ \es -> do
   esF <- cloneEnv es
-  C.forkOnWithUnmask n (\restore -> unEff (f (unsafeLiftMapIO restore)) esF)
+  C.forkOnWithUnmask n $ \unmask -> unEff (f $ unsafeLiftMapIO unmask) esF
 
 -- | Lifted 'C.getNumCapabilities'.
 getNumCapabilities :: Concurrent :> es => Eff es Int
@@ -188,11 +187,11 @@ forkOS k = unsafeEff $ \es -> do
 -- | Lifted 'E.forkOSWithUnmask'.
 forkOSWithUnmask
   :: Concurrent :> es
-  => ((forall a es'. IOE :> es' => Eff es' a -> Eff es' a) -> Eff es ())
+  => ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
 forkOSWithUnmask f = unsafeEff $ \es -> do
   esF <- cloneEnv es
-  C.forkOSWithUnmask (\restore -> unEff (f (unsafeLiftMapIO restore)) esF)
+  C.forkOSWithUnmask $ \unmask -> unEff (f $ unsafeLiftMapIO unmask) esF
 
 -- | Lifted 'C.isCurrentThreadBound'.
 isCurrentThreadBound :: Concurrent :> es => Eff es Bool

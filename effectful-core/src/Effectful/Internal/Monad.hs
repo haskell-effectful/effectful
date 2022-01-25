@@ -235,16 +235,16 @@ instance C.MonadCatch (Eff es) where
       unEff (handler e) es
 
 instance C.MonadMask (Eff es) where
-  mask k = unsafeEff $ \es -> E.mask $ \restore ->
-    unEff (k $ \m -> unsafeEff $ restore . unEff m) es
+  mask k = unsafeEff $ \es -> E.mask $ \unmask ->
+    unEff (k $ \m -> unsafeEff $ unmask . unEff m) es
 
-  uninterruptibleMask k = unsafeEff $ \es -> E.uninterruptibleMask $ \restore ->
-    unEff (k $ \m -> unsafeEff $ restore . unEff m) es
+  uninterruptibleMask k = unsafeEff $ \es -> E.uninterruptibleMask $ \unmask ->
+    unEff (k $ \m -> unsafeEff $ unmask . unEff m) es
 
-  generalBracket acquire release use = unsafeEff $ \es -> E.mask $ \restore -> do
+  generalBracket acquire release use = unsafeEff $ \es -> E.mask $ \unmask -> do
     size <- sizeEnv es
     resource <- unEff acquire es
-    b <- restore (unEff (use resource) es) `E.catch` \e -> do
+    b <- unmask (unEff (use resource) es) `E.catch` \e -> do
       checkSizeEnv size es
       _ <- unEff (release resource $ C.ExitCaseException e) es
       E.throwIO e

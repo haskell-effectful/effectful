@@ -75,9 +75,9 @@ tell w = stateStaticRep $ \(Writer w0) -> ((), Writer (w0 <> w))
 -- :}
 -- "Hi there!"
 listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
-listen m = unsafeEff $ \es -> mask $ \restore -> do
+listen m = unsafeEff $ \es -> mask $ \unmask -> do
   w0 <- stateEnv es $ \(Writer w) -> (w, Writer mempty)
-  a <- restore (unEff m es) `onException` merge es w0
+  a <- unmask (unEff m es) `onException` merge es w0
   (a, ) <$> merge es w0
   where
     merge es w0 =

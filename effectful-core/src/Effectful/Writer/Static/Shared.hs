@@ -83,11 +83,11 @@ listen m = unsafeEff $ \es -> do
   -- The mask is uninterruptible because modifyMVar_ v0 in the merge function
   -- might block and if an async exception is received while waiting, w1 will be
   -- lost.
-  uninterruptibleMask $ \restore -> do
+  uninterruptibleMask $ \unmask -> do
     v1 <- newMVar mempty
     -- Replace thread local MVar with a fresh one for isolated listening.
     v0 <- stateEnv es $ \(Writer v) -> (v, Writer v1)
-    a <- restore (unEff m es) `onException` merge es v0 v1
+    a <- unmask (unEff m es) `onException` merge es v0 v1
     (a, ) <$> merge es v0 v1
   where
     -- Merge results accumulated in the local MVar with the mainline. If an

@@ -26,6 +26,14 @@ import qualified Control.Monad.Freer.Reader as FS
 import qualified Control.Monad.Freer.State as FS
 #endif
 
+-- fused-effects
+#ifdef VERSION_fused_effects
+import qualified Control.Algebra as FE
+import qualified Control.Effect.Sum as FE
+import qualified Control.Carrier.Reader as FE
+import qualified Control.Carrier.State.Strict as FE
+#endif
+
 -- mtl
 #ifdef VERSION_mtl
 import qualified Control.Monad.State as M
@@ -266,6 +274,86 @@ fs_calculateFileSizesDeep = FS.runM
   . fs_program
   where
     runR = FS.runReader ()
+
+#endif
+
+----------------------------------------
+-- fused-effects
+
+#ifdef VERSION_fused_effects
+
+data FE_File :: E.Effect where
+  FE_tryFileSize :: FilePath -> FE_File m (Maybe Int)
+
+fe_tryFileSize :: FE.Has FE_File sig m => FilePath -> m (Maybe Int)
+fe_tryFileSize = FE.send . FE_tryFileSize
+
+newtype FE_FileC m a = FE_FileC { fe_runFileC :: m a }
+  deriving (Applicative, Functor, Monad, MonadIO)
+
+instance
+  ( MonadIO m
+  , FE.Algebra sig m
+  ) => FE.Algebra (FE_File FE.:+: sig) (FE_FileC m) where
+  alg hdl sig ctx = case sig of
+    FE.L (FE_tryFileSize path) -> (<$ ctx) <$> liftIO (tryGetFileSize path)
+    FE.R other                 -> FE_FileC $ FE.alg (fe_runFileC . hdl) other ctx
+
+data FE_Logging :: E.Effect where
+  FE_logMsg :: String -> FE_Logging m ()
+
+fe_logMsg :: FE.Has FE_Logging sig m => String -> m ()
+fe_logMsg = FE.send . FE_logMsg
+
+newtype FE_LoggingC m a = FE_LoggingC { fe_runLoggingC :: FE.StateC [String] m a }
+  deriving (Applicative, Functor, Monad)
+
+instance
+  ( FE.Algebra sig m
+  ) => FE.Algebra (FE_Logging FE.:+: sig) (FE_LoggingC m) where
+  alg hdl sig ctx = case sig of
+    FE.L (FE_logMsg msg) -> FE_LoggingC $ ctx <$ FE.modify (msg :)
+    FE.R other           -> FE_LoggingC $ FE.alg (fe_runLoggingC . hdl) (FE.R other) ctx
+
+fe_runLogging :: Monad m => FE_LoggingC m a -> m (a, [String])
+fe_runLogging = fmap fe_swap . FE.runState [] . fe_runLoggingC
+
+fe_swap :: (a, b) -> (b, a)
+fe_swap (x, y) = (y, x)
+
+----------
+
+fe_calculateFileSize
+  :: (FE.Member FE_File sig, FE.Member FE_Logging sig, FE.Algebra sig m)
+  => FilePath
+  -> m Int
+fe_calculateFileSize path = do
+  fe_logMsg $ "Calculating the size of " ++ path
+  fe_tryFileSize path >>= \case
+    Nothing   -> 0    <$ fe_logMsg ("Could not calculate the size of " ++ path)
+    Just size -> size <$ fe_logMsg (path ++ " is " ++ show size ++ " bytes")
+{-# NOINLINE fe_calculateFileSize #-}
+
+fe_program
+  :: (FE.Member FE_File sig, FE.Member FE_Logging sig, FE.Algebra sig m)
+  => [FilePath]
+  -> m Int
+fe_program files = do
+  sizes <- traverse fe_calculateFileSize files
+  pure $ sum sizes
+{-# NOINLINE fe_program #-}
+
+fe_calculateFileSizes :: [FilePath] -> IO (Int, [String])
+fe_calculateFileSizes = fe_runFileC . fe_runLogging . fe_program
+
+fe_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
+fe_calculateFileSizesDeep
+  = runR . runR . runR . runR . runR
+  . fe_runFileC . fe_runLogging
+  . runR . runR . runR . runR . runR
+  . fe_program
+  where
+    runR = FE.runReader ()
 
 #endif
 

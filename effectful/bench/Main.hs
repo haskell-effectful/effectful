@@ -25,10 +25,10 @@ main = defaultMain
 
 countdown :: Integer -> Benchmark
 countdown n = bgroup (show n)
-  [ bgroup "shallow"
-    [ bench "reference (pure)"           $ nf countdownRef n
-    , bench "reference (ST)"             $ nf countdownST n
-    , bench "effectful (local/static)"   $ nf countdownEffectfulLocal n
+  [ bench "reference (pure)"             $ nf countdownRef n
+  , bench "reference (ST)"               $ nf countdownST n
+  , bgroup "shallow"
+    [ bench "effectful (local/static)"   $ nf countdownEffectfulLocal n
     , bench "effectful (local/dynamic)"  $ nf countdownEffectfulDynLocal n
     , bench "effectful (shared/static)"  $ nf countdownEffectfulShared n
     , bench "effectful (shared/dynamic)" $ nf countdownEffectfulDynShared n
@@ -73,35 +73,41 @@ countdown n = bgroup (show n)
 
 filesize :: Int -> Benchmark
 filesize n = bgroup (show n)
-  [ bgroup "shallow"
-    [ bench "reference"    $ nfAppIO ref_calculateFileSizes (take n files)
-    , bench "effectful"    $ nfAppIO effectful_calculateFileSizes (take n files)
+  [ bench "reference"       $ nfAppIO ref_calculateFileSizes (take n files)
+  , bgroup "shallow"
+    [ bench "effectful"     $ nfAppIO effectful_calculateFileSizes (take n files)
 #ifdef VERSION_freer_simple
-    , bench "freer-simple" $ nfAppIO fs_calculateFileSizes (take n files)
+    , bench "freer-simple"  $ nfAppIO fs_calculateFileSizes (take n files)
 #endif
 #ifdef VERSION_mtl
-    , bench "mtl"          $ nfAppIO mtl_calculateFileSizes (take n files)
+    , bench "mtl"           $ nfAppIO mtl_calculateFileSizes (take n files)
 #endif
 #ifdef VERSION_eff
-    , bench "eff"          $ nfAppIO eff_calculateFileSizes (take n files)
+    , bench "eff"           $ nfAppIO eff_calculateFileSizes (take n files)
+#endif
+#ifdef VERSION_fused_effects
+    , bench "fused-effects" $ nfAppIO fe_calculateFileSizes (take n files)
 #endif
 #ifdef VERSION_polysemy
-    , bench "polysemy"     $ nfAppIO poly_calculateFileSizes (take n files)
+    , bench "polysemy"      $ nfAppIO poly_calculateFileSizes (take n files)
 #endif
     ]
   , bgroup "deep"
-    [ bench "effectful"    $ nfAppIO effectful_calculateFileSizesDeep (take n files)
+    [ bench "effectful"     $ nfAppIO effectful_calculateFileSizesDeep (take n files)
 #ifdef VERSION_freer_simple
-    , bench "freer-simple" $ nfAppIO fs_calculateFileSizesDeep (take n files)
+    , bench "freer-simple"  $ nfAppIO fs_calculateFileSizesDeep (take n files)
 #endif
 #ifdef VERSION_eff
-    , bench "eff"          $ nfAppIO eff_calculateFileSizesDeep (take n files)
+    , bench "eff"           $ nfAppIO eff_calculateFileSizesDeep (take n files)
 #endif
 #ifdef VERSION_mtl
-    , bench "mtl"          $ nfAppIO mtl_calculateFileSizesDeep (take n files)
+    , bench "mtl"           $ nfAppIO mtl_calculateFileSizesDeep (take n files)
 #endif
 #ifdef VERSION_polysemy
-    , bench "polysemy"     $ nfAppIO poly_calculateFileSizesDeep (take n files)
+    , bench "polysemy"      $ nfAppIO poly_calculateFileSizesDeep (take n files)
+#endif
+#ifdef VERSION_fused_effects
+    , bench "fused-effects" $ nfAppIO fe_calculateFileSizesDeep (take n files)
 #endif
     ]
   ]

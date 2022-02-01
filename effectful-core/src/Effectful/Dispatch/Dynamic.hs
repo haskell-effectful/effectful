@@ -214,7 +214,7 @@ import Effectful.Internal.Monad
 --      t1 <- liftIO getMonotonicTime
 --      r <- action
 --      t2 <- liftIO getMonotonicTime
---      liftIO . putStrLn $ label ++ "' took " ++ show (t2 - t1) ++ " seconds"
+--      liftIO . putStrLn $ "Action '" ++ label ++ "' took " ++ show (t2 - t1) ++ " seconds."
 --      pure r
 -- :}
 -- ...

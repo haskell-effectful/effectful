@@ -161,9 +161,9 @@ withUnliftStrategy unlift = localStaticRep $ \_ -> IOE unlift
 
 -- | Create an unlifting function with the current 'UnliftStrategy'.
 --
--- This function is equivalent to 'withRunInIO', but has a 'HasCallStack'
--- constraint for accurate stack traces in case an insufficiently powerful
--- 'UnliftStrategy' is used and the unlifting function fails.
+-- This function is equivalent to 'Effectful.withRunInIO', but has a
+-- 'HasCallStack' constraint for accurate stack traces in case an insufficiently
+-- powerful 'UnliftStrategy' is used and the unlifting function fails.
 --
 -- /Note:/ the strategy is reset to 'SeqUnlift' inside the continuation.
 withEffToIO
@@ -295,7 +295,7 @@ instance IOE :> es => MonadBase IO (Eff es) where
   liftBase = unsafeEff_
 
 -- | Instance included for compatibility with existing code, usage of
--- 'withRunInIO' is preferrable.
+-- 'Effectful.withRunInIO' is preferrable.
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
   liftBaseWith = withEffToIO

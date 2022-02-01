@@ -18,8 +18,12 @@ module Effectful
   , runPureEff
 
     -- ** Computations with side effects
-  , IOE
   , runEff
+
+    -- *** Integration with the 'IO' monad
+  , IOE
+  , MonadIO(..)
+  , MonadUnliftIO(..)
 
     -- ** Unlift strategies
   , UnliftStrategy(..)
@@ -28,10 +32,6 @@ module Effectful
   , unliftStrategy
   , withUnliftStrategy
   , withEffToIO
-
-    -- * Re-exports
-  , MonadIO(..)
-  , MonadUnliftIO(..)
   ) where
 
 import Control.Monad.IO.Class

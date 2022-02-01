@@ -85,11 +85,11 @@ filesize n = bgroup (show n)
 #ifdef VERSION_cleff
     , bench "cleff"         $ nfAppIO cleff_calculateFileSizes (take n files)
 #endif
-#ifdef VERSION_freer_simple
-    , bench "freer-simple"  $ nfAppIO fs_calculateFileSizes (take n files)
-#endif
 #ifdef VERSION_mtl
     , bench "mtl"           $ nfAppIO mtl_calculateFileSizes (take n files)
+#endif
+#ifdef VERSION_freer_simple
+    , bench "freer-simple"  $ nfAppIO fs_calculateFileSizes (take n files)
 #endif
 #ifdef VERSION_eff
     , bench "eff"           $ nfAppIO eff_calculateFileSizes (take n files)

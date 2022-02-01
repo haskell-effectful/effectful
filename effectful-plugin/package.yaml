@@ -1,0 +1,86 @@
+name:                effectful-plugin
+version:             0.1
+github:              "arybczak/effectful"
+license:             BSD-3-Clause
+author:              "Andrej Rybczak"
+maintainer:          "andrzej@rybczak.net"
+build-type:          Custom
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+synopsis:            Disambiguate obvious uses of effects.
+category:            Polysemy
+
+description:         Please see the README on GitHub at <https://github.com/polysemy-research/polysemy/tree/master/polysemy-plugin#readme>
+
+dependencies:
+- base >= 4.9 && < 5
+- ghc >= 8.6.5 && < 10
+- ghc-tcplugins-extra >= 0.3 && < 0.5
+- syb >= 0.7 && < 0.8
+- transformers >= 0.5.2.0 && < 0.6
+- containers >= 0.5 && < 0.7
+- effectful
+
+custom-setup:
+  dependencies:
+    - base >= 4.9 && < 5
+    - Cabal
+    - cabal-doctest >=1.0.6 && <1.1
+
+library:
+  source-dirs: src
+  generated-other-modules:
+  - Paths_effectful_plugin
+
+flags:
+  corelint:
+    description: Perform the corelint tests
+    default:     False
+    manual:      True
+
+tests:
+  effectful-plugin-test:
+    main:                Main.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -fplugin=Effectful.Plugin
+    when:
+    - condition: flag(corelint)
+      ghc-options:
+        - -dcore-lint
+        - -dsuppress-all
+    build-tools:
+    - hspec-discover
+    dependencies:
+    - effectful
+    - effectful-core
+    - effectful-plugin
+    - exceptions
+    - hspec >= 2.6.0 && < 3
+    - should-not-typecheck >= 2.1.0 && < 3
+    - inspection-testing >= 0.4.2 && < 0.5
+    - doctest >= 0.16.0.1 && < 0.19
+    generated-other-modules:
+    - Build_doctests
+
+default-extensions:
+  - DataKinds
+  - DeriveFunctor
+  - FlexibleContexts
+  - GADTs
+  - LambdaCase
+  - PolyKinds
+  - RankNTypes
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - TypeApplications
+  - TypeOperators
+  - TypeFamilies
+
+  - UnicodeSyntax

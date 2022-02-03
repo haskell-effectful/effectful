@@ -116,7 +116,7 @@ toFunctionName cname = let
   x : xs = nameBase cname
   in mkName $ toLower x : xs
 
-effVars :: [TyVarBndrUnit] -> ([TyVarBndr], TyVarBndr, TyVarBndr)
+effVars :: [TyVarBndrUnit] -> ([TyVarBndrUnit], TyVarBndrUnit, TyVarBndrUnit)
 effVars = go mempty
   where
     go _ [] = error "Type is no Effect !"

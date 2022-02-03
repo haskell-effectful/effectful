@@ -75,7 +75,8 @@ makeSendFunctionFor tinfo cinfo = do
   let replaceEff = map (pure . replaceTV m effMonad)
 
   -- Create the function's type signature.
-  let bndrs = effectVarBndrs <> constructorVars cinfo <> [esBndr, rBndr]
+  let bndrs = map (mapTVFlag (const inferredSpec)) $
+        effectVarBndrs <> constructorVars cinfo <> [esBndr, rBndr]
 
   let effect = appsT $ conT (datatypeName tinfo) : map varT effectVars
       effectConstraint = [t| $(effect) :> $(varT es) |]
@@ -86,7 +87,7 @@ makeSendFunctionFor tinfo cinfo = do
       eff = [t| Eff $(varT es) $(varT r) |]
       funSig = arrowsT args eff
 
-  sig <- sigD fname $ forallT bndrs ctx funSig
+  sig <- withDoc $ sigD fname $ forallT bndrs ctx funSig
 
   -- Create the function's definition.
   ns <- let
@@ -101,14 +102,16 @@ makeSendFunctionFor tinfo cinfo = do
 
   defn <- funD fname [clause pats body []]
 
-#if MIN_VERSION_template_haskell(2,18,0)
-  let doc :: String
-      doc = "-- | Send the '"
-        <> show (constructorName cinfo)
-        <> "' effect to the effect handler."
-  pure [withDecDoc doc sig, defn]
-#else
   pure [sig, defn]
+  where
+    withDoc :: Q Dec -> Q Dec
+#if MIN_VERSION_template_haskell(2,18,0)
+    withDoc = withDecDoc
+      $  "-- | Send the '"
+      <> show (constructorName cinfo)
+      <> "' effect to the effect handler."
+#else
+    withDoc = id
 #endif
 
 toFunctionName :: Name -> Name

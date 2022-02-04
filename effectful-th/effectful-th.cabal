@@ -56,8 +56,8 @@ library
     ghc-options:    -O2
 
     build-depends:    base                >= 4.13      && < 5
+                    , containers
                     , effectful-core
-                    , syb
                     , template-haskell
                     , th-abstraction
 

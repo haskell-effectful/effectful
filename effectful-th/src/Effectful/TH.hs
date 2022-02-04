@@ -21,8 +21,7 @@ import Control.Monad (forM)
 import Effectful (Eff, Effect, (:>))
 import Effectful.Dispatch.Dynamic (send)
 import Data.Char (toLower)
-import Data.Generics (everywhere, listify, mkT)
-import qualified Data.List
+import qualified Data.Map as Map
 import Language.Haskell.TH
 import Language.Haskell.TH.Datatype
 import Language.Haskell.TH.Datatype.TyVarBndr
@@ -137,7 +136,7 @@ makeSendFunctionForInfo options tinfo cinfo = do
   es <- newName "es"
   esBndr <- kindedTV es <$> [t| [Effect] |]
   effMonad <- [t| Eff $(varT es) |]
-  let replaceEff = map (pure . replaceTV m effMonad)
+  let replaceEff = map pure . applySubstitution (Map.singleton m effMonad)
 
   -- Create the function's type signature.
   let bndrs = map (mapTVFlag (const inferredSpec)) $
@@ -149,7 +148,7 @@ makeSendFunctionForInfo options tinfo cinfo = do
       ctx = sequence $ effectConstraint : constructorConstraints
 
   let args = replaceEff $ constructorFields cinfo
-      eff = [t| Eff $(varT es) $(varT r) |]
+      eff = [t| $(pure effMonad) $(varT r) |]
       funSig = arrowsT args eff
 
   sig <- withDoc $ sigD fname $ forallT bndrs ctx funSig
@@ -161,7 +160,7 @@ makeSendFunctionForInfo options tinfo cinfo = do
 
   let pats = map varP ns
       con = conE cname
-      tyApps = replaceEff $ listTyVars $ constructorFields cinfo
+      tyApps = replaceEff $ listTVs $ constructorFields cinfo
       fields = map varE ns
       body = normalB $ [|send|] `appE` appsE (appTypesE con tyApps : fields)
 
@@ -184,25 +183,12 @@ effVars = go mempty
   where
     go _ [] = error "Type is no Effect !"
     go _ [_] = error "Type is no Effect !"
-    go acc [m, r] = (reverse acc, m, r)
-    go acc (tv : tvs) = go (tv : acc) tvs
+    go !acc [m, r] = (reverse acc, m, r)
+    go !acc (tv : tvs) = go (tv : acc) tvs
 
-listTyVars :: [Type] -> [Type]
-listTyVars = foldl f mempty
-  where
-    f memo t = let
-      tvs = listify isTyVar t
-      in memo <> (Data.List.nub tvs Data.List.\\ memo)
+listTVs :: [Type] -> [Type]
+listTVs = map (VarT . tvName) . freeVariablesWellScoped
 
-    isTyVar VarT{} = True
-    isTyVar _ = False
-
-replaceTV :: Name -> Type -> Type -> Type
-replaceTV n r = everywhere (mkT f)
-  where
-    f :: Type -> Type
-    f (VarT tv) | tv == n = r
-    f t = t
 
 ----------------------------------------
 -- Helper functions

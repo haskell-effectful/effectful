@@ -27,6 +27,13 @@ import Language.Haskell.TH.Datatype
 import Language.Haskell.TH.Datatype.TyVarBndr
 
 -- | Options for the generation of send functions.
+--
+-- The available options are documented in their respective setters:
+--
+--  * 'setMakeFunction': Select for which data constructors functions are
+--    generated.
+--  * 'setToFunctionName': How data constructor names are mapped to function
+--    names.
 data Options = Options
   { optionsMakeFunction :: Name -> Bool
   , optionsToFunctionName :: String -> String
@@ -62,7 +69,7 @@ setMakeFunctionFor ns = setMakeFunction (`elem` ns)
 setToFunctionName :: (String -> String) -> Options -> Options
 setToFunctionName f options = options { optionsToFunctionName = f }
 
--- | Generate functions for sending a dynamic effect to the effect handler.
+-- | Generate functions for sending an effect operation to its handler.
 --
 -- For example,
 --
@@ -139,31 +146,40 @@ makeSendFunctionForInfo options tinfo cinfo = do
   let replaceEff = map pure . applySubstitution (Map.singleton m effMonad)
 
   -- Create the function's type signature.
+
+  -- The bindings of the type variables in the scope of the signature.
   let bndrs = map (mapTVFlag (const inferredSpec)) $
         effectVarBndrs <> constructorVars cinfo <> [esBndr, rBndr]
 
+  -- The signature's context.
   let effect = appsT $ conT (datatypeName tinfo) : map varT effectVars
       effectConstraint = [t| $(effect) :> $(varT es) |]
       constructorConstraints = replaceEff $ constructorContext cinfo
       ctx = sequence $ effectConstraint : constructorConstraints
 
+  -- The type of the function.
   let args = replaceEff $ constructorFields cinfo
       eff = [t| $(pure effMonad) $(varT r) |]
       funSig = arrowsT args eff
 
+  -- The whole function signature.
   sig <- withDoc $ sigD fname $ forallT bndrs ctx funSig
 
   -- Create the function's definition.
+
+  -- The names of the patterns / constructor arguments.
   ns <- let
     fieldsN = length $ constructorFields cinfo
     in mapM (\i -> newName ("arg" <> show i)) [1 .. fieldsN]
 
+  -- The patterns and the function body.
   let pats = map varP ns
       con = conE cname
       tyApps = replaceEff $ listTVs $ constructorFields cinfo
       fields = map varE ns
       body = normalB $ [|send|] `appE` appsE (appTypesE con tyApps : fields)
 
+  -- The whole function definition.
   defn <- funD fname [clause pats body []]
 
   pure [sig, defn]
@@ -178,6 +194,14 @@ makeSendFunctionForInfo options tinfo cinfo = do
     withDoc = id
 #endif
 
+-- | Split the type variables of the effect in
+--
+--  * the ones specific to the effect.
+--  * the monad of the effect (i.e. the one that will be instantiated with
+--    'Eff es')
+--  * the return type of the operation.
+--
+-- For example, the effect `Reader r m a` will be split into `([r], m, a)`.
 effVars :: [TyVarBndrUnit] -> ([TyVarBndrUnit], TyVarBndrUnit, TyVarBndrUnit)
 effVars = go mempty
   where
@@ -186,6 +210,9 @@ effVars = go mempty
     go !acc [m, r] = (reverse acc, m, r)
     go !acc (tv : tvs) = go (tv : acc) tvs
 
+-- | Extract a list of type variables in a well-scoped fashion.
+--
+-- See 'freeVariablesWellScoped' for further information.
 listTVs :: [Type] -> [Type]
 listTVs = map (VarT . tvName) . freeVariablesWellScoped
 
@@ -194,13 +221,18 @@ listTVs = map (VarT . tvName) . freeVariablesWellScoped
 -- Helper functions
 ----------------------------------------
 
+-- | `appsE` for `Type`.
 appsT :: [Q Type] -> Q Type
 appsT [] = error "appsT []"
 appsT [x] = x
 appsT (x:y:zs) = appsT ( (appT x y) : zs )
 
+-- | `appsE` for type applications.
 appTypesE :: Q Exp -> [Q Type] -> Q Exp
 appTypesE = foldl appTypeE
 
+-- | `appsE` for arrows.
+--
+-- For example, `arrows [a, b] c` will result in `a -> (b -> c)`.
 arrowsT :: [Q Type] -> Q Type -> Q Type
 arrowsT = flip (foldr (\arg -> appT (appT arrowT arg)))

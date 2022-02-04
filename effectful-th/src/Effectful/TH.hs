@@ -4,20 +4,64 @@
 module Effectful.TH
   ( -- * Generate functions for dynamic effects
     makeSendFunctions
+  , makeSendFunctionsWithOptions
+  , makeSendFunctionFor
+  , Options
+  , defaultOptions
+  , setMakeFunction
+  , setMakeFunctionFor
+  , setToFunctionName
 
     -- * Re-exports
   , Effect
   , send
   ) where
 
+import Control.Monad (forM)
 import Effectful (Eff, Effect, (:>))
 import Effectful.Dispatch.Dynamic (send)
-import Data.Char
-import Data.Generics
+import Data.Char (toLower)
+import Data.Generics (everywhere, listify, mkT)
 import qualified Data.List
 import Language.Haskell.TH
 import Language.Haskell.TH.Datatype
 import Language.Haskell.TH.Datatype.TyVarBndr
+
+-- | Options for the generation of send functions.
+data Options = Options
+  { optionsMakeFunction :: Name -> Bool
+  , optionsToFunctionName :: String -> String
+  }
+
+-- | Default options used by 'makeSendFunctions'. Those are:
+--
+--  * Generate functions for all data constructors of the effect type.
+--  * The function's name is the one of the data constructor with the first
+--    letter converted to lower case.
+defaultOptions :: Options
+defaultOptions = Options
+  { optionsMakeFunction = const True
+  , optionsToFunctionName = \case
+    x : xs -> toLower x : xs
+    _ -> error "Empty constructor name"
+  }
+
+-- | Control which data constructor to generate functions for.
+--
+-- The function passed as a first argument is a predicate used to decide for
+-- each constructor name whether a function is generated or not.
+setMakeFunction :: (Name -> Bool) -> Options -> Options
+setMakeFunction f options = options { optionsMakeFunction = f }
+
+-- | A version of 'setMakeFunction' expecting a list of names for which
+-- functions are generated.
+setMakeFunctionFor :: [Name] -> Options -> Options
+setMakeFunctionFor ns = setMakeFunction (`elem` ns)
+
+-- | Controls how to map constructor names to the names of the functions that
+-- are generated.
+setToFunctionName :: (String -> String) -> Options -> Options
+setToFunctionName f options = options { optionsToFunctionName = f }
 
 -- | Generate functions for sending a dynamic effect to the effect handler.
 --
@@ -55,14 +99,35 @@ import Language.Haskell.TH.Datatype.TyVarBndr
 -- >   Reader r :> es => (r -> r) -> Eff es b -> Eff es b
 -- > local arg1 arg2 = send (Local @r @(Eff es) @b arg1 arg2)
 makeSendFunctions :: Name -> Q [Dec]
-makeSendFunctions tname = do
+makeSendFunctions = makeSendFunctionsWithOptions defaultOptions
+
+-- | A version of 'makeSendFunctions' that takes 'Options' to customize the
+-- generated functions.
+makeSendFunctionsWithOptions :: Options -> Name -> Q [Dec]
+makeSendFunctionsWithOptions options tname = do
   tinfo <- reifyDatatype tname
-  fmap mconcat $ mapM (makeSendFunctionFor tinfo) $ datatypeCons tinfo
+  fmap mconcat $ forM (datatypeCons tinfo) $ \cinfo -> do
+    if optionsMakeFunction options $ constructorName cinfo
+      then makeSendFunctionForInfo options tinfo cinfo
+      else pure []
 
 -- | Generates the function for a particular data constructor.
-makeSendFunctionFor :: DatatypeInfo -> ConstructorInfo -> Q [Dec]
-makeSendFunctionFor tinfo cinfo = do
-  let fname = toFunctionName $ constructorName cinfo
+--
+-- > makeSendFunctionFor options tname cname
+-- generates a send function for the data constructor @cname@ of the type
+-- @tname@.
+-- This function ignores the @makeFunction@ selector of the 'Options' passed.
+makeSendFunctionFor :: Options -> Name -> Name -> Q [Dec]
+makeSendFunctionFor options tname cname = do
+  tinfo <- reifyDatatype tname
+  let cinfo = lookupByConstructorName cname tinfo
+  makeSendFunctionForInfo options tinfo cinfo
+
+-- | A version of 'makeSendFunctionFor' that takes the already reified
+-- 'DatatypeInfo' and 'ConstructorInfo' as arguments.
+makeSendFunctionForInfo :: Options -> DatatypeInfo -> ConstructorInfo -> Q [Dec]
+makeSendFunctionForInfo options tinfo cinfo = do
+  let fname = mkName $ optionsToFunctionName options $ nameBase cname
 
   let (effectVarBndrs, mBndr, rBndr) = effVars $ datatypeVars tinfo
       effectVars = map tvName effectVarBndrs
@@ -95,7 +160,7 @@ makeSendFunctionFor tinfo cinfo = do
     in mapM (\i -> newName ("arg" <> show i)) [1 .. fieldsN]
 
   let pats = map varP ns
-      con = conE $ constructorName cinfo
+      con = conE cname
       tyApps = replaceEff $ listTyVars $ constructorFields cinfo
       fields = map varE ns
       body = normalB $ [|send|] `appE` appsE (appTypesE con tyApps : fields)
@@ -104,20 +169,15 @@ makeSendFunctionFor tinfo cinfo = do
 
   pure [sig, defn]
   where
+    cname = constructorName cinfo
+
     withDoc :: Q Dec -> Q Dec
 #if MIN_VERSION_template_haskell(2,18,0)
-    withDoc = withDecDoc
-      $  "-- | Send the '"
-      <> show (constructorName cinfo)
-      <> "' effect to the effect handler."
+    withDoc = withDecDoc $
+      "-- | Send the '" <> show cname <> "' effect to the effect handler."
 #else
     withDoc = id
 #endif
-
-toFunctionName :: Name -> Name
-toFunctionName cname = let
-  x : xs = nameBase cname
-  in mkName $ toLower x : xs
 
 effVars :: [TyVarBndrUnit] -> ([TyVarBndrUnit], TyVarBndrUnit, TyVarBndrUnit)
 effVars = go mempty

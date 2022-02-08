@@ -14,6 +14,7 @@ data Timeout :: Effect
 
 type instance DispatchOf Timeout = 'Static
 data instance StaticRep Timeout = Timeout
+type instance NeedsIO Timeout = 'True
 
 -- | Run the 'Timeout' effect.
 runTimeout :: IOE :> es => Eff (Timeout : es) a -> Eff es a

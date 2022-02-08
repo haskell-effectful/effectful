@@ -18,6 +18,7 @@ data Temporary :: Effect
 
 type instance DispatchOf Temporary = 'Static
 data instance StaticRep Temporary = Temporary
+type instance NeedsIO Temporary = 'True
 
 -- | Run the 'Temporary' effect.
 runTemporary :: IOE :> es => Eff (Temporary : es) a -> Eff es a

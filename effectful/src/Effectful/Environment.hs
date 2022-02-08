@@ -21,12 +21,14 @@ import qualified System.Environment as E
 
 import Effectful
 import Effectful.Dispatch.Static hiding (getEnv)
+import Data.Proxy (Proxy(Proxy))
 
 -- | An effect for querying and modifying the system environment.
 data Environment :: Effect
 
 type instance DispatchOf Environment = 'Static
 data instance StaticRep Environment = Environment
+type instance NeedsIO Environment = 'True
 
 -- | Run the 'Environment' effect.
 runEnvironment :: IOE :> es => Eff (Environment : es) a -> Eff es a
@@ -34,35 +36,35 @@ runEnvironment = evalStaticRep Environment
 
 -- | Lifted 'E.getArgs'.
 getArgs :: Environment :> es => Eff es [String]
-getArgs = unsafeEff_ E.getArgs
+getArgs = deferIO_ (Proxy @Environment) E.getArgs
 
 -- | Lifted 'E.getEnv'.
 getEnv :: Environment :> es => String -> Eff es String
-getEnv = unsafeEff_ . E.getEnv
+getEnv = deferIO_ (Proxy @Environment) . E.getEnv
 
 -- | Lifted 'E.getEnvironment'.
 getEnvironment :: Environment :> es => Eff es [(String, String)]
-getEnvironment = unsafeEff_ E.getEnvironment
+getEnvironment = deferIO_ (Proxy @Environment) E.getEnvironment
 
 -- | Lifted 'E.getExecutablePath'.
 getExecutablePath :: Environment :> es => Eff es FilePath
-getExecutablePath = unsafeEff_ E.getExecutablePath
+getExecutablePath = deferIO_ (Proxy @Environment) E.getExecutablePath
 
 -- | Lifted 'E.getProgName'.
 getProgName :: Environment :> es => Eff es String
-getProgName = unsafeEff_ E.getProgName
+getProgName = deferIO_ (Proxy @Environment) E.getProgName
 
 -- | Lifted 'E.lookupEnv'.
 lookupEnv :: Environment :> es => String -> Eff es (Maybe String)
-lookupEnv = unsafeEff_ . E.lookupEnv
+lookupEnv = deferIO_ (Proxy @Environment) . E.lookupEnv
 
 -- | Lifted 'E.setEnv'.
 setEnv :: Environment :> es => String -> String -> Eff es ()
-setEnv n = unsafeEff_ . E.setEnv n
+setEnv n = deferIO_ (Proxy @Environment) . E.setEnv n
 
 -- | Lifted 'E.unsetEnv'.
 unsetEnv :: Environment :> es => String -> Eff es ()
-unsetEnv = unsafeEff_ . E.unsetEnv
+unsetEnv = deferIO_ (Proxy @Environment) . E.unsetEnv
 
 -- | Lifted 'E.withArgs'.
 withArgs :: Environment :> es => [String] -> Eff es a -> Eff es a

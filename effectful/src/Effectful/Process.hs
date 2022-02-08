@@ -58,6 +58,7 @@ data Process :: Effect
 
 type instance DispatchOf Process = 'Static
 data instance StaticRep Process = Process
+type instance NeedsIO Process = 'True
 
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
 runProcess = evalStaticRep Process

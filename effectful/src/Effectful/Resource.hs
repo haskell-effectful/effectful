@@ -26,12 +26,14 @@ import qualified Control.Monad.Trans.Resource.Internal as RI
 
 import Effectful
 import Effectful.Dispatch.Static
+import Effectful.Internal.Monad (unsafeEvalStaticRep)
 
 -- | Data tag for a resource effect.
 data Resource :: Effect
 
 type instance DispatchOf Resource = 'Static
 newtype instance StaticRep Resource = Resource R.InternalState
+type instance NeedsIO Resource = 'True
 
 -- | Run the resource effect.
 runResource :: IOE :> es => Eff (Resource : es) a -> Eff es a
@@ -61,7 +63,7 @@ getInternalState = do
 --
 -- /Note:/ the 'R.InternalState' will not be closed at the end.
 runInternalState :: R.InternalState -> Eff (Resource : es) a -> Eff es a
-runInternalState istate = evalStaticRep (Resource istate)
+runInternalState istate = unsafeEvalStaticRep (Resource istate)
 
 ----------------------------------------
 -- Orphan instance

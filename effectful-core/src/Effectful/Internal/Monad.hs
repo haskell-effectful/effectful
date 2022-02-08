@@ -66,12 +66,16 @@ module Effectful.Internal.Monad
 
   -- *** Primitive operations
   , unsafeConsEnv
+  , unsafeRunStaticRep
+  , unsafeEvalStaticRep
+  , unsafeExecStaticRep
   , getEnv
   , putEnv
   , stateEnv
   , modifyEnv
   , NeedsIO
   , deferIO
+  , deferIO_
   ) where
 
 import Control.Applicative (liftA2)
@@ -321,7 +325,7 @@ runPrim = evalStaticRep Prim
 
 instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
-  primitive = deferIO (Proxy @Prim) . IO
+  primitive = deferIO_ (Proxy @Prim) . IO
 
 ----------------------------------------
 -- Dispatch
@@ -398,7 +402,29 @@ runStaticRep
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es (a, StaticRep e)
-runStaticRep e0 m = unsafeEff $ \es0 -> do
+runStaticRep = unsafeRunStaticRep
+
+evalStaticRep
+  :: (DispatchOf e ~ 'Static, DeferredEffects e :>> es)
+  => StaticRep e -- ^ The initial representation.
+  -> Eff (e : es) a
+  -> Eff es a
+evalStaticRep = unsafeEvalStaticRep
+
+
+execStaticRep
+  :: (DispatchOf e ~ 'Static, DeferredEffects e :>> es)
+  => StaticRep e -- ^ The initial representation.
+  -> Eff (e : es) a
+  -> Eff es (StaticRep e)
+execStaticRep = unsafeExecStaticRep
+
+unsafeRunStaticRep
+  :: (DispatchOf e ~ 'Static)
+  => StaticRep e -- ^ The initial representation.
+  -> Eff (e : es) a
+  -> Eff es (a, StaticRep e)
+unsafeRunStaticRep e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e0 dummyRelinker es0)
             (unsafeTailEnv size0)
@@ -406,12 +432,12 @@ runStaticRep e0 m = unsafeEff $ \es0 -> do
 
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final value, discarding the final representation.
-evalStaticRep
-  :: (DispatchOf e ~ 'Static, DeferredEffects e :>> es)
+unsafeEvalStaticRep
+  :: (DispatchOf e ~ 'Static)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es a
-evalStaticRep e m = unsafeEff $ \es0 -> do
+unsafeEvalStaticRep e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e dummyRelinker es0)
             (unsafeTailEnv size0)
@@ -419,12 +445,12 @@ evalStaticRep e m = unsafeEff $ \es0 -> do
 
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final representation, discarding the final value.
-execStaticRep
-  :: (DispatchOf e ~ 'Static, DeferredEffects e :>> es)
+unsafeExecStaticRep
+  :: (DispatchOf e ~ 'Static)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es (StaticRep e)
-execStaticRep e0 m = unsafeEff $ \es0 -> do
+unsafeExecStaticRep e0 m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e0 dummyRelinker es0)
             (unsafeTailEnv size0)
@@ -527,5 +553,8 @@ type family DeferredEffects_ b where
 type DeferredEffects :: Effect -> [Effect]
 type DeferredEffects e = DeferredEffects_ (NeedsIO e)
 
-deferIO :: (DispatchOf e ~ 'Static, NeedsIO e ~ 'True, e :> es) => Proxy e -> IO a -> Eff es a
-deferIO _p = unsafeEff_
+deferIO_ :: (DispatchOf e ~ 'Static, NeedsIO e ~ 'True, e :> es) => Proxy e -> IO a -> Eff es a
+deferIO_ _p = unsafeEff_
+
+deferIO :: (DispatchOf e ~ 'Static, NeedsIO e ~ 'True, e :> es) => Proxy e -> (Env es -> IO a) -> Eff es a
+deferIO _p = unsafeEff

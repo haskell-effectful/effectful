@@ -37,10 +37,10 @@ module Effectful.FileSystem.IO
 
 import qualified System.IO as IO
 import System.IO (Handle, IOMode (..))
-
 import Effectful
 import Effectful.Dispatch.Static
 import Effectful.FileSystem.Effect
+import Data.Proxy (Proxy(Proxy))
 
 -- | Lifted version of 'IO.withFile'.
 withFile
@@ -64,80 +64,80 @@ withBinaryFile fp mode inner = unsafeUnliftIO $ \unlift -> do
 
 -- | Lifted version of 'IO.openFile'
 openFile :: FileSystem :> es => FilePath -> IOMode -> Eff es Handle
-openFile fp = deferIO . IO.openFile fp
+openFile fp = deferIO_ (Proxy @FileSystem) . IO.openFile fp
 
 -- | Lifted version of 'IO.hClose'
 hClose :: FileSystem :> es => Handle -> Eff es ()
-hClose = deferIO . IO.hClose
+hClose = deferIO_ (Proxy @FileSystem) . IO.hClose
 
 -- | Lifted version of 'IO.hFlush'
 hFlush :: FileSystem :> es => Handle -> Eff es ()
-hFlush = deferIO . IO.hFlush
+hFlush = deferIO_ (Proxy @FileSystem) . IO.hFlush
 
 -- | Lifted version of 'IO.hFileSize'
 hFileSize :: FileSystem :> es => Handle -> Eff es Integer
-hFileSize = deferIO . IO.hFileSize
+hFileSize = deferIO_ (Proxy @FileSystem) . IO.hFileSize
 
 -- | Lifted version of 'IO.hSetFileSize'
 hSetFileSize :: FileSystem :> es => Handle -> Integer -> Eff es ()
-hSetFileSize h = deferIO . IO.hSetFileSize h
+hSetFileSize h = deferIO_ (Proxy @FileSystem) . IO.hSetFileSize h
 
 -- | Lifted version of 'IO.hIsEOF'
 hIsEOF :: FileSystem :> es => Handle -> Eff es Bool
-hIsEOF = deferIO . IO.hIsEOF
+hIsEOF = deferIO_ (Proxy @FileSystem) . IO.hIsEOF
 
 -- | Lifted version of 'IO.hSetBuffering'
 hSetBuffering :: FileSystem :> es => Handle -> IO.BufferMode -> Eff es ()
-hSetBuffering h = deferIO . IO.hSetBuffering h
+hSetBuffering h = deferIO_ (Proxy @FileSystem) . IO.hSetBuffering h
 
 -- | Lifted version of 'IO.hGetBuffering'
 hGetBuffering :: FileSystem :> es => Handle -> Eff es IO.BufferMode
-hGetBuffering = deferIO . IO.hGetBuffering
+hGetBuffering = deferIO_ (Proxy @FileSystem) . IO.hGetBuffering
 
 -- | Lifted version of 'IO.hSeek'
 hSeek :: FileSystem :> es => Handle -> IO.SeekMode -> Integer -> Eff es ()
-hSeek h s = deferIO . IO.hSeek h s
+hSeek h s = deferIO_ (Proxy @FileSystem) . IO.hSeek h s
 
 -- | Lifted version of 'IO.hTell'
 hTell :: FileSystem :> es => Handle -> Eff es Integer
-hTell = deferIO . IO.hTell
+hTell = deferIO_ (Proxy @FileSystem) . IO.hTell
 
 -- | Lifted version of 'IO.hIsOpen'
 hIsOpen :: FileSystem :> es => Handle -> Eff es Bool
-hIsOpen = deferIO . IO.hIsOpen
+hIsOpen = deferIO_ (Proxy @FileSystem) . IO.hIsOpen
 
 -- | Lifted version of 'IO.hIsClosed'
 hIsClosed :: FileSystem :> es => Handle -> Eff es Bool
-hIsClosed = deferIO . IO.hIsClosed
+hIsClosed = deferIO_ (Proxy @FileSystem) . IO.hIsClosed
 
 -- | Lifted version of 'IO.hIsReadable'
 hIsReadable :: FileSystem :> es => Handle -> Eff es Bool
-hIsReadable = deferIO . IO.hIsReadable
+hIsReadable = deferIO_ (Proxy @FileSystem) . IO.hIsReadable
 
 -- | Lifted version of 'IO.hIsWritable'
 hIsWritable :: FileSystem :> es => Handle -> Eff es Bool
-hIsWritable = deferIO . IO.hIsWritable
+hIsWritable = deferIO_ (Proxy @FileSystem) . IO.hIsWritable
 
 -- | Lifted version of 'IO.hIsSeekable'
 hIsSeekable :: FileSystem :> es => Handle -> Eff es Bool
-hIsSeekable = deferIO . IO.hIsSeekable
+hIsSeekable = deferIO_ (Proxy @FileSystem) . IO.hIsSeekable
 
 -- | Lifted version of 'IO.hIsTerminalDevice'
 hIsTerminalDevice :: FileSystem :> es => Handle -> Eff es Bool
-hIsTerminalDevice = deferIO . IO.hIsTerminalDevice
+hIsTerminalDevice = deferIO_ (Proxy @FileSystem) . IO.hIsTerminalDevice
 
 -- | Lifted version of 'IO.hSetEcho'
 hSetEcho :: FileSystem :> es => Handle -> Bool -> Eff es ()
-hSetEcho h = deferIO . IO.hSetEcho h
+hSetEcho h = deferIO_ (Proxy @FileSystem) . IO.hSetEcho h
 
 -- | Lifted version of 'IO.hGetEcho'
 hGetEcho :: FileSystem :> es => Handle -> Eff es Bool
-hGetEcho = deferIO . IO.hGetEcho
+hGetEcho = deferIO_ (Proxy @FileSystem) . IO.hGetEcho
 
 -- | Lifted version of 'IO.hWaitForInput'
 hWaitForInput :: FileSystem :> es => Handle -> Int -> Eff es Bool
-hWaitForInput h = deferIO . IO.hWaitForInput h
+hWaitForInput h = deferIO_ (Proxy @FileSystem) . IO.hWaitForInput h
 
 -- | Lifted version of 'IO.hReady'
 hReady :: FileSystem :> es => Handle -> Eff es Bool
-hReady = deferIO . IO.hReady
+hReady = deferIO_ (Proxy @FileSystem) . IO.hReady

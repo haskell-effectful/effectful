@@ -73,6 +73,7 @@ data Concurrent :: Effect
 
 type instance DispatchOf Concurrent = 'Static
 data instance StaticRep Concurrent = Concurrent
+type instance NeedsIO Concurrent = 'True
 
 -- | Run the 'Concurrent' effect.
 runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a

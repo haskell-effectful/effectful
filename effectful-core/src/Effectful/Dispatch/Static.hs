@@ -56,6 +56,8 @@ module Effectful.Dispatch.Static
   , putEnv
   , stateEnv
   , modifyEnv
+  , NeedsIO
+  , deferIO
   ) where
 
 import Effectful.Internal.Env

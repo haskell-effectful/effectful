@@ -70,6 +70,8 @@ module Effectful.Internal.Monad
   , putEnv
   , stateEnv
   , modifyEnv
+  , NeedsIO
+  , deferIO
   ) where
 
 import Control.Applicative (liftA2)
@@ -89,6 +91,7 @@ import qualified Control.Monad.Catch as C
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Unlift
+import Data.Proxy (Proxy(Proxy))
 
 type role Eff nominal representational
 
@@ -275,6 +278,7 @@ data IOE :: Effect
 
 type instance DispatchOf IOE = 'Static
 newtype instance StaticRep IOE = IOE UnliftStrategy
+type instance NeedsIO IOE = 'False
 
 -- | Run an 'Eff' computation with side effects.
 --
@@ -309,6 +313,7 @@ data Prim :: Effect
 
 type instance DispatchOf Prim = 'Static
 data instance StaticRep Prim = Prim
+type instance NeedsIO Prim = 'True
 
 -- | Run an 'Eff' computation with primitive state-transformer actions.
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
@@ -316,7 +321,7 @@ runPrim = evalStaticRep Prim
 
 instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
-  primitive = unsafeEff_ . IO
+  primitive = deferIO (Proxy @Prim) . IO
 
 ----------------------------------------
 -- Dispatch
@@ -389,7 +394,7 @@ data family StaticRep (e :: Effect) :: Type
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final value along with the final representation.
 runStaticRep
-  :: DispatchOf e ~ 'Static
+  :: (DispatchOf e ~ 'Static, DeferredEffects e :>> es)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es (a, StaticRep e)
@@ -402,7 +407,7 @@ runStaticRep e0 m = unsafeEff $ \es0 -> do
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final value, discarding the final representation.
 evalStaticRep
-  :: DispatchOf e ~ 'Static
+  :: (DispatchOf e ~ 'Static, DeferredEffects e :>> es)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es a
@@ -415,7 +420,7 @@ evalStaticRep e m = unsafeEff $ \es0 -> do
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final representation, discarding the final value.
 execStaticRep
-  :: DispatchOf e ~ 'Static
+  :: (DispatchOf e ~ 'Static, DeferredEffects e :>> es)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es (StaticRep e)
@@ -510,3 +515,17 @@ modifyEnv
   -- ^ The function to modify the representation.
   -> IO ()
 modifyEnv = unsafeModifyEnv
+
+type NeedsIO :: Effect -> Bool
+type family NeedsIO e
+
+type DeferredEffects_ :: Bool -> [Effect]
+type family DeferredEffects_ b where
+  DeferredEffects_ 'True = '[IOE]
+  DeferredEffects_ 'False = '[]
+  
+type DeferredEffects :: Effect -> [Effect]
+type DeferredEffects e = DeferredEffects_ (NeedsIO e)
+
+deferIO :: (DispatchOf e ~ 'Static, NeedsIO e ~ 'True, e :> es) => Proxy e -> IO a -> Eff es a
+deferIO _p = unsafeEff_

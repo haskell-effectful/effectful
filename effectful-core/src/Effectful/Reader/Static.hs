@@ -21,6 +21,7 @@ data Reader r :: Effect
 
 type instance DispatchOf (Reader r) = 'Static
 newtype instance StaticRep (Reader r) = Reader r
+type instance NeedsIO (Reader r) = 'False
 
 -- | Run a 'Reader' effect with the given initial environment.
 runReader

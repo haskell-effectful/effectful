@@ -49,6 +49,7 @@ data State s :: Effect
 
 type instance DispatchOf (State s) = 'Static
 newtype instance StaticRep (State s) = State s
+type instance NeedsIO (State s) = 'False
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value along with the final state.

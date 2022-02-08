@@ -51,6 +51,7 @@ common language
                         TypeApplications
                         TypeFamilies
                         TypeOperators
+                        StandaloneKindSignatures
 
 library effectful-internal-utils
     import:          language

@@ -38,6 +38,7 @@ data Writer w :: Effect
 
 type instance DispatchOf (Writer w) = 'Static
 newtype instance StaticRep (Writer w) = Writer w
+type instance NeedsIO (Writer w) = 'False
 
 -- | Run a 'Writer' effect and return the final value along with the final
 -- output.

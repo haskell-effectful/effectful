@@ -11,6 +11,7 @@ data FileSystem :: Effect
 
 type instance DispatchOf FileSystem = 'Static
 data instance StaticRep FileSystem = FileSystem
+type instance NeedsIO FileSystem = 'True
 
 -- | Run the 'FileSystem' effect.
 runFileSystem :: IOE :> es => Eff (FileSystem : es) a -> Eff es a

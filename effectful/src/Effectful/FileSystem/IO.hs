@@ -64,80 +64,80 @@ withBinaryFile fp mode inner = unsafeUnliftIO $ \unlift -> do
 
 -- | Lifted version of 'IO.openFile'
 openFile :: FileSystem :> es => FilePath -> IOMode -> Eff es Handle
-openFile fp = unsafeEff_ . IO.openFile fp
+openFile fp = deferIO . IO.openFile fp
 
 -- | Lifted version of 'IO.hClose'
 hClose :: FileSystem :> es => Handle -> Eff es ()
-hClose = unsafeEff_ . IO.hClose
+hClose = deferIO . IO.hClose
 
 -- | Lifted version of 'IO.hFlush'
 hFlush :: FileSystem :> es => Handle -> Eff es ()
-hFlush = unsafeEff_ . IO.hFlush
+hFlush = deferIO . IO.hFlush
 
 -- | Lifted version of 'IO.hFileSize'
 hFileSize :: FileSystem :> es => Handle -> Eff es Integer
-hFileSize = unsafeEff_ . IO.hFileSize
+hFileSize = deferIO . IO.hFileSize
 
 -- | Lifted version of 'IO.hSetFileSize'
 hSetFileSize :: FileSystem :> es => Handle -> Integer -> Eff es ()
-hSetFileSize h = unsafeEff_ . IO.hSetFileSize h
+hSetFileSize h = deferIO . IO.hSetFileSize h
 
 -- | Lifted version of 'IO.hIsEOF'
 hIsEOF :: FileSystem :> es => Handle -> Eff es Bool
-hIsEOF = unsafeEff_ . IO.hIsEOF
+hIsEOF = deferIO . IO.hIsEOF
 
 -- | Lifted version of 'IO.hSetBuffering'
 hSetBuffering :: FileSystem :> es => Handle -> IO.BufferMode -> Eff es ()
-hSetBuffering h = unsafeEff_ . IO.hSetBuffering h
+hSetBuffering h = deferIO . IO.hSetBuffering h
 
 -- | Lifted version of 'IO.hGetBuffering'
 hGetBuffering :: FileSystem :> es => Handle -> Eff es IO.BufferMode
-hGetBuffering = unsafeEff_ . IO.hGetBuffering
+hGetBuffering = deferIO . IO.hGetBuffering
 
 -- | Lifted version of 'IO.hSeek'
 hSeek :: FileSystem :> es => Handle -> IO.SeekMode -> Integer -> Eff es ()
-hSeek h s = unsafeEff_ . IO.hSeek h s
+hSeek h s = deferIO . IO.hSeek h s
 
 -- | Lifted version of 'IO.hTell'
 hTell :: FileSystem :> es => Handle -> Eff es Integer
-hTell = unsafeEff_ . IO.hTell
+hTell = deferIO . IO.hTell
 
 -- | Lifted version of 'IO.hIsOpen'
 hIsOpen :: FileSystem :> es => Handle -> Eff es Bool
-hIsOpen = unsafeEff_ . IO.hIsOpen
+hIsOpen = deferIO . IO.hIsOpen
 
 -- | Lifted version of 'IO.hIsClosed'
 hIsClosed :: FileSystem :> es => Handle -> Eff es Bool
-hIsClosed = unsafeEff_ . IO.hIsClosed
+hIsClosed = deferIO . IO.hIsClosed
 
 -- | Lifted version of 'IO.hIsReadable'
 hIsReadable :: FileSystem :> es => Handle -> Eff es Bool
-hIsReadable = unsafeEff_ . IO.hIsReadable
+hIsReadable = deferIO . IO.hIsReadable
 
 -- | Lifted version of 'IO.hIsWritable'
 hIsWritable :: FileSystem :> es => Handle -> Eff es Bool
-hIsWritable = unsafeEff_ . IO.hIsWritable
+hIsWritable = deferIO . IO.hIsWritable
 
 -- | Lifted version of 'IO.hIsSeekable'
 hIsSeekable :: FileSystem :> es => Handle -> Eff es Bool
-hIsSeekable = unsafeEff_ . IO.hIsSeekable
+hIsSeekable = deferIO . IO.hIsSeekable
 
 -- | Lifted version of 'IO.hIsTerminalDevice'
 hIsTerminalDevice :: FileSystem :> es => Handle -> Eff es Bool
-hIsTerminalDevice = unsafeEff_ . IO.hIsTerminalDevice
+hIsTerminalDevice = deferIO . IO.hIsTerminalDevice
 
 -- | Lifted version of 'IO.hSetEcho'
 hSetEcho :: FileSystem :> es => Handle -> Bool -> Eff es ()
-hSetEcho h = unsafeEff_ . IO.hSetEcho h
+hSetEcho h = deferIO . IO.hSetEcho h
 
 -- | Lifted version of 'IO.hGetEcho'
 hGetEcho :: FileSystem :> es => Handle -> Eff es Bool
-hGetEcho = unsafeEff_ . IO.hGetEcho
+hGetEcho = deferIO . IO.hGetEcho
 
 -- | Lifted version of 'IO.hWaitForInput'
 hWaitForInput :: FileSystem :> es => Handle -> Int -> Eff es Bool
-hWaitForInput h = unsafeEff_ . IO.hWaitForInput h
+hWaitForInput h = deferIO . IO.hWaitForInput h
 
 -- | Lifted version of 'IO.hReady'
 hReady :: FileSystem :> es => Handle -> Eff es Bool
-hReady = unsafeEff_ . IO.hReady
+hReady = deferIO . IO.hReady

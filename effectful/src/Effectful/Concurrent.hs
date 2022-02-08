@@ -13,7 +13,10 @@
 --
 -- 3) Low level functions from "Effectful.Concurrent" such as 'forkIO'.
 module Effectful.Concurrent
-  ( Concurrent
+  ( -- * Effect
+    Concurrent
+
+    -- ** Handlers
   , runConcurrent
 
     -- * Basic concurrency operations

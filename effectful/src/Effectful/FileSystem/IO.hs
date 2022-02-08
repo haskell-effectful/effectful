@@ -1,6 +1,9 @@
 -- | Lifted version of "System.IO".
 module Effectful.FileSystem.IO
-  ( FileSystem
+  ( -- * Effect
+    FileSystem
+
+    -- ** Handlers
   , runFileSystem
 
     -- * IO

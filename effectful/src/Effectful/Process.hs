@@ -1,10 +1,13 @@
 {-# LANGUAGE CPP #-}
 -- | Lifted version of "System.Process".
 module Effectful.Process
-  ( Process
+  ( -- * Effect
+    Process
+
+    -- ** Handlers
   , runProcess
 
-  -- * Running sub-processes
+    -- * Running sub-processes
   , createProcess
   , createProcess_
   , P.shell
@@ -14,7 +17,7 @@ module Effectful.Process
   , P.StdStream(..)
   , P.ProcessHandle
 
-  -- ** Simpler functions for common tasks
+    -- ** Simpler functions for common tasks
   , callProcess
   , callCommand
   , spawnProcess
@@ -26,7 +29,7 @@ module Effectful.Process
   , withCreateProcess
   , cleanupProcess
 
-  -- ** Related utilities
+    -- ** Related utilities
   , P.showCommandForUser
   , P.Pid
   , getPid
@@ -34,13 +37,13 @@ module Effectful.Process
   , getCurrentPid
 #endif
 
-  -- * Process completion
+    -- * Process completion
   , waitForProcess
   , getProcessExitCode
   , terminateProcess
   , interruptProcessGroupOf
 
-  -- * Interprocess communication
+    -- * Interprocess communication
   , createPipe
   , createPipeFd
   ) where

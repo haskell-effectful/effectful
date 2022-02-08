@@ -1,37 +1,40 @@
 {-# LANGUAGE UndecidableInstances #-}
 -- | Lifted version of "Control.Concurrent.Async".
 module Effectful.Concurrent.Async
-  ( Concurrent
+  ( -- * Effect
+    Concurrent
+
+    -- ** Handlers
   , runConcurrent
 
-  -- * Asynchronous actions
+    -- * Asynchronous actions
   , Async
 
-  -- * High-level API
+    -- * High-level API
 
-  -- ** Spawning with automatic 'cancel'ation
+    -- ** Spawning with automatic 'cancel'ation
   , withAsync, withAsyncBound, withAsyncOn, withAsyncWithUnmask
   , withAsyncOnWithUnmask
 
-  -- ** Querying 'Async's
+    -- ** Querying 'Async's
   , wait, poll, waitCatch, A.asyncThreadId
   , cancel, uninterruptibleCancel, cancelWith, A.AsyncCancelled(..)
   , A.compareAsyncs
 
-  -- ** High-level utilities
+    -- ** High-level utilities
   , race, race_
   , concurrently, concurrently_
   , mapConcurrently, forConcurrently
   , mapConcurrently_, forConcurrently_
   , replicateConcurrently, replicateConcurrently_
 
-  -- *** Concurrently
+    -- *** Concurrently
   , Concurrently(..)
 
-  -- *** Conc
+    -- *** Conc
   , Conc, conc, runConc, U.ConcException(..)
 
-  -- ** Pooled concurrency
+    -- ** Pooled concurrency
   , pooledMapConcurrentlyN
   , pooledMapConcurrently
   , pooledMapConcurrentlyN_
@@ -45,29 +48,29 @@ module Effectful.Concurrent.Async
   , pooledReplicateConcurrentlyN_
   , pooledReplicateConcurrently_
 
-  -- ** Specialised operations
+    -- ** Specialised operations
 
-  -- *** STM operations
+    -- *** STM operations
   , A.waitSTM, A.pollSTM, A.waitCatchSTM
 
-  -- *** Waiting for multiple 'Async's
+    -- *** Waiting for multiple 'Async's
   , waitAny, waitAnyCatch, waitAnyCancel, waitAnyCatchCancel
   , waitEither, waitEitherCatch, waitEitherCancel, waitEitherCatchCancel
   , waitEither_
   , waitBoth
 
-  -- *** Waiting for multiple 'Async's in STM
+    -- *** Waiting for multiple 'Async's in STM
   , A.waitAnySTM, A.waitAnyCatchSTM
   , A.waitEitherSTM, A.waitEitherCatchSTM
   , A.waitEitherSTM_
   , A.waitBothSTM
 
-  -- * Low-level API
+    -- * Low-level API
 
-  -- ** Spawning (low-level API)
+    -- ** Spawning (low-level API)
   , async, asyncBound, asyncOn, asyncWithUnmask, asyncOnWithUnmask
 
-  -- ** Linking
+    -- ** Linking
   , link, linkOnly, link2, link2Only, A.ExceptionInLinkedThread(..)
   ) where
 

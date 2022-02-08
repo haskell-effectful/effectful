@@ -1,5 +1,8 @@
 module Effectful.Environment
-  ( Environment
+  ( -- * Effect
+    Environment
+
+    -- ** Handlers
   , runEnvironment
 
     -- * Querying the environment

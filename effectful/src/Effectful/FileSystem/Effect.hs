@@ -1,5 +1,8 @@
 module Effectful.FileSystem.Effect
-  ( FileSystem
+  ( -- * Effect
+    FileSystem
+
+    -- ** Handlers
   , runFileSystem
   ) where
 

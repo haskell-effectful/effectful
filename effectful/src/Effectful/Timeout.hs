@@ -1,6 +1,11 @@
 module Effectful.Timeout
-  ( Timeout
+  ( -- * Effect
+    Timeout
+
+    -- ** Handlers
   , runTimeout
+
+    -- ** Operations
   , timeout
   ) where
 

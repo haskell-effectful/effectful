@@ -1,6 +1,9 @@
 -- | Lifted version of "Control.Concurrent.STM".
 module Effectful.Concurrent.STM
-  ( Concurrent
+  ( -- * Effect
+    Concurrent
+
+    -- ** Handlers
   , runConcurrent
 
     -- * Core

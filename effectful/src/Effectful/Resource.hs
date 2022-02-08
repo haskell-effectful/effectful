@@ -2,17 +2,20 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 -- | Resource management via 'R.MonadResource'.
 module Effectful.Resource
-  ( Resource
+  ( -- * Effect
+    Resource
+
+    -- ** Handlers
   , runResource
 
-  -- * Registering and releasing resources
+    -- * Registering and releasing resources
   , R.allocate
   , R.allocate_
   , R.register
   , R.release
   , R.unprotect
 
-  -- * Internal state
+    -- * Internal state
   , R.InternalState
   , getInternalState
   , runInternalState

@@ -1,6 +1,11 @@
 module Effectful.Temporary
-  ( Temporary
+  ( -- * Effect
+    Temporary
+
+    -- ** Handlers
   , runTemporary
+
+    -- ** Operations
   , withSystemTempFile
   , withSystemTempDirectory
   , withTempFile

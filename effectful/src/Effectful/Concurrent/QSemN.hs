@@ -1,6 +1,9 @@
 -- | Lifted version of "Control.Concurrent.QSemN".
 module Effectful.Concurrent.QSemN
-  ( Concurrent
+  ( -- * Effect
+    Concurrent
+
+    -- ** Handlers
   , runConcurrent
 
     -- * QSemN

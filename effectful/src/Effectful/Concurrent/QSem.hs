@@ -1,6 +1,9 @@
 -- | Lifted version of "Control.Concurrent.QSem".
 module Effectful.Concurrent.QSem
-  ( Concurrent
+  ( -- * Effect
+    Concurrent
+
+    -- ** Handlers
   , runConcurrent
 
     -- * QSem

@@ -280,7 +280,7 @@ newtype instance StaticRep IOE = IOE UnliftStrategy
 --
 -- For running pure computations see 'runPureEff'.
 runEff :: Eff '[IOE] a -> IO a
-runEff m = unEff (evalStaticRep (IOE SeqUnlift) m) =<< emptyEnv
+runEff m = unEff m =<< unsafeConsEnv (IOE SeqUnlift) dummyRelinker =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_

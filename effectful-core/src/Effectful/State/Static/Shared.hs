@@ -45,6 +45,7 @@ import Control.Concurrent.MVar
 
 import Effectful
 import Effectful.Dispatch.Static
+import Effectful.Dispatch.Static.Primitive
 
 -- | Provide access to a strict (WHNF), shared, mutable value of type @s@.
 data State s :: Effect

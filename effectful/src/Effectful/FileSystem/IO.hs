@@ -52,7 +52,7 @@ withFile
   -> IOMode
   -> (Handle -> Eff es a)
   -> Eff es a
-withFile fp mode inner = unsafeUnliftIO $ \unlift -> do
+withFile fp mode inner = unsafeSeqUnliftIO $ \unlift -> do
   IO.withFile fp mode $ unlift . inner
 
 -- | Lifted version of 'IO.withBinaryFile'.
@@ -62,7 +62,7 @@ withBinaryFile
   -> IOMode
   -> (Handle -> Eff es a)
   -> Eff es a
-withBinaryFile fp mode inner = unsafeUnliftIO $ \unlift -> do
+withBinaryFile fp mode inner = unsafeSeqUnliftIO $ \unlift -> do
   IO.withBinaryFile fp mode $ unlift . inner
 
 -- | Lifted version of 'IO.openFile'

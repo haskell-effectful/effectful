@@ -272,7 +272,7 @@ findFileWith
   -> [FilePath]
   -> String
   -> Eff es (Maybe FilePath)
-findFileWith p dirs n = unsafeUnliftIO $ \unlift -> do
+findFileWith p dirs n = unsafeSeqUnliftIO $ \unlift -> do
   D.findFileWith (unlift . p) dirs n
 
 -- | Lifted 'D.findFilesWith'.
@@ -282,7 +282,7 @@ findFilesWith
   -> [FilePath]
   -> String
   -> Eff es [FilePath]
-findFilesWith p dirs ns = unsafeUnliftIO $ \unlift -> do
+findFilesWith p dirs ns = unsafeSeqUnliftIO $ \unlift -> do
   D.findFilesWith (unlift . p) dirs ns
 
 ----------------------------------------

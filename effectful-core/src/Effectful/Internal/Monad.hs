@@ -475,13 +475,15 @@ localStaticRep f m = unsafeEff $ \es -> do
 -- This function is __highly unsafe__ because it renders the input 'Env'
 -- unusable until the corresponding 'unsafeTailEnv' call is made, but it's not
 -- checked anywhere.
+--
+-- __If you disregard the above, segmentation faults await.__
 unsafeConsEnv
   :: EffectRep (DispatchOf e) e
   -- ^ The representation of the effect.
   -> Relinker (EffectRep (DispatchOf e)) e
   -> Env es
   -> IO (Env (e : es))
-unsafeConsEnv = veryUnsafeConsEnv
+unsafeConsEnv = reallyUnsafeConsEnv
 
 -- | Extract a specific representation of the effect from the environment.
 getEnv :: e :> es => Env es -> IO (EffectRep (DispatchOf e) e)

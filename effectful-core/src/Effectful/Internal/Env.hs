@@ -29,7 +29,7 @@ module Effectful.Internal.Env
   , checkSizeEnv
 
     -- ** Extending and shrinking
-  , veryUnsafeConsEnv
+  , reallyUnsafeConsEnv
   , unsafeTailEnv
 
     -- ** Data retrieval and update
@@ -52,11 +52,16 @@ import Effectful.Internal.Utils
 
 type role Env nominal
 
--- | A strict (WHNF), thread local, mutable, extensible record indexed by types
+-- | A strict (WHNF), __thread local__, mutable, extensible record indexed by types
 -- of kind 'Effect'.
 --
 -- Supports forking, i.e. introduction of local branches for encapsulation of
 -- data specific to effect handlers.
+--
+-- __Warning: the environment is a mutable data structure and cannot be simultaneously used from multiple threads under any circumstances.__
+--
+-- In order to pass it to a different thread, you need to perform a deep copy
+-- with the 'cloneEnv' funtion.
 --
 -- Offers very good performance characteristics:
 --
@@ -67,6 +72,7 @@ type role Env nominal
 -- - Indexing via '(:>)': /O(forks)/, usually /O(1)/ (amortized).
 --
 -- - Modification of a specific element: /O(1)/.
+--
 --
 -- Here's an example of how the environment might look:
 --
@@ -182,6 +188,8 @@ emptyEnv :: IO (Env '[])
 emptyEnv = Env NoFork <$> emptyEnvRef <*> newForkIdGen
 
 -- | Clone the environment.
+--
+-- Mostly used to pass the environment to a different thread.
 cloneEnv :: Env es -> IO (Env es)
 cloneEnv (Env NoFork gref0 gen0) = do
   EnvRef n es0 fs0 <- readIORef gref0
@@ -361,10 +369,12 @@ checkSizeEnv k (Env (Forks _ baseIx lref _) _ _) = do
 -- - The @rep@ type variable is unrestricted, so it's possible to put in a
 --   different data type than the one retrieved later.
 --
--- - It renders the input 'Env' unusable until the corresponding 'unsafeTailEnv'
---   call is made, but it's not checked anywhere.
-veryUnsafeConsEnv :: rep e -> Relinker rep e -> Env es -> IO (Env (e : es))
-veryUnsafeConsEnv e f (Env fork gref gen) = case fork of
+-- - It renders the input 'Env' __unusable__ until the corresponding
+--   'unsafeTailEnv' call is made, but it's not checked anywhere.
+--
+-- __If you disregard the above, segmentation faults await.__
+reallyUnsafeConsEnv :: rep e -> Relinker rep e -> Env es -> IO (Env (e : es))
+reallyUnsafeConsEnv e f (Env fork gref gen) = case fork of
   NoFork -> do
     extendEnvRef gref
     pure $ Env NoFork gref gen
@@ -394,13 +404,15 @@ veryUnsafeConsEnv e f (Env fork gref gen) = case fork of
 
     doubleCapacity :: Int -> Int
     doubleCapacity n = max 1 n * 2
-{-# NOINLINE veryUnsafeConsEnv #-}
+{-# NOINLINE reallyUnsafeConsEnv #-}
 
 -- | Shrink the environment by one data type (in place). Makes sure the size of
 -- the environment is as expected.
 --
 -- This function is __highly unsafe__ because it renders the input 'Env'
--- unusable, but it's not checked anywhere.
+-- __unusable__, but it's not checked anywhere.
+--
+-- __If you disregard the above, segmentation faults await.__
 unsafeTailEnv :: Int -> Env (e : es) -> IO ()
 unsafeTailEnv len (Env fork gref _) = case fork of
   NoFork                -> shrinkEnvRef len gref

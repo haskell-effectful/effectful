@@ -102,6 +102,7 @@ import GHC.Stack
 
 import Effectful
 import Effectful.Dispatch.Static
+import Effectful.Dispatch.Static.Primitive
 import Effectful.Internal.Utils
 
 -- | Provide the ability to handle errors of type @e@.

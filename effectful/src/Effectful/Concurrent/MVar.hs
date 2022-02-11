@@ -34,6 +34,8 @@ import qualified Control.Concurrent.MVar as M
 import Effectful
 import Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
+import Effectful.Dispatch.Static.Primitive
+import Effectful.Dispatch.Static.Unsafe
 
 -- | Lifted 'M.newEmptyMVar'.
 newEmptyMVar :: Concurrent :> es => Eff es (MVar a)
@@ -77,35 +79,36 @@ tryReadMVar = unsafeEff_ . M.tryReadMVar
 
 -- | Lifted 'M.withMVar'.
 withMVar :: Concurrent :> es => MVar a -> (a -> Eff es b) -> Eff es b
-withMVar var f = unsafeUnliftIO $ \unlift -> do
+withMVar var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.withMVar var $ unlift . f
 
 -- | Lifted 'M.withMVarMasked'.
 withMVarMasked :: Concurrent :> es => MVar a -> (a -> Eff es b) -> Eff es b
-withMVarMasked var f = unsafeUnliftIO $ \unlift -> do
+withMVarMasked var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.withMVarMasked var $ unlift . f
 
 -- | Lifted 'M.modifyMVar_'.
 modifyMVar_ :: Concurrent :> es => MVar a -> (a -> Eff es a) -> Eff es ()
-modifyMVar_ var f = unsafeUnliftIO $ \unlift -> do
+modifyMVar_ var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.modifyMVar_ var $ unlift . f
 
 -- | Lifted 'M.modifyMVar'.
 modifyMVar :: Concurrent :> es => MVar a -> (a -> Eff es (a, b)) -> Eff es b
-modifyMVar var f = unsafeUnliftIO $ \unlift -> do
+modifyMVar var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.modifyMVar var $ unlift . f
 
 -- | Lifted 'M.modifyMVarMasked_'.
 modifyMVarMasked_ :: Concurrent :> es => MVar a -> (a -> Eff es a) -> Eff es ()
-modifyMVarMasked_ var f = unsafeUnliftIO $ \unlift -> do
+modifyMVarMasked_ var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.modifyMVarMasked_ var $ unlift . f
 
 -- | Lifted 'M.modifyMVarMasked'.
 modifyMVarMasked :: Concurrent :> es => MVar a -> (a -> Eff es (a, b)) -> Eff es b
-modifyMVarMasked var f = unsafeUnliftIO $ \unlift -> do
+modifyMVarMasked var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.modifyMVarMasked var $ unlift . f
 
 -- | Lifted 'M.mkWeakMVar'.
 mkWeakMVar :: Concurrent :> es => MVar a -> Eff es () -> Eff es (Weak (MVar a))
-mkWeakMVar var f = unsafeUnliftIO $ \unlift -> do
-  M.mkWeakMVar var $ unlift f
+mkWeakMVar var f = unsafeEff $ \es -> do
+  -- The finalizer can run at any point and in any thread.
+  M.mkWeakMVar var . unEff f =<< cloneEnv es

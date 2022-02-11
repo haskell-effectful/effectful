@@ -24,41 +24,18 @@ module Effectful.Dispatch.Static
     -- ** Unlifts
   , seqUnliftIO
   , concUnliftIO
+  , unsafeSeqUnliftIO
+  , unsafeConcUnliftIO
 
     -- ** Utils
   , unEff
   , unsafeEff
   , unsafeEff_
   , unsafeLiftMapIO
-  , unsafeUnliftIO
-
-    -- * Primitive API
-  , Env
-  , Relinker(..)
-  , dummyRelinker
-
-    -- ** Representation of effects
-  , EffectRep
-
-    -- ** Operations
-  , emptyEnv
-  , cloneEnv
-  , forkEnv
-  , sizeEnv
-  , checkSizeEnv
-
-    -- ** Extending and shrinking
-  , unsafeConsEnv
-  , unsafeTailEnv
-
-    -- ** Data retrieval and update
-  , getEnv
-  , putEnv
-  , stateEnv
-  , modifyEnv
   ) where
 
-import Effectful.Internal.Env
+import GHC.Stack (HasCallStack)
+
 import Effectful.Internal.Monad
 
 -- $intro
@@ -180,27 +157,40 @@ import Effectful.Internal.Monad
 --
 -- @'Eff' es a -> 'Eff' es b@
 --
--- This function is __unsafe__ because:
+-- /Note:/ the computation must not run its argument in a separate thread,
+-- attempting to do so will result in a runtime error.
 --
--- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
---   computations.
---
--- - The 'IO' computation must not run its argument in a separate thread, but
---   it's not checked anywhere.
-unsafeLiftMapIO :: (IO a -> IO b) -> Eff es a -> Eff es b
-unsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
+-- This function is __unsafe__ because it can be used to introduce arbitrary
+-- 'IO' actions into pure 'Eff' computations.
+unsafeLiftMapIO :: HasCallStack => (IO a -> IO b) -> Eff es a -> Eff es b
+unsafeLiftMapIO f m = unsafeEff $ \es -> do
+  seqUnliftIO es $ \unlift -> f (unlift m)
 
--- | Utility for running 'Eff' computations locally in the 'IO' monad.
+-- | Create an unlifting function with the 'SeqUnlift' strategy.
 --
--- This function is __unsafe__ because:
+-- This function is __unsafe__ because it can be used to introduce arbitrary
+-- 'IO' actions into pure 'Eff' computations.
+unsafeSeqUnliftIO
+  :: HasCallStack
+  => ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
+  -> Eff es a
+unsafeSeqUnliftIO k = unsafeEff $ \es -> do
+  seqUnliftIO es k
+
+-- | Create an unlifting function with the 'ConcUnlift' strategy.
 --
--- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
---   computations.
---
--- - Unlifted 'Eff' computations must not be run in a thread distinct from the
---   caller of 'unsafeUnliftIO', but it's not checked anywhere.
-unsafeUnliftIO :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
-unsafeUnliftIO k = unsafeEff $ \es -> k (`unEff` es)
+-- This function is __unsafe__ because it can be used to introduce arbitrary
+-- 'IO' actions into pure 'Eff' computations.
+unsafeConcUnliftIO
+  :: HasCallStack
+  => Persistence
+  -> Limit
+  -> ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
+  -> Eff es a
+unsafeConcUnliftIO persistence limit k = unsafeEff $ \es -> do
+  concUnliftIO es persistence limit k
 
 -- $setup
 -- >>> import Effectful

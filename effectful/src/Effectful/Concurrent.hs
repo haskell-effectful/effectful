@@ -70,6 +70,8 @@ import qualified GHC.Conc as GHC
 import Effectful
 import Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
+import Effectful.Dispatch.Static.Primitive
+import Effectful.Dispatch.Static.Unsafe
 
 ----------------------------------------
 -- Basic concurrency operations
@@ -99,9 +101,7 @@ forkIOWithUnmask
   :: Concurrent :> es
   => ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
-forkIOWithUnmask f = unsafeEff $ \es -> do
-  esF <- cloneEnv es
-  C.forkIOWithUnmask $ \unmask -> unEff (f $ unsafeLiftMapIO unmask) esF
+forkIOWithUnmask = liftForkWithUnmask C.forkIOWithUnmask
 
 -- | Lifted 'C.killThread'.
 killThread :: Concurrent :> es => C.ThreadId -> Eff es ()
@@ -126,9 +126,7 @@ forkOnWithUnmask
   => Int
   -> ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
-forkOnWithUnmask n f = unsafeEff $ \es -> do
-  esF <- cloneEnv es
-  C.forkOnWithUnmask n $ \unmask -> unEff (f $ unsafeLiftMapIO unmask) esF
+forkOnWithUnmask n = liftForkWithUnmask (C.forkOnWithUnmask n)
 
 -- | Lifted 'C.getNumCapabilities'.
 getNumCapabilities :: Concurrent :> es => Eff es Int
@@ -192,9 +190,7 @@ forkOSWithUnmask
   :: Concurrent :> es
   => ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
-forkOSWithUnmask f = unsafeEff $ \es -> do
-  esF <- cloneEnv es
-  C.forkOSWithUnmask $ \unmask -> unEff (f $ unsafeLiftMapIO unmask) esF
+forkOSWithUnmask = liftForkWithUnmask C.forkOSWithUnmask
 
 -- | Lifted 'C.isCurrentThreadBound'.
 isCurrentThreadBound :: Concurrent :> es => Eff es Bool
@@ -218,3 +214,15 @@ runInUnboundThread k = unsafeEff $ \es -> do
 -- | Lifted 'C.mkWeakThreadId'.
 mkWeakThreadId :: Concurrent :> es => C.ThreadId -> Eff es (Weak C.ThreadId)
 mkWeakThreadId = unsafeEff_ . C.mkWeakThreadId
+
+----------------------------------------
+-- Helpers
+
+liftForkWithUnmask
+  :: (((forall c. IO c -> IO c) -> IO a) -> IO C.ThreadId)
+  -> ((forall c. Eff es c -> Eff es c) -> Eff es a)
+  -> Eff es C.ThreadId
+liftForkWithUnmask fork action = unsafeEff $ \es -> do
+  esF <- cloneEnv es
+  -- Unmask never runs its argument in a different thread.
+  fork $ \unmask -> unEff (action $ reallyUnsafeLiftMapIO unmask) esF

@@ -32,6 +32,7 @@ import Control.Exception (onException, uninterruptibleMask)
 
 import Effectful
 import Effectful.Dispatch.Static
+import Effectful.Dispatch.Static.Primitive
 
 -- | Provide access to a strict (WHNF), shared, write only value of type @w@.
 data Writer w :: Effect

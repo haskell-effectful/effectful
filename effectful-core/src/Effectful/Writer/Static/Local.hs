@@ -31,6 +31,7 @@ import Control.Exception (onException, mask)
 
 import Effectful
 import Effectful.Dispatch.Static
+import Effectful.Dispatch.Static.Primitive
 
 -- | Provide access to a strict (WHNF), thread local, write only value of type
 -- @w@.

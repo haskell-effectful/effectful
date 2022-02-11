@@ -29,6 +29,7 @@ import qualified Control.Monad.Trans.Resource.Internal as RI
 
 import Effectful
 import Effectful.Dispatch.Static
+import Effectful.Dispatch.Static.Primitive
 
 -- | Data tag for a resource effect.
 data Resource :: Effect

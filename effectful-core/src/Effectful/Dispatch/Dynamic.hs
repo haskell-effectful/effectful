@@ -356,7 +356,7 @@ localUnliftIO (LocalEnv les) strategy k = case strategy of
 --
 -- @'Eff' localEs a -> 'Eff' localEs b@
 --
--- /Note:/ the computation must not run its argument in a separate thread,
+-- /Note:/ the computation must not run its argument in a different thread,
 -- attempting to do so will result in a runtime error.
 withLiftMap
   :: (HasCallStack, SuffixOf es handlerEs)
@@ -380,7 +380,7 @@ withLiftMap !_ k = unsafeEff $ \es -> do
 --
 -- @'Eff' localEs a -> 'Eff' localEs b@
 --
--- /Note:/ the computation must not run its argument in a separate thread,
+-- /Note:/ the computation must not run its argument in a different thread,
 -- attempting to do so will result in a runtime error.
 --
 -- Useful e.g. for lifting the unmasking function in

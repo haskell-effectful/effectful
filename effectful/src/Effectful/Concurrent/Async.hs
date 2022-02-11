@@ -87,6 +87,8 @@ import qualified UnliftIO.Internals.Async as I
 import Effectful
 import Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
+import Effectful.Dispatch.Static.Primitive
+import Effectful.Dispatch.Static.Unsafe
 
 -- | Lifted 'A.async'.
 async :: Concurrent :> es => Eff es a -> Eff es (Async a)
@@ -524,7 +526,8 @@ liftAsyncWithUnmask
   -> Eff es (Async a)
 liftAsyncWithUnmask fork action = unsafeEff $ \es -> do
   esA <- cloneEnv es
-  fork $ \unmask -> unEff (action $ unsafeLiftMapIO unmask) esA
+  -- Unmask never runs its argument in a different thread.
+  fork $ \unmask -> unEff (action $ reallyUnsafeLiftMapIO unmask) esA
 
 liftWithAsync
   :: (IO a -> (Async a -> IO b) -> IO b)
@@ -543,5 +546,6 @@ liftWithAsyncWithUnmask
   -> Eff es b
 liftWithAsyncWithUnmask withA action k = unsafeEff $ \es -> do
   esA <- cloneEnv es
-  withA (\unmask -> unEff (action $ unsafeLiftMapIO unmask) esA)
+  -- Unmask never runs its argument in a different thread.
+  withA (\unmask -> unEff (action $ reallyUnsafeLiftMapIO unmask) esA)
         (\a -> unEff (k a) es)

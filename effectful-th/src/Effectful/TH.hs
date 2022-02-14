@@ -17,7 +17,7 @@ module Effectful.TH
   , send
   ) where
 
-import Control.Monad (forM)
+import Control.Monad (filterM, forM, unless)
 import Effectful (Eff, Effect, (:>))
 import Effectful.Dispatch.Dynamic (send)
 import Data.Char (toLower)
@@ -135,6 +135,13 @@ makePartialEffectInfo :: Options -> DatatypeInfo -> ConstructorInfo -> Q [Dec]
 makePartialEffectInfo options tinfo cinfo = do
   let fname = mkName $ optionsToFunctionName options $ nameBase cname
 
+  -- Check if required extensions are enabled.
+  requiredExtensions (nameBase fname)
+    [ FlexibleContexts
+    , ScopedTypeVariables
+    , TypeApplications
+    ]
+
   let (effectVarBndrs, mBndr, rBndr) = effVars $ datatypeVars tinfo
       effectVars = map tvName effectVarBndrs
       m = tvName mBndr
@@ -216,6 +223,15 @@ effVars = go mempty
 listTVs :: [Type] -> [Type]
 listTVs = map (VarT . tvName) . freeVariablesWellScoped
 
+requiredExtensions :: String -> [Extension] -> Q ()
+requiredExtensions what exts = do
+  missing <- filterM (fmap not . isExtEnabled) exts
+  let ppMissing = map (\ext -> "{-# LANGUAGE " <> show ext <> " #-}") missing
+  unless (null missing) $ do
+    fail $ unlines $
+      [ "Generating " <> what <> " requires additional language extensions."
+      , "You can enable them by adding the following pragmas to the beginning of the source file:"
+      ] <> ppMissing
 
 ----------------------------------------
 -- Helper functions

@@ -53,12 +53,10 @@ common language
 library
     import:         language
 
-    ghc-options:    -O2
-
     build-depends:    base                >= 4.13      && < 5
                     , containers
                     , effectful-core
-                    , template-haskell
+                    , template-haskell    >= 2.16      && < 2.19
                     , th-abstraction
 
     hs-source-dirs:  src

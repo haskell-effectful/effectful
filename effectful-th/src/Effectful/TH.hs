@@ -104,11 +104,24 @@ setToFunctionName f options = options { optionsToFunctionName = f }
 -- > local :: forall (r :: Type) (es :: [Effect]) (b :: Type).
 -- >   Reader r :> es => (r -> r) -> Eff es b -> Eff es b
 -- > local arg1 arg2 = send (Local @r @(Eff es) @b arg1 arg2)
+--
+-- __Known limitations__
+--
+-- This function works for "basic" effect types but may fail more advanced ones.
+-- In particular the following does not work:
+--
+--  - Constructors that only work with an explicit type application.
+--    See <https://github.com/polysemy-research/polysemy/issues/339> for an
+--    example.
+--  - Explicit foralls in constructor binding type variables in a different
+--    order than the one GHC would infer.
 makeEffect :: Name -> Q [Dec]
 makeEffect = makeEffectWithOptions defaultOptions
 
 -- | A version of 'makeEffect' that takes 'Options' to customize the
 -- generated functions.
+--
+-- See 'makeEffect' for known limitations.
 makeEffectWithOptions :: Options -> Name -> Q [Dec]
 makeEffectWithOptions options tname = do
   tinfo <- reifyDatatype tname
@@ -123,6 +136,8 @@ makeEffectWithOptions options tname = do
 -- generates a send function for the data constructor @cname@ of the type
 -- @tname@.
 -- This function ignores the @makeFunction@ selector of the 'Options' passed.
+--
+-- See 'makeEffect' for known limitations.
 makePartialEffect :: Options -> Name -> Name -> Q [Dec]
 makePartialEffect options tname cname = do
   tinfo <- reifyDatatype tname
@@ -131,6 +146,8 @@ makePartialEffect options tname cname = do
 
 -- | A version of 'makeEffect' that takes the already reified
 -- 'DatatypeInfo' and 'ConstructorInfo' as arguments.
+--
+-- See 'makeEffect' for known limitations.
 makePartialEffectInfo :: Options -> DatatypeInfo -> ConstructorInfo -> Q [Dec]
 makePartialEffectInfo options tinfo cinfo = do
   let fname = mkName $ optionsToFunctionName options $ nameBase cname

@@ -3,9 +3,9 @@
 -- | Template Haskell utilities.
 module Effectful.TH
   ( -- * Generate functions for dynamic effects
-    makeSendFunctions
-  , makeSendFunctionsWithOptions
-  , makeSendFunctionFor
+    makeEffect
+  , makeEffectWithOptions
+  , makePartialEffect
   , Options
   , defaultOptions
   , setMakeFunction
@@ -39,7 +39,7 @@ data Options = Options
   , optionsToFunctionName :: String -> String
   }
 
--- | Default options used by 'makeSendFunctions'. Those are:
+-- | Default options used by 'makeEffect'. Those are:
 --
 --  * Generate functions for all data constructors of the effect type.
 --  * The function's name is the one of the data constructor with the first
@@ -93,7 +93,7 @@ setToFunctionName f options = options { optionsToFunctionName = f }
 -- >
 -- > type instance DispatchOf (Reader r) = 'Dynamic
 -- >
--- > makeSendFunctions ''Reader
+-- > makeEffect ''Reader
 --
 -- will generate the following functions:
 --
@@ -104,35 +104,35 @@ setToFunctionName f options = options { optionsToFunctionName = f }
 -- > local :: forall (r :: Type) (es :: [Effect]) (b :: Type).
 -- >   Reader r :> es => (r -> r) -> Eff es b -> Eff es b
 -- > local arg1 arg2 = send (Local @r @(Eff es) @b arg1 arg2)
-makeSendFunctions :: Name -> Q [Dec]
-makeSendFunctions = makeSendFunctionsWithOptions defaultOptions
+makeEffect :: Name -> Q [Dec]
+makeEffect = makeEffectWithOptions defaultOptions
 
--- | A version of 'makeSendFunctions' that takes 'Options' to customize the
+-- | A version of 'makeEffect' that takes 'Options' to customize the
 -- generated functions.
-makeSendFunctionsWithOptions :: Options -> Name -> Q [Dec]
-makeSendFunctionsWithOptions options tname = do
+makeEffectWithOptions :: Options -> Name -> Q [Dec]
+makeEffectWithOptions options tname = do
   tinfo <- reifyDatatype tname
   fmap mconcat $ forM (datatypeCons tinfo) $ \cinfo -> do
     if optionsMakeFunction options $ constructorName cinfo
-      then makeSendFunctionForInfo options tinfo cinfo
+      then makePartialEffectInfo options tinfo cinfo
       else pure []
 
 -- | Generates the function for a particular data constructor.
 --
--- > makeSendFunctionFor options tname cname
+-- > makeEffect options tname cname
 -- generates a send function for the data constructor @cname@ of the type
 -- @tname@.
 -- This function ignores the @makeFunction@ selector of the 'Options' passed.
-makeSendFunctionFor :: Options -> Name -> Name -> Q [Dec]
-makeSendFunctionFor options tname cname = do
+makePartialEffect :: Options -> Name -> Name -> Q [Dec]
+makePartialEffect options tname cname = do
   tinfo <- reifyDatatype tname
   let cinfo = lookupByConstructorName cname tinfo
-  makeSendFunctionForInfo options tinfo cinfo
+  makePartialEffectInfo options tinfo cinfo
 
--- | A version of 'makeSendFunctionFor' that takes the already reified
+-- | A version of 'makeEffect' that takes the already reified
 -- 'DatatypeInfo' and 'ConstructorInfo' as arguments.
-makeSendFunctionForInfo :: Options -> DatatypeInfo -> ConstructorInfo -> Q [Dec]
-makeSendFunctionForInfo options tinfo cinfo = do
+makePartialEffectInfo :: Options -> DatatypeInfo -> ConstructorInfo -> Q [Dec]
+makePartialEffectInfo options tinfo cinfo = do
   let fname = mkName $ optionsToFunctionName options $ nameBase cname
 
   let (effectVarBndrs, mBndr, rBndr) = effVars $ datatypeVars tinfo

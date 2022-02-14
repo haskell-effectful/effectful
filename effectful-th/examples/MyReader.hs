@@ -18,4 +18,4 @@ data Reader r :: Effect where
 
 type instance DispatchOf (Reader r) = 'Dynamic
 
-makeSendFunctions ''Reader
+makeEffect ''Reader

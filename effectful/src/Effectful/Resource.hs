@@ -34,7 +34,7 @@ import Effectful.Dispatch.Static.Primitive
 -- | Data tag for a resource effect.
 data Resource :: Effect
 
-type instance DispatchOf Resource = 'Static
+type instance DispatchOf Resource = 'Static 'WithSideEffects
 newtype instance StaticRep Resource = Resource R.InternalState
 
 -- | Run the resource effect.
@@ -64,7 +64,7 @@ getInternalState = do
 -- | Run the 'Resource' effect with existing 'R.InternalState'.
 --
 -- /Note:/ the 'R.InternalState' will not be closed at the end.
-runInternalState :: R.InternalState -> Eff (Resource : es) a -> Eff es a
+runInternalState :: IOE :> es => R.InternalState -> Eff (Resource : es) a -> Eff es a
 runInternalState istate = evalStaticRep (Resource istate)
 
 ----------------------------------------

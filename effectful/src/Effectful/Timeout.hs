@@ -17,7 +17,7 @@ import Effectful.Dispatch.Static
 -- | An effect for timing out computations.
 data Timeout :: Effect
 
-type instance DispatchOf Timeout = 'Static
+type instance DispatchOf Timeout = 'Static 'WithSideEffects
 data instance StaticRep Timeout = Timeout
 
 -- | Run the 'Timeout' effect.

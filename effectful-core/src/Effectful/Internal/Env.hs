@@ -87,9 +87,9 @@ type role Env nominal
 -- @
 --
 -- The point of execution is currently at (*), i.e. the mainline. Moreover,
--- currently (brackets represent forks):
+-- currently (more than one bracket signifies a forked environment):
 --
--- - Mainline sees @[e00, e01, e05, e07]@.
+-- - Mainline sees @[e00, e01, e05, e07]@ (mainline never has forks).
 --
 -- - @e01@ is an interpreted effect, its handler sees @[e00][e02, e03]@.
 --

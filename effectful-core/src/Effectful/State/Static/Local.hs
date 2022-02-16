@@ -47,7 +47,7 @@ import Effectful.Dispatch.Static
 -- | Provide access to a strict (WHNF), thread local, mutable value of type @s@.
 data State s :: Effect
 
-type instance DispatchOf (State s) = 'Static
+type instance DispatchOf (State s) = 'Static 'NoSideEffects
 newtype instance StaticRep (State s) = State s
 
 -- | Run the 'State' effect with the given initial state and return the final

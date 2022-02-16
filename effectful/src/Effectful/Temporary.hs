@@ -21,7 +21,7 @@ import Effectful.Dispatch.Static
 -- | An effect for interacting with temporary files.
 data Temporary :: Effect
 
-type instance DispatchOf Temporary = 'Static
+type instance DispatchOf Temporary = 'Static 'WithSideEffects
 data instance StaticRep Temporary = Temporary
 
 -- | Run the 'Temporary' effect.

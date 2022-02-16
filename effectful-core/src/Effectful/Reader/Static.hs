@@ -19,7 +19,7 @@ import Effectful.Dispatch.Static
 -- @r@.
 data Reader r :: Effect
 
-type instance DispatchOf (Reader r) = 'Static
+type instance DispatchOf (Reader r) = 'Static 'NoSideEffects
 newtype instance StaticRep (Reader r) = Reader r
 
 -- | Run a 'Reader' effect with the given initial environment.

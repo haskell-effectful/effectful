@@ -8,6 +8,8 @@ module Effectful.Dispatch.Static
 
     -- * Low level API
     StaticRep
+  , SideEffects(..)
+  , MaybeIOE
 
     -- ** Extending the environment
   , runStaticRep
@@ -73,7 +75,11 @@ import Effectful.Internal.Monad
 --
 -- >>> data Log :: Effect
 --
--- >>> type instance DispatchOf Log = 'Static
+-- When it comes to the dispatch, we also need to signify whether core
+-- operations of the effect will perform side effects. Since GHC is not a
+-- polygraph, you can lie, though being truthful is recommended 🙂
+--
+-- >>> type instance DispatchOf Log = 'Static 'WithSideEffects
 --
 -- The environment of 'Eff' will hold the data type that represents the
 -- effect. It is defined by the appropriate instance of the 'StaticRep' data
@@ -108,19 +114,33 @@ import Effectful.Internal.Monad
 --    unsafeEff_ $ logMessage logger msg
 -- :}
 --
--- However, in order for this approach to be sound, the function that introduces
--- the @Log@ effect needs to require 'IOE':
+-- However, since logging is most often an operation with side effects, in order
+-- for this approach to be sound, the function that introduces the @Log@ effect
+-- needs to require the 'IOE' effect.
+--
+-- If you forget to do that, don't worry. As long as the 'DispatchOf' instance
+-- was correctly defined to be @'Static' 'WithSideEffects'@, you will get a
+-- reminder:
+--
+-- >>> :{
+--  runLog :: Logger -> Eff (Log : es) a -> Eff es a
+--  runLog logger = evalStaticRep (Log logger)
+-- :}
+-- ...
+-- ...No instance for (IOE :> es) arising from a use of ‘evalStaticRep’
+-- ...
+--
+-- Including @'IOE' :> es@ in the context fixes the problem:
 --
 -- >>> :{
 --  runLog :: IOE :> es => Logger -> Eff (Log : es) a -> Eff es a
 --  runLog logger = evalStaticRep (Log logger)
 -- :}
 --
--- In general, whenever any operation of a static effect introduces potential
+-- In general, whenever any operation of a statically dispatched effect performs
 -- side effects using one of the unsafe functions, all functions that introduce
--- this effect need to require the 'IOE' effect.
---
--- __If you forget, that's on you, the compiler will not complain.__
+-- this effect need to require the 'IOE' effect (otherwise it would be possible
+-- to run it via 'runPureEff').
 --
 -- Now we can use the newly defined effect to log messages:
 --

@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-noncanonical-monad-instances #-}
 {-# OPTIONS_HADDOCK not-home #-}
@@ -43,6 +42,7 @@ module Effectful.Internal.Monad
 
   -- * Dispatch
   , Dispatch(..)
+  , SideEffects(..)
   , DispatchOf
   , EffectRep
 
@@ -55,6 +55,7 @@ module Effectful.Internal.Monad
 
   -- ** Static dispatch
   , StaticRep
+  , MaybeIOE
   , runStaticRep
   , evalStaticRep
   , execStaticRep
@@ -79,6 +80,7 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Primitive
 import Control.Monad.Trans.Control
+import Data.Kind (Constraint)
 import GHC.Exts (oneShot)
 import GHC.IO (IO(..))
 import GHC.Stack (HasCallStack)
@@ -273,7 +275,7 @@ instance Fail :> es => MonadFail (Eff es) where
 -- effects.
 data IOE :: Effect
 
-type instance DispatchOf IOE = 'Static
+type instance DispatchOf IOE = 'Static 'WithSideEffects
 newtype instance StaticRep IOE = IOE UnliftStrategy
 
 -- | Run an 'Eff' computation with side effects.
@@ -307,7 +309,7 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
 -- | Provide the ability to perform primitive state-transformer actions.
 data Prim :: Effect
 
-type instance DispatchOf Prim = 'Static
+type instance DispatchOf Prim = 'Static 'WithSideEffects
 data instance StaticRep Prim = Prim
 
 -- | Run an 'Eff' computation with primitive state-transformer actions.
@@ -321,17 +323,23 @@ instance Prim :> es => PrimMonad (Eff es) where
 ----------------------------------------
 -- Dispatch
 
+-- | Signifies whether core operations of a statically dispatched effect perform
+-- side effects. If an effect is marked as such, the 'runStaticRep' family of
+-- functions will require the 'IOE' effect to be in context via the 'MaybeIOE'
+-- type family.
+data SideEffects = NoSideEffects | WithSideEffects
+
 -- | A type of dispatch. For more information consult the documentation in
 -- "Effectful.Dispatch.Dynamic" and "Effectful.Dispatch.Static".
-data Dispatch = Dynamic | Static
+data Dispatch = Dynamic | Static SideEffects
 
 -- | Dispatch types of effects.
 type family DispatchOf (e :: Effect) :: Dispatch
 
 -- | Internal representations of effects.
-type family EffectRep (d :: Dispatch) = (r :: Effect -> Type) | r -> d where
-  EffectRep 'Dynamic = Handler
-  EffectRep 'Static  = StaticRep
+type family EffectRep (d :: Dispatch) :: Effect -> Type where
+  EffectRep 'Dynamic    = Handler
+  EffectRep ('Static _) = StaticRep
 
 ----------------------------------------
 -- Dynamic dispatch
@@ -383,13 +391,19 @@ send op = unsafeEff $ \es -> do
 ----------------------------------------
 -- Static dispatch
 
+-- | Require the 'IOE' effect for running statically dispatched effects whose
+-- operations perform side effects.
+type family MaybeIOE (sideEffects :: SideEffects) (es :: [Effect]) :: Constraint where
+  MaybeIOE 'NoSideEffects   _  = ()
+  MaybeIOE 'WithSideEffects es = IOE :> es
+
 -- | Internal representations of statically dispatched effects.
 data family StaticRep (e :: Effect) :: Type
 
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final value along with the final representation.
 runStaticRep
-  :: DispatchOf e ~ 'Static
+  :: (DispatchOf e ~ 'Static sideEffects, MaybeIOE sideEffects es)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es (a, StaticRep e)
@@ -402,7 +416,7 @@ runStaticRep e0 m = unsafeEff $ \es0 -> do
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final value, discarding the final representation.
 evalStaticRep
-  :: DispatchOf e ~ 'Static
+  :: (DispatchOf e ~ 'Static sideEffects, MaybeIOE sideEffects es)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es a
@@ -415,7 +429,7 @@ evalStaticRep e m = unsafeEff $ \es0 -> do
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final representation, discarding the final value.
 execStaticRep
-  :: DispatchOf e ~ 'Static
+  :: (DispatchOf e ~ 'Static sideEffects, MaybeIOE sideEffects es)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es (StaticRep e)
@@ -426,17 +440,17 @@ execStaticRep e0 m = unsafeEff $ \es0 -> do
             (\es -> unEff m es *> getEnv es)
 
 -- | Fetch the current representation of the effect.
-getStaticRep :: (DispatchOf e ~ 'Static, e :> es) => Eff es (StaticRep e)
+getStaticRep :: (DispatchOf e ~ 'Static sideEffects, e :> es) => Eff es (StaticRep e)
 getStaticRep = unsafeEff $ \es -> getEnv es
 
 -- | Set the current representation of the effect to the given value.
-putStaticRep :: (DispatchOf e ~ 'Static, e :> es) => StaticRep e -> Eff es ()
+putStaticRep :: (DispatchOf e ~ 'Static sideEffects, e :> es) => StaticRep e -> Eff es ()
 putStaticRep s = unsafeEff $ \es -> putEnv es s
 
 -- | Apply the function to the current representation of the effect and return a
 -- value.
 stateStaticRep
-  :: (DispatchOf e ~ 'Static, e :> es)
+  :: (DispatchOf e ~ 'Static sideEffects, e :> es)
   => (StaticRep e -> (a, StaticRep e))
   -- ^ The function to modify the representation.
   -> Eff es a
@@ -445,7 +459,7 @@ stateStaticRep f = unsafeEff $ \es -> stateEnv es f
 -- | Apply the monadic function to the current representation of the effect and
 -- return a value.
 stateStaticRepM
-  :: (DispatchOf e ~ 'Static, e :> es)
+  :: (DispatchOf e ~ 'Static sideEffects, e :> es)
   => (StaticRep e -> Eff es (a, StaticRep e))
   -- ^ The function to modify the representation.
   -> Eff es a
@@ -457,7 +471,7 @@ stateStaticRepM f = unsafeEff $ \es -> E.mask $ \release -> do
 -- | Execute a computation with a temporarily modified representation of the
 -- effect.
 localStaticRep
-  :: (DispatchOf e ~ 'Static, e :> es)
+  :: (DispatchOf e ~ 'Static sideEffects, e :> es)
   => (StaticRep e -> StaticRep e)
   -- ^ The function to temporarily modify the representation.
   -> Eff es a

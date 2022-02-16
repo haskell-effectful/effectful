@@ -37,7 +37,7 @@ import Effectful.Dispatch.Static.Primitive
 -- @w@.
 data Writer w :: Effect
 
-type instance DispatchOf (Writer w) = 'Static
+type instance DispatchOf (Writer w) = 'Static 'NoSideEffects
 newtype instance StaticRep (Writer w) = Writer w
 
 -- | Run a 'Writer' effect and return the final value along with the final

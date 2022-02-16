@@ -12,7 +12,7 @@ import Effectful.Dispatch.Static
 -- | An effect for interacting with the filesystem.
 data FileSystem :: Effect
 
-type instance DispatchOf FileSystem = 'Static
+type instance DispatchOf FileSystem = 'Static 'WithSideEffects
 data instance StaticRep FileSystem = FileSystem
 
 -- | Run the 'FileSystem' effect.

@@ -1,8 +1,11 @@
 -- | Primitive API for statically dispatched effects.
 --
--- /Warning:/ this module exposes internal implementation details of the 'Eff'
--- monad. Most of the time functions from "Effectful.Dispatch.Static" are
--- sufficient and safer to use.
+-- This module exposes internal implementation details of the 'Eff' monad. Most
+-- of the time functions from "Effectful.Dispatch.Static" are sufficient.
+--
+-- /Warning:/ playing the so called "type tetris" with functions from this
+-- module is not enough. Their misuse might lead to memory corruption or
+-- segmentation faults, so make sure you understand what you're doing.
 module Effectful.Dispatch.Static.Primitive
   ( -- * The environment
     Env

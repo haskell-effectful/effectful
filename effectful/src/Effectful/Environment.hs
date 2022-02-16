@@ -28,7 +28,7 @@ import Effectful.Dispatch.Static hiding (getEnv)
 -- | An effect for querying and modifying the system environment.
 data Environment :: Effect
 
-type instance DispatchOf Environment = 'Static
+type instance DispatchOf Environment = 'Static 'WithSideEffects
 data instance StaticRep Environment = Environment
 
 -- | Run the 'Environment' effect.

@@ -59,7 +59,7 @@ import Effectful.Dispatch.Static
 -- | An effect for running child processes using the @process@ library.
 data Process :: Effect
 
-type instance DispatchOf Process = 'Static
+type instance DispatchOf Process = 'Static 'WithSideEffects
 data instance StaticRep Process = Process
 
 runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a

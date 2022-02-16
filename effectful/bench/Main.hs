@@ -27,101 +27,103 @@ countdown :: Integer -> Benchmark
 countdown n = bgroup (show n)
   [ bench "reference (pure)"             $ nf countdownRef n
   , bench "reference (ST)"               $ nf countdownST n
-  , bgroup "shallow"
-    [ bench "effectful (local/static)"   $ nf countdownEffectfulLocal n
-    , bench "effectful (local/dynamic)"  $ nf countdownEffectfulDynLocal n
-    , bench "effectful (shared/static)"  $ nf countdownEffectfulShared n
-    , bench "effectful (shared/dynamic)" $ nf countdownEffectfulDynShared n
-#ifdef VERSION_freer_simple
-    , bench "freer-simple"               $ nf countdownFreerSimple n
-#endif
-#ifdef VERSION_cleff
-    , bench "cleff"                      $ nf countdownCleff n
-#endif
-#ifdef VERSION_eff
-    , bench "eff"                        $ nf countdownEff n
-#endif
-#ifdef VERSION_mtl
-    , bench "mtl"                        $ nf countdownMtl n
-#endif
-#ifdef VERSION_fused_effects
-    , bench "fused-effects"              $ nf countdownFusedEffects n
-#endif
-#ifdef VERSION_polysemy
-    , bench "polysemy"                   $ nf countdownPolysemy n
-#endif
+  , bgroup "effectful (local/static)"
+    [ bench "shallow" $ nf countdownEffectfulLocal n
+    , bench "deep"    $ nf countdownEffectfulLocalDeep n
     ]
-  , bgroup "deep"
-    [ bench "effectful (local/static)"   $ nf countdownEffectfulLocalDeep n
-    , bench "effectful (local/dynamic)"  $ nf countdownEffectfulDynLocalDeep n
-    , bench "effectful (shared/static)"  $ nf countdownEffectfulSharedDeep n
-    , bench "effectful (shared/dynamic)" $ nf countdownEffectfulDynSharedDeep n
+  , bgroup "effectful (local/dynamic)"
+    [ bench "shallow" $ nf countdownEffectfulDynLocal n
+    , bench "deep"    $ nf countdownEffectfulDynLocalDeep n
+    ]
+  , bgroup "effectful (shared/static)"
+    [ bench "shallow" $ nf countdownEffectfulShared n
+    , bench "deep"    $ nf countdownEffectfulSharedDeep n
+    ]
+  , bgroup "effectful (shared/dynamic)"
+    [ bench "shallow" $ nf countdownEffectfulDynShared n
+    , bench "deep"    $ nf countdownEffectfulDynSharedDeep n
+    ]
 #ifdef VERSION_cleff
-    , bench "cleff"                      $ nf countdownCleffDeep n
+  , bgroup "cleff"
+    [ bench "shallow" $ nf countdownCleff n
+    , bench "deep"    $ nf countdownCleffDeep n
+    ]
 #endif
 #ifdef VERSION_freer_simple
-    , bench "freer-simple"               $ nf countdownFreerSimpleDeep n
+  , bgroup "freer-simple"
+    [ bench "shallow" $ nf countdownFreerSimple n
+    , bench "deep"    $ nf countdownFreerSimpleDeep n
+    ]
 #endif
 #ifdef VERSION_eff
-    , bench "eff"                        $ nf countdownEffDeep n
-#endif
-#ifdef VERSION_polysemy
-    , bench "polysemy"                   $ nf countdownPolysemyDeep n
+  , bgroup "eff"
+    [ bench "shallow" $ nf countdownEff n
+    , bench "deep"    $ nf countdownEffDeep n
+    ]
 #endif
 #ifdef VERSION_mtl
-    , bench "mtl"                        $ nf countdownMtlDeep n
+  , bgroup "mtl"
+    [ bench "shallow" $ nf countdownMtl n
+    , bench "deep"    $ nf countdownMtlDeep n
+    ]
 #endif
 #ifdef VERSION_fused_effects
-    , bench "fused-effects"              $ nf countdownFusedEffectsDeep n
-#endif
+  , bgroup "fused-effects"
+    [ bench "shallow" $ nf countdownFusedEffects n
+    , bench "deep"    $ nf countdownFusedEffectsDeep n
     ]
+#endif
+#ifdef VERSION_polysemy
+  , bgroup "polysemy"
+    [ bench "shallow" $ nf countdownPolysemy n
+    , bench "deep"    $ nf countdownPolysemyDeep n
+    ]
+#endif
   ]
 
 filesize :: Int -> Benchmark
 filesize n = bgroup (show n)
-  [ bench "reference"       $ nfAppIO ref_calculateFileSizes (take n files)
-  , bgroup "shallow"
-    [ bench "effectful"     $ nfAppIO effectful_calculateFileSizes (take n files)
+  [ bench "reference" $ nfAppIO ref_calculateFileSizes (take n files)
+  , bgroup "effectful"
+    [ bench "shallow" $ nfAppIO effectful_calculateFileSizes (take n files)
+    , bench "deep"    $ nfAppIO effectful_calculateFileSizesDeep (take n files)
+    ]
 #ifdef VERSION_cleff
-    , bench "cleff"         $ nfAppIO cleff_calculateFileSizes (take n files)
-#endif
-#ifdef VERSION_mtl
-    , bench "mtl"           $ nfAppIO mtl_calculateFileSizes (take n files)
+  , bgroup "cleff"
+    [ bench "shallow" $ nfAppIO cleff_calculateFileSizes (take n files)
+    , bench "deep"    $ nfAppIO cleff_calculateFileSizesDeep (take n files)
+    ]
 #endif
 #ifdef VERSION_freer_simple
-    , bench "freer-simple"  $ nfAppIO fs_calculateFileSizes (take n files)
-#endif
-#ifdef VERSION_eff
-    , bench "eff"           $ nfAppIO eff_calculateFileSizes (take n files)
-#endif
-#ifdef VERSION_fused_effects
-    , bench "fused-effects" $ nfAppIO fe_calculateFileSizes (take n files)
-#endif
-#ifdef VERSION_polysemy
-    , bench "polysemy"      $ nfAppIO poly_calculateFileSizes (take n files)
-#endif
+  , bgroup "freer-simple"
+    [ bench "shallow" $ nfAppIO fs_calculateFileSizes (take n files)
+    , bench "deep"    $ nfAppIO fs_calculateFileSizesDeep (take n files)
     ]
-  , bgroup "deep"
-    [ bench "effectful"     $ nfAppIO effectful_calculateFileSizesDeep (take n files)
-#ifdef VERSION_cleff
-    , bench "cleff"         $ nfAppIO cleff_calculateFileSizesDeep (take n files)
-#endif
-#ifdef VERSION_freer_simple
-    , bench "freer-simple"  $ nfAppIO fs_calculateFileSizesDeep (take n files)
 #endif
 #ifdef VERSION_eff
-    , bench "eff"           $ nfAppIO eff_calculateFileSizesDeep (take n files)
+  , bgroup "eff"
+    [ bench "shallow" $ nfAppIO eff_calculateFileSizes (take n files)
+    , bench "deep"    $ nfAppIO eff_calculateFileSizesDeep (take n files)
+    ]
 #endif
 #ifdef VERSION_mtl
-    , bench "mtl"           $ nfAppIO mtl_calculateFileSizesDeep (take n files)
-#endif
-#ifdef VERSION_polysemy
-    , bench "polysemy"      $ nfAppIO poly_calculateFileSizesDeep (take n files)
+  , bgroup "mtl"
+    [ bench "shallow" $ nfAppIO mtl_calculateFileSizes (take n files)
+    , bench "deep"    $ nfAppIO mtl_calculateFileSizesDeep (take n files)
+    ]
 #endif
 #ifdef VERSION_fused_effects
-    , bench "fused-effects" $ nfAppIO fe_calculateFileSizesDeep (take n files)
-#endif
+  , bgroup "fused-effects"
+    [ bench "shallow" $ nfAppIO fe_calculateFileSizes (take n files)
+    , bench "deep"    $ nfAppIO fe_calculateFileSizesDeep (take n files)
     ]
+#endif
+#ifdef VERSION_polysemy
+  , bgroup "polysemy"
+    [ bench "shallow" $ nfAppIO poly_calculateFileSizes (take n files)
+    , bench "deep"    $ nfAppIO poly_calculateFileSizesDeep (take n files)
+    ]
+#endif
   ]
   where
     files :: [FilePath]

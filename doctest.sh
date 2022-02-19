@@ -39,4 +39,5 @@ run_doctest() {
 }
 
 run_doctest effectful-core src
+run_doctest effectful-th src
 run_doctest effectful src

@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.14
+# version: 0.14.1
 #
-# REGENDATA ("0.14",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.14.1",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -169,8 +169,9 @@ jobs:
       - name: initial cabal.project for sdist
         run: |
           touch cabal.project
-          echo "packages: $GITHUB_WORKSPACE/source/effectful" >> cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful-core" >> cabal.project
+          echo "packages: $GITHUB_WORKSPACE/source/effectful-th" >> cabal.project
+          echo "packages: $GITHUB_WORKSPACE/source/effectful" >> cabal.project
           cat cabal.project
       - name: sdist
         run: |
@@ -182,24 +183,29 @@ jobs:
           find sdist -maxdepth 1 -type f -name '*.tar.gz' -exec tar -C $GITHUB_WORKSPACE/unpacked -xzvf {} \;
       - name: generate cabal.project
         run: |
-          PKGDIR_effectful="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/effectful-[0-9.]*')"
-          echo "PKGDIR_effectful=${PKGDIR_effectful}" >> "$GITHUB_ENV"
           PKGDIR_effectful_core="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/effectful-core-[0-9.]*')"
           echo "PKGDIR_effectful_core=${PKGDIR_effectful_core}" >> "$GITHUB_ENV"
+          PKGDIR_effectful_th="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/effectful-th-[0-9.]*')"
+          echo "PKGDIR_effectful_th=${PKGDIR_effectful_th}" >> "$GITHUB_ENV"
+          PKGDIR_effectful="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/effectful-[0-9.]*')"
+          echo "PKGDIR_effectful=${PKGDIR_effectful}" >> "$GITHUB_ENV"
           rm -f cabal.project cabal.project.local
           touch cabal.project
           touch cabal.project.local
-          echo "packages: ${PKGDIR_effectful}" >> cabal.project
           echo "packages: ${PKGDIR_effectful_core}" >> cabal.project
-          echo "package effectful" >> cabal.project
-          echo "    ghc-options: -Werror=missing-methods" >> cabal.project
+          echo "packages: ${PKGDIR_effectful_th}" >> cabal.project
+          echo "packages: ${PKGDIR_effectful}" >> cabal.project
           echo "package effectful-core" >> cabal.project
+          echo "    ghc-options: -Werror=missing-methods" >> cabal.project
+          echo "package effectful-th" >> cabal.project
+          echo "    ghc-options: -Werror=missing-methods" >> cabal.project
+          echo "package effectful" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           cat >> cabal.project <<EOF
           package effectful
             flags: +benchmark-foreign-libraries
           EOF
-          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(effectful|effectful-core)$/; }' >> cabal.project.local
+          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(effectful|effectful-core|effectful-th)$/; }' >> cabal.project.local
           cat cabal.project
           cat cabal.project.local
       - name: dump install plan
@@ -227,17 +233,21 @@ jobs:
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: doctest
         run: |
-          cd ${PKGDIR_effectful} || false
-          doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
           cd ${PKGDIR_effectful_core} || false
           doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
           cd ${PKGDIR_effectful_core} || false
           doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators utils
+          cd ${PKGDIR_effectful_th} || false
+          doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
+          cd ${PKGDIR_effectful} || false
+          doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
       - name: cabal check
         run: |
-          cd ${PKGDIR_effectful} || false
-          ${CABAL} -vnormal check
           cd ${PKGDIR_effectful_core} || false
+          ${CABAL} -vnormal check
+          cd ${PKGDIR_effectful_th} || false
+          ${CABAL} -vnormal check
+          cd ${PKGDIR_effectful} || false
           ${CABAL} -vnormal check
       - name: haddock
         run: |

@@ -1,3 +1,4 @@
 packages:
-    effectful/effectful.cabal
-    effectful-core/effectful-core.cabal
+  effectful-core/*.cabal
+  effectful-th/*.cabal
+  effectful/*.cabal

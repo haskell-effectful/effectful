@@ -23,7 +23,7 @@ module Effectful.Environment
 import qualified System.Environment as E
 
 import Effectful
-import Effectful.Dispatch.Static hiding (getEnv)
+import Effectful.Dispatch.Static
 
 -- | An effect for querying and modifying the system environment.
 data Environment :: Effect

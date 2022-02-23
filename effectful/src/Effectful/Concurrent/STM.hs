@@ -1,4 +1,4 @@
--- | Lifted version of "Control.Concurrent.STM".
+-- | Lifted "Control.Concurrent.STM".
 module Effectful.Concurrent.STM
   ( -- * Effect
     Concurrent
@@ -99,54 +99,54 @@ import Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
 import Effectful.Dispatch.Static.Primitive
 
--- | Lifted version of 'STM.atomically'.
+-- | Lifted 'STM.atomically'.
 atomically :: Concurrent :> es => STM a -> Eff es a
 atomically = unsafeEff_ . STM.atomically
 
--- | Lifted version of 'STM.newTVarIO'.
+-- | Lifted 'STM.newTVarIO'.
 newTVarIO :: Concurrent :> es => a -> Eff es (TVar a)
 newTVarIO = unsafeEff_ . STM.newTVarIO
 
--- | Lifted version of 'STM.readTVarIO'.
+-- | Lifted 'STM.readTVarIO'.
 readTVarIO :: Concurrent :> es => TVar a -> Eff es a
 readTVarIO = unsafeEff_ . STM.readTVarIO
 
--- | Lifted version of 'STM.registerDelay'.
+-- | Lifted 'STM.registerDelay'.
 registerDelay :: Concurrent :> es => Int -> Eff es (TVar Bool)
 registerDelay = unsafeEff_ . STM.registerDelay
 
--- | Lifted version of 'STM.mkWeakTVar'.
+-- | Lifted 'STM.mkWeakTVar'.
 mkWeakTVar :: Concurrent :> es => TVar a -> Eff es () -> Eff es (Weak (TVar a))
 mkWeakTVar var f = unsafeEff $ \es -> do
   -- The finalizer can run at any point and in any thread.
   STM.mkWeakTVar var . unEff f =<< cloneEnv es
 
--- | Lifted version of 'STM.newTMVarIO'.
+-- | Lifted 'STM.newTMVarIO'.
 newTMVarIO :: Concurrent :> es => a -> Eff es (TMVar a)
 newTMVarIO = unsafeEff_ . STM.newTMVarIO
 
--- | Lifted version of 'STM.newEmptyTMVarIO'.
+-- | Lifted 'STM.newEmptyTMVarIO'.
 newEmptyTMVarIO :: Concurrent :> es => Eff es (TMVar a)
 newEmptyTMVarIO = unsafeEff_ STM.newEmptyTMVarIO
 
--- | Lifted version of 'STM.mkWeakTMVar'.
+-- | Lifted 'STM.mkWeakTMVar'.
 mkWeakTMVar :: Concurrent :> es => TMVar a -> Eff es () -> Eff es (Weak (TMVar a))
 mkWeakTMVar var f = unsafeEff $ \es -> do
   -- The finalizer can run at any point and in any thread.
   STM.mkWeakTMVar var . unEff f =<< cloneEnv es
 
--- | Lifted version of 'STM.newTChanIO'.
+-- | Lifted 'STM.newTChanIO'.
 newTChanIO :: Concurrent :> es => Eff es (TChan a)
 newTChanIO = unsafeEff_ STM.newTChanIO
 
--- | Lifted version of 'STM.newBroadcastTChanIO'.
+-- | Lifted 'STM.newBroadcastTChanIO'.
 newBroadcastTChanIO :: Concurrent :> es => Eff es (TChan a)
 newBroadcastTChanIO = unsafeEff_ STM.newBroadcastTChanIO
 
--- | Lifted version of 'STM.newTQueueIO'.
+-- | Lifted 'STM.newTQueueIO'.
 newTQueueIO :: Concurrent :> es => Eff es (TQueue a)
 newTQueueIO = unsafeEff_ STM.newTQueueIO
 
--- | Lifted version of 'STM.newTBQueueIO'.
+-- | Lifted 'STM.newTBQueueIO'.
 newTBQueueIO :: Concurrent :> es => Natural -> Eff es (TBQueue a)
 newTBQueueIO = unsafeEff_ . STM.newTBQueueIO

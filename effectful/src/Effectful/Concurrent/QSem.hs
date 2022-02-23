@@ -1,4 +1,4 @@
--- | Lifted version of "Control.Concurrent.QSem".
+-- | Lifted "Control.Concurrent.QSem".
 module Effectful.Concurrent.QSem
   ( -- * Effect
     Concurrent

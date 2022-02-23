@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP #-}
--- | Lifted version of "System.Process".
+-- | Lifted "System.Process".
 module Effectful.Process
   ( -- * Effect
     Process

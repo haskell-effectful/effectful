@@ -1,5 +1,5 @@
--- | Lifted version of "Control.Concurrent.MVar" with operations that force the
--- values put inside an 'MVar' to WHNF.
+-- | Lifted "Control.Concurrent.MVar" with operations that force values put
+-- inside an 'MVar' to WHNF.
 module Effectful.Concurrent.MVar.Strict
   ( -- * Effect
     Concurrent

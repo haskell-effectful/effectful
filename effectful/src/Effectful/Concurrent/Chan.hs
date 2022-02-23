@@ -1,4 +1,4 @@
--- | Lifted version of "Control.Concurrent.Chan".
+-- | Lifted "Control.Concurrent.Chan".
 module Effectful.Concurrent.Chan
   ( -- * Effect
     Concurrent

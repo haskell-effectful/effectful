@@ -1,4 +1,4 @@
--- | Lifted version of "Control.Concurrent.MVar".
+-- | Lifted "Control.Concurrent.MVar".
 module Effectful.Concurrent.MVar
   ( -- * Effect
     Concurrent

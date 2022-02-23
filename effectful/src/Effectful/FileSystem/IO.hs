@@ -1,4 +1,4 @@
--- | Lifted version of "System.IO".
+-- | Lifted "System.IO".
 module Effectful.FileSystem.IO
   ( -- * Effect
     FileSystem
@@ -45,7 +45,7 @@ import Effectful
 import Effectful.Dispatch.Static
 import Effectful.FileSystem.Effect
 
--- | Lifted version of 'IO.withFile'.
+-- | Lifted 'IO.withFile'.
 withFile
   :: FileSystem :> es
   => FilePath
@@ -55,7 +55,7 @@ withFile
 withFile fp mode inner = unsafeSeqUnliftIO $ \unlift -> do
   IO.withFile fp mode $ unlift . inner
 
--- | Lifted version of 'IO.withBinaryFile'.
+-- | Lifted 'IO.withBinaryFile'.
 withBinaryFile
   :: FileSystem :> es
   => FilePath
@@ -65,82 +65,82 @@ withBinaryFile
 withBinaryFile fp mode inner = unsafeSeqUnliftIO $ \unlift -> do
   IO.withBinaryFile fp mode $ unlift . inner
 
--- | Lifted version of 'IO.openFile'
+-- | Lifted 'IO.openFile'
 openFile :: FileSystem :> es => FilePath -> IOMode -> Eff es Handle
 openFile fp = unsafeEff_ . IO.openFile fp
 
--- | Lifted version of 'IO.hClose'
+-- | Lifted 'IO.hClose'
 hClose :: FileSystem :> es => Handle -> Eff es ()
 hClose = unsafeEff_ . IO.hClose
 
--- | Lifted version of 'IO.hFlush'
+-- | Lifted 'IO.hFlush'
 hFlush :: FileSystem :> es => Handle -> Eff es ()
 hFlush = unsafeEff_ . IO.hFlush
 
--- | Lifted version of 'IO.hFileSize'
+-- | Lifted 'IO.hFileSize'
 hFileSize :: FileSystem :> es => Handle -> Eff es Integer
 hFileSize = unsafeEff_ . IO.hFileSize
 
--- | Lifted version of 'IO.hSetFileSize'
+-- | Lifted 'IO.hSetFileSize'
 hSetFileSize :: FileSystem :> es => Handle -> Integer -> Eff es ()
 hSetFileSize h = unsafeEff_ . IO.hSetFileSize h
 
--- | Lifted version of 'IO.hIsEOF'
+-- | Lifted 'IO.hIsEOF'
 hIsEOF :: FileSystem :> es => Handle -> Eff es Bool
 hIsEOF = unsafeEff_ . IO.hIsEOF
 
--- | Lifted version of 'IO.hSetBuffering'
+-- | Lifted 'IO.hSetBuffering'
 hSetBuffering :: FileSystem :> es => Handle -> IO.BufferMode -> Eff es ()
 hSetBuffering h = unsafeEff_ . IO.hSetBuffering h
 
--- | Lifted version of 'IO.hGetBuffering'
+-- | Lifted 'IO.hGetBuffering'
 hGetBuffering :: FileSystem :> es => Handle -> Eff es IO.BufferMode
 hGetBuffering = unsafeEff_ . IO.hGetBuffering
 
--- | Lifted version of 'IO.hSeek'
+-- | Lifted 'IO.hSeek'
 hSeek :: FileSystem :> es => Handle -> IO.SeekMode -> Integer -> Eff es ()
 hSeek h s = unsafeEff_ . IO.hSeek h s
 
--- | Lifted version of 'IO.hTell'
+-- | Lifted 'IO.hTell'
 hTell :: FileSystem :> es => Handle -> Eff es Integer
 hTell = unsafeEff_ . IO.hTell
 
--- | Lifted version of 'IO.hIsOpen'
+-- | Lifted 'IO.hIsOpen'
 hIsOpen :: FileSystem :> es => Handle -> Eff es Bool
 hIsOpen = unsafeEff_ . IO.hIsOpen
 
--- | Lifted version of 'IO.hIsClosed'
+-- | Lifted 'IO.hIsClosed'
 hIsClosed :: FileSystem :> es => Handle -> Eff es Bool
 hIsClosed = unsafeEff_ . IO.hIsClosed
 
--- | Lifted version of 'IO.hIsReadable'
+-- | Lifted 'IO.hIsReadable'
 hIsReadable :: FileSystem :> es => Handle -> Eff es Bool
 hIsReadable = unsafeEff_ . IO.hIsReadable
 
--- | Lifted version of 'IO.hIsWritable'
+-- | Lifted 'IO.hIsWritable'
 hIsWritable :: FileSystem :> es => Handle -> Eff es Bool
 hIsWritable = unsafeEff_ . IO.hIsWritable
 
--- | Lifted version of 'IO.hIsSeekable'
+-- | Lifted 'IO.hIsSeekable'
 hIsSeekable :: FileSystem :> es => Handle -> Eff es Bool
 hIsSeekable = unsafeEff_ . IO.hIsSeekable
 
--- | Lifted version of 'IO.hIsTerminalDevice'
+-- | Lifted 'IO.hIsTerminalDevice'
 hIsTerminalDevice :: FileSystem :> es => Handle -> Eff es Bool
 hIsTerminalDevice = unsafeEff_ . IO.hIsTerminalDevice
 
--- | Lifted version of 'IO.hSetEcho'
+-- | Lifted 'IO.hSetEcho'
 hSetEcho :: FileSystem :> es => Handle -> Bool -> Eff es ()
 hSetEcho h = unsafeEff_ . IO.hSetEcho h
 
--- | Lifted version of 'IO.hGetEcho'
+-- | Lifted 'IO.hGetEcho'
 hGetEcho :: FileSystem :> es => Handle -> Eff es Bool
 hGetEcho = unsafeEff_ . IO.hGetEcho
 
--- | Lifted version of 'IO.hWaitForInput'
+-- | Lifted 'IO.hWaitForInput'
 hWaitForInput :: FileSystem :> es => Handle -> Int -> Eff es Bool
 hWaitForInput h = unsafeEff_ . IO.hWaitForInput h
 
--- | Lifted version of 'IO.hReady'
+-- | Lifted 'IO.hReady'
 hReady :: FileSystem :> es => Handle -> Eff es Bool
 hReady = unsafeEff_ . IO.hReady

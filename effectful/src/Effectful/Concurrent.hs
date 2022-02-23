@@ -1,4 +1,4 @@
--- | Lifted version of "Control.Concurrent".
+-- | Lifted "Control.Concurrent".
 --
 -- For functions that spawn threads, the order of preference for their usage is
 -- recommended as follows:

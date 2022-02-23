@@ -78,6 +78,7 @@ library
                      Effectful.Concurrent.Async
                      Effectful.Concurrent.Chan
                      Effectful.Concurrent.MVar
+                     Effectful.Concurrent.MVar.Strict
                      Effectful.Concurrent.STM
                      Effectful.Concurrent.QSem
                      Effectful.Concurrent.QSemN

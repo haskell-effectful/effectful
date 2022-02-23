@@ -19,8 +19,8 @@ main :: IO ()
 main = defaultMain
   [ concurrencyBenchmark
   , unliftBenchmark
-  , bgroup "countdown" $ map countdown [1000, 10000]
-  , bgroup "filesize"  $ map filesize [100, 1000]
+  , bgroup "countdown" $ map countdown [1000, 2000, 3000]
+  , bgroup "filesize"  $ map filesize  [1000, 2000, 3000]
   ]
 
 countdown :: Integer -> Benchmark

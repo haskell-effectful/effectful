@@ -6,7 +6,9 @@ module FileSizes where
 import Control.Exception
 import Control.Monad.IO.Class
 import Data.IORef
+import Data.Text (Text)
 import System.Posix
+import qualified Data.Text as T
 
 -- effectful
 import qualified Effectful as E
@@ -63,24 +65,26 @@ tryGetFileSize path = try @IOException (getFileStatus path) >>= \case
 ----------------------------------------
 -- reference
 
-ref_calculateFileSize :: IORef [String] -> FilePath -> IO Int
+ref_calculateFileSize :: IORef [Text] -> FilePath -> IO Int
 ref_calculateFileSize logs path = do
   logToIORef logs $ "Calculating the size of " ++ path
   tryGetFileSize path >>= \case
     Nothing -> 0      <$ logToIORef logs ("Could not calculate the size of " ++ path)
     Just size -> size <$ logToIORef logs (path ++ " is " ++ show size ++ " bytes")
   where
-    logToIORef :: IORef [String] -> String -> IO ()
-    logToIORef r msg = modifyIORef' r (msg :)
+    logToIORef :: IORef [Text] -> String -> IO ()
+    logToIORef r msgS = do
+      let msg = T.pack msgS
+      msg `seq` modifyIORef' r (msg :)
 {-# NOINLINE ref_calculateFileSize #-}
 
-ref_program :: IORef [String] -> [FilePath] -> IO Int
+ref_program :: IORef [Text] -> [FilePath] -> IO Int
 ref_program logs files = do
   sizes <- traverse (ref_calculateFileSize logs) files
   pure $ sum sizes
 {-# NOINLINE ref_program #-}
 
-ref_calculateFileSizes :: [FilePath] -> IO (Int, [String])
+ref_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
 ref_calculateFileSizes files = do
   logs      <- newIORef []
   size      <- ref_program logs files
@@ -103,16 +107,16 @@ effectful_runFile = E.interpret \_ -> \case
   Effectful_tryFileSize path -> liftIO $ tryGetFileSize path
 
 data Effectful_Logging :: E.Effect where
-  Effectful_logMsg :: String -> Effectful_Logging m ()
+  Effectful_logMsg :: !Text -> Effectful_Logging m ()
 
 type instance E.DispatchOf Effectful_Logging = 'E.Dynamic
 
 effectful_logMsg :: Effectful_Logging E.:> es => String -> E.Eff es ()
-effectful_logMsg = E.send . Effectful_logMsg
+effectful_logMsg = E.send . Effectful_logMsg . T.pack
 
 effectful_runLogging
   :: E.Eff (Effectful_Logging : es) a
-  -> E.Eff es (a, [String])
+  -> E.Eff es (a, [Text])
 effectful_runLogging = E.reinterpret (E.runState []) \_ -> \case
   Effectful_logMsg msg -> E.modify (msg :)
 
@@ -138,11 +142,11 @@ effectful_program files = do
   pure $ sum sizes
 {-# NOINLINE effectful_program #-}
 
-effectful_calculateFileSizes :: [FilePath] -> IO (Int, [String])
+effectful_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
 effectful_calculateFileSizes =
   E.runEff . effectful_runFile . effectful_runLogging . effectful_program
 
-effectful_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
+effectful_calculateFileSizesDeep :: [FilePath] -> IO (Int, [Text])
 effectful_calculateFileSizesDeep = E.runEff
   . runR . runR . runR . runR . runR
   . effectful_runFile . effectful_runLogging
@@ -167,14 +171,14 @@ eff_runFile = L.interpret \case
   Eff_tryFileSize path -> liftIO $ tryGetFileSize path
 
 data Eff_Logging :: L.Effect where
-  Eff_logMsg :: String -> Eff_Logging m ()
+  Eff_logMsg :: !Text -> Eff_Logging m ()
 
 eff_logMsg :: Eff_Logging L.:< es => String -> L.Eff es ()
-eff_logMsg = L.send . Eff_logMsg
+eff_logMsg = L.send . Eff_logMsg . T.pack
 
 eff_runLogging
   :: L.Eff (Eff_Logging : es) a
-  -> L.Eff es (a, [String])
+  -> L.Eff es (a, [Text])
 eff_runLogging
   = fmap eff_swap . L.runState [] . L.interpret \case
       Eff_logMsg msg -> L.modify (msg :)
@@ -205,11 +209,11 @@ eff_program files = do
   pure $ sum sizes
 {-# NOINLINE eff_program #-}
 
-eff_calculateFileSizes :: [FilePath] -> IO (Int, [String])
+eff_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
 eff_calculateFileSizes =
   L.runIO . eff_runFile . eff_runLogging . eff_program
 
-eff_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
+eff_calculateFileSizesDeep :: [FilePath] -> IO (Int, [Text])
 eff_calculateFileSizesDeep = L.runIO
   . runR . runR . runR . runR . runR
   . eff_runFile . eff_runLogging
@@ -234,14 +238,14 @@ cleff_runFile = C.interpret \case
   Cleff_tryFileSize path -> liftIO $ tryGetFileSize path
 
 data Cleff_Logging :: C.Effect where
-  Cleff_logMsg :: String -> Cleff_Logging m ()
+  Cleff_logMsg :: !Text -> Cleff_Logging m ()
 
 cleff_logMsg :: Cleff_Logging C.:> es => String -> C.Eff es ()
-cleff_logMsg = C.send . Cleff_logMsg
+cleff_logMsg = C.send . Cleff_logMsg . T.pack
 
 cleff_runLogging
   :: C.Eff (Cleff_Logging : es) a
-  -> C.Eff es (a, [String])
+  -> C.Eff es (a, [Text])
 cleff_runLogging = C.runState [] . C.reinterpret \case
   Cleff_logMsg msg -> C.modify (msg :)
 
@@ -267,11 +271,11 @@ cleff_program files = do
   pure $ sum sizes
 {-# NOINLINE cleff_program #-}
 
-cleff_calculateFileSizes :: [FilePath] -> IO (Int, [String])
+cleff_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
 cleff_calculateFileSizes =
   C.runIOE . cleff_runFile . cleff_runLogging . cleff_program
 
-cleff_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
+cleff_calculateFileSizesDeep :: [FilePath] -> IO (Int, [Text])
 cleff_calculateFileSizesDeep = C.runIOE
   . runR . runR . runR . runR . runR
   . cleff_runFile . cleff_runLogging
@@ -296,14 +300,14 @@ fs_runFile = FS.interpret \case
   FS_tryFileSize path -> liftIO $ tryGetFileSize path
 
 data FS_Logging r where
-  FS_logMsg :: String -> FS_Logging ()
+  FS_logMsg :: !Text -> FS_Logging ()
 
 fs_logMsg :: FS.Member FS_Logging es => String -> FS.Eff es ()
-fs_logMsg = FS.send . FS_logMsg
+fs_logMsg = FS.send . FS_logMsg . T.pack
 
 fs_runLogging
   :: FS.Eff (FS_Logging : es) a
-  -> FS.Eff es (a, [String])
+  -> FS.Eff es (a, [Text])
 fs_runLogging = FS.runState [] . FS.reinterpret \case
   FS_logMsg msg -> FS.modify (msg :)
 
@@ -329,11 +333,11 @@ fs_program files = do
   pure $ sum sizes
 {-# NOINLINE fs_program #-}
 
-fs_calculateFileSizes :: [FilePath] -> IO (Int, [String])
+fs_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
 fs_calculateFileSizes =
   FS.runM . fs_runFile . fs_runLogging . fs_program
 
-fs_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
+fs_calculateFileSizesDeep :: [FilePath] -> IO (Int, [Text])
 fs_calculateFileSizesDeep = FS.runM
   . runR . runR . runR . runR . runR
   . fs_runFile . fs_runLogging
@@ -367,12 +371,12 @@ instance
     FE.R other                 -> FE_FileC $ FE.alg (fe_runFileC . hdl) other ctx
 
 data FE_Logging :: E.Effect where
-  FE_logMsg :: String -> FE_Logging m ()
+  FE_logMsg :: !Text -> FE_Logging m ()
 
 fe_logMsg :: FE.Has FE_Logging sig m => String -> m ()
-fe_logMsg = FE.send . FE_logMsg
+fe_logMsg = FE.send . FE_logMsg . T.pack
 
-newtype FE_LoggingC m a = FE_LoggingC { fe_runLoggingC :: FE.StateC [String] m a }
+newtype FE_LoggingC m a = FE_LoggingC { fe_runLoggingC :: FE.StateC [Text] m a }
   deriving (Applicative, Functor, Monad)
 
 instance
@@ -382,7 +386,7 @@ instance
     FE.L (FE_logMsg msg) -> FE_LoggingC $ ctx <$ FE.modify (msg :)
     FE.R other           -> FE_LoggingC $ FE.alg (fe_runLoggingC . hdl) (FE.R other) ctx
 
-fe_runLogging :: Monad m => FE_LoggingC m a -> m (a, [String])
+fe_runLogging :: Monad m => FE_LoggingC m a -> m (a, [Text])
 fe_runLogging = fmap fe_swap . FE.runState [] . fe_runLoggingC
 
 fe_swap :: (a, b) -> (b, a)
@@ -410,10 +414,10 @@ fe_program files = do
   pure $ sum sizes
 {-# NOINLINE fe_program #-}
 
-fe_calculateFileSizes :: [FilePath] -> IO (Int, [String])
+fe_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
 fe_calculateFileSizes = fe_runFileC . fe_runLogging . fe_program
 
-fe_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
+fe_calculateFileSizesDeep :: [FilePath] -> IO (Int, [Text])
 fe_calculateFileSizesDeep
   = runR . runR . runR . runR . runR
   . fe_runFileC . fe_runLogging
@@ -451,7 +455,7 @@ instance MonadIO m => MonadFile (FileT m) where
 class Monad m => MonadLog m where
   mtl_logMsg :: String -> m ()
 
-newtype LoggingT m a = LoggingT (M.StateT [String] m a)
+newtype LoggingT m a = LoggingT (M.StateT [Text] m a)
   deriving (Functor, Applicative, Monad, MonadIO, M.MonadTrans)
 
 instance {-# OVERLAPPABLE #-}
@@ -462,9 +466,11 @@ instance {-# OVERLAPPABLE #-}
   mtl_logMsg = M.lift . mtl_logMsg
 
 instance MonadIO m => MonadLog (LoggingT m) where
-  mtl_logMsg msg = LoggingT $ M.modify (msg :)
+  mtl_logMsg msgS = do
+    let msg = T.pack msgS
+    msg `seq` LoggingT (M.modify (msg :))
 
-runLoggingT :: LoggingT m a -> m (a, [String])
+runLoggingT :: LoggingT m a -> m (a, [Text])
 runLoggingT (LoggingT m) = M.runStateT m []
 
 ----------
@@ -483,10 +489,10 @@ mtl_program files = do
   pure $ sum sizes
 {-# NOINLINE mtl_program #-}
 
-mtl_calculateFileSizes :: [FilePath] -> IO (Int, [String])
+mtl_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
 mtl_calculateFileSizes = runFileT . runLoggingT . mtl_program
 
-mtl_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
+mtl_calculateFileSizesDeep :: [FilePath] -> IO (Int, [Text])
 mtl_calculateFileSizesDeep
   = runR . runR . runR . runR . runR
   . runFileT . runLoggingT
@@ -513,12 +519,12 @@ poly_runFile = P.interpret \case
   Poly_tryFileSize path -> P.embed $ tryGetFileSize path
 
 data Poly_Logging :: E.Effect where
-  Poly_logMsg :: String -> Poly_Logging m ()
+  Poly_logMsg :: !Text -> Poly_Logging m ()
 
 poly_logMsg :: P.Member Poly_Logging es => String -> P.Sem es ()
-poly_logMsg = P.send . Poly_logMsg
+poly_logMsg = P.send . Poly_logMsg . T.pack
 
-poly_runLogging :: P.Sem (Poly_Logging : es) a -> P.Sem es (a, [String])
+poly_runLogging :: P.Sem (Poly_Logging : es) a -> P.Sem es (a, [Text])
 poly_runLogging = fmap poly_swap . P.runState [] . P.reinterpret \case
   Poly_logMsg msg -> P.modify (msg :)
 
@@ -547,11 +553,11 @@ poly_program files = do
   pure $ sum sizes
 {-# NOINLINE poly_program #-}
 
-poly_calculateFileSizes :: [FilePath] -> IO (Int, [String])
+poly_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
 poly_calculateFileSizes =
   P.runM . poly_runFile . poly_runLogging . poly_program
 
-poly_calculateFileSizesDeep :: [FilePath] -> IO (Int, [String])
+poly_calculateFileSizesDeep :: [FilePath] -> IO (Int, [Text])
 poly_calculateFileSizesDeep = P.runM
   . runR . runR . runR . runR . runR
   . poly_runFile . poly_runLogging

@@ -165,6 +165,7 @@ benchmark bench
                     , tasty-bench
                     , unix
                     , unliftio
+                    , text
 
     hs-source-dirs: bench
 

@@ -38,8 +38,8 @@ module Effectful.FileSystem.IO
   , hReady
   ) where
 
-import qualified System.IO as IO
 import System.IO (Handle, IOMode (..))
+import qualified System.IO as IO
 
 import Effectful
 import Effectful.Dispatch.Static

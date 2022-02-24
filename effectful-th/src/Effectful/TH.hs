@@ -190,7 +190,7 @@ makeCon makeSig name = do
            else VarE 'send `AppE`      effOp
 #endif
   let fnSig = ForallT actionVars
-        (UInfixT effTy ''(:>) esVar : actionCtx)
+        (ConT ''HasCallStack : UInfixT effTy ''(:>) esVar : actionCtx)
         (makeTyp esVar substM resTy actionParams)
 
   let rest = FunD fnName [Clause (VarP <$> fnArgs) (NormalB fnBody) []]

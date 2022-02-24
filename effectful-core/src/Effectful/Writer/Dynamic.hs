@@ -1,4 +1,4 @@
--- | The dynamically dispatched variant of the 'State' effect.
+-- | The dynamically dispatched variant of the 'Writer' effect.
 --
 -- /Note:/ unless you plan to change interpretations at runtime, it's
 -- recommended to use one of the statically dispatched variants,

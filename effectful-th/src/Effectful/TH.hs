@@ -35,14 +35,19 @@ import Effectful.Dispatch.Dynamic
 -- DispatchOf E :: Dispatch
 -- = 'Dynamic
 --
--- >>> :t op1
--- op1 :: (E :> es) => Int -> Eff es a -> Eff es a
+-- >>> :i op1
+-- op1 :: (HasCallStack, E :> es) => Int -> Eff es a -> Eff es a
+-- ...
 --
--- >>> :t op2
--- op2 :: (E :> es, IOE :> es) => Int -> Eff es ()
+-- >>> :i op2
+-- op2 :: (HasCallStack, E :> es, IOE :> es) => Int -> Eff es ()
+-- ...
 --
--- >>> :t op3
--- op3 :: (E :> es) => (forall r. Eff es r -> Eff es r) -> Eff es Int
+-- >>> :i op3
+-- op3 ::
+--   (HasCallStack, E :> es) =>
+--   (forall r. Eff es r -> Eff es r) -> Eff es Int
+-- ...
 --
 -- The naming rule changes the first uppercase letter in the constructor name to
 -- lowercase or removes the @:@ symbol in case of operators. Any fixity

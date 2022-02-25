@@ -27,7 +27,7 @@ test_errorFromInterpret = runEff $ do
 data NestedErr :: Effect where
   NestedErr :: NestedErr m ()
 
-type instance DispatchOf NestedErr = 'Dynamic
+type instance DispatchOf NestedErr = Dynamic
 
 nestedErr :: (HasCallStack, NestedErr :> es) => Eff es ()
 nestedErr = send NestedErr

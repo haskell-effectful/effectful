@@ -108,7 +108,7 @@ import Effectful.Internal.Utils
 -- | Provide the ability to handle errors of type @e@.
 data Error e :: Effect
 
-type instance DispatchOf (Error e) = 'Static 'NoSideEffects
+type instance DispatchOf (Error e) = Static NoSideEffects
 newtype instance StaticRep (Error e) = Error ErrorId
 
 -- | Handle errors of type @e@.

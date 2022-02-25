@@ -106,7 +106,7 @@ data HasInt :: Effect where
   GetInt :: HasInt m Int
   PutInt :: Int -> HasInt m ()
 
-type instance DispatchOf HasInt = 'Dynamic
+type instance DispatchOf HasInt = Dynamic
 
 getInt :: HasInt :> es => Eff es Int
 getInt = send GetInt

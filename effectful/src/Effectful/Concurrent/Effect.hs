@@ -74,7 +74,7 @@ import Effectful.Dispatch.Static
 --
 data Concurrent :: Effect
 
-type instance DispatchOf Concurrent = 'Static 'WithSideEffects
+type instance DispatchOf Concurrent = Static WithSideEffects
 data instance StaticRep Concurrent = Concurrent
 
 -- | Run the 'Concurrent' effect.

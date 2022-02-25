@@ -41,9 +41,7 @@ class (e :: Effect) :> (es :: [Effect]) where
                error "unimplemented"
 
 instance TypeError
-  ('Text "There is no handler for '" ':<>:
-   'ShowType e ':<>:
-   'Text "' in the context"
+  ( Text "There is no handler for '" :<>: ShowType e :<>: Text "' in the context"
   ) => e :> '[] where
   reifyIndex = error "unreachable"
 

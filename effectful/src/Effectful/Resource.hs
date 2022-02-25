@@ -34,7 +34,7 @@ import Effectful.Dispatch.Static.Primitive
 -- | Data tag for a resource effect.
 data Resource :: Effect
 
-type instance DispatchOf Resource = 'Static 'WithSideEffects
+type instance DispatchOf Resource = Static WithSideEffects
 newtype instance StaticRep Resource = Resource R.InternalState
 
 -- | Run the resource effect.

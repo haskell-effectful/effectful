@@ -33,7 +33,7 @@ data Writer w :: Effect where
   Tell   :: w   -> Writer w m ()
   Listen :: m a -> Writer w m (a, w)
 
-type instance DispatchOf (Writer w) = 'Dynamic
+type instance DispatchOf (Writer w) = Dynamic
 
 ----------------------------------------
 -- Local

@@ -24,7 +24,7 @@ data Reader r :: Effect where
   Ask   :: Reader r m r
   Local :: (r -> r) -> m a -> Reader r m a
 
-type instance DispatchOf (Reader r) = 'Dynamic
+type instance DispatchOf (Reader r) = Dynamic
 
 -- | Run the 'Reader' effect with the given initial environment (via
 -- "Effectful.Reader.Static").

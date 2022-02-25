@@ -58,7 +58,7 @@ op = pure 1
 data Fork :: Effect where
   ForkWithUnmask :: ((forall a. m a -> m a) -> m r) -> Fork m (Async r)
 
-type instance DispatchOf Fork = 'Dynamic
+type instance DispatchOf Fork = Dynamic
 
 -- | Uses 'localUnliftIO' and 'withLiftMapIO'.
 runFork1 :: IOE :> es => Eff (Fork : es) a -> Eff es a

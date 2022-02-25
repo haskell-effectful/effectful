@@ -79,7 +79,7 @@ import Effectful.Internal.Monad
 -- operations of the effect will perform side effects. Since GHC is not a
 -- polygraph, you can lie, though being truthful is recommended 🙂
 --
--- >>> type instance DispatchOf Log = 'Static 'WithSideEffects
+-- >>> type instance DispatchOf Log = Static WithSideEffects
 --
 -- The environment of 'Eff' will hold the data type that represents the
 -- effect. It is defined by the appropriate instance of the 'StaticRep' data

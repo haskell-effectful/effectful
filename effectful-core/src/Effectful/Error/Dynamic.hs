@@ -33,7 +33,7 @@ data Error e :: Effect where
   ThrowError :: e -> Error e m a
   CatchError :: m a -> (E.CallStack -> e -> m a) -> Error e m a
 
-type instance DispatchOf (Error e) = 'Dynamic
+type instance DispatchOf (Error e) = Dynamic
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static").
 runError

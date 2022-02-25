@@ -76,7 +76,7 @@ import Effectful.Internal.Monad
 --     WriteFile :: FilePath -> String -> FileSystem m ()
 -- :}
 --
--- >>> type instance DispatchOf FileSystem = 'Dynamic
+-- >>> type instance DispatchOf FileSystem = Dynamic
 --
 -- The @FileSystem@ effect has two operations:
 --
@@ -196,7 +196,7 @@ import Effectful.Internal.Monad
 --     Profile :: String -> m a -> Profiling m a
 -- :}
 --
--- >>> type instance DispatchOf Profiling = 'Dynamic
+-- >>> type instance DispatchOf Profiling = Dynamic
 --
 -- >>> :{
 --   profile :: (HasCallStack, Profiling :> es) => String -> Eff es a -> Eff es a
@@ -268,7 +268,7 @@ import Effectful.Internal.Monad
 
 -- | Interpret an effect.
 interpret
-  :: DispatchOf e ~ 'Dynamic
+  :: DispatchOf e ~ Dynamic
   => EffectHandler e es
   -- ^ The effect handler.
   -> Eff (e : es) a
@@ -279,7 +279,7 @@ interpret handler m = unsafeEff $ \es -> do
 
 -- | Interpret an effect using other effects.
 reinterpret
-  :: DispatchOf e ~ 'Dynamic
+  :: DispatchOf e ~ Dynamic
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> EffectHandler e handlerEs
@@ -389,7 +389,7 @@ withLiftMap !_ k = unsafeEff $ \es -> do
 -- >>> :{
 -- data Fork :: Effect where
 --   ForkWithUnmask :: ((forall a. m a -> m a) -> m ()) -> Fork m ThreadId
--- type instance DispatchOf Fork = 'Dynamic
+-- type instance DispatchOf Fork = Dynamic
 -- :}
 --
 -- >>> :{

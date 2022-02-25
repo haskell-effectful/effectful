@@ -41,7 +41,7 @@ data State s :: Effect where
   State  :: (s ->   (a, s)) -> State s m a
   StateM :: (s -> m (a, s)) -> State s m a
 
-type instance DispatchOf (State s) = 'Dynamic
+type instance DispatchOf (State s) = Dynamic
 
 ----------------------------------------
 -- Local

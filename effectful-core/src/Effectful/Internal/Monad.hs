@@ -260,7 +260,7 @@ instance C.MonadMask (Eff es) where
 data Fail :: Effect where
   Fail :: String -> Fail m a
 
-type instance DispatchOf Fail = 'Dynamic
+type instance DispatchOf Fail = Dynamic
 
 instance Fail :> es => MonadFail (Eff es) where
   fail = send . Fail
@@ -275,7 +275,7 @@ instance Fail :> es => MonadFail (Eff es) where
 -- effects.
 data IOE :: Effect
 
-type instance DispatchOf IOE = 'Static 'WithSideEffects
+type instance DispatchOf IOE = Static WithSideEffects
 newtype instance StaticRep IOE = IOE UnliftStrategy
 
 -- | Run an 'Eff' computation with side effects.
@@ -309,7 +309,7 @@ instance IOE :> es => MonadBaseControl IO (Eff es) where
 -- | Provide the ability to perform primitive state-transformer actions.
 data Prim :: Effect
 
-type instance DispatchOf Prim = 'Static 'WithSideEffects
+type instance DispatchOf Prim = Static WithSideEffects
 data instance StaticRep Prim = Prim
 
 -- | Run an 'Eff' computation with primitive state-transformer actions.
@@ -338,8 +338,8 @@ type family DispatchOf (e :: Effect) :: Dispatch
 
 -- | Internal representations of effects.
 type family EffectRep (d :: Dispatch) :: Effect -> Type where
-  EffectRep 'Dynamic    = Handler
-  EffectRep ('Static _) = StaticRep
+  EffectRep Dynamic    = Handler
+  EffectRep (Static _) = StaticRep
 
 ----------------------------------------
 -- Dynamic dispatch
@@ -370,7 +370,7 @@ data Handler :: Effect -> Type where
   Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
 
 -- | Run a dynamically dispatched effect with the given handler.
-runHandler :: DispatchOf e ~ 'Dynamic => Handler e -> Eff (e : es) a -> Eff es a
+runHandler :: DispatchOf e ~ Dynamic => Handler e -> Eff (e : es) a -> Eff es a
 runHandler e m = unsafeEff $ \es0 -> do
   size0 <- sizeEnv es0
   E.bracket (unsafeConsEnv e relinker es0)
@@ -383,7 +383,7 @@ runHandler e m = unsafeEff $ \es0 -> do
       pure $ Handler newHandlerEs handle
 
 -- | Send an operation of the given effect to its handler for execution.
-send :: (HasCallStack, DispatchOf e ~ 'Dynamic, e :> es) => e (Eff es) a -> Eff es a
+send :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es) => e (Eff es) a -> Eff es a
 send op = unsafeEff $ \es -> do
   Handler handlerEs handle <- getEnv es
   unEff (handle (LocalEnv es) op) handlerEs
@@ -403,7 +403,7 @@ data family StaticRep (e :: Effect) :: Type
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final value along with the final representation.
 runStaticRep
-  :: (DispatchOf e ~ 'Static sideEffects, MaybeIOE sideEffects es)
+  :: (DispatchOf e ~ Static sideEffects, MaybeIOE sideEffects es)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es (a, StaticRep e)
@@ -416,7 +416,7 @@ runStaticRep e0 m = unsafeEff $ \es0 -> do
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final value, discarding the final representation.
 evalStaticRep
-  :: (DispatchOf e ~ 'Static sideEffects, MaybeIOE sideEffects es)
+  :: (DispatchOf e ~ Static sideEffects, MaybeIOE sideEffects es)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es a
@@ -429,7 +429,7 @@ evalStaticRep e m = unsafeEff $ \es0 -> do
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final representation, discarding the final value.
 execStaticRep
-  :: (DispatchOf e ~ 'Static sideEffects, MaybeIOE sideEffects es)
+  :: (DispatchOf e ~ Static sideEffects, MaybeIOE sideEffects es)
   => StaticRep e -- ^ The initial representation.
   -> Eff (e : es) a
   -> Eff es (StaticRep e)
@@ -440,17 +440,17 @@ execStaticRep e0 m = unsafeEff $ \es0 -> do
             (\es -> unEff m es *> getEnv es)
 
 -- | Fetch the current representation of the effect.
-getStaticRep :: (DispatchOf e ~ 'Static sideEffects, e :> es) => Eff es (StaticRep e)
+getStaticRep :: (DispatchOf e ~ Static sideEffects, e :> es) => Eff es (StaticRep e)
 getStaticRep = unsafeEff $ \es -> getEnv es
 
 -- | Set the current representation of the effect to the given value.
-putStaticRep :: (DispatchOf e ~ 'Static sideEffects, e :> es) => StaticRep e -> Eff es ()
+putStaticRep :: (DispatchOf e ~ Static sideEffects, e :> es) => StaticRep e -> Eff es ()
 putStaticRep s = unsafeEff $ \es -> putEnv es s
 
 -- | Apply the function to the current representation of the effect and return a
 -- value.
 stateStaticRep
-  :: (DispatchOf e ~ 'Static sideEffects, e :> es)
+  :: (DispatchOf e ~ Static sideEffects, e :> es)
   => (StaticRep e -> (a, StaticRep e))
   -- ^ The function to modify the representation.
   -> Eff es a
@@ -459,7 +459,7 @@ stateStaticRep f = unsafeEff $ \es -> stateEnv es f
 -- | Apply the monadic function to the current representation of the effect and
 -- return a value.
 stateStaticRepM
-  :: (DispatchOf e ~ 'Static sideEffects, e :> es)
+  :: (DispatchOf e ~ Static sideEffects, e :> es)
   => (StaticRep e -> Eff es (a, StaticRep e))
   -- ^ The function to modify the representation.
   -> Eff es a
@@ -471,7 +471,7 @@ stateStaticRepM f = unsafeEff $ \es -> E.mask $ \release -> do
 -- | Execute a computation with a temporarily modified representation of the
 -- effect.
 localStaticRep
-  :: (DispatchOf e ~ 'Static sideEffects, e :> es)
+  :: (DispatchOf e ~ Static sideEffects, e :> es)
   => (StaticRep e -> StaticRep e)
   -- ^ The function to temporarily modify the representation.
   -> Eff es a

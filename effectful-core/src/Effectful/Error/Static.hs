@@ -118,10 +118,9 @@ runError
   -> Eff es (Either (CallStack, e) a)
 runError m = unsafeEff $ \es0 -> mask $ \release -> do
   eid <- newErrorId
-  size0 <- sizeEnv es0
-  es <- unsafeConsEnv (Error @e eid) dummyRelinker es0
-  r <- tryErrorIO release eid es `onException` unsafeTailEnv size0 es
-  unsafeTailEnv size0 es
+  es <- consEnv (Error @e eid) dummyRelinker es0
+  r <- tryErrorIO release eid es `onException` unconsEnv es
+  unconsEnv es
   pure r
   where
     tryErrorIO release eid es = try (release $ unEff m es) >>= \case
@@ -156,9 +155,8 @@ catchError
   -> Eff es a
 catchError m handler = unsafeEff $ \es -> do
   Error eid <- getEnv @(Error e) es
-  size <- sizeEnv es
   catchErrorIO eid (unEff m es) $ \cs e -> do
-    checkSizeEnv size es
+    checkSizeEnv es
     unEff (handler cs e) es
 
 -- | The same as @'flip' 'catchError'@, which is useful in situations where the

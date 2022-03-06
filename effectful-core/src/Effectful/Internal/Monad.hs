@@ -26,7 +26,10 @@ module Effectful.Internal.Monad
   , Prim
   , runPrim
 
-  -- * Unlift strategies
+  -- * Lifting
+  , raise
+
+  -- * Unlifting
   , UnliftStrategy(..)
   , Persistence(..)
   , Limit(..)
@@ -37,8 +40,6 @@ module Effectful.Internal.Monad
   -- ** Low-level unlifts
   , seqUnliftIO
   , concUnliftIO
-
-  -- * Effects
 
   -- * Dispatch
   , Dispatch(..)
@@ -66,7 +67,7 @@ module Effectful.Internal.Monad
   , localStaticRep
 
   -- *** Primitive operations
-  , unsafeConsEnv
+  , consEnv
   , getEnv
   , putEnv
   , stateEnv
@@ -166,12 +167,12 @@ withUnliftStrategy unlift = localStaticRep $ \_ -> IOE unlift
 -- This function is equivalent to 'Effectful.withRunInIO', but has a
 -- 'HasCallStack' constraint for accurate stack traces in case an insufficiently
 -- powerful 'UnliftStrategy' is used and the unlifting function fails.
---
--- /Note:/ the strategy is reset to 'SeqUnlift' inside the continuation.
 withEffToIO
   :: (HasCallStack, IOE :> es)
   => ((forall r. Eff es r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
+  --
+  -- /Note:/ the strategy is reset to 'SeqUnlift' inside the continuation.
   -> Eff es a
 withEffToIO f = unliftStrategy >>= \case
   SeqUnlift -> unsafeEff $ \es -> seqUnliftIO es f
@@ -231,9 +232,8 @@ instance C.MonadThrow (Eff es) where
 
 instance C.MonadCatch (Eff es) where
   catch m handler = unsafeEff $ \es -> do
-    size <- sizeEnv es
     unEff m es `E.catch` \e -> do
-      checkSizeEnv size es
+      checkSizeEnv es
       unEff (handler e) es
 
 instance C.MonadMask (Eff es) where
@@ -244,10 +244,9 @@ instance C.MonadMask (Eff es) where
     unEff (k $ \m -> unsafeEff $ unmask . unEff m) es
 
   generalBracket acquire release use = unsafeEff $ \es -> E.mask $ \unmask -> do
-    size <- sizeEnv es
     resource <- unEff acquire es
     b <- unmask (unEff (use resource) es) `E.catch` \e -> do
-      checkSizeEnv size es
+      checkSizeEnv es
       _ <- unEff (release resource $ C.ExitCaseException e) es
       E.throwIO e
     c <- unEff (release resource $ C.ExitCaseSuccess b) es
@@ -282,7 +281,7 @@ newtype instance StaticRep IOE = IOE UnliftStrategy
 --
 -- For running pure computations see 'runPureEff'.
 runEff :: Eff '[IOE] a -> IO a
-runEff m = unEff m =<< unsafeConsEnv (IOE SeqUnlift) dummyRelinker =<< emptyEnv
+runEff m = unEff m =<< consEnv (IOE SeqUnlift) dummyRelinker =<< emptyEnv
 
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
@@ -319,6 +318,13 @@ runPrim = evalStaticRep Prim
 instance Prim :> es => PrimMonad (Eff es) where
   type PrimState (Eff es) = RealWorld
   primitive = unsafeEff_ . IO
+
+----------------------------------------
+-- Lifting
+
+-- | Lift an 'Eff' computation into an effect stack with one more effect.
+raise :: Eff es a -> Eff (e : es) a
+raise m = unsafeEff $ \es -> unEff m =<< tailEnv es
 
 ----------------------------------------
 -- Dispatch
@@ -372,9 +378,8 @@ data Handler :: Effect -> Type where
 -- | Run a dynamically dispatched effect with the given handler.
 runHandler :: DispatchOf e ~ Dynamic => Handler e -> Eff (e : es) a -> Eff es a
 runHandler e m = unsafeEff $ \es0 -> do
-  size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e relinker es0)
-            (unsafeTailEnv size0)
+  E.bracket (consEnv e relinker es0)
+            unconsEnv
             (\es -> unEff m es)
   where
     relinker :: Relinker Handler e
@@ -408,9 +413,8 @@ runStaticRep
   -> Eff (e : es) a
   -> Eff es (a, StaticRep e)
 runStaticRep e0 m = unsafeEff $ \es0 -> do
-  size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e0 dummyRelinker es0)
-            (unsafeTailEnv size0)
+  E.bracket (consEnv e0 dummyRelinker es0)
+            unconsEnv
             (\es -> (,) <$> unEff m es <*> getEnv es)
 
 -- | Run a statically dispatched effect with the given initial representation
@@ -421,9 +425,8 @@ evalStaticRep
   -> Eff (e : es) a
   -> Eff es a
 evalStaticRep e m = unsafeEff $ \es0 -> do
-  size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e dummyRelinker es0)
-            (unsafeTailEnv size0)
+  E.bracket (consEnv e dummyRelinker es0)
+            unconsEnv
             (\es -> unEff m es)
 
 -- | Run a statically dispatched effect with the given initial representation
@@ -434,9 +437,8 @@ execStaticRep
   -> Eff (e : es) a
   -> Eff es (StaticRep e)
 execStaticRep e0 m = unsafeEff $ \es0 -> do
-  size0 <- sizeEnv es0
-  E.bracket (unsafeConsEnv e0 dummyRelinker es0)
-            (unsafeTailEnv size0)
+  E.bracket (consEnv e0 dummyRelinker es0)
+            unconsEnv
             (\es -> unEff m es *> getEnv es)
 
 -- | Fetch the current representation of the effect.
@@ -485,19 +487,13 @@ localStaticRep f m = unsafeEff $ \es -> do
 -- Safer interface for Env
 
 -- | Extend the environment with a new effect (in place).
---
--- This function is __highly unsafe__ because it renders the input 'Env'
--- unusable until the corresponding 'unsafeTailEnv' call is made, but it's not
--- checked anywhere.
---
--- __If you disregard the above, segmentation faults await.__
-unsafeConsEnv
+consEnv
   :: EffectRep (DispatchOf e) e
   -- ^ The representation of the effect.
   -> Relinker (EffectRep (DispatchOf e)) e
   -> Env es
   -> IO (Env (e : es))
-unsafeConsEnv = reallyUnsafeConsEnv
+consEnv = unsafeConsEnv
 
 -- | Extract a specific representation of the effect from the environment.
 getEnv :: e :> es => Env es -> IO (EffectRep (DispatchOf e) e)

@@ -40,15 +40,14 @@ newtype instance StaticRep Resource = Resource R.InternalState
 -- | Run the resource effect.
 runResource :: IOE :> es => Eff (Resource : es) a -> Eff es a
 runResource m = unsafeEff $ \es0 -> do
-  size0 <- sizeEnv es0
   istate <- R.createInternalState
   mask $ \unmask -> do
-    es <- unsafeConsEnv (Resource istate) dummyRelinker es0
+    es <- consEnv (Resource istate) dummyRelinker es0
     a <- unmask (unEff m es) `catch` \e -> do
-      unsafeTailEnv size0 es
+      unconsEnv es
       RI.stateCleanupChecked (Just e) istate
       throwIO e
-    unsafeTailEnv size0 es
+    unconsEnv es
     RI.stateCleanupChecked Nothing istate
     pure a
 

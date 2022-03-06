@@ -18,8 +18,8 @@ module Effectful.Dispatch.Static.Primitive
   , EffectRep
 
     -- ** Extending and shrinking
-  , unsafeConsEnv
-  , unsafeTailEnv
+  , consEnv
+  , unconsEnv
 
     -- ** Data retrieval and update
   , getEnv
@@ -33,6 +33,7 @@ module Effectful.Dispatch.Static.Primitive
   , forkEnv
   , sizeEnv
   , checkSizeEnv
+  , tailEnv
   ) where
 
 import Effectful.Internal.Env

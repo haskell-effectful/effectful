@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE MagicHash #-}
 {-# LANGUAGE UnliftedFFITypes #-}
+{-# OPTIONS_HADDOCK not-home #-}
 module Effectful.Internal.Utils
   ( weakThreadId
   , eqThreadId

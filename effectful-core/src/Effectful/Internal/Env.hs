@@ -27,10 +27,11 @@ module Effectful.Internal.Env
   , forkEnv
   , sizeEnv
   , checkSizeEnv
+  , tailEnv
 
     -- ** Extending and shrinking
-  , reallyUnsafeConsEnv
-  , unsafeTailEnv
+  , unsafeConsEnv
+  , unconsEnv
 
     -- ** Data retrieval and update
   , unsafeGetEnv
@@ -127,9 +128,10 @@ type role Env nominal
 -- - Handler of @e11@ sees @[e00][e02, e03][e12]@.
 --
 data Env (es :: [Effect]) = Env
-  { _forks     :: !Forks
-  , _globalRef :: !(IORef EnvRef)
-  , _forkIdGen :: !ForkIdGen
+  { envForks     :: !Forks
+  , envSize      :: !Int
+  , envGlobalRef :: !(IORef EnvRef)
+  , envForkIdGen :: !ForkIdGen
   }
 
 -- | Local forks of the environment.
@@ -137,9 +139,9 @@ data Forks = Forks !ForkId !Int !(IORef EnvRef) Forks | NoFork
 
 -- | Data held in the environment.
 data EnvRef = EnvRef
-  { _size      :: !Int
-  , _data      :: !(SmallMutableArray RealWorld Any)
-  , _relinkers :: !(SmallMutableArray RealWorld Any)
+  { refSize      :: !Int
+  , refValues    :: !(SmallMutableArray RealWorld Any)
+  , refRelinkers :: !(SmallMutableArray RealWorld Any)
   }
 
 ----------------------------------------
@@ -185,36 +187,34 @@ dummyRelinker = Relinker $ \_ -> pure
 
 -- | Create an empty environment.
 emptyEnv :: IO (Env '[])
-emptyEnv = Env NoFork <$> emptyEnvRef <*> newForkIdGen
+emptyEnv = Env NoFork 0 <$> emptyEnvRef <*> newForkIdGen
 
 -- | Clone the environment.
 --
 -- Mostly used to pass the environment to a different thread.
 cloneEnv :: Env es -> IO (Env es)
-cloneEnv (Env NoFork gref0 gen0) = do
-  EnvRef n es0 fs0 <- readIORef gref0
-  es  <- cloneSmallMutableArray es0 0 (sizeofSmallMutableArray es0)
-  fs  <- cloneSmallMutableArray fs0 0 (sizeofSmallMutableArray fs0)
-  gen <- cloneForkIdGen gen0
-  gref <- newIORef $ EnvRef n es fs
-  store <- newIORef IM.empty
-  relinkData gref gen store es fs n
-  pure $ Env NoFork gref gen
-cloneEnv (Env forks@(Forks _ baseIx lref0 _) gref0 gen0) = do
+cloneEnv (Env NoFork size gref0 gen0) = do
   EnvRef _ es0 fs0 <- readIORef gref0
-  EnvRef n _   _   <- readIORef lref0
-  let len = baseIx + n
-  es  <- newSmallArray len undefinedData
-  fs  <- newSmallArray len undefinedData
-  baseN <- copyForks es fs len forks
+  es  <- cloneSmallMutableArray es0 0 size
+  fs  <- cloneSmallMutableArray fs0 0 size
+  gen <- cloneForkIdGen gen0
+  gref <- newIORef $ EnvRef size es fs
+  store <- newIORef IM.empty
+  relinkData gref gen store es fs size
+  pure $ Env NoFork size gref gen
+cloneEnv (Env forks size gref0 gen0) = do
+  EnvRef _ es0 fs0 <- readIORef gref0
+  es  <- newSmallArray size undefinedData
+  fs  <- newSmallArray size undefinedData
+  baseN <- copyForks es fs size forks
   copySmallMutableArray es 0 es0 0 baseN
   copySmallMutableArray fs 0 fs0 0 baseN
   gen <- cloneForkIdGen gen0
-  gref <- newIORef $ EnvRef len es fs
+  gref <- newIORef $ EnvRef size es fs
   store <- newIORef IM.empty
-  relinkData gref gen store es fs n
+  relinkData gref gen store es fs size
   -- The forked environment is flattened and becomes the global one.
-  pure $ Env NoFork gref gen
+  pure $ Env NoFork size gref gen
 {-# NOINLINE cloneEnv #-}
 
 ----------------------------------------
@@ -233,19 +233,19 @@ cloneEnv (Env forks@(Forks _ baseIx lref0 _) gref0 gen0) = do
 --
 -- and elements [0,1] are taken from the global environment ([0,1,..]).
 --
--- We start with len: 12, we subtract baseIx: 10 and get n: 2, the number of
+-- We start with size: 12, we subtract baseIx: 10 and get n: 2, the number of
 -- elements to copy from the fork. We copy them, then call recursively with
 -- baseIx (10).
 --
--- Then len: 10, we subtract baseIx: 6 and get n: 4. the number of elements to
+-- Then size: 10, we subtract baseIx: 6 and get n: 4. the number of elements to
 -- copy from the fork (note that we can't use the capacity from EnvRef, because
 -- it might be longer than 4 if the fork was locally extended). We copy them,
 -- then call recursively with baseIx (6).
 --
--- Then len: 6, we subtract baseIx: 2 and get n: 4. We copy the elements, then
+-- Then size: 6, we subtract baseIx: 2 and get n: 4. We copy the elements, then
 -- call recursively with baseIx (2).
 --
--- Now len: 2, but there are no more forks left, so we return len (2), the
+-- Now size: 2, but there are no more forks left, so we return size (2), the
 -- number of elements to copy from the global environment.
 copyForks
   :: SmallMutableArray RealWorld Any
@@ -253,11 +253,11 @@ copyForks
   -> Int
   -> Forks
   -> IO Int
-copyForks es fs len = \case
-  NoFork -> pure len
+copyForks es fs size = \case
+  NoFork -> pure size
   Forks _ baseIx lref0 forks -> do
     EnvRef _ es0 fs0 <- readIORef lref0
-    let n = len - baseIx
+    let n = size - baseIx
     copySmallMutableArray es baseIx es0 0 n
     copySmallMutableArray fs baseIx fs0 0 n
     copyForks es fs baseIx forks
@@ -284,9 +284,11 @@ relinkData gref gen store es fs = \case
     relinkData gref gen store es fs i
   where
     relinkEnv :: Env es -> IO (Env es)
-    relinkEnv (Env forks _ _) = Env <$> relinkForks gref gen store forks
-                                    <*> pure gref
-                                    <*> pure gen
+    relinkEnv (Env forks size _ _) = Env
+      <$> relinkForks gref gen store forks
+      <*> pure size
+      <*> pure gref
+      <*> pure gen
 
 relinkForks :: IORef EnvRef -> ForkIdGen -> EnvRefStore -> Forks -> IO Forks
 relinkForks gref gen store = \case
@@ -322,65 +324,54 @@ cloneEnvRef gref gen store fid lref0 = do
 
 -- | Create a local fork of the environment for handlers.
 forkEnv :: Env es -> IO (Env es)
-forkEnv env@(Env NoFork gref gen) = do
-  size <- sizeEnv env
+forkEnv (Env NoFork size gref gen) = do
   fid <- newForkId gen
   Env <$> (Forks fid size <$> emptyEnvRef <*> pure NoFork)
-      <*> pure gref <*> pure gen
-forkEnv (Env forks@(Forks _ baseIx lref0 olderForks) gref gen) = do
+      <*> pure size <*> pure gref <*> pure gen
+forkEnv (Env forks@(Forks _ baseIx lref0 olderForks) size gref gen) = do
   fid <- newForkId gen
   lref <- emptyEnvRef
-  (_size <$> readIORef lref0) >>= \case
+  (refSize <$> readIORef lref0) >>= \case
     -- If the fork is empty, replace it as no data is lost.
-    0 -> pure $ Env (Forks fid baseIx lref olderForks) gref gen
-    _ -> pure $ Env (Forks fid baseIx lref forks)      gref gen
+    0 -> pure $ Env (Forks fid baseIx lref olderForks) size gref gen
+    _ -> pure $ Env (Forks fid baseIx lref forks)      size gref gen
 {-# NOINLINE forkEnv #-}
 
 -- | Get the current size of the environment.
 sizeEnv :: Env es -> IO Int
-sizeEnv (Env NoFork ref _) = do
-  EnvRef n _ _ <- readIORef ref
-  pure n
-sizeEnv (Env (Forks _ baseIx lref _) _ _) = do
-  EnvRef n _ _ <- readIORef lref
-  pure $ baseIx + n
-{-# NOINLINE sizeEnv #-}
+sizeEnv env = pure $ envSize env
 
 -- | Check that the size of the environment is the same as the expected value.
-checkSizeEnv :: Int -> Env es -> IO ()
-checkSizeEnv k (Env NoFork ref _) = do
+checkSizeEnv :: Env es -> IO ()
+checkSizeEnv (Env NoFork size ref _) = do
   EnvRef n _ _ <- readIORef ref
-  when (k /= n) $ do
-    error $ "k (" ++ show k ++ ") /= n (" ++ show n ++ ")"
-checkSizeEnv k (Env (Forks _ baseIx lref _) _ _) = do
+  when (size /= n) $ do
+    error $ "size (" ++ show size ++ ") /= n (" ++ show n ++ ")"
+checkSizeEnv (Env (Forks _ baseIx lref _) size _ _) = do
   EnvRef n _ _ <- readIORef lref
-  when (k /= baseIx + n) $ do
-    error $ "k (" ++ show k ++ ") /= baseIx + n (baseIx: "
+  when (size /= baseIx + n) $ do
+    error $ "size (" ++ show size ++ ") /= baseIx + n (baseIx: "
          ++ show baseIx ++ ", n: " ++ show n ++ ")"
-{-# NOINLINE checkSizeEnv #-}
+
+-- | Access the tail of the environment.
+tailEnv :: Env (e : es) -> IO (Env es)
+tailEnv env = pure $ env { envSize = envSize env - 1 }
 
 ----------------------------------------
 -- Extending and shrinking
 
 -- | Extend the environment with a new data type (in place).
 --
--- This function is __highly unsafe__ because:
---
--- - The @rep@ type variable is unrestricted, so it's possible to put in a
---   different data type than the one retrieved later.
---
--- - It renders the input 'Env' __unusable__ until the corresponding
---   'unsafeTailEnv' call is made, but it's not checked anywhere.
---
--- __If you disregard the above, segmentation faults await.__
-reallyUnsafeConsEnv :: rep e -> Relinker rep e -> Env es -> IO (Env (e : es))
-reallyUnsafeConsEnv e f (Env fork gref gen) = case fork of
+-- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
+-- to retrieve a different data type than the one put in.
+unsafeConsEnv :: rep e -> Relinker rep e -> Env es -> IO (Env (e : es))
+unsafeConsEnv e f (Env fork size gref gen) = case fork of
   NoFork -> do
     extendEnvRef gref
-    pure $ Env NoFork gref gen
+    pure $ Env NoFork (size + 1) gref gen
   Forks _ _ lref _ -> do
     extendEnvRef lref
-    pure $ Env fork gref gen
+    pure $ Env fork (size + 1) gref gen
   where
     extendEnvRef :: IORef EnvRef -> IO ()
     extendEnvRef ref = do
@@ -404,19 +395,13 @@ reallyUnsafeConsEnv e f (Env fork gref gen) = case fork of
 
     doubleCapacity :: Int -> Int
     doubleCapacity n = max 1 n * 2
-{-# NOINLINE reallyUnsafeConsEnv #-}
+{-# NOINLINE unsafeConsEnv #-}
 
--- | Shrink the environment by one data type (in place). Makes sure the size of
--- the environment is as expected.
---
--- This function is __highly unsafe__ because it renders the input 'Env'
--- __unusable__, but it's not checked anywhere.
---
--- __If you disregard the above, segmentation faults await.__
-unsafeTailEnv :: Int -> Env (e : es) -> IO ()
-unsafeTailEnv len (Env fork gref _) = case fork of
-  NoFork                -> shrinkEnvRef len gref
-  Forks _ baseIx lref _ -> shrinkEnvRef (len - baseIx) lref
+-- | Shrink the environment by one data type (in place).
+unconsEnv :: Env (e : es) -> IO ()
+unconsEnv (Env fork size gref _) = case fork of
+  NoFork                -> shrinkEnvRef (size - 1)          gref
+  Forks _ baseIx lref _ -> shrinkEnvRef (size - 1 - baseIx) lref
   where
     shrinkEnvRef :: Int -> IORef EnvRef -> IO ()
     shrinkEnvRef k ref = do
@@ -427,7 +412,7 @@ unsafeTailEnv len (Env fork gref _) = case fork of
           writeSmallArray es k undefinedData
           writeSmallArray fs k undefinedData
           writeIORef ref $! EnvRef k es fs
-{-# NOINLINE unsafeTailEnv #-}
+{-# NOINLINE unconsEnv #-}
 
 ----------------------------------------
 -- Data retrieval and update
@@ -435,7 +420,7 @@ unsafeTailEnv len (Env fork gref _) = case fork of
 -- | Extract a specific data type from the environment.
 --
 -- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
--- to retrieve a different data type that was put in.
+-- to retrieve a different data type than the one put in.
 --
 -- For a safe variant see 'Effectful.Dispatch.Static.getEnv'.
 unsafeGetEnv
@@ -449,7 +434,7 @@ unsafeGetEnv env = do
 -- | Replace the data type in the environment with a new value (in place).
 --
 -- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
--- to retrieve a different data type that was put in.
+-- to retrieve a different data type than the one put in.
 --
 -- For a safe variant see 'Effectful.Dispatch.Static.putEnv'.
 unsafePutEnv
@@ -464,7 +449,7 @@ unsafePutEnv env e = do
 -- | Modify the data type in the environment (in place) and return a value.
 --
 -- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
--- to retrieve a different data type that was put in.
+-- to retrieve a different data type than the one put in.
 --
 -- For a safe variant see 'Effectful.Dispatch.Static.stateEnv'.
 unsafeStateEnv
@@ -481,7 +466,7 @@ unsafeStateEnv env f = do
 -- | Modify the data type in the environment (in place).
 --
 -- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
--- to retrieve a different data type that was put in.
+-- to retrieve a different data type than the one put in.
 --
 -- For a safe variant see 'Effectful.Dispatch.Static.modifyEnv'.
 unsafeModifyEnv
@@ -515,8 +500,9 @@ getLocation
   :: Int
   -> Env es
   -> IO Location
-getLocation ixE (Env fork ref _) = do
-  EnvRef n es@(SmallMutableArray es#) _ <- readIORef ref
+getLocation ix (Env fork size ref _) = do
+  let i = size - ix - 1
+  EnvRef _ es@(SmallMutableArray es#) _ <- readIORef ref
   -- Optimized for the common access pattern:
   --
   -- - Most application code has no access to forks, in which case we look at
@@ -525,10 +511,9 @@ getLocation ixE (Env fork ref _) = do
   -- - Effect handlers will most likely access the newest fork with handler
   --   specific effects for reinterpretation.
   case fork of
-    NoFork -> pure $ Location (ix n) es
+    NoFork -> pure $ Location i es
     Forks _ baseIx lref forks -> do
-      EnvRef ln les _ <- readIORef lref
-      let i = ix (baseIx + ln)
+      EnvRef _ les _ <- readIORef lref
       if i >= baseIx
         then pure $ Location (i - baseIx) les
         else go es# i forks
@@ -544,6 +529,3 @@ getLocation ixE (Env fork ref _) = do
         if i >= baseIx
           then pure $ Location (i - baseIx) les
           else go es# i forks
-
-    ix :: Int -> Int
-    ix n = n - ixE - 1

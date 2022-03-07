@@ -442,8 +442,8 @@ stateStaticRepM
   => (StaticRep e -> Eff es (a, StaticRep e))
   -- ^ The function to modify the representation.
   -> Eff es a
-stateStaticRepM f = unsafeEff $ \es -> E.mask $ \release -> do
-  (a, s) <- (\s0 -> release $ unEff (f s0) es) =<< getEnv es
+stateStaticRepM f = unsafeEff $ \es -> E.mask $ \unmask -> do
+  (a, s) <- (\s0 -> unmask $ unEff (f s0) es) =<< getEnv es
   putEnv es s
   pure a
 

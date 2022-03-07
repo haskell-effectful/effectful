@@ -116,14 +116,14 @@ runError
   :: forall e es a
   .  Eff (Error e : es) a
   -> Eff es (Either (CallStack, e) a)
-runError m = unsafeEff $ \es0 -> mask $ \release -> do
+runError m = unsafeEff $ \es0 -> mask $ \unmask -> do
   eid <- newErrorId
   es <- consEnv (Error @e eid) dummyRelinker es0
-  r <- tryErrorIO release eid es `onException` unconsEnv es
+  r <- tryErrorIO unmask eid es `onException` unconsEnv es
   unconsEnv es
   pure r
   where
-    tryErrorIO release eid es = try (release $ unEff m es) >>= \case
+    tryErrorIO unmask eid es = try (unmask $ unEff m es) >>= \case
       Right a -> pure $ Right a
       Left ex -> tryHandler ex eid (\cs e -> Left (cs, e))
                $ throwIO ex

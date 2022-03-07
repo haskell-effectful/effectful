@@ -21,8 +21,6 @@ module Effectful
   , runEff
   , IOE
 
-    -- * Manipulating 'Eff' computations
-
     -- ** Lifting
   , raise
 

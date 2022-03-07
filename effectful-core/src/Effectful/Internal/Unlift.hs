@@ -40,9 +40,9 @@ import Effectful.Internal.Utils
 -- 'Effectful.Dispatch.Dynamic.localUnlift' family.
 data UnliftStrategy
   = SeqUnlift
-  -- ^ The fastest strategy and a default setting for 'IOE'. An attempt to call
-  -- the unlifting function in threads distinct from its creator will result in
-  -- a runtime error.
+  -- ^ The fastest strategy and a default setting for 'Effectful.IOE'. An
+  -- attempt to call the unlifting function in threads distinct from its creator
+  -- will result in a runtime error.
   | ConcUnlift !Persistence !Limit
   -- ^ A strategy that makes it possible for the unlifting function to be called
   -- in threads distinct from its creator. See 'Persistence' and 'Limit'

@@ -15,10 +15,9 @@ with the existing Haskell ecosystem.
 
 Main features:
 
-1. Very fast (benchmark results with GHC 8.8.4:
-   [countdown](https://rybczak.net/files/effectful/countdown.html),
-   [filesize](https://rybczak.net/files/effectful/filesize.html), [comparison
-   with eff](https://rybczak.net/files/effectful/eff_comparison.html)).
+1. Very fast (benchmark results with GHC 9.0.2:
+   [countdown](https://raw.githubusercontent.com/haskell-effectful/effectful/master/benchmarks/bench_countdown_1000.png),
+   [filesize](https://raw.githubusercontent.com/haskell-effectful/effectful/master/benchmarks/bench_filesize_1000.png)).
 
 2. Easy to use API (no boilerplate code and dealing with arcane types).
 

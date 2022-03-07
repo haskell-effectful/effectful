@@ -284,13 +284,19 @@ copyForks es fs size = \case
   Forks _ baseIx lref0 forks -> do
     EnvRef _ es0 fs0 <- readIORef lref0
     let n = size - baseIx
-    copySmallMutableArray es baseIx es0 0 n
-    copySmallMutableArray fs baseIx fs0 0 n
-    copyForks es fs baseIx forks
+    -- It might happen that the environment was over-tailed and the size is now
+    -- less than the baseIx of the fork. In such case we simply try our luck
+    -- with the older fork.
+    if n <= 0
+      then copyForks es fs size forks
+      else do
+        copySmallMutableArray es baseIx es0 0 n
+        copySmallMutableArray fs baseIx fs0 0 n
+        copyForks es fs baseIx forks
 
 type EnvRefStore = IORef (IM.IntMap (IORef EnvRef))
 
--- | Relink local environments hiding in the handler.
+-- | Relink local environments hiding in the handlers.
 relinkData
   :: (forall es. Env es -> IO (Env es))
   -> SmallMutableArray RealWorld Any
@@ -307,7 +313,7 @@ relinkData relink es fs = \case
       >>= writeSmallArray es i . toAny
     relinkData relink es fs i
 
--- | Relink local environments hiding in the handler.
+-- | Relink local environments hiding in the handlers.
 relinkEnv :: IORef EnvRef -> ForkIdGen -> EnvRefStore -> Env es -> IO (Env es)
 relinkEnv gref gen store (Env forks size _ _) = Env
   <$> relinkForks forks

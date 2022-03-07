@@ -42,10 +42,6 @@ module Effectful.Internal.Monad
   , concUnliftIO
 
   -- * Dispatch
-  , Dispatch(..)
-  , SideEffects(..)
-  , DispatchOf
-  , EffectRep
 
   -- ** Dynamic dispatch
   , EffectHandler
@@ -327,27 +323,6 @@ raise :: Eff es a -> Eff (e : es) a
 raise m = unsafeEff $ \es -> unEff m =<< tailEnv es
 
 ----------------------------------------
--- Dispatch
-
--- | Signifies whether core operations of a statically dispatched effect perform
--- side effects. If an effect is marked as such, the 'runStaticRep' family of
--- functions will require the 'IOE' effect to be in context via the 'MaybeIOE'
--- type family.
-data SideEffects = NoSideEffects | WithSideEffects
-
--- | A type of dispatch. For more information consult the documentation in
--- "Effectful.Dispatch.Dynamic" and "Effectful.Dispatch.Static".
-data Dispatch = Dynamic | Static SideEffects
-
--- | Dispatch types of effects.
-type family DispatchOf (e :: Effect) :: Dispatch
-
--- | Internal representations of effects.
-type family EffectRep (d :: Dispatch) :: Effect -> Type where
-  EffectRep Dynamic    = Handler
-  EffectRep (Static _) = StaticRep
-
-----------------------------------------
 -- Dynamic dispatch
 
 type role LocalEnv nominal nominal
@@ -374,6 +349,7 @@ type EffectHandler e es
 -- effect handler bundled with its environment.
 data Handler :: Effect -> Type where
   Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
+type instance EffectRep Dynamic = Handler
 
 -- | Run a dynamically dispatched effect with the given handler.
 runHandler :: DispatchOf e ~ Dynamic => Handler e -> Eff (e : es) a -> Eff es a
@@ -399,11 +375,12 @@ send op = unsafeEff $ \es -> do
 -- | Require the 'IOE' effect for running statically dispatched effects whose
 -- operations perform side effects.
 type family MaybeIOE (sideEffects :: SideEffects) (es :: [Effect]) :: Constraint where
-  MaybeIOE 'NoSideEffects   _  = ()
-  MaybeIOE 'WithSideEffects es = IOE :> es
+  MaybeIOE NoSideEffects   _  = ()
+  MaybeIOE WithSideEffects es = IOE :> es
 
 -- | Internal representations of statically dispatched effects.
 data family StaticRep (e :: Effect) :: Type
+type instance EffectRep (Static sideEffects) = StaticRep
 
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final value along with the final representation.
@@ -482,43 +459,3 @@ localStaticRep f m = unsafeEff $ \es -> do
   E.bracket (stateEnv es $ \s -> (s, f s))
             (\s -> putEnv es s)
             (\_ -> unEff m es)
-
-----------------------------------------
--- Safer interface for Env
-
--- | Extend the environment with a new effect (in place).
-consEnv
-  :: EffectRep (DispatchOf e) e
-  -- ^ The representation of the effect.
-  -> Relinker (EffectRep (DispatchOf e)) e
-  -> Env es
-  -> IO (Env (e : es))
-consEnv = unsafeConsEnv
-
--- | Extract a specific representation of the effect from the environment.
-getEnv :: e :> es => Env es -> IO (EffectRep (DispatchOf e) e)
-getEnv = unsafeGetEnv
-
--- | Replace the representation of the effect in the environment with a new
--- value (in place).
-putEnv :: e :> es => Env es -> EffectRep (DispatchOf e) e -> IO ()
-putEnv = unsafePutEnv
-
--- | Modify the representation of the effect in the environment (in place) and
--- return a value.
-stateEnv
-  :: e :> es
-  => Env es
-  -> (EffectRep (DispatchOf e) e -> (a, EffectRep (DispatchOf e) e))
-  -- ^ The function to modify the representation.
-  -> IO a
-stateEnv = unsafeStateEnv
-
--- | Modify the representation of the effect in the environment (in place).
-modifyEnv
-  :: e :> es
-  => Env es
-  -> (EffectRep (DispatchOf e) e -> EffectRep (DispatchOf e) e)
-  -- ^ The function to modify the representation.
-  -> IO ()
-modifyEnv = unsafeModifyEnv

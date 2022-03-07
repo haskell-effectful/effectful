@@ -37,4 +37,3 @@ module Effectful.Dispatch.Static.Primitive
   ) where
 
 import Effectful.Internal.Env
-import Effectful.Internal.Monad

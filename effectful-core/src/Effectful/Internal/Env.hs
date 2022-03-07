@@ -21,6 +21,12 @@ module Effectful.Internal.Env
   , Relinker(..)
   , dummyRelinker
 
+    -- * Dispatch
+  , Dispatch(..)
+  , SideEffects(..)
+  , DispatchOf
+  , EffectRep
+
     -- * Operations
   , emptyEnv
   , cloneEnv
@@ -30,14 +36,14 @@ module Effectful.Internal.Env
   , tailEnv
 
     -- ** Extending and shrinking
-  , unsafeConsEnv
+  , consEnv
   , unconsEnv
 
     -- ** Data retrieval and update
-  , unsafeGetEnv
-  , unsafePutEnv
-  , unsafeStateEnv
-  , unsafeModifyEnv
+  , getEnv
+  , putEnv
+  , stateEnv
+  , modifyEnv
   ) where
 
 import Control.Monad
@@ -181,6 +187,26 @@ newtype Relinker :: (Effect -> Type) -> Effect -> Type where
 -- | A dummy 'Relinker'.
 dummyRelinker :: Relinker rep e
 dummyRelinker = Relinker $ \_ -> pure
+
+----------------------------------------
+-- Dispatch
+
+-- | A type of dispatch. For more information consult the documentation in
+-- "Effectful.Dispatch.Dynamic" and "Effectful.Dispatch.Static".
+data Dispatch = Dynamic | Static SideEffects
+
+-- | Signifies whether core operations of a statically dispatched effect perform
+-- side effects. If an effect is marked as such, the
+-- 'Effectful.Dispatch.Static.runStaticRep' family of functions will require the
+-- 'Effectful.IOE' effect to be in context via the
+-- 'Effectful.Dispatch.Static.MaybeIOE' type family.
+data SideEffects = NoSideEffects | WithSideEffects
+
+-- | Dispatch types of effects.
+type family DispatchOf (e :: Effect) :: Dispatch
+
+-- | Internal representations of effects.
+type family EffectRep (d :: Dispatch) :: Effect -> Type
 
 ----------------------------------------
 -- Operations
@@ -355,11 +381,13 @@ tailEnv env = pure $ env { envSize = envSize env - 1 }
 -- Extending and shrinking
 
 -- | Extend the environment with a new data type (in place).
---
--- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
--- to retrieve a different data type than the one put in.
-unsafeConsEnv :: rep e -> Relinker rep e -> Env es -> IO (Env (e : es))
-unsafeConsEnv e f (Env fork size gref gen) = case fork of
+consEnv
+  :: EffectRep (DispatchOf e) e
+  -- ^ The representation of the effect.
+  -> Relinker (EffectRep (DispatchOf e)) e
+  -> Env es
+  -> IO (Env (e : es))
+consEnv e f (Env fork size gref gen) = case fork of
   NoFork -> do
     extendEnvRef gref
     pure $ Env NoFork (size + 1) gref gen
@@ -389,7 +417,7 @@ unsafeConsEnv e f (Env fork size gref gen) = case fork of
 
     doubleCapacity :: Int -> Int
     doubleCapacity n = max 1 n * 2
-{-# NOINLINE unsafeConsEnv #-}
+{-# NOINLINE consEnv #-}
 
 -- | Shrink the environment by one data type (in place).
 unconsEnv :: Env (e : es) -> IO ()
@@ -412,63 +440,43 @@ unconsEnv (Env fork size gref _) = case fork of
 -- Data retrieval and update
 
 -- | Extract a specific data type from the environment.
---
--- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
--- to retrieve a different data type than the one put in.
---
--- For a safe variant see 'Effectful.Dispatch.Static.getEnv'.
-unsafeGetEnv
-  :: forall e rep es. e :> es
+getEnv
+  :: forall e es. e :> es
   => Env es
-  -> IO (rep e)
-unsafeGetEnv env = do
+  -> IO (EffectRep (DispatchOf e) e)
+getEnv env = do
   Location i es <- getLocation (reifyIndex @e @es) env
   fromAny <$> readSmallArray es i
 
 -- | Replace the data type in the environment with a new value (in place).
---
--- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
--- to retrieve a different data type than the one put in.
---
--- For a safe variant see 'Effectful.Dispatch.Static.putEnv'.
-unsafePutEnv
-  :: forall e rep es. e :> es
+putEnv
+  :: forall e es. e :> es
   => Env es
-  -> rep e
+  -> EffectRep (DispatchOf e) e
   -> IO ()
-unsafePutEnv env e = do
+putEnv env e = do
   Location i es <- getLocation (reifyIndex @e @es) env
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place) and return a value.
---
--- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
--- to retrieve a different data type than the one put in.
---
--- For a safe variant see 'Effectful.Dispatch.Static.stateEnv'.
-unsafeStateEnv
-  :: forall e rep es a. e :> es
+stateEnv
+  :: forall e es a. e :> es
   => Env es
-  -> (rep e -> (a, rep e))
+  -> (EffectRep (DispatchOf e) e -> (a, EffectRep (DispatchOf e) e))
   -> IO a
-unsafeStateEnv env f = do
+stateEnv env f = do
   Location i es <- getLocation (reifyIndex @e @es) env
   (a, e) <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
   pure a
 
 -- | Modify the data type in the environment (in place).
---
--- This function is __unsafe__ because @rep@ is unrestricted, so it's possible
--- to retrieve a different data type than the one put in.
---
--- For a safe variant see 'Effectful.Dispatch.Static.modifyEnv'.
-unsafeModifyEnv
-  :: forall e rep es. e :> es
+modifyEnv
+  :: forall e es. e :> es
   => Env es
-  -> (rep e -> rep e)
+  -> (EffectRep (DispatchOf e) e -> EffectRep (DispatchOf e) e)
   -> IO ()
-unsafeModifyEnv env f = do
+modifyEnv env f = do
   Location i es <- getLocation (reifyIndex @e @es) env
   e <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)

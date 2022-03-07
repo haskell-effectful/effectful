@@ -43,6 +43,7 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 
 import Effectful.Internal.Effect
+import Effectful.Internal.Env
 import Effectful.Internal.Monad
 
 -- $intro

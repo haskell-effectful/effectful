@@ -38,6 +38,7 @@ module Effectful.Dispatch.Static
 
 import GHC.Stack (HasCallStack)
 
+import Effectful.Internal.Env
 import Effectful.Internal.Monad
 
 -- $intro

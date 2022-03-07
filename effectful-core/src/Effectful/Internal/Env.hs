@@ -200,7 +200,7 @@ cloneEnv (Env NoFork size gref0 gen0) = do
   gen <- cloneForkIdGen gen0
   gref <- newIORef $ EnvRef size es fs
   store <- newIORef IM.empty
-  relinkData gref gen store es fs size
+  relinkData (relinkEnv gref gen store) es fs size
   pure $ Env NoFork size gref gen
 cloneEnv (Env forks size gref0 gen0) = do
   EnvRef _ es0 fs0 <- readIORef gref0
@@ -212,7 +212,7 @@ cloneEnv (Env forks size gref0 gen0) = do
   gen <- cloneForkIdGen gen0
   gref <- newIORef $ EnvRef size es fs
   store <- newIORef IM.empty
-  relinkData gref gen store es fs size
+  relinkData (relinkEnv gref gen store) es fs size
   -- The forked environment is flattened and becomes the global one.
   pure $ Env NoFork size gref gen
 {-# NOINLINE cloneEnv #-}
@@ -264,61 +264,54 @@ copyForks es fs size = \case
 
 type EnvRefStore = IORef (IM.IntMap (IORef EnvRef))
 
--- | Relink local environments hiding in the handlers.
+-- | Relink local environments hiding in the handler.
 relinkData
-  :: IORef EnvRef
-  -> ForkIdGen
-  -> EnvRefStore
+  :: (forall es. Env es -> IO (Env es))
   -> SmallMutableArray RealWorld Any
   -> SmallMutableArray RealWorld Any
   -> Int
   -> IO ()
-relinkData gref gen store es fs = \case
+relinkData relink es fs = \case
   0 -> pure ()
   n -> do
     let i = n - 1
     Relinker f <- fromAny <$> readSmallArray fs i
     readSmallArray es i
-      >>= f relinkEnv . fromAny
+      >>= f relink . fromAny
       >>= writeSmallArray es i . toAny
-    relinkData gref gen store es fs i
+    relinkData relink es fs i
+
+-- | Relink local environments hiding in the handler.
+relinkEnv :: IORef EnvRef -> ForkIdGen -> EnvRefStore -> Env es -> IO (Env es)
+relinkEnv gref gen store (Env forks size _ _) = Env
+  <$> relinkForks forks
+  <*> pure size
+  <*> pure gref
+  <*> pure gen
   where
-    relinkEnv :: Env es -> IO (Env es)
-    relinkEnv (Env forks size _ _) = Env
-      <$> relinkForks gref gen store forks
-      <*> pure size
-      <*> pure gref
-      <*> pure gen
+    relinkForks :: Forks -> IO Forks
+    relinkForks = \case
+      NoFork -> pure NoFork
+      Forks fid baseIx lref0 innerForks -> do
+        -- A specific IORef EnvRef can be held by more than one local environment
+        -- and we need to replace all its occurences with the same, new value
+        -- containing its clone.
+        readIORef store >>= pure . IM.lookup (unForkId fid) >>= \case
+          Just lref -> Forks fid baseIx <$> pure lref
+                                        <*> relinkForks innerForks
+          Nothing   -> Forks fid baseIx <$> cloneEnvRef fid lref0
+                                        <*> relinkForks innerForks
 
-relinkForks :: IORef EnvRef -> ForkIdGen -> EnvRefStore -> Forks -> IO Forks
-relinkForks gref gen store = \case
-  NoFork -> pure NoFork
-  Forks fid baseIx lref0 forks -> do
-    -- A specific IORef EnvRef can be held by more than one local environment
-    -- and we need to replace all its occurences with the same, new value
-    -- containing its clone.
-    readIORef store >>= pure . IM.lookup (unForkId fid) >>= \case
-      Just lref -> Forks fid baseIx <$> pure lref
-                                    <*> relinkForks gref gen store forks
-      Nothing   -> Forks fid baseIx <$> cloneEnvRef gref gen store fid lref0
-                                    <*> relinkForks gref gen store forks
-
--- | Clone the local 'EnvRef' and put it in a store.
-cloneEnvRef
-  :: IORef EnvRef
-  -> ForkIdGen
-  -> EnvRefStore
-  -> ForkId
-  -> IORef EnvRef
-  -> IO (IORef EnvRef)
-cloneEnvRef gref gen store fid lref0 = do
-  EnvRef n es0 fs0 <- readIORef lref0
-  es  <- cloneSmallMutableArray es0 0 (sizeofSmallMutableArray es0)
-  fs  <- cloneSmallMutableArray fs0 0 (sizeofSmallMutableArray fs0)
-  ref <- newIORef $ EnvRef n es fs
-  modifyIORef' store $ IM.insert (unForkId fid) ref
-  relinkData gref gen store es fs n
-  pure ref
+    -- | Clone the local 'EnvRef' and put it in a store.
+    cloneEnvRef :: ForkId -> IORef EnvRef -> IO (IORef EnvRef)
+    cloneEnvRef fid lref0 = do
+      EnvRef n es0 fs0 <- readIORef lref0
+      es  <- cloneSmallMutableArray es0 0 (sizeofSmallMutableArray es0)
+      fs  <- cloneSmallMutableArray fs0 0 (sizeofSmallMutableArray fs0)
+      ref <- newIORef $ EnvRef n es fs
+      modifyIORef' store $ IM.insert (unForkId fid) ref
+      relinkData (relinkEnv gref gen store) es fs n
+      pure ref
 
 ----------------------------------------
 
@@ -337,10 +330,6 @@ forkEnv (Env forks@(Forks _ baseIx lref0 olderForks) size gref gen) = do
     _ -> pure $ Env (Forks fid baseIx lref forks)      size gref gen
 {-# NOINLINE forkEnv #-}
 
--- | Get the current size of the environment.
-sizeEnv :: Env es -> IO Int
-sizeEnv env = pure $ envSize env
-
 -- | Check that the size of the environment is the same as the expected value.
 checkSizeEnv :: Env es -> IO ()
 checkSizeEnv (Env NoFork size ref _) = do
@@ -352,6 +341,11 @@ checkSizeEnv (Env (Forks _ baseIx lref _) size _ _) = do
   when (size /= baseIx + n) $ do
     error $ "size (" ++ show size ++ ") /= baseIx + n (baseIx: "
          ++ show baseIx ++ ", n: " ++ show n ++ ")"
+{-# NOINLINE checkSizeEnv #-}
+
+-- | Get the current size of the environment.
+sizeEnv :: Env es -> IO Int
+sizeEnv env = pure $ envSize env
 
 -- | Access the tail of the environment.
 tailEnv :: Env (e : es) -> IO (Env es)

@@ -14,7 +14,7 @@ description: Generate functions for performing operations of dynamically
 
 extra-source-files: CHANGELOG.md
 
-tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.1
+tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.2
 
 bug-reports:   https://github.com/arybczak/effectful/issues
 source-repository head

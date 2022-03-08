@@ -227,6 +227,8 @@ eff_calculateFileSizesDeep = L.runIO
 ----------------------------------------
 -- cleff
 
+#ifdef VERSION_cleff
+
 data Cleff_File :: C.Effect where
   Cleff_tryFileSize :: FilePath -> Cleff_File m (Maybe Int)
 
@@ -283,6 +285,8 @@ cleff_calculateFileSizesDeep = C.runIOE
   . cleff_program
   where
     runR = C.runReader ()
+
+#endif
 
 ----------------------------------------
 -- freer-simple

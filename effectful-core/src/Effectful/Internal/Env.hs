@@ -525,11 +525,11 @@ getLocation ix (Env fork size ref _) = do
   --   specific effects for reinterpretation.
   case fork of
     NoFork -> pure $ Location i es
-    Forks _ baseIx lref forks -> do
-      EnvRef _ les _ <- readIORef lref
-      if i >= baseIx
-        then pure $ Location (i - baseIx) les
-        else go es# i forks
+    Forks _ baseIx lref forks
+      | i >= baseIx -> do
+          EnvRef _ les _ <- readIORef lref
+          pure $ Location (i - baseIx) les
+      | otherwise -> go es# i forks
   where
     go :: SmallMutableArray# RealWorld Any
        -> Int
@@ -537,8 +537,8 @@ getLocation ix (Env fork size ref _) = do
        -> IO Location
     go es# i = \case
       NoFork -> pure $ Location i (SmallMutableArray es#)
-      Forks _ baseIx lref forks -> do
-        EnvRef _ les _ <- readIORef lref
-        if i >= baseIx
-          then pure $ Location (i - baseIx) les
-          else go es# i forks
+      Forks _ baseIx lref forks
+        | i >= baseIx -> do
+            EnvRef _ les _ <- readIORef lref
+            pure $ Location (i - baseIx) les
+        | otherwise -> go es# i forks

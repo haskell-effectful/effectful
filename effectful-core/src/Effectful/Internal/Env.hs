@@ -347,19 +347,20 @@ relinkEnv gref gen store (Env forks size _ _) = Env
 
 ----------------------------------------
 
--- | Create a local fork of the environment for handlers.
+-- | Create a local fork of the environment.
 forkEnv :: Env es -> IO (Env es)
 forkEnv (Env NoFork size gref gen) = do
   fid <- newForkId gen
   Env <$> (Forks fid size <$> emptyEnvRef <*> pure NoFork)
       <*> pure size <*> pure gref <*> pure gen
-forkEnv (Env forks@(Forks _ baseIx lref0 olderForks) size gref gen) = do
+forkEnv (Env forks@(Forks _ baseIx _ innerForks) size gref gen) = do
   fid <- newForkId gen
   lref <- emptyEnvRef
-  (refSize <$> readIORef lref0) >>= \case
-    -- If the fork is empty, replace it as no data is lost.
-    0 -> pure $ Env (Forks fid baseIx lref olderForks) size gref gen
-    _ -> pure $ Env (Forks fid baseIx lref forks)      size gref gen
+  let newForks = -- If the fork is empty, replace it as no data is lost.
+        if size == baseIx
+        then innerForks
+        else forks
+  pure $ Env (Forks fid size lref newForks) size gref gen
 {-# NOINLINE forkEnv #-}
 
 -- | Check that the size of the environment is the same as the expected value.
@@ -381,7 +382,11 @@ sizeEnv env = pure $ envSize env
 
 -- | Access the tail of the environment.
 tailEnv :: Env (e : es) -> IO (Env es)
-tailEnv env = pure $ env { envSize = envSize env - 1 }
+tailEnv (Env NoFork size gref gen) = forkEnv $ Env NoFork (size - 1) gref gen
+tailEnv (Env forks@(Forks _ baseIx _ innerForks) size gref gen)
+  -- If the fork is empty, consider the inner fork.
+  | size == baseIx = tailEnv $ Env innerForks size gref gen
+  | otherwise      = forkEnv $ Env forks (size - 1) gref gen
 
 ----------------------------------------
 -- Extending and shrinking

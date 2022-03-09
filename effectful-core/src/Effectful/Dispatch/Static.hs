@@ -34,6 +34,9 @@ module Effectful.Dispatch.Static
   , unsafeEff
   , unsafeEff_
   , unsafeLiftMapIO
+
+  -- * Re-exports
+  , HasCallStack
   ) where
 
 import GHC.Stack (HasCallStack)

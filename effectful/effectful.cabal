@@ -132,6 +132,7 @@ test-suite test
 
     other-modules:  AsyncTests
                     ConcurrencyTests
+                    EnvTests
                     EnvironmentTests
                     ErrorTests
                     StateTests

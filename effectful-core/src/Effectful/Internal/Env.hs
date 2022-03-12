@@ -222,32 +222,32 @@ consEnv
   -> Env es
   -> IO (Env (e : es))
 consEnv e f (Env size mrefs storage) = do
-  ref <- insertEffect e f storage
   References n refs0 <- readIORef mrefs
   errorWhenDifferent size n
   len0 <- getSizeofMutablePrimArray refs0
-  case n `compare` len0 of
-    GT -> error $ "n (" ++ show n ++ ") > len0 (" ++ show len0 ++ ")"
-    LT -> mask_ $ do
-      writePrimArray refs0 n ref
-      writeIORef mrefs $! References (n + 1) refs0
-    EQ -> mask_ $ do
-      let len = doubleCapacity len0
-      refs <- resizeMutablePrimArray refs0 len
-      writePrimArray refs n ref
-      writeIORef mrefs $! References (n + 1) refs
-  pure $ Env (size + 1) mrefs storage
+  refs <- case size `compare` len0 of
+    GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
+    LT -> pure refs0
+    EQ -> resizeMutablePrimArray refs0 (doubleCapacity len0)
+  mask_ $ do
+    ref <- insertEffect storage e f
+    writePrimArray refs size ref
+    writeIORef mrefs $! References (size + 1) refs
+    pure $ Env (size + 1) mrefs storage
 {-# NOINLINE consEnv #-}
 
 -- | Shrink the environment by one data type (in place).
+--
+-- /Note:/ after calling this function the input environment is no longer
+-- usable.
 unconsEnv :: Env (e : es) -> IO ()
 unconsEnv (Env size mrefs storage) = do
   References n refs <- readIORef mrefs
   errorWhenDifferent size n
-  ref <- readPrimArray refs (n - 1)
+  ref <- readPrimArray refs (size - 1)
   mask_ $ do
-    deleteEffect ref storage
-    writeIORef mrefs $! References (n - 1) refs
+    deleteEffect storage ref
+    writeIORef mrefs $! References (size - 1) refs
 {-# NOINLINE unconsEnv #-}
 
 ----------------------------------------
@@ -318,12 +318,12 @@ emptyStorage = Storage
 
 -- | Insert an effect into the storage and return its reference.
 insertEffect
-  :: EffectRep (DispatchOf e) e
+  :: IORef Storage
+  -> EffectRep (DispatchOf e) e
   -- ^ The representation of the effect.
   -> Relinker (EffectRep (DispatchOf e)) e
-  -> IORef Storage
   -> IO Int
-insertEffect e f storage = do
+insertEffect storage e f = do
   Storage freeSlots es0 fs0 <- readIORef storage
   case IS.minView freeSlots of
     Just (ref, newFreeSlots) -> do
@@ -346,8 +346,8 @@ insertEffect e f storage = do
       pure ref
 
 -- | Given a reference to an effect, delete it from the storage.
-deleteEffect :: Int -> IORef Storage -> IO ()
-deleteEffect ref storage = do
+deleteEffect :: IORef Storage -> Int -> IO ()
+deleteEffect storage ref = do
   Storage freeSlots es fs <- readIORef storage
   writeSmallArray es ref undefinedData
   writeSmallArray fs ref undefinedData

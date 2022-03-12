@@ -18,6 +18,7 @@ import qualified Cleff.State as C
 
 -- effectful
 import qualified Effectful as E
+import qualified Effectful.Dispatch.Dynamic as E
 import qualified Effectful.Reader.Static as E
 import qualified Effectful.State.Dynamic as ED
 import qualified Effectful.State.Static.Local as EL
@@ -191,6 +192,49 @@ countdownEffectfulDynSharedDeep :: Integer -> (Integer, Integer)
 countdownEffectfulDynSharedDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
   . ED.runSharedState n
+  . runR . runR . runR . runR . runR
+  $ programEffectfulDynamic
+  where
+    runR = E.runReader ()
+
+----------------------------------------
+-- efectful (double-dynamic)
+
+runDoubleLocalState :: s -> E.Eff (ED.State s : es) a -> E.Eff es (a, s)
+runDoubleLocalState s0 = E.reinterpret (ED.runLocalState s0) $ \env -> \case
+  ED.Get      -> ED.get
+  ED.Put s    -> ED.put s
+  ED.State f  -> ED.state f
+  ED.StateM f -> E.localSeqUnlift env $ \unlift -> ED.stateM (unlift . f)
+
+countdownEffectfulDoubleDynLocal :: Integer -> (Integer, Integer)
+countdownEffectfulDoubleDynLocal n =
+  E.runPureEff . runDoubleLocalState n $ programEffectfulDynamic
+
+countdownEffectfulDoubleDynLocalDeep :: Integer -> (Integer, Integer)
+countdownEffectfulDoubleDynLocalDeep n = E.runPureEff
+  . runR . runR . runR . runR . runR
+  . runDoubleLocalState n
+  . runR . runR . runR . runR . runR
+  $ programEffectfulDynamic
+  where
+    runR = E.runReader ()
+
+runDoubleSharedState :: s -> E.Eff (ED.State s : es) a -> E.Eff es (a, s)
+runDoubleSharedState s0 = E.reinterpret (ED.runSharedState s0) $ \env -> \case
+  ED.Get      -> ED.get
+  ED.Put s    -> ED.put s
+  ED.State f  -> ED.state f
+  ED.StateM f -> E.localSeqUnlift env $ \unlift -> ED.stateM (unlift . f)
+
+countdownEffectfulDoubleDynShared :: Integer -> (Integer, Integer)
+countdownEffectfulDoubleDynShared n =
+  E.runPureEff . runDoubleSharedState n $ programEffectfulDynamic
+
+countdownEffectfulDoubleDynSharedDeep :: Integer -> (Integer, Integer)
+countdownEffectfulDoubleDynSharedDeep n = E.runPureEff
+  . runR . runR . runR . runR . runR
+  . runDoubleSharedState n
   . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where

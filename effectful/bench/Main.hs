@@ -31,17 +31,25 @@ countdown n = bgroup (show n)
     [ bench "shallow" $ nf countdownEffectfulLocal n
     , bench "deep"    $ nf countdownEffectfulLocalDeep n
     ]
-  , bgroup "effectful (local/dynamic)"
+  , bgroup "effectful (local/dynamic/single)"
     [ bench "shallow" $ nf countdownEffectfulDynLocal n
     , bench "deep"    $ nf countdownEffectfulDynLocalDeep n
+    ]
+  , bgroup "effectful (local/dynamic/double)"
+    [ bench "shallow" $ nf countdownEffectfulDoubleDynLocal n
+    , bench "deep"    $ nf countdownEffectfulDoubleDynLocalDeep n
     ]
   , bgroup "effectful (shared/static)"
     [ bench "shallow" $ nf countdownEffectfulShared n
     , bench "deep"    $ nf countdownEffectfulSharedDeep n
     ]
-  , bgroup "effectful (shared/dynamic)"
+  , bgroup "effectful (shared/dynamic/single)"
     [ bench "shallow" $ nf countdownEffectfulDynShared n
     , bench "deep"    $ nf countdownEffectfulDynSharedDeep n
+    ]
+  , bgroup "effectful (shared/dynamic/double)"
+    [ bench "shallow" $ nf countdownEffectfulDoubleDynShared n
+    , bench "deep"    $ nf countdownEffectfulDoubleDynSharedDeep n
     ]
 #ifdef VERSION_cleff
   , bgroup "cleff"

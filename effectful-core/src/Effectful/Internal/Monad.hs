@@ -368,6 +368,7 @@ send :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es) => e (Eff es) a -> Eff e
 send op = unsafeEff $ \es -> do
   Handler handlerEs handle <- getEnv es
   unEff (handle (LocalEnv es) op) handlerEs
+{-# NOINLINE send #-}
 
 ----------------------------------------
 -- Static dispatch

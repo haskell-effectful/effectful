@@ -1,21 +1,9 @@
-{-# LANGUAGE MagicHash #-}
 {-# OPTIONS_HADDOCK not-home #-}
--- | The environment for the 'Effectful.Internal.Monad.Eff' monad.
---
--- This module is intended for internal use only, and may change without warning
--- in subsequent releases.
 module Effectful.Internal.Env
   ( -- * The environment
     Env(..)
-  , Forks(..)
-  , EnvRef(..)
-
-    -- ** ForkId
-  , ForkId(..)
-  , ForkIdGen(..)
-  , newForkIdGen
-  , cloneForkIdGen
-  , newForkId
+  , References(..)
+  , Storage(..)
 
     -- ** Relinker
   , Relinker(..)
@@ -46,13 +34,14 @@ module Effectful.Internal.Env
   , modifyEnv
   ) where
 
+import Control.Exception
 import Control.Monad
 import Control.Monad.Primitive
 import Data.IORef
+import Data.Primitive.PrimArray
 import Data.Primitive.SmallArray
-import GHC.Exts (SmallMutableArray#)
 import GHC.Stack (HasCallStack)
-import qualified Data.IntMap.Strict as IM
+import qualified Data.IntSet as IS
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Utils
@@ -63,116 +52,50 @@ type role Env nominal
 -- of kind 'Effect'.
 --
 -- Supports forking, i.e. introduction of local branches for encapsulation of
--- data specific to effect handlers.
+-- effects specific to effect handlers.
 --
 -- __Warning: the environment is a mutable data structure and cannot be simultaneously used from multiple threads under any circumstances.__
 --
 -- In order to pass it to a different thread, you need to perform a deep copy
 -- with the 'cloneEnv' funtion.
 --
--- Offers very good performance characteristics:
+-- Offers very good performance characteristics for most often performed
+-- operations:
 --
--- - Extending: /O(1)/ (amortized).
+-- - Extending: /@O(1)@/ (amortized).
 --
--- - Shrinking: /O(1)/.
+-- - Shrinking: /@O(1)@/.
 --
--- - Indexing via '(:>)': /O(forks)/, usually /O(1)/ (amortized).
+-- - Indexing via '(:>)': /@O(1)@/
 --
--- - Modification of a specific element: /O(1)/.
+-- - Modification of a specific element: /@O(1)@/.
 --
+-- - Forking: /@O(n)@/, where @n@ is the size of the effect stack.
 --
--- Here's an example of how the environment might look:
---
--- @
--- e00 - e01 - e05 - e07 (*)
---        |     |     |
---        |    e06   e08 - e09
---        |
---       e02 - e03
---              |
---             e04
--- @
---
--- The point of execution is currently at (*), i.e. the mainline. Moreover,
--- currently (more than one bracket signifies a forked environment):
---
--- - Mainline sees @[e00, e01, e05, e07]@ (mainline never has forks).
---
--- - @e01@ is an interpreted effect, its handler sees @[e00][e02, e03]@.
---
--- - @e03@ is an interpreted effect, its handler sees @[e00][e02][e04]@.
---
--- - @e05@ is an interpreted effect, its handler sees @[e00, e01][e06]@.
---
--- - @e07@ is an interpreted effect, its handler sees @[e00, e01, e05][e08,
---   e09]@.
---
--- If an operation from @e01@ is invoked, the environment in the middle of
--- handling it might look like this:
---
--- @
--- e00 - e01 - e05 - e07
---        |     |     |
---        |    e06   e08 - e09
---        |
---       e02 - e03 - e10 (*)
---              |     |
---             e04   e11
---                    |
---                   e12
--- @
---
--- The point of execution is at (*), i.e. inside the handler of @e01@. The
--- handler needed to introduce @e10@ (which introduced @e11@, which in turn
--- introduced @e12@), so its local environment was temporarily extended with
--- it. Moreover, currently:
---
--- - Handler of @e01@ sees @[e00][e02, e03, e10]@.
---
--- - Handler of @e10@ sees @[e00][e02, e03][e11]@.
---
--- - Handler of @e11@ sees @[e00][e02, e03][e12]@.
+-- - Cloning: /@O(N + Σ(n_i))@/, where @N@ is the size of the 'Storage', while
+--   @i@ ranges over handlers of dynamically dispatched effects in the 'Storage'
+--   and @n_i@ is the size of the effect stack of @i@-th handler.
 --
 data Env (es :: [Effect]) = Env
-  { envForks     :: !Forks
-  , envSize      :: !Int
-  , envGlobalRef :: !(IORef EnvRef)
-  , envForkIdGen :: !ForkIdGen
+  { envSize    :: !Int
+  , envRefs    :: !(IORef References)
+  , envStorage :: !(IORef Storage)
   }
 
--- | Local forks of the environment.
-data Forks = Forks !ForkId !Int !(IORef EnvRef) Forks | NoFork
-
--- | Data held in the environment.
-data EnvRef = EnvRef
-  { refSize      :: !Int
-  , refValues    :: !(SmallMutableArray RealWorld Any)
-  , refRelinkers :: !(SmallMutableArray RealWorld Any)
+-- | An array of references to effects in the 'Storage'.
+data References = References
+  { refSize    :: !Int
+  , refIndices :: !(MutablePrimArray RealWorld Int)
   }
 
-----------------------------------------
--- ForkId
-
--- | Internal id of the fork.
-newtype ForkId = ForkId { unForkId :: Int }
-
--- | 'ForkId' generation.
-newtype ForkIdGen = ForkIdGen (IORef ForkId)
-
--- | Create a new thread local 'ForkId' generator.
-newForkIdGen :: IO ForkIdGen
-newForkIdGen = ForkIdGen <$> newIORef (ForkId 0)
-
--- | Clone the 'ForkId' generator for use in a different thread.
-cloneForkIdGen :: ForkIdGen -> IO ForkIdGen
-cloneForkIdGen (ForkIdGen ref) = fmap ForkIdGen . newIORef =<< readIORef ref
-
--- | Get a unique 'ForkId' from the generator.
-newForkId :: ForkIdGen -> IO ForkId
-newForkId (ForkIdGen ref) = do
-  fid@(ForkId n) <- readIORef ref
-  writeIORef ref $! ForkId (n + 1)
-  pure fid
+-- | A storage of effects.
+--
+-- Shared between all forks of the environment within the same thread.
+data Storage = Storage
+  { stFreeSlots :: !IS.IntSet
+  , stEffects   :: !(SmallMutableArray RealWorld Any)
+  , stRelinkers :: !(SmallMutableArray RealWorld Any)
+  }
 
 ----------------------------------------
 -- Relinker
@@ -213,167 +136,65 @@ type family EffectRep (d :: Dispatch) :: Effect -> Type
 
 -- | Create an empty environment.
 emptyEnv :: IO (Env '[])
-emptyEnv = Env NoFork 0 <$> emptyEnvRef <*> newForkIdGen
+emptyEnv = Env <$> pure 0
+  <*> (newIORef . References 0 =<< newPrimArray 0)
+  <*> (newIORef =<< emptyStorage)
 
--- | Clone the environment.
---
--- Mostly used to pass the environment to a different thread.
+-- | Clone the environment to use it in a different thread.
 cloneEnv :: Env es -> IO (Env es)
-cloneEnv (Env NoFork size gref0 gen0) = do
-  EnvRef _ es0 fs0 <- readIORef gref0
-  es  <- cloneSmallMutableArray es0 0 size
-  fs  <- cloneSmallMutableArray fs0 0 size
-  gen <- cloneForkIdGen gen0
-  gref <- newIORef $ EnvRef size es fs
-  store <- newIORef IM.empty
-  relinkData (relinkEnv gref gen store) es fs size
-  pure $ Env NoFork size gref gen
-cloneEnv (Env forks size gref0 gen0) = do
-  EnvRef _ es0 fs0 <- readIORef gref0
-  es  <- newSmallArray size undefinedData
-  fs  <- newSmallArray size undefinedData
-  baseN <- copyForks es fs size forks
-  copySmallMutableArray es 0 es0 0 baseN
-  copySmallMutableArray fs 0 fs0 0 baseN
-  gen <- cloneForkIdGen gen0
-  gref <- newIORef $ EnvRef size es fs
-  store <- newIORef IM.empty
-  relinkData (relinkEnv gref gen store) es fs size
-  -- The forked environment is flattened and becomes the global one.
-  pure $ Env NoFork size gref gen
+cloneEnv (Env size mrefs0 storage0) = do
+  References n refs0 <- readIORef mrefs0
+  errorWhenDifferent size n
+  mrefs <- newIORef . References n
+    =<< cloneMutablePrimArray refs0 0 (sizeofMutablePrimArray refs0)
+  Storage freeSlots es0 fs0 <- readIORef storage0
+  let esSize = sizeofSmallMutableArray es0
+      fsSize = sizeofSmallMutableArray fs0
+  when (esSize /= fsSize) $ do
+    error $ "esSize (" ++ show esSize ++ ") /= fsSize (" ++ show fsSize ++ ")"
+  es <- cloneSmallMutableArray es0 0 esSize
+  fs <- cloneSmallMutableArray fs0 0 esSize
+  storage <- newIORef $ Storage freeSlots es fs
+  relinkEffects (relinkEnv storage) freeSlots es fs esSize
+  pure $ Env size mrefs storage
+  where
+    relinkEffects
+      :: (forall es. Env es -> IO (Env es))
+      -> IS.IntSet
+      -> SmallMutableArray RealWorld Any
+      -> SmallMutableArray RealWorld Any
+      -> Int
+      -> IO ()
+    relinkEffects relink freeSlots es fs = \case
+     0 -> pure ()
+     n -> do
+       let i = n - 1
+       when (i `IS.notMember` freeSlots) $ do
+         Relinker f <- fromAny <$> readSmallArray fs i
+         readSmallArray es i
+           >>= f relink . fromAny
+           >>= writeSmallArray es i . toAny
+       relinkEffects relink freeSlots es fs i
 {-# NOINLINE cloneEnv #-}
 
-----------------------------------------
--- Utils for cloning
-
--- | Let's say that the forked environment looks like this:
+-- | Create a fork of the environment.
 --
--- [0,1][2,3,4,5][6,7,8,9][10,11]
---
--- Then forks will look like this:
---
--- Fork (baseIx: 10, ...) [10,11]
---   (Fork (baseIx: 6, ...) [6,7,8,9,..]
---     (Fork (baseIx: 2, ...) [2,3,4,5,..]
---       NoFork))
---
--- and elements [0,1] are taken from the global environment ([0,1,..]).
---
--- We start with size: 12, we subtract baseIx: 10 and get n: 2, the number of
--- elements to copy from the fork. We copy them, then call recursively with
--- baseIx (10).
---
--- Then size: 10, we subtract baseIx: 6 and get n: 4. the number of elements to
--- copy from the fork (note that we can't use the capacity from EnvRef, because
--- it might be longer than 4 if the fork was locally extended). We copy them,
--- then call recursively with baseIx (6).
---
--- Then size: 6, we subtract baseIx: 2 and get n: 4. We copy the elements, then
--- call recursively with baseIx (2).
---
--- Now size: 2, but there are no more forks left, so we return size (2), the
--- number of elements to copy from the global environment.
-copyForks
-  :: SmallMutableArray RealWorld Any
-  -> SmallMutableArray RealWorld Any
-  -> Int
-  -> Forks
-  -> IO Int
-copyForks es fs size = \case
-  NoFork -> pure size
-  Forks _ baseIx lref0 forks -> do
-    EnvRef _ es0 fs0 <- readIORef lref0
-    let n = size - baseIx
-    -- It might happen that the environment was over-tailed and the size is now
-    -- less than the baseIx of the fork. In such case we simply try our luck
-    -- with the older fork.
-    if n <= 0
-      then copyForks es fs size forks
-      else do
-        copySmallMutableArray es baseIx es0 0 n
-        copySmallMutableArray fs baseIx fs0 0 n
-        copyForks es fs baseIx forks
-
-type EnvRefStore = IORef (IM.IntMap (IORef EnvRef))
-
--- | Relink local environments hiding in the handlers.
-relinkData
-  :: (forall es. Env es -> IO (Env es))
-  -> SmallMutableArray RealWorld Any
-  -> SmallMutableArray RealWorld Any
-  -> Int
-  -> IO ()
-relinkData relink es fs = \case
-  0 -> pure ()
-  n -> do
-    let i = n - 1
-    Relinker f <- fromAny <$> readSmallArray fs i
-    readSmallArray es i
-      >>= f relink . fromAny
-      >>= writeSmallArray es i . toAny
-    relinkData relink es fs i
-
--- | Relink local environments hiding in the handlers.
-relinkEnv :: IORef EnvRef -> ForkIdGen -> EnvRefStore -> Env es -> IO (Env es)
-relinkEnv gref gen store (Env forks size _ _) = Env
-  <$> relinkForks forks
-  <*> pure size
-  <*> pure gref
-  <*> pure gen
-  where
-    relinkForks :: Forks -> IO Forks
-    relinkForks = \case
-      NoFork -> pure NoFork
-      Forks fid baseIx lref0 innerForks -> do
-        -- A specific IORef EnvRef can be held by more than one local environment
-        -- and we need to replace all its occurences with the same, new value
-        -- containing its clone.
-        readIORef store >>= pure . IM.lookup (unForkId fid) >>= \case
-          Just lref -> Forks fid baseIx <$> pure lref
-                                        <*> relinkForks innerForks
-          Nothing   -> Forks fid baseIx <$> cloneEnvRef fid lref0
-                                        <*> relinkForks innerForks
-
-    -- | Clone the local 'EnvRef' and put it in a store.
-    cloneEnvRef :: ForkId -> IORef EnvRef -> IO (IORef EnvRef)
-    cloneEnvRef fid lref0 = do
-      EnvRef n es0 fs0 <- readIORef lref0
-      es  <- cloneSmallMutableArray es0 0 (sizeofSmallMutableArray es0)
-      fs  <- cloneSmallMutableArray fs0 0 (sizeofSmallMutableArray fs0)
-      ref <- newIORef $ EnvRef n es fs
-      modifyIORef' store $ IM.insert (unForkId fid) ref
-      relinkData (relinkEnv gref gen store) es fs n
-      pure ref
-
-----------------------------------------
-
--- | Create a local fork of the environment.
+-- Forked environment can be updated independently of the original one within
+-- the same thread.
 forkEnv :: Env es -> IO (Env es)
-forkEnv (Env NoFork size gref gen) = do
-  fid <- newForkId gen
-  Env <$> (Forks fid size <$> emptyEnvRef <*> pure NoFork)
-      <*> pure size <*> pure gref <*> pure gen
-forkEnv (Env forks@(Forks _ baseIx _ innerForks) size gref gen) = do
-  fid <- newForkId gen
-  lref <- emptyEnvRef
-  let newForks = -- If the fork is empty, replace it as no data is lost.
-        if size == baseIx
-        then innerForks
-        else forks
-  pure $ Env (Forks fid size lref newForks) size gref gen
+forkEnv (Env size mrefs0 storage) = do
+  References n refs0 <- readIORef mrefs0
+  errorWhenDifferent size n
+  mrefs <- newIORef . References size
+    =<< cloneMutablePrimArray refs0 0 (sizeofMutablePrimArray refs0)
+  pure $ Env size mrefs storage
 {-# NOINLINE forkEnv #-}
 
--- | Check that the size of the environment is the same as the expected value.
+-- | Check that the size of the environment is internally consistent.
 checkSizeEnv :: Env es -> IO ()
-checkSizeEnv (Env NoFork size ref _) = do
-  EnvRef n _ _ <- readIORef ref
-  when (size /= n) $ do
-    error $ "size (" ++ show size ++ ") /= n (" ++ show n ++ ")"
-checkSizeEnv (Env (Forks _ baseIx lref _) size _ _) = do
-  EnvRef n _ _ <- readIORef lref
-  when (size /= baseIx + n) $ do
-    error $ "size (" ++ show size ++ ") /= baseIx + n (baseIx: "
-         ++ show baseIx ++ ", n: " ++ show n ++ ")"
+checkSizeEnv (Env size mrefs _) = do
+  References n _ <- readIORef mrefs
+  errorWhenDifferent size n
 {-# NOINLINE checkSizeEnv #-}
 
 -- | Get the current size of the environment.
@@ -382,11 +203,13 @@ sizeEnv env = pure $ envSize env
 
 -- | Access the tail of the environment.
 tailEnv :: Env (e : es) -> IO (Env es)
-tailEnv (Env NoFork size gref gen) = forkEnv $ Env NoFork (size - 1) gref gen
-tailEnv (Env forks@(Forks _ baseIx _ innerForks) size gref gen)
-  -- If the fork is empty, consider the inner fork.
-  | size == baseIx = tailEnv $ Env innerForks size gref gen
-  | otherwise      = forkEnv $ Env forks (size - 1) gref gen
+tailEnv (Env size mrefs0 storage) = do
+  References n refs0 <- readIORef mrefs0
+  errorWhenDifferent size n
+  mrefs <- newIORef . References (size - 1)
+    =<< cloneMutablePrimArray refs0 0 (sizeofMutablePrimArray refs0)
+  pure $ Env (size - 1) mrefs storage
+{-# NOINLINE tailEnv #-}
 
 ----------------------------------------
 -- Extending and shrinking
@@ -398,53 +221,33 @@ consEnv
   -> Relinker (EffectRep (DispatchOf e)) e
   -> Env es
   -> IO (Env (e : es))
-consEnv e f (Env fork size gref gen) = case fork of
-  NoFork -> do
-    extendEnvRef gref
-    pure $ Env NoFork (size + 1) gref gen
-  Forks _ _ lref _ -> do
-    extendEnvRef lref
-    pure $ Env fork (size + 1) gref gen
-  where
-    extendEnvRef :: IORef EnvRef -> IO ()
-    extendEnvRef ref = do
-      EnvRef n es0 fs0 <- readIORef ref
-      let len0 = sizeofSmallMutableArray es0
-      case n `compare` len0 of
-        GT -> error $ "n (" ++ show n ++ ") > len0 (" ++ show len0 ++ ")"
-        LT -> do
-          e `seq` writeSmallArray es0 n (toAny e)
-          f `seq` writeSmallArray fs0 n (toAny f)
-          writeIORef ref $! EnvRef (n + 1) es0 fs0
-        EQ -> do
-          let len = doubleCapacity len0
-          es <- newSmallArray len undefinedData
-          copySmallMutableArray es 0 es0 0 len0
-          e `seq` writeSmallArray es n (toAny e)
-          fs <- newSmallArray len undefinedData
-          copySmallMutableArray fs 0 fs0 0 len0
-          f `seq` writeSmallArray fs n (toAny f)
-          writeIORef ref $! EnvRef (n + 1) es fs
-
-    doubleCapacity :: Int -> Int
-    doubleCapacity n = max 1 n * 2
+consEnv e f (Env size mrefs storage) = do
+  ref <- insertEffect e f storage
+  References n refs0 <- readIORef mrefs
+  errorWhenDifferent size n
+  len0 <- getSizeofMutablePrimArray refs0
+  case n `compare` len0 of
+    GT -> error $ "n (" ++ show n ++ ") > len0 (" ++ show len0 ++ ")"
+    LT -> mask_ $ do
+      writePrimArray refs0 n ref
+      writeIORef mrefs $! References (n + 1) refs0
+    EQ -> mask_ $ do
+      let len = doubleCapacity len0
+      refs <- resizeMutablePrimArray refs0 len
+      writePrimArray refs n ref
+      writeIORef mrefs $! References (n + 1) refs
+  pure $ Env (size + 1) mrefs storage
 {-# NOINLINE consEnv #-}
 
 -- | Shrink the environment by one data type (in place).
 unconsEnv :: Env (e : es) -> IO ()
-unconsEnv (Env fork size gref _) = case fork of
-  NoFork                -> shrinkEnvRef (size - 1)          gref
-  Forks _ baseIx lref _ -> shrinkEnvRef (size - 1 - baseIx) lref
-  where
-    shrinkEnvRef :: Int -> IORef EnvRef -> IO ()
-    shrinkEnvRef k ref = do
-      EnvRef n es fs <- readIORef ref
-      if k /= n - 1
-        then error $ "k (" ++ show k ++ ") /= n - 1 (" ++ show (n - 1) ++ ")"
-        else do
-          writeSmallArray es k undefinedData
-          writeSmallArray fs k undefinedData
-          writeIORef ref $! EnvRef k es fs
+unconsEnv (Env size mrefs storage) = do
+  References n refs <- readIORef mrefs
+  errorWhenDifferent size n
+  ref <- readPrimArray refs (n - 1)
+  mask_ $ do
+    deleteEffect ref storage
+    writeIORef mrefs $! References (n - 1) refs
 {-# NOINLINE unconsEnv #-}
 
 ----------------------------------------
@@ -453,30 +256,30 @@ unconsEnv (Env fork size gref _) = case fork of
 -- | Extract a specific data type from the environment.
 getEnv
   :: forall e es. e :> es
-  => Env es
+  => Env es -- ^ The environment.
   -> IO (EffectRep (DispatchOf e) e)
 getEnv env = do
-  Location i es <- getLocation (reifyIndex @e @es) env
+  (i, es) <- getLocation (reifyIndex @e @es) env
   fromAny <$> readSmallArray es i
 
 -- | Replace the data type in the environment with a new value (in place).
 putEnv
   :: forall e es. e :> es
-  => Env es
+  => Env es -- ^ The environment.
   -> EffectRep (DispatchOf e) e
   -> IO ()
 putEnv env e = do
-  Location i es <- getLocation (reifyIndex @e @es) env
+  (i, es) <- getLocation (reifyIndex @e @es) env
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place) and return a value.
 stateEnv
   :: forall e es a. e :> es
-  => Env es
+  => Env es -- ^ The environment.
   -> (EffectRep (DispatchOf e) e -> (a, EffectRep (DispatchOf e) e))
   -> IO a
 stateEnv env f = do
-  Location i es <- getLocation (reifyIndex @e @es) env
+  (i, es) <- getLocation (reifyIndex @e @es) env
   (a, e) <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
   pure a
@@ -484,61 +287,89 @@ stateEnv env f = do
 -- | Modify the data type in the environment (in place).
 modifyEnv
   :: forall e es. e :> es
-  => Env es
+  => Env es -- ^ The environment.
   -> (EffectRep (DispatchOf e) e -> EffectRep (DispatchOf e) e)
   -> IO ()
 modifyEnv env f = do
-  Location i es <- getLocation (reifyIndex @e @es) env
+  (i, es) <- getLocation (reifyIndex @e @es) env
   e <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
+
+-- | Determine location of the effect in the environment.
+getLocation
+  :: Int
+  -> Env es
+  -> IO (Int, SmallMutableArray RealWorld Any)
+getLocation ix (Env size mrefs storage) = do
+  refs <- refIndices <$> readIORef mrefs
+  i <- readPrimArray refs (size - ix - 1)
+  es <- stEffects <$> readIORef storage
+  pure (i, es)
 
 ----------------------------------------
 -- Internal helpers
 
+-- | Create an empty storage.
+emptyStorage :: IO Storage
+emptyStorage = Storage
+  <$> pure IS.empty
+  <*> newSmallArray 0 undefinedData
+  <*> newSmallArray 0 undefinedData
+
+-- | Insert an effect into the storage and return its reference.
+insertEffect
+  :: EffectRep (DispatchOf e) e
+  -- ^ The representation of the effect.
+  -> Relinker (EffectRep (DispatchOf e)) e
+  -> IORef Storage
+  -> IO Int
+insertEffect e f storage = do
+  Storage freeSlots es0 fs0 <- readIORef storage
+  case IS.minView freeSlots of
+    Just (ref, newFreeSlots) -> do
+      e `seq` writeSmallArray es0 ref (toAny e)
+      f `seq` writeSmallArray fs0 ref (toAny f)
+      writeIORef storage $! Storage newFreeSlots es0 fs0
+      pure ref
+    Nothing -> do
+      let len0 = sizeofSmallMutableArray es0
+          len  = doubleCapacity len0
+      es <- newSmallArray len undefinedData
+      copySmallMutableArray es 0 es0 0 len0
+      fs <- newSmallArray len undefinedData
+      copySmallMutableArray fs 0 fs0 0 len0
+      let ref          = len0
+      let newFreeSlots = IS.fromAscList $ tail [len0 .. len - 1]
+      e `seq` writeSmallArray es ref (toAny e)
+      f `seq` writeSmallArray fs ref (toAny f)
+      writeIORef storage $! Storage newFreeSlots es fs
+      pure ref
+
+-- | Given a reference to an effect, delete it from the storage.
+deleteEffect :: Int -> IORef Storage -> IO ()
+deleteEffect ref storage = do
+  Storage freeSlots es fs <- readIORef storage
+  writeSmallArray es ref undefinedData
+  writeSmallArray fs ref undefinedData
+  writeIORef storage $! Storage (IS.insert ref freeSlots) es fs
+
+-- | Relink the environment to use the new storage.
+relinkEnv :: IORef Storage -> Env es -> IO (Env es)
+relinkEnv storage (Env size mrefs0 _) = do
+  References n refs0 <- readIORef mrefs0
+  mrefs <- newIORef . References n
+    =<< cloneMutablePrimArray refs0 0 (sizeofMutablePrimArray refs0)
+  pure $ Env size mrefs storage
+
+-- | Throw an error if array sizes do not agree.
+errorWhenDifferent :: HasCallStack => Int -> Int -> IO ()
+errorWhenDifferent size n
+  | size /= n = error $ "size (" ++ show size ++ ") /= n (" ++ show n ++ ")"
+  | otherwise = pure ()
+
+-- | Double the capacity of an array.
+doubleCapacity :: Int -> Int
+doubleCapacity n = max 1 n * 2
+
 undefinedData :: HasCallStack => a
 undefinedData = error "undefined data"
-
-emptyEnvRef :: IO (IORef EnvRef)
-emptyEnvRef = do
-  es <- newSmallArray 0 undefinedData
-  fs <- newSmallArray 0 undefinedData
-  newIORef $ EnvRef 0 es fs
-
--- | Location with unboxed fields to make GHC generate Core without unnecessary
--- reboxing around the local 'go' function from 'getLocation'.
-data Location = Location !Int !(SmallMutableArray RealWorld Any)
-
--- | Determine location of the data type in the environment.
-getLocation
-  :: Int
-  -> Env es
-  -> IO Location
-getLocation ix (Env fork size ref _) = do
-  let i = size - ix - 1
-  EnvRef _ es@(SmallMutableArray es#) _ <- readIORef ref
-  -- Optimized for the common access pattern:
-  --
-  -- - Most application code has no access to forks, in which case we look at
-  --   the global EnvRef.
-  --
-  -- - Effect handlers will most likely access the newest fork with handler
-  --   specific effects for reinterpretation.
-  case fork of
-    NoFork -> pure $ Location i es
-    Forks _ baseIx lref forks
-      | i >= baseIx -> do
-          EnvRef _ les _ <- readIORef lref
-          pure $ Location (i - baseIx) les
-      | otherwise -> go es# i forks
-  where
-    go :: SmallMutableArray# RealWorld Any
-       -> Int
-       -> Forks
-       -> IO Location
-    go es# i = \case
-      NoFork -> pure $ Location i (SmallMutableArray es#)
-      Forks _ baseIx lref forks
-        | i >= baseIx -> do
-            EnvRef _ les _ <- readIORef lref
-            pure $ Location (i - baseIx) les
-        | otherwise -> go es# i forks

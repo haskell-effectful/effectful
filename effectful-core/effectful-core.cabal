@@ -43,7 +43,6 @@ common language
                         MultiParamTypeClasses
                         NoStarIsType
                         RankNTypes
-                        RecordWildCards
                         RoleAnnotations
                         ScopedTypeVariables
                         StandaloneDeriving

@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Effectful.Internal.Env
   ( -- * The environment
@@ -23,9 +24,13 @@ module Effectful.Internal.Env
   , checkSizeEnv
   , tailEnv
 
-    -- ** Extending and shrinking
+    -- ** Modification of the effect stack
   , consEnv
   , unconsEnv
+  , replaceEnv
+  , unreplaceEnv
+  , subsumeEnv
+  , unsubsumeEnv
 
     -- ** Data retrieval and update
   , getEnv
@@ -248,6 +253,72 @@ unconsEnv (Env size mrefs storage) = do
 {-# NOINLINE unconsEnv #-}
 
 ----------------------------------------
+
+-- | Replace a specific effect in the stack with a new value.
+replaceEnv
+  :: forall e es. e :> es
+  => EffectRep (DispatchOf e) e
+  -- ^ The representation of the effect.
+  -> Relinker (EffectRep (DispatchOf e)) e
+  -> Env es
+  -> IO (Env es)
+replaceEnv e f (Env size mrefs0 storage) = do
+  References n refs0 <- readIORef mrefs0
+  errorWhenDifferent size n
+  len0 <- getSizeofMutablePrimArray refs0
+  refs <- if size > len0
+    then error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
+    else cloneMutablePrimArray refs0 0 len0
+  mask_ $ do
+    ref <- insertEffect storage e f
+    writePrimArray refs (refIndex @e @es size) ref
+    mrefs <- newIORef $ References n refs
+    pure $ Env size mrefs storage
+{-# NOINLINE replaceEnv #-}
+
+-- | Remove a reference to the replaced effect.
+--
+-- /Note:/ after calling this function the input environment is no longer
+-- usable.
+unreplaceEnv :: forall e es. e :> es => Env es -> IO ()
+unreplaceEnv (Env size mrefs storage) = do
+  References n refs <- readIORef mrefs
+  errorWhenDifferent size n
+  ref <- readPrimArray refs (refIndex @e @es size)
+  deleteEffect storage ref
+{-# NOINLINE unreplaceEnv #-}
+
+----------------------------------------
+
+-- | Reference an existing effect from the top of the stack (in place).
+subsumeEnv :: forall e es. e :> es => Env es -> IO (Env (e : es))
+subsumeEnv (Env size mrefs storage) = do
+  References n refs0 <- readIORef mrefs
+  errorWhenDifferent size n
+  len0 <- getSizeofMutablePrimArray refs0
+  refs <- case size `compare` len0 of
+    GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
+    LT -> pure refs0
+    EQ -> resizeMutablePrimArray refs0 (doubleCapacity len0)
+  mask_ $ do
+    ref <- readPrimArray refs (refIndex @e @es size)
+    writePrimArray refs size ref
+    writeIORef mrefs $! References (size + 1) refs
+    pure $ Env (size + 1) mrefs storage
+{-# NOINLINE subsumeEnv #-}
+
+-- | Remove a reference to an existing effect from the top of the stack.
+--
+-- /Note:/ after calling this function the input environment is no longer
+-- usable.
+unsubsumeEnv :: e :> es => Env (e : es) -> IO ()
+unsubsumeEnv (Env size mrefs _) = do
+  References n refs <- readIORef mrefs
+  errorWhenDifferent size n
+  writeIORef mrefs $! References (size - 1) refs
+{-# NOINLINE unsubsumeEnv #-}
+
+----------------------------------------
 -- Data retrieval and update
 
 -- | Extract a specific data type from the environment.
@@ -256,7 +327,7 @@ getEnv
   => Env es -- ^ The environment.
   -> IO (EffectRep (DispatchOf e) e)
 getEnv env = do
-  (i, es) <- getLocation (reifyIndex @e @es) env
+  (i, es) <- getLocation @e env
   fromAny <$> readSmallArray es i
 
 -- | Replace the data type in the environment with a new value (in place).
@@ -266,7 +337,7 @@ putEnv
   -> EffectRep (DispatchOf e) e
   -> IO ()
 putEnv env e = do
-  (i, es) <- getLocation (reifyIndex @e @es) env
+  (i, es) <- getLocation @e env
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Modify the data type in the environment (in place) and return a value.
@@ -276,7 +347,7 @@ stateEnv
   -> (EffectRep (DispatchOf e) e -> (a, EffectRep (DispatchOf e) e))
   -> IO a
 stateEnv env f = do
-  (i, es) <- getLocation (reifyIndex @e @es) env
+  (i, es) <- getLocation @e env
   (a, e) <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
   pure a
@@ -288,20 +359,24 @@ modifyEnv
   -> (EffectRep (DispatchOf e) e -> EffectRep (DispatchOf e) e)
   -> IO ()
 modifyEnv env f = do
-  (i, es) <- getLocation (reifyIndex @e @es) env
+  (i, es) <- getLocation @e env
   e <- f . fromAny <$> readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Determine location of the effect in the environment.
 getLocation
-  :: Int
-  -> Env es
+  :: forall e es. e :> es
+  => Env es
   -> IO (Int, SmallMutableArray RealWorld Any)
-getLocation ix (Env size mrefs storage) = do
+getLocation (Env size mrefs storage) = do
   refs <- refIndices <$> readIORef mrefs
-  i <- readPrimArray refs (size - ix - 1)
+  i <- readPrimArray refs (refIndex @e @es size)
   es <- stEffects <$> readIORef storage
   pure (i, es)
+
+-- | Get the index of a reference to an effect.
+refIndex :: forall e es. e :> es => Int -> Int
+refIndex size = size - reifyIndex @e @es - 1
 
 ----------------------------------------
 -- Internal helpers

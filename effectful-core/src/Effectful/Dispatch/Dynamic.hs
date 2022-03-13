@@ -16,6 +16,7 @@ module Effectful.Dispatch.Dynamic
   , EffectHandler
   , interpret
   , reinterpret
+  , interpose
 
     -- ** Handling local 'Eff' computations
   , LocalEnv
@@ -41,6 +42,7 @@ module Effectful.Dispatch.Dynamic
   , HasCallStack
   ) where
 
+import Control.Exception (bracket)
 import Control.Monad.IO.Unlift
 import Data.Kind
 import GHC.Stack (HasCallStack)
@@ -290,6 +292,46 @@ reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
   les0 <- forkEnv es
   (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
     (`unEff` es) $ runHandler (Handler les handler) m
+
+-- | Replace the handler of an existing effect with a new one.
+--
+-- /Note:/ this function allows for augmenting handlers with a new functionality
+-- as the new handler can send operations to the old one.
+--
+-- >>> :{
+--   data E :: Effect where
+--     Op :: E m ()
+--   type instance DispatchOf E = Dynamic
+-- :}
+--
+-- >>> :{
+--   runE :: IOE :> es => Eff (E : es) a -> Eff es a
+--   runE = interpret $ \_ Op -> liftIO (putStrLn "op")
+-- :}
+--
+-- >>> runEff . runE $ send Op
+-- op
+--
+-- >>> :{
+--   augmentE :: (E :> es, IOE :> es) => Eff es a -> Eff es a
+--   augmentE = interpose $ \_ Op -> liftIO (putStrLn "augmented op") >> send Op
+-- :}
+--
+-- >>> runEff . runE . augmentE $ send Op
+-- augmented op
+-- op
+--
+interpose
+  :: forall e es a. (e :> es, DispatchOf e ~ Dynamic)
+  => EffectHandler e es
+  -- ^ The effect handler.
+  -> Eff es a
+  -> Eff es a
+interpose handler m = unsafeEff $ \es0 -> do
+  les <- forkEnv es0
+  bracket (replaceEnv (Handler les handler) relinkHandler es0)
+          (unreplaceEnv @e)
+          (\es -> unEff m es)
 
 ----------------------------------------
 -- Unlifts

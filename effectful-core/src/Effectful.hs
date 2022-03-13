@@ -23,6 +23,7 @@ module Effectful
 
     -- ** Lifting
   , raise
+  , subsume
 
     -- ** Unlifting
   , UnliftStrategy(..)

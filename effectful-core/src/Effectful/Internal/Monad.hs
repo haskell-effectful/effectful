@@ -28,6 +28,7 @@ module Effectful.Internal.Monad
 
   -- * Lifting
   , raise
+  , subsume
 
   -- * Unlifting
   , UnliftStrategy(..)
@@ -47,6 +48,7 @@ module Effectful.Internal.Monad
   , EffectHandler
   , LocalEnv(..)
   , Handler(..)
+  , relinkHandler
   , runHandler
   , send
 
@@ -322,6 +324,10 @@ instance Prim :> es => PrimMonad (Eff es) where
 raise :: Eff es a -> Eff (e : es) a
 raise m = unsafeEff $ \es -> unEff m =<< tailEnv es
 
+-- | Eliminate a duplicate effect from the top of the effect stack.
+subsume :: e :> es => Eff (e : es) a -> Eff es a
+subsume m = unsafeEff $ \es -> E.bracket (subsumeEnv es) unsubsumeEnv (unEff m)
+
 ----------------------------------------
 -- Dynamic dispatch
 
@@ -351,17 +357,17 @@ data Handler :: Effect -> Type where
   Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
 type instance EffectRep Dynamic = Handler
 
+relinkHandler :: Relinker Handler e
+relinkHandler = Relinker $ \relink (Handler handlerEs handle) -> do
+  newHandlerEs <- relink handlerEs
+  pure $ Handler newHandlerEs handle
+
 -- | Run a dynamically dispatched effect with the given handler.
 runHandler :: DispatchOf e ~ Dynamic => Handler e -> Eff (e : es) a -> Eff es a
 runHandler e m = unsafeEff $ \es0 -> do
-  E.bracket (consEnv e relinker es0)
+  E.bracket (consEnv e relinkHandler es0)
             unconsEnv
             (\es -> unEff m es)
-  where
-    relinker :: Relinker Handler e
-    relinker = Relinker $ \relink (Handler handlerEs handle) -> do
-      newHandlerEs <- relink handlerEs
-      pure $ Handler newHandlerEs handle
 
 -- | Send an operation of the given effect to its handler for execution.
 send

@@ -41,7 +41,6 @@ import Data.IORef
 import Data.Primitive.PrimArray
 import Data.Primitive.SmallArray
 import GHC.Stack (HasCallStack)
-import qualified Data.IntSet as IS
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Utils
@@ -92,7 +91,7 @@ data References = References
 --
 -- Shared between all forks of the environment within the same thread.
 data Storage = Storage
-  { stFreeSlots :: !IS.IntSet
+  { stSize      :: !Int
   , stEffects   :: !(SmallMutableArray RealWorld Any)
   , stRelinkers :: !(SmallMutableArray RealWorld Any)
   }
@@ -147,34 +146,32 @@ cloneEnv (Env size mrefs0 storage0) = do
   errorWhenDifferent size n
   mrefs <- newIORef . References n
     =<< cloneMutablePrimArray refs0 0 (sizeofMutablePrimArray refs0)
-  Storage freeSlots es0 fs0 <- readIORef storage0
+  Storage storageSize es0 fs0 <- readIORef storage0
   let esSize = sizeofSmallMutableArray es0
       fsSize = sizeofSmallMutableArray fs0
   when (esSize /= fsSize) $ do
     error $ "esSize (" ++ show esSize ++ ") /= fsSize (" ++ show fsSize ++ ")"
   es <- cloneSmallMutableArray es0 0 esSize
   fs <- cloneSmallMutableArray fs0 0 esSize
-  storage <- newIORef $ Storage freeSlots es fs
-  relinkEffects (relinkEnv storage) freeSlots es fs esSize
+  storage <- newIORef $ Storage storageSize es fs
+  relinkEffects (relinkEnv storage) es fs storageSize
   pure $ Env size mrefs storage
   where
     relinkEffects
       :: (forall es. Env es -> IO (Env es))
-      -> IS.IntSet
       -> SmallMutableArray RealWorld Any
       -> SmallMutableArray RealWorld Any
       -> Int
       -> IO ()
-    relinkEffects relink freeSlots es fs = \case
+    relinkEffects relink es fs = \case
      0 -> pure ()
      n -> do
        let i = n - 1
-       when (i `IS.notMember` freeSlots) $ do
-         Relinker f <- fromAny <$> readSmallArray fs i
-         readSmallArray es i
-           >>= f relink . fromAny
-           >>= writeSmallArray es i . toAny
-       relinkEffects relink freeSlots es fs i
+       Relinker f <- fromAny <$> readSmallArray fs i
+       readSmallArray es i
+         >>= f relink . fromAny
+         >>= writeSmallArray es i . toAny
+       relinkEffects relink es fs i
 {-# NOINLINE cloneEnv #-}
 
 -- | Create a fork of the environment.
@@ -312,7 +309,7 @@ getLocation ix (Env size mrefs storage) = do
 -- | Create an empty storage.
 emptyStorage :: IO Storage
 emptyStorage = Storage
-  <$> pure IS.empty
+  <$> pure 0
   <*> newSmallArray 0 undefinedData
   <*> newSmallArray 0 undefinedData
 
@@ -324,34 +321,40 @@ insertEffect
   -> Relinker (EffectRep (DispatchOf e)) e
   -> IO Int
 insertEffect storage e f = do
-  Storage freeSlots es0 fs0 <- readIORef storage
-  case IS.minView freeSlots of
-    Just (ref, newFreeSlots) -> do
-      e `seq` writeSmallArray es0 ref (toAny e)
-      f `seq` writeSmallArray fs0 ref (toAny f)
-      writeIORef storage $! Storage newFreeSlots es0 fs0
-      pure ref
-    Nothing -> do
-      let len0 = sizeofSmallMutableArray es0
-          len  = doubleCapacity len0
+  Storage size es0 fs0 <- readIORef storage
+  let len0 = sizeofSmallMutableArray es0
+  case size `compare` len0 of
+    GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
+    LT -> do
+      e `seq` writeSmallArray es0 size (toAny e)
+      f `seq` writeSmallArray fs0 size (toAny f)
+      writeIORef storage $! Storage (size + 1) es0 fs0
+      pure size
+    EQ -> do
+      let len = doubleCapacity len0
       es <- newSmallArray len undefinedData
-      copySmallMutableArray es 0 es0 0 len0
       fs <- newSmallArray len undefinedData
-      copySmallMutableArray fs 0 fs0 0 len0
-      let ref          = len0
-      let newFreeSlots = IS.fromAscList $ tail [len0 .. len - 1]
-      e `seq` writeSmallArray es ref (toAny e)
-      f `seq` writeSmallArray fs ref (toAny f)
-      writeIORef storage $! Storage newFreeSlots es fs
-      pure ref
+      copySmallMutableArray es 0 es0 0 size
+      copySmallMutableArray fs 0 fs0 0 size
+      e `seq` writeSmallArray es size (toAny e)
+      f `seq` writeSmallArray fs size (toAny f)
+      writeIORef storage $! Storage (size + 1) es fs
+      pure size
 
 -- | Given a reference to an effect, delete it from the storage.
+--
+-- /Note:/ the reference needs to point to the end of the storage. Normally it's
+-- not a problem as it turns out effects are put and taken from the storage in
+-- the same order across all forks, unless someone tries to do something
+-- unexpected.
 deleteEffect :: IORef Storage -> Int -> IO ()
 deleteEffect storage ref = do
-  Storage freeSlots es fs <- readIORef storage
+  Storage size es fs <- readIORef storage
+  when (ref /= size - 1) $ do
+    error $ "ref (" ++ show ref ++ ") /= size - 1 (" ++ show (size - 1) ++ ")"
   writeSmallArray es ref undefinedData
   writeSmallArray fs ref undefinedData
-  writeIORef storage $! Storage (IS.insert ref freeSlots) es fs
+  writeIORef storage $! Storage (size - 1) es fs
 
 -- | Relink the environment to use the new storage.
 relinkEnv :: IORef Storage -> Env es -> IO (Env es)

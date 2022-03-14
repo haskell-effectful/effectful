@@ -322,7 +322,7 @@ reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
 -- op
 --
 interpose
-  :: forall e es a. (e :> es, DispatchOf e ~ Dynamic)
+  :: forall e es a. (DispatchOf e ~ Dynamic, e :> es)
   => EffectHandler e es
   -- ^ The effect handler.
   -> Eff es a

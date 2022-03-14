@@ -17,6 +17,7 @@ module Effectful.Dispatch.Dynamic
   , interpret
   , reinterpret
   , interpose
+  , impose
 
     -- ** Handling local 'Eff' computations
   , LocalEnv
@@ -279,7 +280,9 @@ interpret handler m = unsafeEff $ \es -> do
   les <- forkEnv es
   (`unEff` es) $ runHandler (Handler les handler) m
 
--- | Interpret an effect using other effects.
+-- | Interpret an effect using other, private effects.
+--
+-- @'interpret' ≡ 'reinterpret' 'id'@
 reinterpret
   :: DispatchOf e ~ Dynamic
   => (Eff handlerEs a -> Eff es b)
@@ -332,6 +335,25 @@ interpose handler m = unsafeEff $ \es0 -> do
   bracket (replaceEnv (Handler les handler) relinkHandler es0)
           (unreplaceEnv @e)
           (\es -> unEff m es)
+
+-- | Replace the handler of an existing effect with a new one that uses other,
+-- private effects.
+--
+-- @'interpose' ≡ 'impose' 'id'@
+impose
+  :: forall e es handlerEs a b. (DispatchOf e ~ Dynamic, e :> es)
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handler.
+  -> EffectHandler e handlerEs
+  -- ^ The effect handler.
+  -> Eff es a
+  -> Eff es b
+impose runHandlerEs handler m = unsafeEff $ \es0 -> do
+  les0 <- forkEnv es0
+  (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
+    bracket (replaceEnv (Handler les handler) relinkHandler es0)
+            (unreplaceEnv @e)
+            (\es -> unEff m es)
 
 ----------------------------------------
 -- Unlifts

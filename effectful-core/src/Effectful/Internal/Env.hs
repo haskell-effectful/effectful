@@ -39,7 +39,6 @@ module Effectful.Internal.Env
   , modifyEnv
   ) where
 
-import Control.Exception
 import Control.Monad
 import Control.Monad.Primitive
 import Data.IORef
@@ -231,11 +230,10 @@ consEnv e f (Env size mrefs storage) = do
     GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
     LT -> pure refs0
     EQ -> resizeMutablePrimArray refs0 (doubleCapacity len0)
-  mask_ $ do
-    ref <- insertEffect storage e f
-    writePrimArray refs size ref
-    writeIORef mrefs $! References (size + 1) refs
-    pure $ Env (size + 1) mrefs storage
+  ref <- insertEffect storage e f
+  writePrimArray refs size ref
+  writeIORef mrefs $! References (size + 1) refs
+  pure $ Env (size + 1) mrefs storage
 {-# NOINLINE consEnv #-}
 
 -- | Shrink the environment by one data type (in place).
@@ -247,9 +245,8 @@ unconsEnv (Env size mrefs storage) = do
   References n refs <- readIORef mrefs
   errorWhenDifferent size n
   ref <- readPrimArray refs (size - 1)
-  mask_ $ do
-    deleteEffect storage ref
-    writeIORef mrefs $! References (size - 1) refs
+  deleteEffect storage ref
+  writeIORef mrefs $! References (size - 1) refs
 {-# NOINLINE unconsEnv #-}
 
 ----------------------------------------
@@ -269,11 +266,10 @@ replaceEnv e f (Env size mrefs0 storage) = do
   refs <- if size > len0
     then error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
     else cloneMutablePrimArray refs0 0 len0
-  mask_ $ do
-    ref <- insertEffect storage e f
-    writePrimArray refs (refIndex @e @es size) ref
-    mrefs <- newIORef $ References n refs
-    pure $ Env size mrefs storage
+  ref <- insertEffect storage e f
+  writePrimArray refs (refIndex @e @es size) ref
+  mrefs <- newIORef $ References n refs
+  pure $ Env size mrefs storage
 {-# NOINLINE replaceEnv #-}
 
 -- | Remove a reference to the replaced effect.
@@ -300,11 +296,10 @@ subsumeEnv (Env size mrefs storage) = do
     GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
     LT -> pure refs0
     EQ -> resizeMutablePrimArray refs0 (doubleCapacity len0)
-  mask_ $ do
-    ref <- readPrimArray refs (refIndex @e @es size)
-    writePrimArray refs size ref
-    writeIORef mrefs $! References (size + 1) refs
-    pure $ Env (size + 1) mrefs storage
+  ref <- readPrimArray refs (refIndex @e @es size)
+  writePrimArray refs size ref
+  writeIORef mrefs $! References (size + 1) refs
+  pure $ Env (size + 1) mrefs storage
 {-# NOINLINE subsumeEnv #-}
 
 -- | Remove a reference to an existing effect from the top of the stack.

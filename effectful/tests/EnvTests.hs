@@ -14,6 +14,7 @@ envTests :: TestTree
 envTests = testGroup "Env"
   [ testCase "staircase forkEnv" test_staircaseForkEnv
   , testCase "tailEnv through forks" test_unforkedTailEnv
+  , testCase "subsume works" test_subsumeEnv
   ]
 
 test_staircaseForkEnv :: Assertion
@@ -41,3 +42,10 @@ test_unforkedTailEnv = runEff . evalState s0 . runReader () $ do
   where
     s0 :: Int
     s0 = 1337
+
+test_subsumeEnv :: Assertion
+test_subsumeEnv = runEff $ do
+  s <- execState @Int 0 . subsume @(State Int) $ do
+    modify @Int (+1)
+    raise $ modify @Int (+2)
+  U.assertEqual "exepcted result" 3 s

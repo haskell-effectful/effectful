@@ -7,6 +7,7 @@ import ConcurrencyTests
 import EnvTests
 import EnvironmentTests
 import ErrorTests
+import ReaderTests
 import StateTests
 import TimeoutTests
 import UnliftTests
@@ -18,6 +19,7 @@ main = defaultMain $ testGroup "effectful"
   , envTests
   , environmentTests
   , errorTests
+  , readerTests
   , stateTests
   , timeoutTests
   , unliftTests

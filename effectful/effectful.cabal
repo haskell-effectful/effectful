@@ -135,6 +135,7 @@ test-suite test
                     EnvTests
                     EnvironmentTests
                     ErrorTests
+                    ReaderTests
                     StateTests
                     TimeoutTests
                     UnliftTests

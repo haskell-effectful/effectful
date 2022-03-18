@@ -263,9 +263,9 @@ replaceEnv e f (Env size mrefs0 storage) = do
   References n refs0 <- readIORef mrefs0
   errorWhenDifferent size n
   len0 <- getSizeofMutablePrimArray refs0
-  refs <- if size > len0
-    then error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
-    else cloneMutablePrimArray refs0 0 len0
+  when (size > len0) $ do
+    error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
+  refs <- cloneMutablePrimArray refs0 0 len0
   ref <- insertEffect storage e f
   writePrimArray refs (refIndex @e @es size) ref
   mrefs <- newIORef $ References n refs

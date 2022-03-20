@@ -78,8 +78,8 @@ Analysis:
    single `Int` pointing at the place in the stack where the relevant effect is
    located.
 
-5. `fused-effects` exhibits similar behavior as `mtl`. This comes with no
-   surprise as it uses the same implementation techniques. It augments them with
+5. `fused-effects` exhibits similar behavior as `mtl`. This comes as no surprise
+   since it uses the same implementation techniques. It augments them with
    additional machinery for convenience, which seems to add even more overhead
    though.
 

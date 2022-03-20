@@ -66,7 +66,7 @@ Analysis:
    every monadic operation, so making it a function call has a disastrous effect
    on performance.
    
-   Why is the result for the deep stack so much worse that for the shallow one
+   Why is the result for the deep stack so much worse than for the shallow one
    though? It's because in reality, each call to bind performs *O(n)* function
    calls, where *n* is the number of monad transformers on the stack. That's
    because the implementation of bind for every monad transformer refers to the

@@ -27,9 +27,9 @@ effects. This is crucial in order to get realistic results, as for any
 non-trivial, multi-module application the compiler will not be able to do this
 as that would essentially mean performing whole program specialization.
 
-The code was compiled with GHC 9.0.2 and run on a Ryzen 9 5950x.
-
 ## Results
+
+The code was compiled with GHC 9.0.2 and run on a Ryzen 9 5950x.
 
 ### Countdown
 

@@ -41,11 +41,11 @@ Analysis:
    implementation that uses the `ST` monad, so it offers no additional
    overhead. Its dynamic dispatch is also the fastest.
 
-2. `cleff` uses very similar implementation techniques as `effectful` and is
-   only a bit behind with the shallow version, but gets further away with the
-   deep one. This is because it uses `IntMap` for the effect dispatch
-   underneath, so it's not quite constant size in terms of the effect stack. For
-   comparison, `effectful` uses arrays.
+2. `cleff` uses very similar implementation techniques as `effectful` and is on
+   par with it for the shallow version, but gets slower for the deep one. This
+   is because it uses `IntMap` for the effect dispatch underneath, so it's not
+   quite constant size in terms of the effect stack. For comparison, `effectful`
+   uses arrays.
 
 3. `freer-simple` does surprisingly well for a solution that's based on free
    monads.

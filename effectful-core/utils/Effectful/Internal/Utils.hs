@@ -22,7 +22,11 @@ weakThreadId :: ThreadId -> Int
 weakThreadId (ThreadId t#) = fromIntegral $ rts_getThreadId t#
 
 foreign import ccall unsafe "rts_getThreadId"
-#if __GLASGOW_HASKELL__ >= 900
+#if __GLASGOW_HASKELL__ >= 903
+  -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6163
+  rts_getThreadId :: ThreadId# -> CULLong
+#elif __GLASGOW_HASKELL__ >= 900
+  -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/1254
   rts_getThreadId :: ThreadId# -> CLong
 #else
   rts_getThreadId :: ThreadId# -> CInt

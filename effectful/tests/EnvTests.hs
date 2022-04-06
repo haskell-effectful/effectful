@@ -15,6 +15,7 @@ envTests = testGroup "Env"
   [ testCase "staircase forkEnv" test_staircaseForkEnv
   , testCase "tailEnv through forks" test_unforkedTailEnv
   , testCase "subsume works" test_subsumeEnv
+  , testCase "inject works" test_injectEnv
   ]
 
 test_staircaseForkEnv :: Assertion
@@ -49,3 +50,20 @@ test_subsumeEnv = runEff $ do
     modify @Int (+1)
     raise $ modify @Int (+2)
   U.assertEqual "exepcted result" 3 s
+
+test_injectEnv :: Assertion
+test_injectEnv = runEff $ runReader () $ do
+  s <- execState @Int 0 $ inject action
+  U.assertEqual "expected result" 15 s
+  where
+    action :: Eff [State Int, IOE, Reader (), State Int] ()
+    action = do
+      modify @Int (+1)
+      raise $ do
+        modify @Int (+2)
+        inject innerAction
+
+    innerAction :: Eff [State Int, State Int, IOE] ()
+    innerAction = do
+      modify @Int (+4)
+      raise $ modify @Int (+8)

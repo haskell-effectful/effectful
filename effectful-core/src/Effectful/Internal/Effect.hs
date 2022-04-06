@@ -9,6 +9,7 @@ module Effectful.Internal.Effect
   ( Effect
   , (:>)(..)
   , (:>>)
+  , Subset(..)
 
   -- * Re-exports
   , Type
@@ -60,3 +61,17 @@ instance e :> es => e :> (x : es) where
 type family xs :>> es :: Constraint where
   '[]      :>> es = ()
   (x : xs) :>> es = (x :> es, xs :>> es)
+
+----------------------------------------
+
+-- | Provide the evidence that @xs@ is a subset of @es@.
+class Subset (xs :: [Effect]) (es :: [Effect]) where
+  reifyIndices :: [Int]
+  reifyIndices = -- Don't show "minimal complete definition" in haddock.
+                 error "unimplemented"
+
+instance Subset '[] es where
+  reifyIndices = []
+
+instance (e :> es, Subset xs es) => Subset (e : xs) es where
+  reifyIndices = reifyIndex @e @es : reifyIndices @xs @es

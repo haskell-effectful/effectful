@@ -31,6 +31,7 @@ module Effectful.Internal.Env
   , unreplaceEnv
   , subsumeEnv
   , unsubsumeEnv
+  , injectEnv
 
     -- ** Data retrieval and update
   , getEnv
@@ -312,6 +313,25 @@ unsubsumeEnv (Env size mrefs _) = do
   errorWhenDifferent size n
   writeIORef mrefs $! References (size - 1) refs
 {-# NOINLINE unsubsumeEnv #-}
+
+----------------------------------------
+
+-- | Construct an environment containing a permutation (with possible
+-- duplicates) of a subset of effects from the input environment.
+injectEnv :: forall xs es. Subset xs es => Env es -> IO (Env xs)
+injectEnv (Env size0 mrefs0 storage) = do
+  References n0 refs0 <- readIORef mrefs0
+  errorWhenDifferent size0 n0
+  let makeRefs k acc = \case
+        []       -> unsafeThawPrimArray $ primArrayFromListN k acc
+        (e : es) -> do
+          i <- readPrimArray refs0 (n0 - e - 1) -- refIndex
+          makeRefs (k + 1) (i : acc) es
+  refs <- makeRefs 0 [] (reifyIndices @xs @es)
+  size <- getSizeofMutablePrimArray refs
+  mrefs <- newIORef $ References size refs
+  pure $ Env size mrefs storage
+{-# NOINLINE injectEnv #-}
 
 ----------------------------------------
 -- Data retrieval and update

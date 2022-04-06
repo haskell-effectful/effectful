@@ -29,6 +29,7 @@ module Effectful.Internal.Monad
   -- * Lifting
   , raise
   , subsume
+  , inject
 
   -- * Unlifting
   , UnliftStrategy(..)
@@ -330,6 +331,18 @@ subsume m = unsafeEff $ \es0 -> do
   E.bracket (subsumeEnv es0)
             unsubsumeEnv
             (\es -> unEff m es)
+
+-- | Allow for running an effect stack @xs@ within @es@ as long as @xs@ is a
+-- permutation (with possible duplicates) of a subset of @es@.
+--
+-- Generalizes 'raise' and 'subsume'.
+--
+-- /Note:/ this function should be needed rarely, usually when you need to cross
+-- API boundaries and monomorphic effect stacks are involved. Using monomorphic
+-- stacks is discouraged (see 'Eff'), but sometimes might be necessary due to
+-- external constraints.
+inject :: Subset xs es => Eff xs a -> Eff es a
+inject m = unsafeEff $ \es -> unEff m =<< injectEnv es
 
 ----------------------------------------
 -- Dynamic dispatch

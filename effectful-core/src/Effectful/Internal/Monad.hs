@@ -326,7 +326,10 @@ raise m = unsafeEff $ \es -> unEff m =<< tailEnv es
 
 -- | Eliminate a duplicate effect from the top of the effect stack.
 subsume :: e :> es => Eff (e : es) a -> Eff es a
-subsume m = unsafeEff $ \es -> E.bracket (subsumeEnv es) unsubsumeEnv (unEff m)
+subsume m = unsafeEff $ \es0 -> do
+  E.bracket (subsumeEnv es0)
+            unsubsumeEnv
+            (\es -> unEff m es)
 
 ----------------------------------------
 -- Dynamic dispatch

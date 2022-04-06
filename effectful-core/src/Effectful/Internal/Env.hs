@@ -159,24 +159,17 @@ cloneEnv (Env size mrefs0 storage0) = do
   es <- cloneSmallMutableArray es0 0 esSize
   fs <- cloneSmallMutableArray fs0 0 esSize
   storage <- newIORef $ Storage storageSize es fs
-  relinkEffects (relinkEnv storage) es fs storageSize
+  let relinkEffects = \case
+        0 -> pure ()
+        k -> do
+          let i = k - 1
+          Relinker f <- fromAny <$> readSmallArray fs i
+          readSmallArray es i
+            >>= f (relinkEnv storage) . fromAny
+            >>= writeSmallArray es i . toAny
+          relinkEffects i
+  relinkEffects storageSize
   pure $ Env size mrefs storage
-  where
-    relinkEffects
-      :: (forall es. Env es -> IO (Env es))
-      -> SmallMutableArray RealWorld Any
-      -> SmallMutableArray RealWorld Any
-      -> Int
-      -> IO ()
-    relinkEffects relink es fs = \case
-     0 -> pure ()
-     n -> do
-       let i = n - 1
-       Relinker f <- fromAny <$> readSmallArray fs i
-       readSmallArray es i
-         >>= f relink . fromAny
-         >>= writeSmallArray es i . toAny
-       relinkEffects relink es fs i
 {-# NOINLINE cloneEnv #-}
 
 -- | Create a fork of the environment.

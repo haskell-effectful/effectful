@@ -337,7 +337,7 @@ subsume m = unsafeEff $ \es0 -> do
 --
 -- Generalizes 'raise' and 'subsume'.
 --
--- /Note:/ this function should be needed rarely, usually when you need to cross
+-- /Note:/ this function should be needed rarely, usually when you have to cross
 -- API boundaries and monomorphic effect stacks are involved. Using monomorphic
 -- stacks is discouraged (see 'Eff'), but sometimes might be necessary due to
 -- external constraints.

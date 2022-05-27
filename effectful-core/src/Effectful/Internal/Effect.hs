@@ -64,7 +64,7 @@ type family xs :>> es :: Constraint where
 
 ----------------------------------------
 
--- | Provide the evidence that @xs@ is a subset of @es@.
+-- | Provide evidence that @xs@ is a subset of @es@.
 class Subset (xs :: [Effect]) (es :: [Effect]) where
   reifyIndices :: [Int]
   reifyIndices = -- Don't show "minimal complete definition" in haddock.

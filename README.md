@@ -68,11 +68,11 @@ support for them has been accepted).
 
 ### What about `mtl`?
 
-It's true that its effects-as-classes approach is widely known and used often.
+It's true that its "effects as classes" approach is widely known and used often.
 
 However:
 
-- `mtl`-style effects are
+- `mtl` style effects are
   [slow](https://github.com/haskell-effectful/effectful/tree/master/benchmarks).
 
 - All of most often used monad transformers (except `ReaderT`) used for effect
@@ -104,23 +104,25 @@ optimization passes, it just works.
 
 ### Any downsides?
 
-As always, there's no free lunch. `Eff` doesn't support `NonDet` and `Coroutine`
-effects.
+As always, there's no free lunch. `Eff` doesn't support `NonDet` nor `Coroutine`
+effects. For what is worth however, the `NonDet` effect in existing effect
+libraries is
+[broken](https://github.com/lexi-lambda/eff/blob/master/notes/semantics-zoo.md)
+and none of them provide the `Coroutine` effect, so arguably it's not a big
+loss.
 
-If you need such capability in your application, not all is lost. There are well
-established libraries such as
-[conduit](https://hackage.haskell.org/package/conduit) or
+If you need such capability in your application, there are well established
+libraries such as [conduit](https://hackage.haskell.org/package/conduit) or
 [list-t](https://hackage.haskell.org/package/list-t) that can be used with
-`effectful` without any issues. Instead of working in the `Eff` monad you'll
-temporarily work in the `ListT Eff` monad and things will work just fine.
+`effectful` without any issues.
 
 ### Summary
 
 `effectful` aims to replace "boring" transformer stacks (which 99% of time
 consist of a dozen of newtype'd `ExceptT`, `ReaderT`, `StateT` and `WriterT`
-transformers) by providing replacements as effects with much improved semantics,
+transformers) by providing equivalent effects with much improved semantics,
 performance and usability. It doesn't try to make monad transformers obsolete,
-so you're free to use it with `ConduitT`, `ContT` or `ListT` when necessary.
+so you're free to use it with `ConduitT`, `ContT`, `ListT` etc. when necessary.
 
 ## Usage
 

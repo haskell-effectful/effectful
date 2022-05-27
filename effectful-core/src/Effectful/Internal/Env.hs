@@ -261,7 +261,7 @@ replaceEnv e f (Env size mrefs0 storage) = do
     error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
   refs <- cloneMutablePrimArray refs0 0 len0
   ref <- insertEffect storage e f
-  writePrimArray refs (refIndex @e @es size) ref
+  writePrimArray refs (mkIndex (reifyIndex @e @es) size) ref
   mrefs <- newIORef $ References n refs
   pure $ Env size mrefs storage
 {-# NOINLINE replaceEnv #-}
@@ -274,7 +274,7 @@ unreplaceEnv :: forall e es. e :> es => Env es -> IO ()
 unreplaceEnv (Env size mrefs storage) = do
   References n refs <- readIORef mrefs
   errorWhenDifferent size n
-  ref <- readPrimArray refs (refIndex @e @es size)
+  ref <- readPrimArray refs $ mkIndex (reifyIndex @e @es) size
   deleteEffect storage ref
 {-# NOINLINE unreplaceEnv #-}
 
@@ -290,7 +290,7 @@ subsumeEnv (Env size mrefs storage) = do
     GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
     LT -> pure refs0
     EQ -> resizeMutablePrimArray refs0 (doubleCapacity len0)
-  ref <- readPrimArray refs (refIndex @e @es size)
+  ref <- readPrimArray refs $ mkIndex (reifyIndex @e @es) size
   writePrimArray refs size ref
   writeIORef mrefs $! References (size + 1) refs
   pure $ Env (size + 1) mrefs storage
@@ -318,7 +318,7 @@ injectEnv (Env size0 mrefs0 storage) = do
   let makeRefs k acc = \case
         []       -> unsafeThawPrimArray $ primArrayFromListN k acc
         (e : es) -> do
-          i <- readPrimArray refs0 (n0 - e - 1) -- refIndex
+          i <- readPrimArray refs0 $ mkIndex e size0
           makeRefs (k + 1) (i : acc) es
   refs <- makeRefs 0 [] (reifyIndices @xs @es)
   size <- getSizeofMutablePrimArray refs
@@ -378,13 +378,13 @@ getLocation
   -> IO (Int, SmallMutableArray RealWorld Any)
 getLocation (Env size mrefs storage) = do
   refs <- refIndices <$> readIORef mrefs
-  i <- readPrimArray refs (refIndex @e @es size)
+  i <- readPrimArray refs $ mkIndex (reifyIndex @e @es) size
   es <- stEffects <$> readIORef storage
   pure (i, es)
 
 -- | Get the index of a reference to an effect.
-refIndex :: forall e es. e :> es => Int -> Int
-refIndex size = size - reifyIndex @e @es - 1
+mkIndex :: Int -> Int -> Int
+mkIndex ix size = size - ix - 1
 
 ----------------------------------------
 -- Internal helpers

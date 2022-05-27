@@ -105,11 +105,10 @@ optimization passes, it just works.
 ### Any downsides?
 
 As always, there's no free lunch. `Eff` doesn't support `NonDet` nor `Coroutine`
-effects. For what is worth however, the `NonDet` effect in existing effect
-libraries is
+effects. However, the `NonDet` effect in existing libraries is
 [broken](https://github.com/lexi-lambda/eff/blob/master/notes/semantics-zoo.md)
-and none of them provide the `Coroutine` effect, so arguably it's not a big
-loss.
+and none of the ones with support for higher order effects provide the
+`Coroutine` effect, so arguably it's not a big loss.
 
 If you need such capability in your application, there are well established
 libraries such as [conduit](https://hackage.haskell.org/package/conduit) or

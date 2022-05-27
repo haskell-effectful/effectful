@@ -29,7 +29,7 @@ That leaves `ReaderT`, which is the only one with predictable behavior.
 - `State` effects never lose updates and they're not affected by the order of
   effects on the stack in any way.
 
-- `Writer` effects are properly strict.
+- `Writer` effects are properly strict (but still niche).
 
 - There is no `RWST` equivalent because stacking effects is very cheap.
 

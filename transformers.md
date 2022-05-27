@@ -9,11 +9,11 @@ From monad transformers used the majority of time:
   exhaustion.
 
 - `StateT` discards state updates when interacting with runtime exceptions and
-  `ExceptT`-specific errors in very surprising ways.
+  `ExceptT`-specific errors in surprising ways.
 
 - `WriterT` has too many variants, choosing a right variant for your use case is
   extremely tricky unless you're an expert in the language and it overall has
-  very niche applications.
+  niche applications.
 
 - `RWST` inherits issues of both `StateT` and `WriterT`, which makes it resemble
   a spike trap.
@@ -31,7 +31,7 @@ That leaves `ReaderT`, which is the only one with predictable behavior.
 
 - `Writer` effects are properly strict (but still niche).
 
-- There is no `RWST` equivalent because stacking effects is very cheap.
+- There is no `RWST` equivalent because stacking effects is cheap.
 
 ## ExceptT
 

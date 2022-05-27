@@ -20,6 +20,19 @@ From monad transformers used the majority of time:
 
 That leaves `ReaderT`, which is the only one with predictable behavior.
 
+`effectful` fixes these issues, namely:
+
+- Errors of the `Error` effect are implemented as runtime exceptions underneath,
+  which allows the library to provide stack traces and clients of the library to
+  treat `Error`-specific errors and runtime exceptions uniformly.
+
+- `State` effects never lose updates and they're not affected by the order of
+  effects on the stack in any way.
+
+- `Writer` effects are properly strict.
+
+- There is no `RWST` equivalent because stacking effects is very cheap.
+
 ## ExceptT
 
 Errors returned by `ExceptT` lack a very important feature: the ability to

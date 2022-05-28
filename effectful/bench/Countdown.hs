@@ -342,11 +342,23 @@ programCleff = do
       programCleff
 {-# NOINLINE programCleff #-}
 
-countdownCleff :: Integer -> (Integer, Integer)
-countdownCleff n = C.runPure . C.runState n $ programCleff
+countdownCleffLocal :: Integer -> (Integer, Integer)
+countdownCleffLocal n = C.runPure . C.runStateLocal n $ programCleff
 
-countdownCleffDeep :: Integer -> (Integer, Integer)
-countdownCleffDeep n = C.runPure
+countdownCleffLocalDeep :: Integer -> (Integer, Integer)
+countdownCleffLocalDeep n = C.runPure
+  . runR . runR . runR . runR . runR
+  . C.runStateLocal n
+  . runR . runR . runR . runR . runR
+  $ programCleff
+  where
+    runR = C.runReader ()
+
+countdownCleffIORef :: Integer -> (Integer, Integer)
+countdownCleffIORef n = C.runPure . C.runState n $ programCleff
+
+countdownCleffIORefDeep :: Integer -> (Integer, Integer)
+countdownCleffIORefDeep n = C.runPure
   . runR . runR . runR . runR . runR
   . C.runState n
   . runR . runR . runR . runR . runR

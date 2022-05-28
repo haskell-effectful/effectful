@@ -52,9 +52,13 @@ countdown n = bgroup (show n)
     , bench "deep"    $ nf countdownEffectfulDoubleDynSharedDeep n
     ]
 #ifdef VERSION_cleff
-  , bgroup "cleff"
-    [ bench "shallow" $ nf countdownCleff n
-    , bench "deep"    $ nf countdownCleffDeep n
+  , bgroup "cleff (local)"
+    [ bench "shallow" $ nf countdownCleffLocal n
+    , bench "deep"    $ nf countdownCleffLocalDeep n
+    ]
+  , bgroup "cleff (IORef)"
+    [ bench "shallow" $ nf countdownCleffIORef n
+    , bench "deep"    $ nf countdownCleffIORefDeep n
     ]
 #endif
 #ifdef VERSION_freer_simple

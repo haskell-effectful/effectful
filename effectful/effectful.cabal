@@ -20,7 +20,7 @@ description: An easy to use, performant extensible effects library with seamless
 
 extra-source-files: CHANGELOG.md
 
-tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.2
+tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.2 || ==9.4.1
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head

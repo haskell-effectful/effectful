@@ -1,6 +1,6 @@
 # effectful
 
-[![Build Status](https://github.com/arybczak/effectful/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/arybczak/effectful/actions?query=branch%3Amaster)
+[![Build Status](https://github.com/haskell-effectful/effectful/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/haskell-effectful/effectful/actions?query=branch%3Amaster)
 [![Documentation](https://img.shields.io/static/v1?label=docs&message=effectful-core-0.1&color=informational)](https://rybczak.net/files/effectful/effectful-core-0.1-docs)
 [![Documentation](https://img.shields.io/static/v1?label=docs&message=effectful-0.1&color=informational)](https://rybczak.net/files/effectful/effectful-0.1-docs)
 
@@ -142,7 +142,7 @@ The effect system is split among several libraries:
 
 A `Filesystem` effect with two handlers, one that runs in `IO` and another that
 uses an in-memory virtual file system can be found
-[here](https://github.com/arybczak/effectful/blob/master/effectful/examples/FileSystem.hs).
+[here](https://github.com/haskell-effectful/effectful/blob/master/effectful/examples/FileSystem.hs).
 
 ## Resources
 

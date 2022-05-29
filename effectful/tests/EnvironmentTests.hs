@@ -11,7 +11,7 @@ import qualified Utils as U
 environmentTests :: TestTree
 environmentTests = testCaseSteps "Environment" $ \step -> do
   -- These tests need to be run sequentially because of
-  -- https://github.com/arybczak/effectful/issues/39.
+  -- https://github.com/haskell-effectful/effectful/issues/39.
   step "set and get an environment variable"
   test_setAndGet
   step "unset and try to get an environment variable"

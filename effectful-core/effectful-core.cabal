@@ -20,10 +20,10 @@ extra-source-files: CHANGELOG.md
 
 tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.2
 
-bug-reports:   https://github.com/arybczak/effectful/issues
+bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head
   type:     git
-  location: https://github.com/arybczak/effectful.git
+  location: https://github.com/haskell-effectful/effectful.git
 
 common language
     ghc-options:        -Wall -Wcompat -Wno-unticked-promoted-constructors

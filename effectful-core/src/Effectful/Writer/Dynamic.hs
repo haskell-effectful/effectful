@@ -10,12 +10,12 @@ module Effectful.Writer.Dynamic
     -- ** Handlers
 
     -- *** Local
-  , runLocalWriter
-  , execLocalWriter
+  , runWriterLocal
+  , execWriterLocal
 
     -- *** Shared
-  , runSharedWriter
-  , execSharedWriter
+  , runWriterShared
+  , execWriterShared
 
     -- * Operations
   , tell
@@ -40,13 +40,13 @@ type instance DispatchOf (Writer w) = Dynamic
 
 -- | Run the 'Writer' effect and return the final value along with the final
 -- output (via "Effectful.Writer.Static.Local").
-runLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runLocalWriter = reinterpret L.runWriter localWriter
+runWriterLocal :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
+runWriterLocal = reinterpret L.runWriter localWriter
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
 -- value (via "Effectful.Writer.Static.Local").
-execLocalWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execLocalWriter = reinterpret L.execWriter localWriter
+execWriterLocal :: Monoid w => Eff (Writer w : es) a -> Eff es w
+execWriterLocal = reinterpret L.execWriter localWriter
 
 localWriter
   :: (L.Writer w :> es, Monoid w)
@@ -62,13 +62,13 @@ localWriter env = \case
 
 -- | Run the 'Writer' effect and return the final value along with the final
 -- output (via "Effectful.Writer.Static.Shared").
-runSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
-runSharedWriter = reinterpret S.runWriter sharedWriter
+runWriterShared :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
+runWriterShared = reinterpret S.runWriter sharedWriter
 
 -- | Run the 'Writer' effect and return the final output, discarding the final
 -- value (via "Effectful.Writer.Static.Shared").
-execSharedWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
-execSharedWriter = reinterpret S.execWriter sharedWriter
+execWriterShared :: Monoid w => Eff (Writer w : es) a -> Eff es w
+execWriterShared = reinterpret S.execWriter sharedWriter
 
 sharedWriter
   :: (S.Writer w :> es, Monoid w)

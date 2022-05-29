@@ -16,6 +16,6 @@ runDeep
           ] a
   -> IO a
 runDeep = runEff
-  . evalLocalState () . evalLocalState () . evalLocalState () . evalLocalState ()
-  . evalLocalState () . evalLocalState () . evalLocalState () . evalLocalState ()
-  . evalLocalState () . evalLocalState ()
+  . evalStateLocal () . evalStateLocal () . evalStateLocal () . evalStateLocal ()
+  . evalStateLocal () . evalStateLocal () . evalStateLocal () . evalStateLocal ()
+  . evalStateLocal () . evalStateLocal ()

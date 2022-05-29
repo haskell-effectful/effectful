@@ -10,14 +10,14 @@ module Effectful.State.Dynamic
     -- ** Handlers
 
     -- *** Local
-  , runLocalState
-  , evalLocalState
-  , execLocalState
+  , runStateLocal
+  , evalStateLocal
+  , execStateLocal
 
     -- *** Shared
-  , runSharedState
-  , evalSharedState
-  , execSharedState
+  , runStateShared
+  , evalStateShared
+  , execStateShared
 
     -- ** Operations
   , get
@@ -48,18 +48,18 @@ type instance DispatchOf (State s) = Dynamic
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value along with the final state (via "Effectful.State.Static.Local").
-runLocalState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runLocalState s0 = reinterpret (L.runState s0) localState
+runStateLocal :: s -> Eff (State s : es) a -> Eff es (a, s)
+runStateLocal s0 = reinterpret (L.runState s0) localState
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value, discarding the final state (via "Effectful.State.Static.Local").
-evalLocalState :: s -> Eff (State s : es) a -> Eff es a
-evalLocalState s0 = reinterpret (L.evalState s0) localState
+evalStateLocal :: s -> Eff (State s : es) a -> Eff es a
+evalStateLocal s0 = reinterpret (L.evalState s0) localState
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- state, discarding the final value (via "Effectful.State.Static.Local").
-execLocalState :: s -> Eff (State s : es) a -> Eff es s
-execLocalState s0 = reinterpret (L.execState s0) localState
+execStateLocal :: s -> Eff (State s : es) a -> Eff es s
+execStateLocal s0 = reinterpret (L.execState s0) localState
 
 localState
   :: L.State s :> es
@@ -77,18 +77,18 @@ localState env = \case
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value along with the final state (via "Effectful.State.Static.Shared").
-runSharedState :: s -> Eff (State s : es) a -> Eff es (a, s)
-runSharedState s0 = reinterpret (S.runState s0) sharedState
+runStateShared :: s -> Eff (State s : es) a -> Eff es (a, s)
+runStateShared s0 = reinterpret (S.runState s0) sharedState
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value, discarding the final state (via "Effectful.State.Static.Shared").
-evalSharedState :: s -> Eff (State s : es) a -> Eff es a
-evalSharedState s0 = reinterpret (S.evalState s0) sharedState
+evalStateShared :: s -> Eff (State s : es) a -> Eff es a
+evalStateShared s0 = reinterpret (S.evalState s0) sharedState
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- state, discarding the final value (via "Effectful.State.Static.Shared").
-execSharedState :: s -> Eff (State s : es) a -> Eff es s
-execSharedState s0 = reinterpret (S.execState s0) sharedState
+execStateShared :: s -> Eff (State s : es) a -> Eff es s
+execStateShared s0 = reinterpret (S.execState s0) sharedState
 
 sharedState
   :: S.State s :> es

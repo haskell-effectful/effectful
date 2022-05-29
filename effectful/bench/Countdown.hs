@@ -173,16 +173,16 @@ programEffectfulDynamic = do
 
 countdownEffectfulDynLocal :: Integer -> (Integer, Integer)
 countdownEffectfulDynLocal n =
-  E.runPureEff . ED.runLocalState n $ programEffectfulDynamic
+  E.runPureEff . ED.runStateLocal n $ programEffectfulDynamic
 
 countdownEffectfulDynShared :: Integer -> (Integer, Integer)
 countdownEffectfulDynShared n =
-  E.runPureEff . ED.runSharedState n $ programEffectfulDynamic
+  E.runPureEff . ED.runStateShared n $ programEffectfulDynamic
 
 countdownEffectfulDynLocalDeep :: Integer -> (Integer, Integer)
 countdownEffectfulDynLocalDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . ED.runLocalState n
+  . ED.runStateLocal n
   . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where
@@ -191,7 +191,7 @@ countdownEffectfulDynLocalDeep n = E.runPureEff
 countdownEffectfulDynSharedDeep :: Integer -> (Integer, Integer)
 countdownEffectfulDynSharedDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . ED.runSharedState n
+  . ED.runStateShared n
   . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where
@@ -200,8 +200,8 @@ countdownEffectfulDynSharedDeep n = E.runPureEff
 ----------------------------------------
 -- efectful (double-dynamic)
 
-runDoubleLocalState :: s -> E.Eff (ED.State s : es) a -> E.Eff es (a, s)
-runDoubleLocalState s0 = E.reinterpret (ED.runLocalState s0) $ \env -> \case
+runDoubleStateLocal :: s -> E.Eff (ED.State s : es) a -> E.Eff es (a, s)
+runDoubleStateLocal s0 = E.reinterpret (ED.runStateLocal s0) $ \env -> \case
   ED.Get      -> ED.get
   ED.Put s    -> ED.put s
   ED.State f  -> ED.state f
@@ -209,19 +209,19 @@ runDoubleLocalState s0 = E.reinterpret (ED.runLocalState s0) $ \env -> \case
 
 countdownEffectfulDoubleDynLocal :: Integer -> (Integer, Integer)
 countdownEffectfulDoubleDynLocal n =
-  E.runPureEff . runDoubleLocalState n $ programEffectfulDynamic
+  E.runPureEff . runDoubleStateLocal n $ programEffectfulDynamic
 
 countdownEffectfulDoubleDynLocalDeep :: Integer -> (Integer, Integer)
 countdownEffectfulDoubleDynLocalDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . runDoubleLocalState n
+  . runDoubleStateLocal n
   . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where
     runR = E.runReader ()
 
-runDoubleSharedState :: s -> E.Eff (ED.State s : es) a -> E.Eff es (a, s)
-runDoubleSharedState s0 = E.reinterpret (ED.runSharedState s0) $ \env -> \case
+runDoubleStateShared :: s -> E.Eff (ED.State s : es) a -> E.Eff es (a, s)
+runDoubleStateShared s0 = E.reinterpret (ED.runStateShared s0) $ \env -> \case
   ED.Get      -> ED.get
   ED.Put s    -> ED.put s
   ED.State f  -> ED.state f
@@ -229,12 +229,12 @@ runDoubleSharedState s0 = E.reinterpret (ED.runSharedState s0) $ \env -> \case
 
 countdownEffectfulDoubleDynShared :: Integer -> (Integer, Integer)
 countdownEffectfulDoubleDynShared n =
-  E.runPureEff . runDoubleSharedState n $ programEffectfulDynamic
+  E.runPureEff . runDoubleStateShared n $ programEffectfulDynamic
 
 countdownEffectfulDoubleDynSharedDeep :: Integer -> (Integer, Integer)
 countdownEffectfulDoubleDynSharedDeep n = E.runPureEff
   . runR . runR . runR . runR . runR
-  . runDoubleSharedState n
+  . runDoubleStateShared n
   . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
   where

@@ -66,13 +66,13 @@ import Effectful.Internal.Monad
 -- can perform any side effect. This "all or nothing" approach isn't very
 -- satisfactory though, because the vast majority of time we would like to
 -- signify that a function can perform /some/ side effects, e.g. only be able to
--- log messages and have a read only access to the logged in user.
+-- log messages.
 --
--- This library provides support for expressing exactly that, using its 'Eff'
+-- This library provides support for expressing exactly that with its 'Eff'
 -- monad:
 --
 -- @
--- f :: (Log ':>' es, 'Effectful.Reader.Static.Reader' User ':>' es) => 'Int' -> 'Eff' es 'String'
+-- f :: Log ':>' es => 'Int' -> 'Eff' es 'String'
 -- @
 --
 -- It implements support for extensible effects with both dynamic and static

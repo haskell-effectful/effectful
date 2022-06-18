@@ -4,6 +4,8 @@ doctest:        <9.3
 tests:          True
 benchmarks:     True
 
+jobs-selection: any
+
 raw-project
   package effectful
     flags: +benchmark-foreign-libraries

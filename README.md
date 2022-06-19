@@ -2,6 +2,7 @@
 
 [![Build Status](https://github.com/haskell-effectful/effectful/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/haskell-effectful/effectful/actions?query=branch%3Amaster)
 [![Documentation](https://img.shields.io/static/v1?label=docs&message=effectful-core-0.1&color=informational)](https://rybczak.net/files/effectful/effectful-core-0.1-docs)
+[![Documentation](https://img.shields.io/static/v1?label=docs&message=effectful-th-0.1&color=informational)](https://rybczak.net/files/effectful/effectful-th-0.1-docs)
 [![Documentation](https://img.shields.io/static/v1?label=docs&message=effectful-0.1&color=informational)](https://rybczak.net/files/effectful/effectful-0.1-docs)
 
 <img src="https://user-images.githubusercontent.com/387658/127747903-f728437f-2ee4-47b8-9f0c-5102fd44c8e4.png" width="128">

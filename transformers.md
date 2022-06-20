@@ -173,7 +173,7 @@ $ ./test
 2
 ```
 
-### Interaction with `EitherT`
+### Interaction with `ExceptT`
 
 The initial state is `0`. What is the value of the state after `test` runs?
 

@@ -29,7 +29,7 @@ as that would essentially mean performing whole program specialization.
 
 ## Results
 
-The code was compiled with GHC 9.0.2 and run on a Ryzen 9 5950x.
+The code was compiled with GHC 9.2.3 and run on a Ryzen 9 5950x.
 
 ### Countdown
 
@@ -39,13 +39,16 @@ Analysis:
 
 1. `effectful` takes the lead. Its static dispatch is on par with the reference
    implementation that uses the `ST` monad, so it offers no additional
-   overhead. Its dynamic dispatch is also the fastest.
+   overhead. Its dynamic dispatch is also very fast.
 
-2. `cleff` uses very similar implementation techniques as `effectful` and is on
-   par with it for the shallow version, but gets slower for the deep one. This
-   is because it uses `IntMap` for the effect dispatch underneath, so it's not
-   quite constant size in terms of the effect stack. For comparison, `effectful`
-   uses arrays.
+2. `cleff` uses similar implementation techniques as `effectful` (the only major
+   difference is that its internal environment that stores effects is immutable),
+   so they trade blows:
+   - Its thread-local `State` is only slightly slower than `effectful`.
+   - Its `State` implemented via `IORef` is the fastest, but it's worth noting
+   that it's neither properly thread-local nor shared as the underlying `IORef`
+   is shared, but can't be safely updated with `get` and `put` from multiple
+   threads.
 
 3. `freer-simple` does surprisingly well for a solution that's based on free
    monads.

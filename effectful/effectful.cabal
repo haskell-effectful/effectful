@@ -157,7 +157,7 @@ benchmark bench
        if impl(ghc < 9.3)
           build-depends: freer-simple
 
-       if impl(ghc < 9.1)
+       if impl(ghc < 9.3)
           build-depends: fused-effects >= 1.1.0.0
 
        if impl(ghc < 9.3)

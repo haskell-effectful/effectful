@@ -45,9 +45,9 @@ Do we really need yet another library for handling effects? There's
 [eff](https://github.com/hasura/eff) and probably a few more.
 
 Unfortunately, of all of them only `eff` is a promising proposition because of
-reasonable performance characteristics (see the talk "Effects for Less" linked
-below for more information) and potential for good interoperability with the
-existing ecosystem.
+reasonable performance characteristics (see the talk [Effects for
+Less](https://www.youtube.com/watch?v=0jI-AlWEwYI) for more information) and
+potential for good interoperability with the existing ecosystem.
 
 The second point is arguably the most important, because it allows focusing on
 things that matter instead of reinventing all kinds of wheels, hence being a
@@ -107,7 +107,7 @@ optimization passes, it just works.
 
 As always, there's no free lunch. `Eff` doesn't support `NonDet` nor `Coroutine`
 effects. However, the `NonDet` effect in existing libraries is
-[broken](https://github.com/lexi-lambda/eff/blob/master/notes/semantics-zoo.md)
+[broken](https://github.com/lexi-lambda/eff/blob/8c4df4bf54faf22456354be18095b14825be5e85/notes/semantics-zoo.md)
 and none of the ones with support for higher order effects provide the
 `Coroutine` effect, so arguably it's not a big loss.
 
@@ -118,13 +118,14 @@ libraries such as [conduit](https://hackage.haskell.org/package/conduit) or
 
 ### Summary
 
-`effectful` aims to replace "boring" transformer stacks (which 99% of time
-consist of a dozen of newtype'd `ExceptT`, `ReaderT`, `StateT` and `WriterT`
-transformers) by providing equivalent effects with much improved semantics,
-performance and usability. It doesn't try to make monad transformers obsolete,
-so you're free to use it with `ConduitT`, `ContT`, `ListT` etc. when necessary.
+`effectful` aims to replace "boring" transformer stacks (which consist of a
+dozen of newtype'd `ExceptT`, `ReaderT`, `StateT` and `WriterT` transformers) by
+providing equivalent effects with improved semantics, performance and usability
+(it also makes it easy to reuse them for your own effects). It doesn't try to
+make monad transformers obsolete, so you're free to use it with `ConduitT`,
+`ContT`, `ListT` etc. when necessary.
 
-## Usage
+## Ecosystem
 
 The effect system is split among several libraries:
 

@@ -45,10 +45,10 @@ Analysis:
    difference is that its internal environment that stores effects is immutable),
    so they trade blows:
    - Its thread-local `State` is only slightly slower than `effectful`.
-   - Its `State` implemented via `IORef` is the fastest, but it's worth noting
-   that it's neither properly thread-local nor shared as the underlying `IORef`
-   is shared, but can't be safely updated with `get` and `put` from multiple
-   threads.
+   - Its `State` implemented via `IORef` is the fastest of the dynamically
+   dispatched effects, but it's worth noting that it's neither properly
+   thread-local nor shared as the underlying `IORef` is shared, but can't be
+   safely updated with `get` and `put` from multiple threads.
 
 3. `freer-simple` does surprisingly well for a solution that's based on free
    monads.

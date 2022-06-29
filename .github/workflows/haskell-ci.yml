@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.15.20220530
+# version: 0.15.20220620
 #
-# REGENDATA ("0.15.20220530",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.15.20220620",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -32,9 +32,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.4.0.20220501
+          - compiler: ghc-9.4.0.20220523
             compilerKind: ghc
-            compilerVersion: 9.4.0.20220501
+            compilerVersion: 9.4.0.20220523
             setup-method: ghcup
             allow-failure: true
           - compiler: ghc-9.2.3
@@ -67,9 +67,9 @@ jobs:
             mkdir -p "$HOME/.ghcup/bin"
             curl -sL https://downloads.haskell.org/ghcup/0.1.17.8/x86_64-linux-ghcup-0.1.17.8 > "$HOME/.ghcup/bin/ghcup"
             chmod a+x "$HOME/.ghcup/bin/ghcup"
-            if $HEADHACKAGE; then "$HOME/.ghcup/bin/ghcup" config add-release-channel https://raw.githubusercontent.com/haskell/ghcup-metadata/master/ghcup-prereleases-0.0.7.yaml; fi
-            "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER"
-            "$HOME/.ghcup/bin/ghcup" install cabal 3.6.2.0
+            "$HOME/.ghcup/bin/ghcup" config add-release-channel https://raw.githubusercontent.com/haskell/ghcup-metadata/master/ghcup-prereleases-0.0.7.yaml;
+            "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER" || (cat "$HOME"/.ghcup/logs/*.* && false)
+            "$HOME/.ghcup/bin/ghcup" install cabal 3.6.2.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
           else
             apt-add-repository -y 'ppa:hvr/ghc'
             apt-get update
@@ -77,7 +77,7 @@ jobs:
             mkdir -p "$HOME/.ghcup/bin"
             curl -sL https://downloads.haskell.org/ghcup/0.1.17.8/x86_64-linux-ghcup-0.1.17.8 > "$HOME/.ghcup/bin/ghcup"
             chmod a+x "$HOME/.ghcup/bin/ghcup"
-            "$HOME/.ghcup/bin/ghcup" install cabal 3.6.2.0
+            "$HOME/.ghcup/bin/ghcup" install cabal 3.6.2.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
           fi
         env:
           HCKIND: ${{ matrix.compilerKind }}
@@ -146,6 +146,7 @@ jobs:
                         26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
                         f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
              key-threshold: 3
+          active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
           EOF
           fi
           cat >> $CABAL_CONFIG <<EOF
@@ -187,6 +188,7 @@ jobs:
         run: |
           touch cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful-core" >> cabal.project
+          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then echo "packages: $GITHUB_WORKSPACE/source/effectful-plugin" >> cabal.project ; fi
           echo "packages: $GITHUB_WORKSPACE/source/effectful-th" >> cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful" >> cabal.project
           cat cabal.project
@@ -202,6 +204,8 @@ jobs:
         run: |
           PKGDIR_effectful_core="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/effectful-core-[0-9.]*')"
           echo "PKGDIR_effectful_core=${PKGDIR_effectful_core}" >> "$GITHUB_ENV"
+          PKGDIR_effectful_plugin="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/effectful-plugin-[0-9.]*')"
+          echo "PKGDIR_effectful_plugin=${PKGDIR_effectful_plugin}" >> "$GITHUB_ENV"
           PKGDIR_effectful_th="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/effectful-th-[0-9.]*')"
           echo "PKGDIR_effectful_th=${PKGDIR_effectful_th}" >> "$GITHUB_ENV"
           PKGDIR_effectful="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/effectful-[0-9.]*')"
@@ -210,10 +214,13 @@ jobs:
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_effectful_core}" >> cabal.project
+          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then echo "packages: ${PKGDIR_effectful_plugin}" >> cabal.project ; fi
           echo "packages: ${PKGDIR_effectful_th}" >> cabal.project
           echo "packages: ${PKGDIR_effectful}" >> cabal.project
           echo "package effectful-core" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
+          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then echo "package effectful-plugin" >> cabal.project ; fi
+          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
           echo "package effectful-th" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           echo "package effectful" >> cabal.project
@@ -225,7 +232,7 @@ jobs:
           if $HEADHACKAGE; then
           echo "allow-newer: $($HCPKG list --simple-output | sed -E 's/([a-zA-Z-]+)-[0-9.]+/*:\1,/g')" >> cabal.project
           fi
-          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(effectful|effectful-core|effectful-th)$/; }' >> cabal.project.local
+          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(effectful|effectful-core|effectful-plugin|effectful-th)$/; }' >> cabal.project.local
           cat cabal.project
           cat cabal.project.local
       - name: dump install plan
@@ -257,6 +264,8 @@ jobs:
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators utils ; fi
+          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful_plugin} || false ; fi
+          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
@@ -265,6 +274,8 @@ jobs:
         run: |
           cd ${PKGDIR_effectful_core} || false
           ${CABAL} -vnormal check
+          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful_plugin} || false ; fi
+          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then ${CABAL} -vnormal check ; fi
           cd ${PKGDIR_effectful_th} || false
           ${CABAL} -vnormal check
           cd ${PKGDIR_effectful} || false

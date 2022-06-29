@@ -1,0 +1,81 @@
+cabal-version:      2.4
+build-type:         Simple
+name:               effectful-plugin
+version:            0.1
+license:            BSD-3-Clause
+license-file:       LICENSE
+category:           Control
+maintainer:         andrzej@rybczak.net
+author:             Andrzej Rybczak
+synopsis:           A GHC plugin for improving disambiguation of effects.
+
+description: Instruct GHC to do a better job with disambiguation of effects.
+             .
+             See the README for more information.
+
+extra-source-files: CHANGELOG.md
+                    README.md
+
+tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.3
+
+bug-reports:   https://github.com/haskell-effectful/effectful/issues
+source-repository head
+  type:     git
+  location: https://github.com/haskell-effectful/effectful.git
+
+common language
+    ghc-options:        -Wall -Wcompat -Wno-unticked-promoted-constructors
+
+    -- The plugin doesn't build with GHC 9.4 yet.
+    if !impl(ghc < 9.3)
+       buildable: False
+
+    default-language:   Haskell2010
+
+    default-extensions: BangPatterns
+                        ConstraintKinds
+                        DataKinds
+                        DeriveFunctor
+                        DeriveGeneric
+                        FlexibleContexts
+                        FlexibleInstances
+                        GADTs
+                        GeneralizedNewtypeDeriving
+                        LambdaCase
+                        MultiParamTypeClasses
+                        NoStarIsType
+                        RankNTypes
+                        RecordWildCards
+                        RoleAnnotations
+                        ScopedTypeVariables
+                        StandaloneDeriving
+                        TupleSections
+                        TypeApplications
+                        TypeFamilies
+                        TypeOperators
+
+library
+    import:         language
+
+    build-depends:    base                >= 4.13      && < 5
+                    , effectful-core      >= 0.1       && < 0.1.1
+                    , containers          >= 0.5
+                    , ghc                 >= 8.6       && < 9.3
+                    , ghc-tcplugins-extra >= 0.3       && < 0.5
+
+    hs-source-dirs:  src
+
+    exposed-modules: Effectful.Plugin
+                     Effectful.Plugin.Internal
+
+test-suite plugin-tests
+    import:         language
+
+    build-depends:    base
+                    , effectful-core
+                    , effectful-plugin
+
+    hs-source-dirs: tests
+
+    type:           exitcode-stdio-1.0
+    main-is:        PluginTests.hs

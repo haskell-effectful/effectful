@@ -1,4 +1,5 @@
 packages:
   effectful-core/*.cabal
+  effectful-plugin/*.cabal
   effectful-th/*.cabal
   effectful/*.cabal

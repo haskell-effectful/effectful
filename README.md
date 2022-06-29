@@ -133,6 +133,11 @@ The effect system is split among several libraries:
   itself and basic effects. It aims for a small dependency footprint and
   provides building blocks for more advanced effects.
 
+- The `effectful-plugin` library provides an optional GHC plugin for improving
+  disambiguation of effects (see
+  [here](https://github.com/haskell-effectful/effectful/blob/master/effectful-plugin/README.md)
+  for more information).
+
 - The `effectful-th` library provides utilities for generating bits of
   effect-related boilerplate via Template Haskell.
 

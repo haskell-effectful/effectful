@@ -17,7 +17,7 @@ the existing Haskell ecosystem.
 Main features:
 
 1. Very fast
-   ([benchmarks](https://github.com/haskell-effectful/effectful/tree/master/benchmarks)).
+   ([benchmarks](https://github.com/haskell-effectful/effectful/tree/master/benchmarks/README.md)).
 
 2. Easy to use API (if you know how to use the
    [MonadUnliftIO](https://hackage.haskell.org/package/unliftio-core/docs/Control-Monad-IO-Unlift.html#t:MonadUnliftIO)
@@ -74,7 +74,7 @@ It's true that its "effects as classes" approach is widely known and used often.
 However:
 
 - `mtl` style effects are
-  [slow](https://github.com/haskell-effectful/effectful/tree/master/benchmarks).
+  [slow](https://github.com/haskell-effectful/effectful/tree/master/benchmarks/README.md).
 
 - All of most often used monad transformers (except `ReaderT`) used for effect
   implementations are rife with [subtle

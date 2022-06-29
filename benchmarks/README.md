@@ -31,6 +31,11 @@ as that would essentially mean performing whole program specialization.
 
 The code was compiled with GHC 9.2.3 and run on a Ryzen 9 5950x.
 
+*Note:* below results are from a 1000 iteration run. Runs with more iterations
+are not included in the analysis since they are proportionally the same, but can
+be found
+[here](https://github.com/haskell-effectful/effectful/tree/master/benchmarks).
+
 ### Countdown
 
 <img src="https://raw.githubusercontent.com/haskell-effectful/effectful/master/benchmarks/bench_countdown_1000.png">
@@ -48,7 +53,7 @@ Analysis:
    - Its `State` implemented via `IORef` is the fastest of the dynamically
    dispatched effects, but it's worth noting that it's neither properly
    thread-local nor shared as the underlying `IORef` is shared, but can't be
-   safely updated with `get` and `put` from multiple threads.
+   safely accessed with `get` and `put` from multiple threads.
 
 3. `freer-simple` does surprisingly well for a solution that's based on free
    monads.

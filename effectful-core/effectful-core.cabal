@@ -14,7 +14,7 @@ description: An easy to use, performant extensible effects library with seamless
              .
              This library provides core definitions with a minimal dependency
              footprint. See the @<https://hackage.haskell.org/package/effectful effectful>@
-             package for documentation and the "batteries-included" variant.
+             package for the "batteries-included" variant.
 
 extra-source-files: CHANGELOG.md
 

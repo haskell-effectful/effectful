@@ -9,6 +9,9 @@ module Effectful.Dispatch.Dynamic
     -- ** First order and higher order effects
     -- $order
 
+    -- ** Integration of @mtl@ style effects #integration#
+    -- $integration
+
     -- * Sending operations to the handler
     send
 
@@ -89,8 +92,8 @@ import Effectful.Internal.Monad
 -- - @WriteFile@, which takes a @FilePath@, a @String@ and returns a @()@ in the
 --   monadic context.
 --
--- For people familiar with the @mtl@ style effects, note that the syntax looks
--- very similar to defining an appropriate type class:
+-- For people familiar with @mtl@ style effects, note that the syntax looks very
+-- similar to defining an appropriate type class:
 --
 -- @
 -- class FileSystem m where
@@ -164,7 +167,7 @@ import Effectful.Internal.Monad
 -- :}
 --
 -- Here, we use 'reinterpret' and introduce a
--- 'Effectful.State.Static.Local.State' effect for the storage that is private
+-- t'Effectful.State.Static.Local.State' effect for the storage that is private
 -- to the effect handler and cannot be accessed outside of it.
 --
 -- Let's compare how these differ.
@@ -268,6 +271,70 @@ import Effectful.Internal.Monad
 --
 -- >>> runEff . runNoProfiling $ action
 -- Hello!
+--
+
+-- $integration
+--
+-- There exists a lot of libraries that provide their functionality as an @mtl@
+-- style effect, which generally speaking is a type class that contains core
+-- operations of the library in question.
+--
+-- Such effects are quite easy to use with the 'Eff' monad. As an example,
+-- consider the @mtl@ style effect for generation of random numbers:
+--
+-- >>> :{
+--   class Monad m => MonadRNG m where
+--     randomInt :: m Int
+-- :}
+--
+-- Let's say the library also defines a helper function for generation of random
+-- strings:
+--
+-- >>> import Control.Monad
+-- >>> import Data.Char
+--
+-- >>> :{
+--  randomString :: MonadRNG m => Int -> m String
+--  randomString n = map chr <$> replicateM n randomInt
+-- :}
+--
+-- To make it possible to use it with the 'Eff' monad, the first step is to
+-- create an effect with operations that mimic the ones of a type class:
+--
+-- >>> :{
+--   data RNG :: Effect where
+--     RandomInt :: RNG m Int
+-- :}
+--
+-- >>> type instance DispatchOf RNG = Dynamic
+--
+-- If we continued as in the example above, we'd now create top level helper
+-- functions that execute effect operations using 'send', in this case
+-- @randomInt@ tied to @RandomInt@. But this function is already declared by the
+-- @MonadRNG@ type class! Therefore, what we do instead is provide an
+-- __orphan__, __canonical__ instance of @MonadRNG@ for 'Eff' that delegates to
+-- the @RNG@ effect:
+--
+-- >>> :set -XUndecidableInstances
+--
+-- >>> :{
+--   instance RNG :> es => MonadRNG (Eff es) where
+--     randomInt = send RandomInt
+-- :}
+--
+-- Now we only need an interpreter:
+--
+-- >>> :{
+--   runDummyRNG :: Eff (RNG : es) a -> Eff es a
+--   runDummyRNG = interpret $ \_ -> \case
+--     RandomInt -> pure 55
+-- :}
+--
+-- and we can use any function that requires a @MonadRNG@ constraint with the
+-- 'Eff' monad as long as the @RNG@ effect is in place:
+--
+-- >>> runEff . runDummyRNG $ randomString 3
+-- "777"
 --
 
 ----------------------------------------

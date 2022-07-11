@@ -43,7 +43,7 @@ import Effectful.Internal.Utils
 -- that brought them into scope. __The behavior when doing so is undefined.__
 data UnliftStrategy
   = SeqUnlift
-  -- ^ The fastest strategy and a default setting for 'Effectful.IOE'. An
+  -- ^ The fastest strategy and a default setting for t'Effectful.IOE'. An
   -- attempt to call the unlifting function in threads distinct from its creator
   -- will result in a runtime error.
   | ConcUnlift !Persistence !Limit

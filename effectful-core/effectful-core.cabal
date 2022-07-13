@@ -1,7 +1,7 @@
 cabal-version:      2.4
 build-type:         Simple
 name:               effectful-core
-version:            0.1
+version:            1.0.0.0
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control
@@ -16,7 +16,9 @@ description: An easy to use, performant extensible effects library with seamless
              footprint. See the @<https://hackage.haskell.org/package/effectful effectful>@
              package for the "batteries-included" variant.
 
-extra-source-files: CHANGELOG.md
+extra-source-files:
+  CHANGELOG.md
+  README.md
 
 tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.3 || ==9.4.1
 

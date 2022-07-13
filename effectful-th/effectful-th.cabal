@@ -1,7 +1,7 @@
 cabal-version:      2.4
 build-type:         Simple
 name:               effectful-th
-version:            0.1
+version:            1.0.0.0
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control
@@ -12,7 +12,9 @@ synopsis:           Template Haskell utilities for the effectful library.
 description: Generate functions for performing operations of dynamically
              dispatched effects via Template Haskell.
 
-extra-source-files: CHANGELOG.md
+extra-source-files:
+  CHANGELOG.md
+  README.md
 
 tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.3 || ==9.4.1
 
@@ -53,7 +55,7 @@ library
 
     build-depends:    base                >= 4.13      && < 5
                     , containers          >= 0.6
-                    , effectful           >= 0.1       && < 0.1.1
+                    , effectful           >= 1.0.0.0   && < 1.0.1.0
                     , exceptions          >= 0.10.4
                     , template-haskell    >= 2.15      && < 2.20
                     , th-abstraction      >= 0.4       && < 0.5

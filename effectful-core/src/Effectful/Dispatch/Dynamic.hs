@@ -9,7 +9,7 @@ module Effectful.Dispatch.Dynamic
     -- ** First order and higher order effects
     -- $order
 
-    -- ** Integration of @mtl@ style effects #integration#
+    -- ** Integration with @mtl@ style effects #integration#
     -- $integration
 
     -- * Sending operations to the handler
@@ -299,7 +299,7 @@ import Effectful.Internal.Monad
 -- :}
 --
 -- To make it possible to use it with the 'Eff' monad, the first step is to
--- create an effect with operations that mimic the ones of a type class:
+-- create an effect with operations that mirror the ones of a type class:
 --
 -- >>> :{
 --   data RNG :: Effect where

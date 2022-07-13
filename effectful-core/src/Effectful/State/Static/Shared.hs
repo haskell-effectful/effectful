@@ -31,6 +31,10 @@ module Effectful.State.Static.Shared
   , evalState
   , execState
 
+  , runStateMVar
+  , evalStateMVar
+  , execStateMVar
+
     -- ** Operations
   , get
   , gets
@@ -73,6 +77,26 @@ evalState s m = do
 execState :: s -> Eff (State s : es) a -> Eff es s
 execState s m = do
   v <- unsafeEff_ $ newMVar s
+  _ <- evalStaticRep (State v) m
+  unsafeEff_ $ readMVar v
+
+-- | Run the 'State' effect with the given initial state 'MVar' and return the
+-- final value along with the final state.
+runStateMVar :: MVar s -> Eff (State s : es) a -> Eff es (a, s)
+runStateMVar v m = do
+  a <- evalStaticRep (State v) m
+  (a, ) <$> unsafeEff_ (readMVar v)
+
+-- | Run the 'State' effect with the given initial state 'MVar' and return the
+-- final value, discarding the final state.
+evalStateMVar :: MVar s -> Eff (State s : es) a -> Eff es a
+evalStateMVar v m = do
+  evalStaticRep (State v) m
+
+-- | Run the 'State' effect with the given initial state 'MVar' and return the
+-- final state, discarding the final value.
+execStateMVar :: MVar s -> Eff (State s : es) a -> Eff es s
+execStateMVar v m = do
   _ <- evalStaticRep (State v) m
   unsafeEff_ $ readMVar v
 

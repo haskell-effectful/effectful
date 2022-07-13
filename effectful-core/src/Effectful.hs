@@ -2,7 +2,7 @@ module Effectful
   ( -- * Introduction
     -- $intro
 
-    -- ** Integration of existing libraries
+    -- ** Integration with existing libraries
     -- $integration
 
     -- *** Transformed monads
@@ -120,7 +120,7 @@ import Effectful.Internal.Monad
 --
 -- There are three main groups a library might fall into. It either operates:
 --
--- 1) In a monad of your application transformed by a specific monad
+-- 1) In a monad of your application transformed by a library specific monad
 --    transformer.
 --
 -- 2) In its own, concrete monad, which is usually 'IO' or a couple of monad
@@ -183,10 +183,11 @@ import Effectful.Internal.Monad
 --
 -- Some libraries operate in a transformer stack over 'IO' or have its own
 -- concrete monad that's a newtype over 'IO', e.g. @Handler@ from the
--- @servant-server@ package.
+-- [servant-server](https://hackage.haskell.org/package/servant-server) package.
 --
--- In such case it's best to mimic the monad in question by the 'Eff' monad with
--- appropriate effects (as standard monad transformers have [subtle
+-- In such case it's best to mirror the monad in question by the 'Eff' monad
+-- with appropriate effects (as tha majority of popular monad transformers have
+-- [subtle
 -- issues](https://github.com/haskell-effectful/effectful/blob/master/transformers.md)),
 -- use it as soon as possible, then at the end feed the final state to the monad
 -- of the library so it proceeds as if nothing unusual happened.

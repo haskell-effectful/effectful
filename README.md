@@ -1,15 +1,13 @@
 # effectful
 
 [![Build Status](https://github.com/haskell-effectful/effectful/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/haskell-effectful/effectful/actions?query=branch%3Amaster)
-[![Documentation](https://img.shields.io/static/v1?label=docs&message=effectful-core-0.1&color=informational)](https://rybczak.net/files/effectful/effectful-core-0.1-docs)
-[![Documentation](https://img.shields.io/static/v1?label=docs&message=effectful-th-0.1&color=informational)](https://rybczak.net/files/effectful/effectful-th-0.1-docs)
-[![Documentation](https://img.shields.io/static/v1?label=docs&message=effectful-0.1&color=informational)](https://rybczak.net/files/effectful/effectful-0.1-docs)
+[![Hackage](https://img.shields.io/hackage/v/effectful.svg)](https://hackage.haskell.org/package/effectful)
+[![Dependencies](https://img.shields.io/hackage-deps/v/effectful.svg)](https://packdeps.haskellers.com/feed?needle=andrzej@rybczak.net)
+[![Stackage LTS](https://www.stackage.org/package/effectful/badge/lts)](https://www.stackage.org/lts/package/effectful)
+[![Stackage Nightly](https://www.stackage.org/package/effectful/badge/nightly)](https://www.stackage.org/nightly/package/effectful)
+
 
 <img src="https://user-images.githubusercontent.com/387658/127747903-f728437f-2ee4-47b8-9f0c-5102fd44c8e4.png" width="128">
-
-*Note:* this is a pre-release of the 0.1 version. Please disregard the 0.0.0.0
-version available on Hackage as the API has been completely redesigned since
-then.
 
 An easy to use, fast extensible effects library with seamless integration with
 the existing Haskell ecosystem.
@@ -19,9 +17,7 @@ Main features:
 1. Very fast
    ([benchmarks](https://github.com/haskell-effectful/effectful/tree/master/benchmarks/README.md)).
 
-2. Easy to use API (if you know how to use the
-   [MonadUnliftIO](https://hackage.haskell.org/package/unliftio-core/docs/Control-Monad-IO-Unlift.html#t:MonadUnliftIO)
-   class, you know how to write effects).
+2. Easy to use API (comparable with usage of the [MonadUnliftIO](https://hackage.haskell.org/package/unliftio-core/docs/Control-Monad-IO-Unlift.html#t:MonadUnliftIO) class).
 
 3. Correct semantics in presence of runtime exceptions (no more discarded state
    updates).
@@ -76,17 +72,17 @@ However:
 - `mtl` style effects are
   [slow](https://github.com/haskell-effectful/effectful/tree/master/benchmarks/README.md).
 
-- All of most often used monad transformers (except `ReaderT`) used for effect
+- The majority of popular monad transformers (except `ReaderT`) used for effect
   implementations are rife with [subtle
   issues](https://github.com/haskell-effectful/effectful/tree/master/transformers.md).
 
-These issues are problematic enough that the [ReaderT design
+These are problematic enough that the [ReaderT design
 pattern](https://www.fpcomplete.com/blog/2017/06/readert-design-pattern/) was
 invented. Its fundamentals are solid, but it's not an effect system.
 
-The solution? Use the `ReaderT` pattern as a base and build around it to make it
-an effect system! This is where `effectful` comes in. The `Eff` monad it uses is
-essentially a `ReaderT` over `IO` on steroids, allowing us to dynamically extend
+A solution? Use the `ReaderT` pattern as a base and build around it to make an
+extensible effects library! This is where `effectful` comes in. The `Eff` monad
+it uses is essentially a `ReaderT` over `IO` on steroids, allowing us to extend
 its environment with data types representing effects.
 
 This concept is quite simple, so:
@@ -105,8 +101,8 @@ optimization passes, it just works.
 
 ### Any downsides?
 
-As always, there's no free lunch. `Eff` doesn't support `NonDet` nor `Coroutine`
-effects. However, the `NonDet` effect in existing libraries is
+As always, there's no free lunch. The `Eff` monad doesn't support `NonDet` nor
+`Coroutine` effects. However, the `NonDet` effect in existing libraries is
 [broken](https://github.com/lexi-lambda/eff/blob/8c4df4bf54faf22456354be18095b14825be5e85/notes/semantics-zoo.md)
 and none of the ones with support for higher order effects provide the
 `Coroutine` effect, so arguably it's not a big loss.
@@ -118,32 +114,36 @@ libraries such as [conduit](https://hackage.haskell.org/package/conduit) or
 
 ### Summary
 
-`effectful` aims to replace "boring" transformer stacks (which consist of a
-dozen of newtype'd `ExceptT`, `ReaderT`, `StateT` and `WriterT` transformers) by
-providing equivalent effects with improved semantics, performance and usability
-(it also makes it easy to reuse them for your own effects). It doesn't try to
-make monad transformers obsolete, so you're free to use it with `ConduitT`,
-`ContT`, `ListT` etc. when necessary.
+`effectful` is an extensible effects library that aims to replace "boring"
+transformer stacks (which consist of a dozen of newtype'd `ExceptT`, `ReaderT`,
+`StateT` and `WriterT` transformers) and their derivatives by providing
+equivalent effects with improved semantics, performance and usability (it also
+makes it easy to reuse them for your own effects). It doesn't try to make monad
+transformers obsolete, so you're free to use it with `ConduitT`, `ContT`,
+`ListT` etc. when necessary.
 
-## Ecosystem
+## Package structure
 
 The effect system is split among several libraries:
 
-- The `effectful-core` library contains the main machinery of the effect system
-  itself and basic effects. It aims for a small dependency footprint and
-  provides building blocks for more advanced effects.
+- The [`effectful-core`](https://hackage.haskell.org/package/effectful-core)
+  library contains the core of the effect system along with the basic
+  effects. It aims for a small dependency footprint and provides building blocks
+  for more advanced effects.
 
-- The `effectful-plugin` library provides an optional GHC plugin for improving
-  disambiguation of effects (see
+- The [`effectful-plugin`](https://hackage.haskell.org/package/effectful-plugin)
+  library provides an optional GHC plugin for improving disambiguation of
+  effects (see
   [here](https://github.com/haskell-effectful/effectful/blob/master/effectful-plugin/README.md)
   for more information).
 
-- The `effectful-th` library provides utilities for generating bits of
-  effect-related boilerplate via Template Haskell.
+- The [`effectful-th`](https://hackage.haskell.org/package/effectful-th) library
+  provides utilities for generating bits of effect-related boilerplate via
+  Template Haskell.
 
-- The `effectful` library re-exports public modules of `effectful-core` and
-  additionally provides most features of the `unliftio` library divided into
-  appropriate effects.
+- The [`effectful`](https://hackage.haskell.org/package/effectful) library
+  re-exports public modules of `effectful-core` and additionally provides most
+  features of the `unliftio` library divided into appropriate effects.
 
 ## Example
 

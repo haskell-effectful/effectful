@@ -9,12 +9,14 @@ maintainer:         andrzej@rybczak.net
 author:             Andrzej Rybczak
 synopsis:           An easy to use, performant extensible effects library.
 
-description: An easy to use, performant extensible effects library with seamless
-             integration with the existing Haskell ecosystem.
-             .
-             This is the "batteries-included" variant; See the
-             @<https://hackage.haskell.org/package/effectful-core effectful-core>@
-             package if you need a more limited dependency footprint.
+description:
+  An easy to use, performant extensible effects library with seamless
+  integration with the existing Haskell ecosystem.
+  .
+  This is the "batteries-included" variant. See the
+  @<https://hackage.haskell.org/package/effectful-core effectful-core>@ package
+  if you need a more limited dependency footprint or want to browse
+  documentation of core modules.
 
 extra-source-files:
   CHANGELOG.md

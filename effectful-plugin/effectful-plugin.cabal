@@ -9,9 +9,10 @@ maintainer:         andrzej@rybczak.net
 author:             Andrzej Rybczak
 synopsis:           A GHC plugin for improving disambiguation of effects.
 
-description: Instruct GHC to do a better job with disambiguation of effects.
-             .
-             See the README for more information.
+description:
+  Instruct GHC to do a better job with disambiguation of effects.
+  .
+  See the README for more information.
 
 extra-source-files: CHANGELOG.md
                     README.md

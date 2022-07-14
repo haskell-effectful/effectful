@@ -9,8 +9,9 @@ maintainer:         andrzej@rybczak.net
 author:             Andrzej Rybczak
 synopsis:           Template Haskell utilities for the effectful library.
 
-description: Generate functions for performing operations of dynamically
-             dispatched effects via Template Haskell.
+description:
+  Generate functions for performing operations of dynamically dispatched effects
+  via Template Haskell.
 
 extra-source-files:
   CHANGELOG.md

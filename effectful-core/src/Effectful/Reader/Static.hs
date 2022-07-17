@@ -5,6 +5,7 @@ module Effectful.Reader.Static
 
     -- ** Handlers
   , runReader
+  , withReader
 
     -- ** Operations
   , ask
@@ -28,6 +29,17 @@ runReader
   -> Eff (Reader r : es) a
   -> Eff es a
 runReader r = evalStaticRep (Reader r)
+
+-- | Execute a computation in a modified environment.
+withReader
+  :: (r1 -> r2)
+  -- ^ The function to modify the environment.
+  -> Eff (Reader r2 : es) a
+  -- ^ Computation to run in the modified environment.
+  -> Eff (Reader r1 : es) a
+withReader f m = do
+  r <- ask
+  raise $ runReader (f r) m
 
 -- | Fetch the value of the environment.
 ask :: Reader r :> es => Eff es r

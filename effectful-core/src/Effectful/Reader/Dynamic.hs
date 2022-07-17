@@ -9,6 +9,7 @@ module Effectful.Reader.Dynamic
 
     -- ** Handlers
   , runReader
+  , withReader
 
     -- ** Operations
   , ask
@@ -35,6 +36,17 @@ runReader
 runReader r = reinterpret (R.runReader r) $ \env -> \case
   Ask       -> R.ask
   Local f m -> localSeqUnlift env $ \unlift -> R.local f (unlift m)
+
+-- | Execute a computation in a modified environment.
+withReader
+  :: (r1 -> r2)
+  -- ^ The function to modify the environment.
+  -> Eff (Reader r2 : es) a
+  -- ^ Computation to run in the modified environment.
+  -> Eff (Reader r1 : es) a
+withReader f m = do
+  r <- ask
+  raise $ runReader (f r) m
 
 ----------------------------------------
 -- Operations

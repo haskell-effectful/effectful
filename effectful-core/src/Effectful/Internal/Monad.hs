@@ -170,13 +170,10 @@ withEffToIO
   :: (HasCallStack, IOE :> es)
   => ((forall r. Eff es r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
-  --
-  -- /Note:/ the strategy is reset to 'SeqUnlift' inside the continuation.
   -> Eff es a
 withEffToIO f = unliftStrategy >>= \case
   SeqUnlift -> unsafeEff $ \es -> seqUnliftIO es f
-  ConcUnlift p b -> withUnliftStrategy SeqUnlift $ do
-    unsafeEff $ \es -> concUnliftIO es p b f
+  ConcUnlift p b -> unsafeEff $ \es -> concUnliftIO es p b f
 
 -- | Create an unlifting function with the 'SeqUnlift' strategy.
 seqUnliftIO

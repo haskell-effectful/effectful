@@ -10,7 +10,7 @@ import qualified Utils as U
 
 unliftTests :: TestTree
 unliftTests = testGroup "Unlift"
-  [ testCase "Reset strategy in new thread" test_resetStrategy
+  [ testCase "Strategy stays the same in a new thread" test_threadStrategy
   , testCase "SeqUnlift in new thread" test_seqUnliftInNewThread
   , testGroup "Ephemeral strategy"
     [ testCase "Invalid limit" test_ephemeralInvalid
@@ -24,12 +24,13 @@ unliftTests = testGroup "Unlift"
     ]
   ]
 
-test_resetStrategy :: Assertion
-test_resetStrategy = runEff $ do
-  s <- withUnliftStrategy (ConcUnlift Ephemeral Unlimited) $ do
+test_threadStrategy :: Assertion
+test_threadStrategy = runEff $ do
+  let strategy = ConcUnlift Ephemeral Unlimited
+  s <- withUnliftStrategy strategy $ do
     withEffToIO $ \runInIO -> do
       inThread $ runInIO unliftStrategy
-  U.assertEqual "correct strategy" SeqUnlift s
+  U.assertEqual "correct strategy" strategy s
 
 test_seqUnliftInNewThread :: Assertion
 test_seqUnliftInNewThread = runEff $ do

@@ -67,7 +67,7 @@ library
                     , async               >= 2.2.2
                     , bytestring          >= 0.10
                     , directory           >= 1.3.2
-                    , effectful-core      >= 1.0.0.0   && < 1.0.1.0
+                    , effectful-core      >= 1.0.0.0   && < 1.2.0.0
                     , process             >= 1.6.9
 
                     , time                >= 1.9.2

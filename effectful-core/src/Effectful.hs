@@ -48,6 +48,7 @@ module Effectful
 
     -- ** Lifting
   , raise
+  , raiseWith
   , subsume
   , inject
   , Subset

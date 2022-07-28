@@ -1,3 +1,4 @@
+{-# LANGUAGE UndecidableInstances #-}
 -- | Dynamically dispatched effects.
 module Effectful.Dispatch.Dynamic
   ( -- * Introduction
@@ -40,7 +41,7 @@ module Effectful.Dispatch.Dynamic
   , localLiftUnliftIO
 
     -- *** Utils
-  , SuffixOf
+  , SharedSuffix
 
     -- * Re-exports
   , HasCallStack
@@ -48,8 +49,8 @@ module Effectful.Dispatch.Dynamic
 
 import Control.Exception (bracket)
 import Control.Monad.IO.Unlift
-import Data.Kind
 import GHC.Stack (HasCallStack)
+import GHC.TypeLits
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
@@ -432,7 +433,7 @@ impose runHandlerEs handler m = unsafeEff $ \es0 -> do
 -- | Create a local unlifting function with the 'SeqUnlift' strategy. For the
 -- general version see 'localUnlift'.
 localSeqUnlift
-  :: (HasCallStack, SuffixOf es handlerEs)
+  :: (HasCallStack, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -- ^ Local environment.
   -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
@@ -445,7 +446,7 @@ localSeqUnlift (LocalEnv les) k = unsafeEff $ \es -> do
 -- | Create a local unlifting function with the 'SeqUnlift' strategy. For the
 -- general version see 'localUnliftIO'.
 localSeqUnliftIO
-  :: (HasCallStack, SuffixOf es handlerEs, IOE :> es)
+  :: (HasCallStack, SharedSuffix es handlerEs, IOE :> es)
   => LocalEnv localEs handlerEs
   -- ^ Local environment.
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
@@ -455,7 +456,7 @@ localSeqUnliftIO (LocalEnv les) k = liftIO $ seqUnliftIO les k
 
 -- | Create a local unlifting function with the given strategy.
 localUnlift
-  :: (HasCallStack, SuffixOf es handlerEs)
+  :: (HasCallStack, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -- ^ Local environment.
   -> UnliftStrategy
@@ -472,7 +473,7 @@ localUnlift (LocalEnv les) strategy k = case strategy of
 
 -- | Create a local unlifting function with the given strategy.
 localUnliftIO
-  :: (HasCallStack, SuffixOf es handlerEs, IOE :> es)
+  :: (HasCallStack, SharedSuffix es handlerEs, IOE :> es)
   => LocalEnv localEs handlerEs
   -- ^ Local environment.
   -> UnliftStrategy
@@ -494,7 +495,7 @@ localUnliftIO (LocalEnv les) strategy k = case strategy of
 -- /Note:/ the computation must not run its argument in a different thread,
 -- attempting to do so will result in a runtime error.
 withLiftMap
-  :: (HasCallStack, SuffixOf es handlerEs)
+  :: (HasCallStack, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -- ^ Local environment.
   -> ((forall a b. (Eff es a -> Eff es b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
@@ -534,7 +535,7 @@ withLiftMap !_ k = unsafeEff $ \es -> do
 --     forkIOWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 -- :}
 withLiftMapIO
-  :: (HasCallStack, SuffixOf es handlerEs, IOE :> es)
+  :: (HasCallStack, SharedSuffix es handlerEs, IOE :> es)
   => LocalEnv localEs handlerEs
   -- ^ Local environment.
   -> ((forall a b. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
@@ -556,7 +557,7 @@ withLiftMapIO !_ k = k $ \mapIO m -> unsafeEff $ \es -> do
 -- /Note:/ depending on the computation you're lifting 'localUnlift' along with
 -- 'withLiftMap' might be enough and is more efficient.
 localLiftUnlift
-  :: (HasCallStack, SuffixOf es handlerEs)
+  :: (HasCallStack, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -- ^ Local environment.
   -> UnliftStrategy
@@ -582,7 +583,7 @@ localLiftUnlift (LocalEnv les) strategy k = case strategy of
 -- /Note:/ depending on the computation you're lifting 'localUnliftIO' along
 -- with 'withLiftMapIO' might be enough and is more efficient.
 localLiftUnliftIO
-  :: (HasCallStack, SuffixOf es handlerEs, IOE :> es)
+  :: (HasCallStack, SharedSuffix es handlerEs, IOE :> es)
   => LocalEnv localEs handlerEs
   -- ^ Local environment.
   -> UnliftStrategy
@@ -596,13 +597,76 @@ localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
 ----------------------------------------
 -- Utils
 
--- | Require that the second list of effects is a suffix of the first one.
+-- | Require that both effect stacks share an opaque suffix.
 --
--- In other words, 'SuffixOf' @es@ @baseEs@ means "a suffix of @es@ is
--- @baseEs@".
-type family SuffixOf (es :: [Effect]) (baseEs :: [Effect]) :: Constraint where
-  SuffixOf   baseEs baseEs = ()
-  SuffixOf (e : es) baseEs = SuffixOf es baseEs
+-- Functions from the 'localUnlift' family utilize this constraint to guarantee
+-- sensible usage of unlifting functions.
+--
+-- As an example, consider the following higher order effect:
+--
+-- >>> :{
+--   data E :: Effect where
+--     E :: m a -> E m a
+--   type instance DispatchOf E = Dynamic
+-- :}
+--
+-- Running local actions in a more specific environment is fine:
+--
+-- >>> :{
+--  runE1 :: Eff (E ': es) a -> Eff es a
+--  runE1 = interpret $ \env -> \case
+--    E m -> runReader () $ do
+--      localSeqUnlift env $ \unlift -> unlift m
+-- :}
+--
+-- Running local actions in a more general environment is fine:
+--
+-- >>> :{
+--  runE2 :: Eff (E ': es) a -> Eff es a
+--  runE2 = reinterpret (runReader ()) $ \env -> \case
+--    E m -> raise $ do
+--      localSeqUnlift env $ \unlift -> unlift m
+-- :}
+--
+-- However, running local actions in an unrelated environment is not fine as
+-- this would make it possible to run anything within 'runPureEff':
+--
+-- >>> :{
+--  runE3 :: Eff (E ': es) a -> Eff es a
+--  runE3 = reinterpret (runReader ()) $ \env -> \case
+--    E m -> pure . runPureEff $ do
+--      localSeqUnlift env $ \unlift -> unlift m
+-- :}
+-- ...
+-- ...Could not deduce (SharedSuffix '[] es)...
+-- ...
+--
+-- Running local actions in a monomorphic effect stack is also not fine as
+-- this makes a special case of the above possible:
+--
+-- >>> :{
+--  runE4 :: Eff '[E, IOE] a -> Eff '[IOE] a
+--  runE4 = interpret $ \env -> \case
+--    E m -> pure . runPureEff $ do
+--      localSeqUnlift env $ \unlift -> unlift m
+-- :}
+-- ...
+-- ...Running local actions in monomorphic effect stacks is not supported...
+-- ...
+--
+class SharedSuffix (es1 :: [Effect]) (es2 :: [Effect])
+
+instance {-# INCOHERENT #-} SharedSuffix es es
+instance {-# INCOHERENT #-} SharedSuffix es1 es2 => SharedSuffix (e : es1) es2
+instance {-# INCOHERENT #-} SharedSuffix es1 es2 => SharedSuffix es1 (e : es2)
+
+-- | This is always preferred to @SharedSuffix es es@ as it's not incoherent.
+instance
+  TypeError
+  ( Text "Running local actions in monomorphic effect stacks is not supported." :$$:
+    Text "As a solution simply change the stack to have a polymorphic suffix."
+  ) => SharedSuffix '[] '[]
 
 -- $setup
 -- >>> import Control.Concurrent (ThreadId, forkIOWithUnmask)
+-- >>> import Effectful.Reader.Static

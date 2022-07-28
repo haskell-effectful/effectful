@@ -28,6 +28,7 @@ module Effectful.Internal.Monad
 
   -- * Lifting
   , raise
+  , raiseWith
   , subsume
   , inject
 
@@ -325,6 +326,24 @@ instance Prim :> es => PrimMonad (Eff es) where
 -- information).
 raise :: Eff es a -> Eff (e : es) a
 raise m = unsafeEff $ \es -> unEff m =<< tailEnv es
+
+-- | Lift an 'Eff' computation into an effect stack with one more effect and
+-- create an unlifting function with the given strategy.
+raiseWith
+  :: HasCallStack
+  => UnliftStrategy
+  -> ((forall r. Eff (e : es) r -> Eff es r) -> Eff es a)
+  -- ^ Continuation with the unlifting function in scope.
+  -> Eff (e : es) a
+raiseWith strategy k = case strategy of
+  SeqUnlift -> unsafeEff $ \ees -> do
+    es <- tailEnv ees
+    seqUnliftIO ees $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
+  ConcUnlift p l -> unsafeEff $ \ees -> do
+    es <- tailEnv ees
+    concUnliftIO ees p l $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
 
 -- | Eliminate a duplicate effect from the top of the effect stack.
 subsume :: e :> es => Eff (e : es) a -> Eff es a

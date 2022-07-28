@@ -109,8 +109,8 @@ import Effectful.Internal.Monad
 -- - Utilities for defining new effects and interpreting them, possibly in terms
 --   of already existing ones.
 --
--- While basic effects can be used out of the box, it's usually recommended to
--- create your own that serve a more specific purpose.
+-- While basic effects can be used out of the box, in general it's recommended
+-- to create your own that serve a more specific purpose.
 --
 
 -- $integration
@@ -147,8 +147,8 @@ import Effectful.Internal.Monad
 -- such as t'Control.Monad.Catch.MonadMask' or 'MonadUnliftIO'.
 --
 -- In case the 'Eff' monad doesn't provide a specific instance out of the box,
--- it can be supplied via a specific effect. As an example see how the instance
--- of @MonadResource@ for 'Eff' is implemented in the
+-- it can be supplied via an effect. As an example see how the instance of
+-- @MonadResource@ for 'Eff' is implemented in the
 -- [resourcet-effectful](https://hackage.haskell.org/package/resourcet-effectful)
 -- package.
 --
@@ -158,22 +158,23 @@ import Effectful.Internal.Monad
 -- If a library operates in 'IO', there are a couple of ways to integrate it.
 --
 -- The easiest way is to use its functions selectively in the 'Eff' monad with
--- the help of 'liftIO' or 'withEffToIO' / 'withRunInIO'. This is the easiest
--- way. However, it's not particularly robust, since it vastly broadens the
--- scope in which the 'IOE' effect is needed (not to mention that explicit
--- lifting is annoying).
+-- the help of 'liftIO' or 'withEffToIO' / 'withRunInIO'. However, this is not
+-- particularly robust, since it vastly broadens the scope in which the 'IOE'
+-- effect is needed (not to mention that explicit lifting is annoying).
 --
 -- A somewhat better approach is to create a dummy static effect with
 -- lightweight wrappers of the library functions. As an example have a look at
--- the @Effectful.Concurrent.Async@ module from the
--- [effectful](https://hackage.haskell.org/package/effectful) package that wraps
--- the API of the [async](https://hackage.haskell.org/package/async)
--- package. Unfortunately, this requires the amount of work proportional to the
--- size of the library and might not be the best option, especially if you only
--- need to make use of a few functions.
+-- the
+-- [@Effectful.Concurrent.Async@](https://hackage.haskell.org/package/effectful/docs/Effectful-Concurrent-Async.html)
+-- module from the [effectful](https://hackage.haskell.org/package/effectful)
+-- package that wraps the API of the
+-- [async](https://hackage.haskell.org/package/async) package. Unfortunately,
+-- this requires the amount of work proportional to the size of the library and
+-- might not be the best option, especially if you only need to make use of a
+-- tiny portion of the API.
 --
 -- Even better (though sometimes hard to do in practice) way is to consider,
--- what the library will be used for and then create a custom effect with high
+-- what do you need the library for and then create a custom effect with high
 -- level operations that the library in question will help us implement. The
 -- advantage of this approach is that we're hiding implementation details from
 -- the so-called "business logic" of our application and make it possible to
@@ -187,8 +188,7 @@ import Effectful.Internal.Monad
 -- [servant-server](https://hackage.haskell.org/package/servant-server) package.
 --
 -- In such case it's best to mirror the monad in question by the 'Eff' monad
--- with appropriate effects (as tha majority of popular monad transformers have
--- [subtle
+-- with appropriate effects (as most popular monad transformers have [subtle
 -- issues](https://github.com/haskell-effectful/effectful/blob/master/transformers.md)),
 -- use it as soon as possible, then at the end feed the final state to the monad
 -- of the library so it proceeds as if nothing unusual happened.
@@ -231,5 +231,5 @@ import Effectful.Internal.Monad
 -- Libraries working in a polymorphic monad use @mtl@ style effects. Details
 -- about their integration with the 'Eff' monad require familiarity with
 -- dynamically dispatched effects and thus are available in the
--- "Effectful.Dispatch.Dynamic#g:integration" module.
+-- "Effectful.Dispatch.Dynamic#integration" module.
 --

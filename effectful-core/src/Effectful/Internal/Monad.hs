@@ -374,7 +374,8 @@ type role LocalEnv nominal nominal
 -- handler.
 --
 -- The second type variable represents effects of a handler and is needed for
--- technical reasons to guarantee soundness.
+-- technical reasons to guarantee soundness (see
+-- t'Effectful.Dispatch.Dynamic.SharedSuffix' for more information).
 newtype LocalEnv (localEs :: [Effect]) (handlerEs :: [Effect]) = LocalEnv (Env localEs)
 
 -- | Type signature of the effect handler.

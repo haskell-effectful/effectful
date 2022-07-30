@@ -40,8 +40,7 @@ import Effectful.Internal.Utils
 -- 'Effectful.Dispatch.Dynamic.localUnlift' family.
 --
 -- /Warning:/ unlifting functions should not be used outside of continuations
--- that brought them into scope. While this currently works just fine, there are
--- no guarantees it will continue doing so in the future.
+-- that brought them into scope. __The behavior when doing so is undefined.__
 data UnliftStrategy
   = SeqUnlift
   -- ^ The fastest strategy and a default setting for t'Effectful.IOE'. An

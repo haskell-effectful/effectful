@@ -38,6 +38,8 @@ runReader r = reinterpret (R.runReader r) $ \env -> \case
   Local f m -> localSeqUnlift env $ \unlift -> R.local f (unlift m)
 
 -- | Execute a computation in a modified environment.
+--
+-- @since 1.1.0.0
 withReader
   :: (r1 -> r2)
   -- ^ The function to modify the environment.

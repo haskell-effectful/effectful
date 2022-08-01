@@ -658,6 +658,7 @@ localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
 -- ...Running local actions in monomorphic effect stacks is not supported...
 -- ...
 --
+-- @since 1.2.0.0
 class SharedSuffix (es1 :: [Effect]) (es2 :: [Effect])
 
 instance {-# INCOHERENT #-} SharedSuffix es es

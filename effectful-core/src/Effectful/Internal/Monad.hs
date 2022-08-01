@@ -325,6 +325,8 @@ raise m = unsafeEff $ \es -> unEff m =<< tailEnv es
 
 -- | Lift an 'Eff' computation into an effect stack with one more effect and
 -- create an unlifting function with the given strategy.
+--
+-- @since 1.2.0.0
 raiseWith
   :: HasCallStack
   => UnliftStrategy

@@ -1,3 +1,8 @@
+# effectful-core-2.0.0.0 (2022-??-??)
+* Make storage references in the environment immutable.
+* Remove `checkSizeEnv` and `forkEnv` from
+  `Effectful.Dispatch.Static.Primitive`.
+
 # effectful-core-1.2.0.0 (2022-07-28)
 * Change `SuffixOf` to `SharedSuffix` and make it behave as advertised.
 * Add `raiseWith`.

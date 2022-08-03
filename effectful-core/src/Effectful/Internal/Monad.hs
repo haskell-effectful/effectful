@@ -230,7 +230,6 @@ instance C.MonadThrow (Eff es) where
 instance C.MonadCatch (Eff es) where
   catch m handler = unsafeEff $ \es -> do
     unEff m es `E.catch` \e -> do
-      checkSizeEnv es
       unEff (handler e) es
 
 instance C.MonadMask (Eff es) where
@@ -243,7 +242,6 @@ instance C.MonadMask (Eff es) where
   generalBracket acquire release use = unsafeEff $ \es -> E.mask $ \unmask -> do
     resource <- unEff acquire es
     b <- unmask (unEff (use resource) es) `E.catch` \e -> do
-      checkSizeEnv es
       _ <- unEff (release resource $ C.ExitCaseException e) es
       E.throwIO e
     c <- unEff (release resource $ C.ExitCaseSuccess b) es
@@ -345,10 +343,7 @@ raiseWith strategy k = case strategy of
 
 -- | Eliminate a duplicate effect from the top of the effect stack.
 subsume :: e :> es => Eff (e : es) a -> Eff es a
-subsume m = unsafeEff $ \es0 -> do
-  E.bracket (subsumeEnv es0)
-            unsubsumeEnv
-            (\es -> unEff m es)
+subsume m = unsafeEff $ \es -> unEff m =<< subsumeEnv es
 
 -- | Allow for running an effect stack @xs@ within @es@ as long as @xs@ is a
 -- permutation (with possible duplicates) of a subset of @es@.

@@ -353,8 +353,7 @@ interpret
   -> Eff (e : es) a
   -> Eff      es  a
 interpret handler m = unsafeEff $ \es -> do
-  les <- forkEnv es
-  (`unEff` es) $ runHandler (Handler les handler) m
+  (`unEff` es) $ runHandler (Handler es handler) m
 
 -- | Interpret an effect using other, private effects.
 --
@@ -368,9 +367,8 @@ reinterpret
   -> Eff (e : es) a
   -> Eff      es  b
 reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
-  les0 <- forkEnv es
-  (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
-    (`unEff` es) $ runHandler (Handler les handler) m
+  (`unEff` es) . runHandlerEs . unsafeEff $ \handlerEs -> do
+    (`unEff` es) $ runHandler (Handler handlerEs handler) m
 
 -- | Replace the handler of an existing effect with a new one.
 --
@@ -407,8 +405,7 @@ interpose
   -> Eff es a
   -> Eff es a
 interpose handler m = unsafeEff $ \es0 -> do
-  les <- forkEnv es0
-  bracket (replaceEnv (Handler les handler) relinkHandler es0)
+  bracket (replaceEnv (Handler es0 handler) relinkHandler es0)
           (unreplaceEnv @e)
           (\es -> unEff m es)
 
@@ -425,9 +422,8 @@ impose
   -> Eff es a
   -> Eff es b
 impose runHandlerEs handler m = unsafeEff $ \es0 -> do
-  les0 <- forkEnv es0
-  (`unEff` les0) . runHandlerEs . unsafeEff $ \les -> do
-    bracket (replaceEnv (Handler les handler) relinkHandler es0)
+  (`unEff` es0) . runHandlerEs . unsafeEff $ \handlerEs -> do
+    bracket (replaceEnv (Handler handlerEs handler) relinkHandler es0)
             (unreplaceEnv @e)
             (\es -> unEff m es)
 

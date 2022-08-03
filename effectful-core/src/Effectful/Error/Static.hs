@@ -156,7 +156,6 @@ catchError
 catchError m handler = unsafeEff $ \es -> do
   Error eid <- getEnv @(Error e) es
   catchErrorIO eid (unEff m es) $ \cs e -> do
-    checkSizeEnv es
     unEff (handler cs e) es
 
 -- | The same as @'flip' 'catchError'@, which is useful in situations where the

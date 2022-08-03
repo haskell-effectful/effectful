@@ -3,7 +3,6 @@
 module Effectful.Internal.Env
   ( -- * The environment
     Env(..)
-  , References(..)
   , Storage(..)
 
     -- ** Relinker
@@ -19,9 +18,7 @@ module Effectful.Internal.Env
     -- * Operations
   , emptyEnv
   , cloneEnv
-  , forkEnv
   , sizeEnv
-  , checkSizeEnv
   , tailEnv
 
     -- ** Modification of the effect stack
@@ -30,7 +27,6 @@ module Effectful.Internal.Env
   , replaceEnv
   , unreplaceEnv
   , subsumeEnv
-  , unsubsumeEnv
   , injectEnv
 
     -- ** Data retrieval and update
@@ -55,9 +51,6 @@ type role Env nominal
 -- | A strict (WHNF), __thread local__, mutable, extensible record indexed by types
 -- of kind 'Effect'.
 --
--- Supports forking, i.e. introduction of local branches for encapsulation of
--- effects specific to effect handlers.
---
 -- __Warning: the environment is a mutable data structure and cannot be simultaneously used from multiple threads under any circumstances.__
 --
 -- In order to pass it to a different thread, you need to perform a deep copy
@@ -66,7 +59,7 @@ type role Env nominal
 -- Offers very good performance characteristics for most often performed
 -- operations:
 --
--- - Extending: /@O(1)@/ (amortized).
+-- - Extending: /@O(n)@/, where @n@ is the size of the effect stack.
 --
 -- - Shrinking: /@O(1)@/.
 --
@@ -74,27 +67,17 @@ type role Env nominal
 --
 -- - Modification of a specific element: /@O(1)@/.
 --
--- - Forking: /@O(n)@/, where @n@ is the size of the effect stack.
+-- - Getting a tail: /@O(1)@/.
 --
--- - Cloning: /@O(N + Σ(n_i))@/, where @N@ is the size of the 'Storage', while
---   @i@ ranges over handlers of dynamically dispatched effects in the 'Storage'
---   and @n_i@ is the size of the effect stack of @i@-th handler.
+-- - Cloning: /@O(N)@/, where @N@ is the size of the 'Storage'.
 --
 data Env (es :: [Effect]) = Env
-  { envSize    :: !Int
-  , envRefs    :: !(IORef References)
+  { envOffset  :: !Int
+  , envRefs    :: !(PrimArray Int)
   , envStorage :: !(IORef Storage)
   }
 
--- | An array of references to effects in the 'Storage'.
-data References = References
-  { refSize    :: !Int
-  , refIndices :: !(MutablePrimArray RealWorld Int)
-  }
-
 -- | A storage of effects.
---
--- Shared between all forks of the environment within the same thread.
 data Storage = Storage
   { stSize      :: !Int
   , stEffects   :: !(SmallMutableArray RealWorld Any)
@@ -140,17 +123,13 @@ type family EffectRep (d :: Dispatch) :: Effect -> Type
 
 -- | Create an empty environment.
 emptyEnv :: IO (Env '[])
-emptyEnv = Env <$> pure 0
-  <*> (newIORef . References 0 =<< newPrimArray 0)
+emptyEnv = Env 0
+  <$> (unsafeFreezePrimArray =<< newPrimArray 0)
   <*> (newIORef =<< emptyStorage)
 
 -- | Clone the environment to use it in a different thread.
 cloneEnv :: Env es -> IO (Env es)
-cloneEnv (Env size mrefs0 storage0) = do
-  References n refs0 <- readIORef mrefs0
-  errorWhenDifferent size n
-  mrefs <- newIORef . References n
-    =<< cloneMutablePrimArray refs0 0 (sizeofMutablePrimArray refs0)
+cloneEnv (Env offset refs storage0) = do
   Storage storageSize es0 fs0 <- readIORef storage0
   let esSize = sizeofSmallMutableArray es0
       fsSize = sizeofSmallMutableArray fs0
@@ -169,78 +148,46 @@ cloneEnv (Env size mrefs0 storage0) = do
             >>= writeSmallArray es i . toAny
           relinkEffects i
   relinkEffects storageSize
-  pure $ Env size mrefs storage
+  pure $ Env offset refs storage
 {-# NOINLINE cloneEnv #-}
-
--- | Create a fork of the environment.
---
--- Forked environment can be updated independently of the original one within
--- the same thread.
-forkEnv :: Env es -> IO (Env es)
-forkEnv (Env size mrefs0 storage) = do
-  References n refs0 <- readIORef mrefs0
-  errorWhenDifferent size n
-  mrefs <- newIORef . References size
-    =<< cloneMutablePrimArray refs0 0 (sizeofMutablePrimArray refs0)
-  pure $ Env size mrefs storage
-{-# NOINLINE forkEnv #-}
-
--- | Check that the size of the environment is internally consistent.
-checkSizeEnv :: Env es -> IO ()
-checkSizeEnv (Env size mrefs _) = do
-  References n _ <- readIORef mrefs
-  errorWhenDifferent size n
-{-# NOINLINE checkSizeEnv #-}
 
 -- | Get the current size of the environment.
 sizeEnv :: Env es -> IO Int
-sizeEnv env = pure $ envSize env
+sizeEnv (Env offset refs _) = do
+  pure $ sizeofPrimArray refs - offset
 
 -- | Access the tail of the environment.
 tailEnv :: Env (e : es) -> IO (Env es)
-tailEnv (Env size mrefs0 storage) = do
-  References n refs0 <- readIORef mrefs0
-  errorWhenDifferent size n
-  mrefs <- newIORef . References (size - 1)
-    =<< cloneMutablePrimArray refs0 0 (sizeofMutablePrimArray refs0)
-  pure $ Env (size - 1) mrefs storage
-{-# NOINLINE tailEnv #-}
+tailEnv (Env offset refs storage) = do
+  pure $ Env (offset + 1) refs storage
 
 ----------------------------------------
 -- Extending and shrinking
 
--- | Extend the environment with a new data type (in place).
+-- | Extend the environment with a new data type.
 consEnv
   :: EffectRep (DispatchOf e) e
   -- ^ The representation of the effect.
   -> Relinker (EffectRep (DispatchOf e)) e
   -> Env es
   -> IO (Env (e : es))
-consEnv e f (Env size mrefs storage) = do
-  References n refs0 <- readIORef mrefs
-  errorWhenDifferent size n
-  len0 <- getSizeofMutablePrimArray refs0
-  refs <- case size `compare` len0 of
-    GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
-    LT -> pure refs0
-    EQ -> resizeMutablePrimArray refs0 (doubleCapacity len0)
+consEnv e f (Env offset refs0 storage) = do
+  let size = sizeofPrimArray refs0 - offset
+  mrefs <- newPrimArray (size + 1)
+  copyPrimArray mrefs 1 refs0 offset size
   ref <- insertEffect storage e f
-  writePrimArray refs size ref
-  writeIORef mrefs $! References (size + 1) refs
-  pure $ Env (size + 1) mrefs storage
+  writePrimArray mrefs 0 ref
+  refs <- unsafeFreezePrimArray mrefs
+  pure $ Env 0 refs storage
 {-# NOINLINE consEnv #-}
 
--- | Shrink the environment by one data type (in place).
+-- | Shrink the environment by one data type.
 --
 -- /Note:/ after calling this function the input environment is no longer
 -- usable.
 unconsEnv :: Env (e : es) -> IO ()
-unconsEnv (Env size mrefs storage) = do
-  References n refs <- readIORef mrefs
-  errorWhenDifferent size n
-  ref <- readPrimArray refs (size - 1)
-  deleteEffect storage ref
-  writeIORef mrefs $! References (size - 1) refs
+unconsEnv (Env _ refs storage) = do
+  deleteEffect storage (indexPrimArray refs 0)
 {-# NOINLINE unconsEnv #-}
 
 ----------------------------------------
@@ -253,17 +200,14 @@ replaceEnv
   -> Relinker (EffectRep (DispatchOf e)) e
   -> Env es
   -> IO (Env es)
-replaceEnv e f (Env size mrefs0 storage) = do
-  References n refs0 <- readIORef mrefs0
-  errorWhenDifferent size n
-  len0 <- getSizeofMutablePrimArray refs0
-  when (size > len0) $ do
-    error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
-  refs <- cloneMutablePrimArray refs0 0 len0
+replaceEnv e f (Env offset refs0 storage) = do
+  let size = sizeofPrimArray refs0 - offset
+  mrefs <- newPrimArray size
+  copyPrimArray mrefs 0 refs0 offset size
   ref <- insertEffect storage e f
-  writePrimArray refs (mkIndex (reifyIndex @e @es) size) ref
-  mrefs <- newIORef $ References n refs
-  pure $ Env size mrefs storage
+  writePrimArray mrefs (reifyIndex @e @es) ref
+  refs <- unsafeFreezePrimArray mrefs
+  pure $ Env 0 refs storage
 {-# NOINLINE replaceEnv #-}
 
 -- | Remove a reference to the replaced effect.
@@ -271,59 +215,39 @@ replaceEnv e f (Env size mrefs0 storage) = do
 -- /Note:/ after calling this function the input environment is no longer
 -- usable.
 unreplaceEnv :: forall e es. e :> es => Env es -> IO ()
-unreplaceEnv (Env size mrefs storage) = do
-  References n refs <- readIORef mrefs
-  errorWhenDifferent size n
-  ref <- readPrimArray refs $ mkIndex (reifyIndex @e @es) size
-  deleteEffect storage ref
+unreplaceEnv (Env _ refs storage) = do
+  deleteEffect storage $ indexPrimArray refs (reifyIndex @e @es)
 {-# NOINLINE unreplaceEnv #-}
 
 ----------------------------------------
 
--- | Reference an existing effect from the top of the stack (in place).
+-- | Reference an existing effect from the top of the stack.
 subsumeEnv :: forall e es. e :> es => Env es -> IO (Env (e : es))
-subsumeEnv (Env size mrefs storage) = do
-  References n refs0 <- readIORef mrefs
-  errorWhenDifferent size n
-  len0 <- getSizeofMutablePrimArray refs0
-  refs <- case size `compare` len0 of
-    GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
-    LT -> pure refs0
-    EQ -> resizeMutablePrimArray refs0 (doubleCapacity len0)
-  ref <- readPrimArray refs $ mkIndex (reifyIndex @e @es) size
-  writePrimArray refs size ref
-  writeIORef mrefs $! References (size + 1) refs
-  pure $ Env (size + 1) mrefs storage
+subsumeEnv (Env offset refs0 storage) = do
+  let size = sizeofPrimArray refs0 - offset
+  mrefs <- newPrimArray (size + 1)
+  copyPrimArray mrefs 1 refs0 offset size
+  writePrimArray mrefs 0 $ indexPrimArray refs0 (offset + reifyIndex @e @es)
+  refs <- unsafeFreezePrimArray mrefs
+  pure $ Env 0 refs storage
 {-# NOINLINE subsumeEnv #-}
-
--- | Remove a reference to an existing effect from the top of the stack.
---
--- /Note:/ after calling this function the input environment is no longer
--- usable.
-unsubsumeEnv :: e :> es => Env (e : es) -> IO ()
-unsubsumeEnv (Env size mrefs _) = do
-  References n refs <- readIORef mrefs
-  errorWhenDifferent size n
-  writeIORef mrefs $! References (size - 1) refs
-{-# NOINLINE unsubsumeEnv #-}
 
 ----------------------------------------
 
 -- | Construct an environment containing a permutation (with possible
 -- duplicates) of a subset of effects from the input environment.
 injectEnv :: forall xs es. Subset xs es => Env es -> IO (Env xs)
-injectEnv (Env size0 mrefs0 storage) = do
-  References n0 refs0 <- readIORef mrefs0
-  errorWhenDifferent size0 n0
-  let makeRefs k acc = \case
-        []       -> unsafeThawPrimArray $ primArrayFromListN k acc
+injectEnv (Env offset refs0 storage) = do
+  let xs = reifyIndices @xs @es
+  mrefs <- newPrimArray (length xs)
+  let writeRefs i = \case
+        []       -> pure ()
         (e : es) -> do
-          i <- readPrimArray refs0 $ mkIndex e size0
-          makeRefs (k + 1) (i : acc) es
-  refs <- makeRefs 0 [] (reifyIndices @xs @es)
-  size <- getSizeofMutablePrimArray refs
-  mrefs <- newIORef $ References size refs
-  pure $ Env size mrefs storage
+          writePrimArray mrefs i $ indexPrimArray refs0 (offset + e)
+          writeRefs (i + 1) es
+  writeRefs 0 xs
+  refs <- unsafeFreezePrimArray mrefs
+  pure $ Env 0 refs storage
 {-# NOINLINE injectEnv #-}
 
 ----------------------------------------
@@ -338,7 +262,7 @@ getEnv env = do
   (i, es) <- getLocation @e env
   fromAny <$> readSmallArray es i
 
--- | Replace the data type in the environment with a new value (in place).
+-- | Replace the data type in the environment with a new value.
 putEnv
   :: forall e es. e :> es
   => Env es -- ^ The environment.
@@ -348,7 +272,7 @@ putEnv env e = do
   (i, es) <- getLocation @e env
   e `seq` writeSmallArray es i (toAny e)
 
--- | Modify the data type in the environment (in place) and return a value.
+-- | Modify the data type in the environment and return a value.
 stateEnv
   :: forall e es a. e :> es
   => Env es -- ^ The environment.
@@ -360,7 +284,7 @@ stateEnv env f = do
   e `seq` writeSmallArray es i (toAny e)
   pure a
 
--- | Modify the data type in the environment (in place).
+-- | Modify the data type in the environment.
 modifyEnv
   :: forall e es. e :> es
   => Env es -- ^ The environment.
@@ -376,15 +300,10 @@ getLocation
   :: forall e es. e :> es
   => Env es
   -> IO (Int, SmallMutableArray RealWorld Any)
-getLocation (Env size mrefs storage) = do
-  refs <- refIndices <$> readIORef mrefs
-  i <- readPrimArray refs $ mkIndex (reifyIndex @e @es) size
+getLocation (Env offset refs storage) = do
+  let i = indexPrimArray refs $ offset + reifyIndex @e @es
   es <- stEffects <$> readIORef storage
   pure (i, es)
-
--- | Get the index of a reference to an effect.
-mkIndex :: Int -> Int -> Int
-mkIndex ix size = size - ix - 1
 
 ----------------------------------------
 -- Internal helpers
@@ -424,12 +343,8 @@ insertEffect storage e f = do
       writeIORef storage $! Storage (size + 1) es fs
       pure size
 
--- | Given a reference to an effect, delete it from the storage.
---
--- /Note:/ the reference needs to point to the end of the storage. Normally it's
--- not a problem as it turns out effects are put and taken from the storage in
--- the same order across all forks, unless someone tries to do something
--- unexpected.
+-- | Given a reference to an effect from the top of the stack, delete it from
+-- the storage.
 deleteEffect :: IORef Storage -> Int -> IO ()
 deleteEffect storage ref = do
   Storage size es fs <- readIORef storage
@@ -441,17 +356,7 @@ deleteEffect storage ref = do
 
 -- | Relink the environment to use the new storage.
 relinkEnv :: IORef Storage -> Env es -> IO (Env es)
-relinkEnv storage (Env size mrefs0 _) = do
-  References n refs0 <- readIORef mrefs0
-  mrefs <- newIORef . References n
-    =<< cloneMutablePrimArray refs0 0 (sizeofMutablePrimArray refs0)
-  pure $ Env size mrefs storage
-
--- | Throw an error if array sizes do not agree.
-errorWhenDifferent :: HasCallStack => Int -> Int -> IO ()
-errorWhenDifferent size n
-  | size /= n = error $ "size (" ++ show size ++ ") /= n (" ++ show n ++ ")"
-  | otherwise = pure ()
+relinkEnv storage (Env offset refs _) = pure $ Env offset refs storage
 
 -- | Double the capacity of an array.
 doubleCapacity :: Int -> Int

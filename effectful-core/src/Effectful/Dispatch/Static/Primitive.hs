@@ -31,9 +31,7 @@ module Effectful.Dispatch.Static.Primitive
     -- ** Utils
   , emptyEnv
   , cloneEnv
-  , forkEnv
   , sizeEnv
-  , checkSizeEnv
   , tailEnv
   ) where
 

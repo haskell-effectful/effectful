@@ -56,7 +56,7 @@ library
 
     build-depends:    base                >= 4.13      && < 5
                     , containers          >= 0.6
-                    , effectful           >= 1.0.0.0   && < 1.3.0.0
+                    , effectful           >= 1.0.0.0   && < 3.0.0.0
                     , exceptions          >= 0.10.4
                     , template-haskell    >= 2.15      && < 2.20
                     , th-abstraction      >= 0.4       && < 0.5

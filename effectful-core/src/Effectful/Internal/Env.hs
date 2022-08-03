@@ -80,6 +80,8 @@ data Env (es :: [Effect]) = Env
 -- | A storage of effects.
 data Storage = Storage
   { stSize      :: !Int
+  , stVersion   :: !Int
+  , stVersions  :: !(MutablePrimArray RealWorld Int)
   , stEffects   :: !(SmallMutableArray RealWorld Any)
   , stRelinkers :: !(SmallMutableArray RealWorld Any)
   }
@@ -130,14 +132,18 @@ emptyEnv = Env 0
 -- | Clone the environment to use it in a different thread.
 cloneEnv :: Env es -> IO (Env es)
 cloneEnv (Env offset refs storage0) = do
-  Storage storageSize es0 fs0 <- readIORef storage0
-  let esSize = sizeofSmallMutableArray es0
+  Storage storageSize version vs0 es0 fs0 <- readIORef storage0
+  let vsSize = sizeofMutablePrimArray  vs0
+      esSize = sizeofSmallMutableArray es0
       fsSize = sizeofSmallMutableArray fs0
+  when (vsSize /= esSize) $ do
+    error $ "vsSize (" ++ show vsSize ++ ") /= esSize (" ++ show esSize ++ ")"
   when (esSize /= fsSize) $ do
     error $ "esSize (" ++ show esSize ++ ") /= fsSize (" ++ show fsSize ++ ")"
+  vs <- cloneMutablePrimArray  vs0 0 vsSize
   es <- cloneSmallMutableArray es0 0 esSize
-  fs <- cloneSmallMutableArray fs0 0 esSize
-  storage <- newIORef $ Storage storageSize es fs
+  fs <- cloneSmallMutableArray fs0 0 fsSize
+  storage <- newIORef $ Storage storageSize version vs es fs
   let relinkEffects = \case
         0 -> pure ()
         k -> do
@@ -154,12 +160,12 @@ cloneEnv (Env offset refs storage0) = do
 -- | Get the current size of the environment.
 sizeEnv :: Env es -> IO Int
 sizeEnv (Env offset refs _) = do
-  pure $ sizeofPrimArray refs - offset
+  pure $ (sizeofPrimArray refs - offset) `div` 2
 
 -- | Access the tail of the environment.
 tailEnv :: Env (e : es) -> IO (Env es)
 tailEnv (Env offset refs storage) = do
-  pure $ Env (offset + 1) refs storage
+  pure $ Env (offset + 2) refs storage
 
 ----------------------------------------
 -- Extending and shrinking
@@ -173,10 +179,11 @@ consEnv
   -> IO (Env (e : es))
 consEnv e f (Env offset refs0 storage) = do
   let size = sizeofPrimArray refs0 - offset
-  mrefs <- newPrimArray (size + 1)
-  copyPrimArray mrefs 1 refs0 offset size
-  ref <- insertEffect storage e f
+  mrefs <- newPrimArray (size + 2)
+  copyPrimArray mrefs 2 refs0 offset size
+  (ref, version) <- insertEffect storage e f
   writePrimArray mrefs 0 ref
+  writePrimArray mrefs 1 version
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage
 {-# NOINLINE consEnv #-}
@@ -204,8 +211,10 @@ replaceEnv e f (Env offset refs0 storage) = do
   let size = sizeofPrimArray refs0 - offset
   mrefs <- newPrimArray size
   copyPrimArray mrefs 0 refs0 offset size
-  ref <- insertEffect storage e f
-  writePrimArray mrefs (reifyIndex @e @es) ref
+  (ref, version) <- insertEffect storage e f
+  let i = 2 * reifyIndex @e @es
+  writePrimArray mrefs  i      ref
+  writePrimArray mrefs (i + 1) version
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage
 {-# NOINLINE replaceEnv #-}
@@ -225,9 +234,11 @@ unreplaceEnv (Env _ refs storage) = do
 subsumeEnv :: forall e es. e :> es => Env es -> IO (Env (e : es))
 subsumeEnv (Env offset refs0 storage) = do
   let size = sizeofPrimArray refs0 - offset
-  mrefs <- newPrimArray (size + 1)
-  copyPrimArray mrefs 1 refs0 offset size
-  writePrimArray mrefs 0 $ indexPrimArray refs0 (offset + reifyIndex @e @es)
+  mrefs <- newPrimArray (size + 2)
+  copyPrimArray mrefs 2 refs0 offset size
+  let ix = offset + 2 * reifyIndex @e @es
+  writePrimArray mrefs 0 $ indexPrimArray refs0  ix
+  writePrimArray mrefs 1 $ indexPrimArray refs0 (ix + 1)
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage
 {-# NOINLINE subsumeEnv #-}
@@ -239,12 +250,14 @@ subsumeEnv (Env offset refs0 storage) = do
 injectEnv :: forall xs es. Subset xs es => Env es -> IO (Env xs)
 injectEnv (Env offset refs0 storage) = do
   let xs = reifyIndices @xs @es
-  mrefs <- newPrimArray (length xs)
+  mrefs <- newPrimArray (2 * length xs)
   let writeRefs i = \case
         []       -> pure ()
         (e : es) -> do
-          writePrimArray mrefs i $ indexPrimArray refs0 (offset + e)
-          writeRefs (i + 1) es
+          let ix = offset + 2 * e
+          writePrimArray mrefs  i      $ indexPrimArray refs0  ix
+          writePrimArray mrefs (i + 1) $ indexPrimArray refs0 (ix + 1)
+          writeRefs (i + 2) es
   writeRefs 0 xs
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage
@@ -301,8 +314,17 @@ getLocation
   => Env es
   -> IO (Int, SmallMutableArray RealWorld Any)
 getLocation (Env offset refs storage) = do
-  let i = indexPrimArray refs $ offset + reifyIndex @e @es
-  es <- stEffects <$> readIORef storage
+  let ix = offset + 2 * reifyIndex @e @es
+      i  = indexPrimArray refs  ix
+  Storage _ _ vs es _ <- readIORef storage
+  let version = indexPrimArray refs (ix + 1)
+  storageVersion <- readPrimArray vs i
+  -- If version of the reference is different than version in the storage, it
+  -- means that the effect in the storage is not the one that was initially
+  -- referenced.
+  when (version /= storageVersion) $ do
+    error $ "version (" ++ show version ++ ") /= storageVersion ("
+         ++ show storageVersion ++ ")"
   pure (i, es)
 
 ----------------------------------------
@@ -310,8 +332,8 @@ getLocation (Env offset refs storage) = do
 
 -- | Create an empty storage.
 emptyStorage :: IO Storage
-emptyStorage = Storage
-  <$> pure 0
+emptyStorage = Storage 0 (noVersion + 1)
+  <$> newPrimArray 0
   <*> newSmallArray 0 undefinedData
   <*> newSmallArray 0 undefinedData
 
@@ -321,38 +343,43 @@ insertEffect
   -> EffectRep (DispatchOf e) e
   -- ^ The representation of the effect.
   -> Relinker (EffectRep (DispatchOf e)) e
-  -> IO Int
+  -> IO (Int, Int)
 insertEffect storage e f = do
-  Storage size es0 fs0 <- readIORef storage
+  Storage size version vs0 es0 fs0 <- readIORef storage
   let len0 = sizeofSmallMutableArray es0
   case size `compare` len0 of
     GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
     LT -> do
+      writePrimArray          vs0 size version
       e `seq` writeSmallArray es0 size (toAny e)
       f `seq` writeSmallArray fs0 size (toAny f)
-      writeIORef storage $! Storage (size + 1) es0 fs0
-      pure size
+      writeIORef storage $! Storage (size + 1) (version + 1) vs0 es0 fs0
+      pure (size, version)
     EQ -> do
       let len = doubleCapacity len0
+      vs <- newPrimArray len
       es <- newSmallArray len undefinedData
       fs <- newSmallArray len undefinedData
+      copyMutablePrimArray  vs 0 vs0 0 size
       copySmallMutableArray es 0 es0 0 size
       copySmallMutableArray fs 0 fs0 0 size
+      writePrimArray          vs size version
       e `seq` writeSmallArray es size (toAny e)
       f `seq` writeSmallArray fs size (toAny f)
-      writeIORef storage $! Storage (size + 1) es fs
-      pure size
+      writeIORef storage $! Storage (size + 1) (version + 1) vs es fs
+      pure (size, version)
 
 -- | Given a reference to an effect from the top of the stack, delete it from
 -- the storage.
 deleteEffect :: IORef Storage -> Int -> IO ()
 deleteEffect storage ref = do
-  Storage size es fs <- readIORef storage
+  Storage size version vs es fs <- readIORef storage
   when (ref /= size - 1) $ do
     error $ "ref (" ++ show ref ++ ") /= size - 1 (" ++ show (size - 1) ++ ")"
+  writePrimArray  vs ref noVersion
   writeSmallArray es ref undefinedData
   writeSmallArray fs ref undefinedData
-  writeIORef storage $! Storage (size - 1) es fs
+  writeIORef storage $! Storage (size - 1) version vs es fs
 
 -- | Relink the environment to use the new storage.
 relinkEnv :: IORef Storage -> Env es -> IO (Env es)
@@ -361,6 +388,9 @@ relinkEnv storage (Env offset refs _) = pure $ Env offset refs storage
 -- | Double the capacity of an array.
 doubleCapacity :: Int -> Int
 doubleCapacity n = max 1 n * 2
+
+noVersion :: Int
+noVersion = 0
 
 undefinedData :: HasCallStack => a
 undefinedData = error "undefined data"

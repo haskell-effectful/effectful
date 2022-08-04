@@ -29,7 +29,7 @@ as that would essentially mean performing whole program specialization.
 
 ## Results
 
-The code was compiled with GHC 9.2.3 and run on a Ryzen 9 5950x.
+The code was compiled with GHC 9.2.4 and run on a Ryzen 9 5950x.
 
 *Note:* below results are from a 1000 iteration run. Runs with more iterations
 are not included in the analysis since they are proportionally the same, but can

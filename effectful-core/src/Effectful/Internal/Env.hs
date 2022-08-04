@@ -200,6 +200,9 @@ unconsEnv (Env _ refs storage) = do
 ----------------------------------------
 
 -- | Replace a specific effect in the stack with a new value.
+--
+-- /Note:/ unlike in 'putEnv' the value in not changed in place, so only the new
+-- environment will see it.
 replaceEnv
   :: forall e es. e :> es
   => EffectRep (DispatchOf e) e
@@ -224,8 +227,8 @@ replaceEnv e f (Env offset refs0 storage) = do
 -- /Note:/ after calling this function the input environment is no longer
 -- usable.
 unreplaceEnv :: forall e es. e :> es => Env es -> IO ()
-unreplaceEnv (Env _ refs storage) = do
-  deleteEffect storage $ indexPrimArray refs (reifyIndex @e @es)
+unreplaceEnv (Env offset refs storage) = do
+  deleteEffect storage $ indexPrimArray refs (offset + 2 * reifyIndex @e @es)
 {-# NOINLINE unreplaceEnv #-}
 
 ----------------------------------------
@@ -275,7 +278,7 @@ getEnv env = do
   (i, es) <- getLocation @e env
   fromAny <$> readSmallArray es i
 
--- | Replace the data type in the environment with a new value.
+-- | Replace the data type in the environment with a new value (in place).
 putEnv
   :: forall e es. e :> es
   => Env es -- ^ The environment.
@@ -285,7 +288,7 @@ putEnv env e = do
   (i, es) <- getLocation @e env
   e `seq` writeSmallArray es i (toAny e)
 
--- | Modify the data type in the environment and return a value.
+-- | Modify the data type in the environment and return a value (in place).
 stateEnv
   :: forall e es a. e :> es
   => Env es -- ^ The environment.
@@ -297,7 +300,7 @@ stateEnv env f = do
   e `seq` writeSmallArray es i (toAny e)
   pure a
 
--- | Modify the data type in the environment.
+-- | Modify the data type in the environment (in place).
 modifyEnv
   :: forall e es. e :> es
   => Env es -- ^ The environment.
@@ -315,7 +318,7 @@ getLocation
   -> IO (Int, SmallMutableArray RealWorld Any)
 getLocation (Env offset refs storage) = do
   let ix = offset + 2 * reifyIndex @e @es
-      i  = indexPrimArray refs  ix
+      i  = indexPrimArray refs ix
   Storage _ _ vs es _ <- readIORef storage
   let version = indexPrimArray refs (ix + 1)
   storageVersion <- readPrimArray vs i

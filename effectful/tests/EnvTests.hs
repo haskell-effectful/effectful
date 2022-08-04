@@ -6,6 +6,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 import Effectful
+import Effectful.Dispatch.Dynamic
 import Effectful.Reader.Static
 import Effectful.State.Static.Local
 import qualified Utils as U
@@ -16,6 +17,7 @@ envTests = testGroup "Env"
   , testCase "subsume works" test_subsumeEnv
   , testCase "inject works" test_injectEnv
   , testCase "unsafeCoerce doesn't leak" test_noUnsafeCoerce
+  , testCase "interpose works" test_interpose
   ]
 
 test_tailEnv :: Assertion
@@ -65,3 +67,42 @@ test_noUnsafeCoerce = do
         withEffToIO $ \unlift -> do
           pure . unlift $ ask @Int
       runReader f $ liftIO oops
+
+----------------------------------------
+
+test_interpose :: IO ()
+test_interpose = runEff $ do
+  runA . runB . runReader () $ do
+    a1 <- send A
+    b1 <- send B
+    U.assertEqual "a1 original" 3 a1
+    U.assertEqual "b1 original" 3 b1
+    doubleA $ do
+      a2 <- send A
+      b2 <- send B
+      U.assertEqual "a2 interposed" 6 a2
+      U.assertEqual "b2 interposed" 6 b2
+    a3 <- send A
+    b3 <- send B
+    U.assertEqual "a3 original" 3 a3
+    U.assertEqual "b3 original" 3 b3
+
+data A :: Effect where
+  A :: A m Int
+type instance DispatchOf A = Dynamic
+
+runA :: IOE :> es => Eff (A : es) a -> Eff es a
+runA = interpret $ \_ -> \case
+  A -> pure 3
+
+doubleA :: (IOE :> es, A :> es) => Eff es a -> Eff es a
+doubleA = interpose $ \_ -> \case
+  A -> (+) <$> send A <*> send A
+
+data B :: Effect where
+  B :: B m Int
+type instance DispatchOf B = Dynamic
+
+runB :: (IOE :> es, A :> es) => Eff (B : es) a -> Eff es a
+runB = interpret $ \_ -> \case
+  B -> send A

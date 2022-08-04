@@ -3,6 +3,7 @@
 * Remove `checkSizeEnv` and `forkEnv` from
   `Effectful.Dispatch.Static.Primitive`.
 * Add internal versioning of effects to prevent leakage of `unsafeCoerce`.
+* Make `interpose` and `impose` properly interact with other handlers.
 
 # effectful-1.2.0.0 (2022-07-28)
 * Change `SuffixOf` to `SharedSuffix` and make it behave as advertised.

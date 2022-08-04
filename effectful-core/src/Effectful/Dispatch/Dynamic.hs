@@ -404,10 +404,22 @@ interpose
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es a
-interpose handler m = unsafeEff $ \es0 -> do
-  bracket (replaceEnv (Handler es0 handler) relinkHandler es0)
-          (unreplaceEnv @e)
-          (\es -> unEff m es)
+interpose handler m = unsafeEff $ \es -> do
+  bracket (do
+              origHandler <- getEnv @e es
+              replaceEnv origHandler relinkHandler es
+          )
+          (\newEs -> do
+              -- Restore the original handler.
+              putEnv es =<< getEnv @e newEs
+              unreplaceEnv @e newEs
+          )
+          (\newEs -> do
+              -- Replace the original handler with a new one. Note that 'newEs'
+              -- will still see the original handler.
+              putEnv es (Handler newEs handler)
+              unEff m es
+          )
 
 -- | Replace the handler of an existing effect with a new one that uses other,
 -- private effects.
@@ -421,11 +433,24 @@ impose
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es b
-impose runHandlerEs handler m = unsafeEff $ \es0 -> do
-  (`unEff` es0) . runHandlerEs . unsafeEff $ \handlerEs -> do
-    bracket (replaceEnv (Handler handlerEs handler) relinkHandler es0)
-            (unreplaceEnv @e)
-            (\es -> unEff m es)
+impose runHandlerEs handler m = unsafeEff $ \es -> do
+  bracket (do
+              origHandler <- getEnv @e es
+              replaceEnv origHandler relinkHandler es
+          )
+          (\newEs -> do
+              -- Restore the original handler.
+              putEnv es =<< getEnv @e newEs
+              unreplaceEnv @e newEs
+          )
+          (\newEs -> do
+              (`unEff` newEs) . runHandlerEs . unsafeEff $ \handlerEs -> do
+                -- Replace the original handler with a new one. Note that
+                -- 'newEs' (and thus 'handlerEs') wil still see the original
+                -- handler.
+                putEnv es (Handler handlerEs handler)
+                unEff m es
+          )
 
 ----------------------------------------
 -- Unlifts

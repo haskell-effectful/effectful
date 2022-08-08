@@ -292,11 +292,11 @@ putEnv env e = do
 stateEnv
   :: forall e es a. e :> es
   => Env es -- ^ The environment.
-  -> (EffectRep (DispatchOf e) e -> (a, EffectRep (DispatchOf e) e))
+  -> (EffectRep (DispatchOf e) e -> IO (a, EffectRep (DispatchOf e) e))
   -> IO a
 stateEnv env f = do
   (i, es) <- getLocation @e env
-  (a, e) <- f . fromAny <$> readSmallArray es i
+  (a, e) <- f . fromAny =<< readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
   pure a
 
@@ -304,11 +304,11 @@ stateEnv env f = do
 modifyEnv
   :: forall e es. e :> es
   => Env es -- ^ The environment.
-  -> (EffectRep (DispatchOf e) e -> EffectRep (DispatchOf e) e)
+  -> (EffectRep (DispatchOf e) e -> IO (EffectRep (DispatchOf e) e))
   -> IO ()
 modifyEnv env f = do
   (i, es) <- getLocation @e env
-  e <- f . fromAny <$> readSmallArray es i
+  e <- f . fromAny =<< readSmallArray es i
   e `seq` writeSmallArray es i (toAny e)
 
 -- | Determine location of the effect in the environment.

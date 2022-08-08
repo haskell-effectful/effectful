@@ -87,7 +87,7 @@ listen m = unsafeEff $ \es -> do
   uninterruptibleMask $ \unmask -> do
     v1 <- newMVar mempty
     -- Replace thread local MVar with a fresh one for isolated listening.
-    v0 <- stateEnv es $ \(Writer v) -> (v, Writer v1)
+    v0 <- stateEnv es $ \(Writer v) -> pure (v, Writer v1)
     a <- unmask (unEff m es) `onException` merge es v0 v1
     (a, ) <$> merge es v0 v1
   where

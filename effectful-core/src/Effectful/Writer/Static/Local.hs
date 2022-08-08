@@ -77,13 +77,13 @@ tell w = stateStaticRep $ \(Writer w0) -> ((), Writer (w0 <> w))
 -- "Hi there!"
 listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
 listen m = unsafeEff $ \es -> mask $ \unmask -> do
-  w0 <- stateEnv es $ \(Writer w) -> (w, Writer mempty)
+  w0 <- stateEnv es $ \(Writer w) -> pure (w, Writer mempty)
   a <- unmask (unEff m es) `onException` merge es w0
   (a, ) <$> merge es w0
   where
     merge es w0 =
       -- If an exception is thrown, restore w0 and keep parts of w1.
-      stateEnv es $ \(Writer w1) -> (w1, Writer (w0 <> w1))
+      stateEnv es $ \(Writer w1) -> pure (w1, Writer (w0 <> w1))
 
 -- | Execute an action and append its output to the overall output of the
 -- 'Writer', then return the final value along with a function of the recorded

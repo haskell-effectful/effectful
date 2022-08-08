@@ -474,7 +474,7 @@ stateStaticRep
   => (StaticRep e -> (a, StaticRep e))
   -- ^ The function to modify the representation.
   -> Eff es a
-stateStaticRep f = unsafeEff $ \es -> stateEnv es f
+stateStaticRep f = unsafeEff $ \es -> stateEnv es (pure . f)
 
 -- | Apply the monadic function to the current representation of the effect and
 -- return a value.
@@ -484,9 +484,7 @@ stateStaticRepM
   -- ^ The function to modify the representation.
   -> Eff es a
 stateStaticRepM f = unsafeEff $ \es -> E.mask $ \unmask -> do
-  (a, s) <- (\s0 -> unmask $ unEff (f s0) es) =<< getEnv es
-  putEnv es s
-  pure a
+  stateEnv es $ unmask . (`unEff` es) . f
 
 -- | Execute a computation with a temporarily modified representation of the
 -- effect.
@@ -497,6 +495,6 @@ localStaticRep
   -> Eff es a
   -> Eff es a
 localStaticRep f m = unsafeEff $ \es -> do
-  E.bracket (stateEnv es $ \s -> (s, f s))
+  E.bracket (stateEnv es $ \s -> pure (s, f s))
             (\s -> putEnv es s)
             (\_ -> unEff m es)

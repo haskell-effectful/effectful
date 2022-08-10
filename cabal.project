@@ -3,3 +3,10 @@ packages:
   effectful-plugin/*.cabal
   effectful-th/*.cabal
   effectful/*.cabal
+
+-- GHC 9.4
+allow-newer: async:base
+           , cleff:base
+           , cleff:template-haskell
+           , first-class-families:base
+           , fused-effects:base

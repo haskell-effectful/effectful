@@ -153,16 +153,16 @@ benchmark bench
     if flag(benchmark-foreign-libraries)
        build-depends: mtl
 
-       if impl(ghc < 9.3)
+       if impl(ghc < 9.5)
           build-depends: cleff >= 0.3.3.0
 
-       if impl(ghc < 9.3)
+       if impl(ghc < 9.5)
           build-depends: freer-simple
 
-       if impl(ghc < 9.3)
+       if impl(ghc < 9.5)
           build-depends: fused-effects >= 1.1.0.0
 
-       if impl(ghc < 9.3)
+       if impl(ghc < 9.5)
           build-depends: polysemy
 
     build-depends:    base

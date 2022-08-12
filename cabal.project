@@ -5,8 +5,7 @@ packages:
   effectful/*.cabal
 
 -- GHC 9.4
-allow-newer: async:base
-           , cleff:base
+allow-newer: cleff:base
            , cleff:template-haskell
-           , first-class-families:base
+           , freer-simple:template-haskell
            , fused-effects:base

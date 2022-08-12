@@ -1,4 +1,4 @@
-# effectful-core-2.0.0.0 (2022-??-??)
+# effectful-core-2.0.0.0 (2022-08-12)
 * Make storage references in the environment immutable.
 * Remove `checkSizeEnv` and `forkEnv` from
   `Effectful.Dispatch.Static.Primitive`.

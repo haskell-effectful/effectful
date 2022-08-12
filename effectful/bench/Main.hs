@@ -31,6 +31,14 @@ countdown n = bgroup (show n)
     [ bench "shallow" $ nf countdownEffectfulLocal n
     , bench "deep"    $ nf countdownEffectfulLocalDeep n
     ]
+  , bgroup "effectful (local/static/state)"
+    [ bench "shallow" $ nf countdownEffectfulLocalSt n
+    , bench "deep"    $ nf countdownEffectfulLocalDeepSt n
+    ]
+  , bgroup "effectful (local/static/stateM)"
+    [ bench "shallow" $ nf countdownEffectfulLocalStM n
+    , bench "deep"    $ nf countdownEffectfulLocalDeepStM n
+    ]
   , bgroup "effectful (local/dynamic)"
     [ bench "shallow" $ nf countdownEffectfulDynLocal n
     , bench "deep"    $ nf countdownEffectfulDynLocalDeep n

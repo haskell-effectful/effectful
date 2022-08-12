@@ -133,6 +133,50 @@ countdownEffectfulLocalDeep n = E.runPureEff
   where
     runR = E.runReader ()
 
+----
+
+programEffectfulLocalSt :: EL.State Integer E.:> es => E.Eff es Integer
+programEffectfulLocalSt = do
+  n <- EL.state @Integer $ \s -> (s, s - 1)
+  if n <= 0
+    then pure n
+    else programEffectfulLocalSt
+{-# NOINLINE programEffectfulLocalSt #-}
+
+countdownEffectfulLocalSt :: Integer -> (Integer, Integer)
+countdownEffectfulLocalSt n = E.runPureEff . EL.runState n $ programEffectfulLocalSt
+
+countdownEffectfulLocalDeepSt :: Integer -> (Integer, Integer)
+countdownEffectfulLocalDeepSt n = E.runPureEff
+  . runR . runR . runR . runR . runR
+  . EL.runState n
+  . runR . runR . runR . runR . runR
+  $ programEffectfulLocalSt
+  where
+    runR = E.runReader ()
+
+----
+
+programEffectfulLocalStM :: EL.State Integer E.:> es => E.Eff es Integer
+programEffectfulLocalStM = do
+  n <- EL.stateM @Integer $ \s -> pure (s, s - 1)
+  if n <= 0
+    then pure n
+    else programEffectfulLocalStM
+{-# NOINLINE programEffectfulLocalStM #-}
+
+countdownEffectfulLocalStM :: Integer -> (Integer, Integer)
+countdownEffectfulLocalStM n = E.runPureEff . EL.runState n $ programEffectfulLocalStM
+
+countdownEffectfulLocalDeepStM :: Integer -> (Integer, Integer)
+countdownEffectfulLocalDeepStM n = E.runPureEff
+  . runR . runR . runR . runR . runR
+  . EL.runState n
+  . runR . runR . runR . runR . runR
+  $ programEffectfulLocalStM
+  where
+    runR = E.runReader ()
+
 ----------------------------------------
 -- effectful (mvar)
 

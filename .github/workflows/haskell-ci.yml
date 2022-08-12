@@ -213,10 +213,9 @@ jobs:
           echo "package effectful" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           cat >> cabal.project <<EOF
-          allow-newer: async:base
           allow-newer: cleff:base
           allow-newer: cleff:template-haskell
-          allow-newer: first-class-families:base
+          allow-newer: freer-simple:template-haskell
           allow-newer: fused-effects:base
 
           package effectful

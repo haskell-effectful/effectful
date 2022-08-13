@@ -317,18 +317,18 @@ getLocation
   => Env es
   -> IO (Int, SmallMutableArray RealWorld Any)
 getLocation (Env offset refs storage) = do
-  let ix = offset + 2 * reifyIndex @e @es
-      i  = indexPrimArray refs ix
+  let i       = offset + 2 * reifyIndex @e @es
+      ref     = indexPrimArray refs  i
+      version = indexPrimArray refs (i + 1)
   Storage _ _ vs es _ <- readIORef storage
-  let version = indexPrimArray refs (ix + 1)
-  storageVersion <- readPrimArray vs i
+  storageVersion <- readPrimArray vs ref
   -- If version of the reference is different than version in the storage, it
   -- means that the effect in the storage is not the one that was initially
   -- referenced.
   when (version /= storageVersion) $ do
     error $ "version (" ++ show version ++ ") /= storageVersion ("
          ++ show storageVersion ++ ")"
-  pure (i, es)
+  pure (ref, es)
 
 ----------------------------------------
 -- Internal helpers

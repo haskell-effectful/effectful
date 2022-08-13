@@ -16,7 +16,7 @@ envTests = testGroup "Env"
   [ testCase "tailEnv works" test_tailEnv
   , testCase "subsume works" test_subsumeEnv
   , testCase "inject works" test_injectEnv
-  , testCase "unsafeCoerce doesn't leak" test_noUnsafeCoerce
+  , testCase "unsafeCoerce doesn't work" test_noUnsafeCoerce
   , testCase "interpose works" test_interpose
   ]
 
@@ -56,17 +56,29 @@ test_injectEnv = runEff $ runReader () $ do
       modify @Int (+4)
       raise $ modify @Int (+8)
 
+----------------------------------------
+
 test_noUnsafeCoerce :: Assertion
 test_noUnsafeCoerce = do
-  r <- try @ErrorCall $ funToInt id
-  assertBool "unsafeCoerce leaks" (isLeft r)
-  where
-    funToInt :: (a -> b) -> IO Int
-    funToInt f = runEff $ do
-      oops <- runReader @Int 0 $ do
-        withEffToIO $ \unlift -> do
-          pure . unlift $ ask @Int
-      runReader f $ liftIO oops
+  r <- try @ErrorCall . evaluate $ unsafeCoerce @Int 'a'
+  assertBool "unsafeCoerce" (isLeft r)
+
+unsafeCoerce :: forall b a. a -> b
+unsafeCoerce a = runPureEff $ do
+  -- 'oops' gains access to the effect stack with Reader (Box b) via the
+  -- unlifting function that escaped its scope. The problem here is that this
+  -- effect is no longer in scope.
+  oops <- runReader @(Box b) (Box undefined) $ do
+    raiseWith SeqUnlift $ \unlift -> do
+      pure . unlift $ ask @(Box b)
+  -- Put Reader (Box a) where the Reader (Box b) was before and attempt to
+  -- retrieve 'a' coerced to 'b'. It fails because 'getLocation' in
+  -- 'Effectful.Internal.Env' checks that version of the reference is the same
+  -- as version of the effect.
+  Box b <- runReader (Box a) $ raise oops
+  pure b
+
+data Box a = Box a
 
 ----------------------------------------
 

@@ -1,3 +1,7 @@
+# effectful-core-2.1.0.0 (2022-??-??)
+* Include the `e :> localEs` constraint in the `EffectHandler` to allow more
+  flexibility in handling higher order effects.
+
 # effectful-core-2.0.0.0 (2022-08-12)
 * Make storage references in the environment immutable.
 * Remove `checkSizeEnv` and `forkEnv` from

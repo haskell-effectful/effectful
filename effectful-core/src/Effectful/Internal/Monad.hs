@@ -373,7 +373,7 @@ newtype LocalEnv (localEs :: [Effect]) (handlerEs :: [Effect]) = LocalEnv (Env l
 
 -- | Type signature of the effect handler.
 type EffectHandler e es
-  = forall a localEs. HasCallStack
+  = forall a localEs. (HasCallStack, e :> localEs)
   => LocalEnv localEs es
   -- ^ Capture of the local environment for handling local 'Eff' computations
   -- when @e@ is a higher order effect.

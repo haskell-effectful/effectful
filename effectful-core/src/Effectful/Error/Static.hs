@@ -85,6 +85,7 @@ module Effectful.Error.Static
 
     -- ** Operations
   , throwError
+  , throwError'
   , catchError
   , handleError
   , tryError
@@ -141,9 +142,18 @@ throwError
   => e
   -- ^ The error.
   -> Eff es a
-throwError e = unsafeEff $ \es -> do
+throwError = throwError' callStack
+
+-- | Throw an error of type @e@, passing the CallStack argument explicitly.
+throwError'
+  :: forall e es a. Error e :> es
+  => CallStack
+  -> e
+  -- ^ The error.
+  -> Eff es a
+throwError' theCallStack e = unsafeEff $ \es -> do
   Error eid <- getEnv @(Error e) es
-  throwIO $ ErrorWrapper eid callStack (toAny e)
+  throwIO $ ErrorWrapper eid theCallStack (toAny e)
 
 -- | Handle an error of type @e@.
 catchError

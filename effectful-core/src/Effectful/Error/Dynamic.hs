@@ -27,10 +27,11 @@ module Effectful.Error.Dynamic
 import Effectful
 import Effectful.Dispatch.Dynamic
 import qualified Effectful.Error.Static as E
+import GHC.Stack (callStack)
 
 -- | Provide the ability to handle errors of type @e@.
 data Error e :: Effect where
-  ThrowError :: e -> Error e m a
+  ThrowError :: E.CallStack -> e -> Error e m a
   CatchError :: m a -> (E.CallStack -> e -> m a) -> Error e m a
 
 type instance DispatchOf (Error e) = Dynamic
@@ -40,7 +41,7 @@ runError
   :: Eff (Error e : es) a
   -> Eff es (Either (E.CallStack, e) a)
 runError = reinterpret E.runError $ \env -> \case
-  ThrowError e   -> E.throwError e
+  ThrowError theCallStack e   -> E.throwError' theCallStack e
   CatchError m h -> localSeqUnlift env $ \unlift -> do
     E.catchError (unlift m) (\cs -> unlift . h cs)
 
@@ -57,7 +58,7 @@ throwError
   => e
   -- ^ The error.
   -> Eff es a
-throwError = send . ThrowError
+throwError = send . ThrowError callStack
 
 -- | Handle an error of type @e@.
 catchError

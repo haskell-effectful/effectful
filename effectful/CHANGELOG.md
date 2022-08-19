@@ -1,6 +1,8 @@
 # effectful-2.1.0.0 (2022-??-??)
 * Include the `e :> localEs` constraint in the `EffectHandler` to allow more
   flexibility in handling higher order effects.
+* Do not include internal stack frames in `throwError` from
+  `Effectful.Error.Dynamic`.
 
 # effectful-2.0.0.0 (2022-08-12)
 * Make storage references in the environment immutable.

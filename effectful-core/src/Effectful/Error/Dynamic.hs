@@ -24,6 +24,8 @@ module Effectful.Error.Dynamic
   , E.prettyCallStack
   ) where
 
+import GHC.Stack (withFrozenCallStack)
+
 import Effectful
 import Effectful.Dispatch.Dynamic
 import qualified Effectful.Error.Static as E
@@ -57,7 +59,7 @@ throwError
   => e
   -- ^ The error.
   -> Eff es a
-throwError = send . ThrowError
+throwError e = withFrozenCallStack $ send (ThrowError e)
 
 -- | Handle an error of type @e@.
 catchError

@@ -190,8 +190,8 @@ consEnv e f (Env offset refs0 storage) = do
 
 -- | Shrink the environment by one data type.
 --
--- /Note:/ after calling this function the input environment is no longer
--- usable.
+-- /Note:/ after calling this function @e@ from the input environment is no
+-- longer usable.
 unconsEnv :: Env (e : es) -> IO ()
 unconsEnv (Env _ refs storage) = do
   deleteEffect storage (indexPrimArray refs 0)

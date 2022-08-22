@@ -1,4 +1,4 @@
-# effectful-core-2.1.0.0 (2022-??-??)
+# effectful-core-2.1.0.0 (2022-08-22)
 * Include the `e :> localEs` constraint in the `EffectHandler` to allow more
   flexibility in handling higher order effects.
 * Do not include internal stack frames in `throwError` from

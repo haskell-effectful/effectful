@@ -73,7 +73,7 @@
 -- predictable behavior.
 --
 -- /Hint:/ if you'd like to reproduce the transactional behavior with the
--- 'Effectful.State.Static.Local.State' effect, appropriate usage of
+-- t'Effectful.State.Static.Local.State' effect, appropriate usage of
 -- 'Control.Monad.Catch.bracketOnError' will do the trick.
 module Effectful.Error.Static
   ( -- * Effect

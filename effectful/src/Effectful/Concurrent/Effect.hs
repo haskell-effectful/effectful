@@ -44,9 +44,9 @@ import Effectful.Dispatch.Static
 -- it's inside the 'Effectful.Reader.Static.local' block, even though the parent
 -- thread already got out of it.
 --
--- This is because the value provided by the 'Effectful.Reader.Static.Reader'
+-- This is because the value provided by the t'Effectful.Reader.Static.Reader'
 -- effect is thread local, i.e. each thread manages its own version of it. For
--- the 'Effectful.Reader.Static.Reader' it is the only reasonable behavior, it
+-- the t'Effectful.Reader.Static.Reader' it is the only reasonable behavior, it
 -- wouldn't be very useful if its "read only" value was affected by calls to
 -- 'Effectful.Reader.Static.local' from its parent or child threads.
 --

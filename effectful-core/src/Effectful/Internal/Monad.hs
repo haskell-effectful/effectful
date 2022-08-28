@@ -86,6 +86,7 @@ import GHC.Exts (oneShot)
 import GHC.IO (IO(..))
 import GHC.Stack (HasCallStack)
 import System.IO.Unsafe (unsafeDupablePerformIO)
+import Unsafe.Coerce
 import qualified Control.Exception as E
 import qualified Control.Monad.Catch as C
 
@@ -310,9 +311,11 @@ data instance StaticRep Prim = Prim
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
 runPrim = evalStaticRep Prim
 
+data PrimS
+
 instance Prim :> es => PrimMonad (Eff es) where
-  type PrimState (Eff es) = RealWorld
-  primitive = unsafeEff_ . IO
+  type PrimState (Eff es) = PrimS
+  primitive = unsafeEff_ . IO . unsafeCoerce
 
 ----------------------------------------
 -- Lifting

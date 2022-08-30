@@ -24,6 +24,7 @@ module Effectful.Internal.Monad
 
   -- * Prim
   , Prim
+  , PrimStateEff
   , runPrim
 
   -- * Lifting
@@ -86,6 +87,7 @@ import GHC.Exts (oneShot)
 import GHC.IO (IO(..))
 import GHC.Stack (HasCallStack)
 import System.IO.Unsafe (unsafeDupablePerformIO)
+import Unsafe.Coerce (unsafeCoerce)
 import qualified Control.Exception as E
 import qualified Control.Monad.Catch as C
 
@@ -306,13 +308,17 @@ data Prim :: Effect
 type instance DispatchOf Prim = Static WithSideEffects
 data instance StaticRep Prim = Prim
 
+-- | 'PrimState' token for 'Eff'. Used instead of 'RealWorld' to prevent the
+-- 'Prim' effect from executing arbitrary 'IO' actions via 'ioToPrim'.
+data PrimStateEff
+
 -- | Run an 'Eff' computation with primitive state-transformer actions.
 runPrim :: IOE :> es => Eff (Prim : es) a -> Eff es a
 runPrim = evalStaticRep Prim
 
 instance Prim :> es => PrimMonad (Eff es) where
-  type PrimState (Eff es) = RealWorld
-  primitive = unsafeEff_ . IO
+  type PrimState (Eff es) = PrimStateEff
+  primitive = unsafeEff_ . IO . unsafeCoerce
 
 ----------------------------------------
 -- Lifting

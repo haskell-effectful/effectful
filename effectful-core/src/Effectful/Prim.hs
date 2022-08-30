@@ -2,6 +2,7 @@
 module Effectful.Prim
   ( -- * Effect
     Prim
+  , PrimStateEff
 
     -- ** Handlers
   , runPrim

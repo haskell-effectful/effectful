@@ -1,3 +1,7 @@
+# effectful-core-2.2.0.0 (2022-??-??)
+* Change `PrimState` for `Eff` from `RealWorld` to `PrimStateEff` to prevent the
+  `Prim` effect from executing arbitrary `IO` actions via `ioToPrim`.
+
 # effectful-core-2.1.0.0 (2022-08-22)
 * Include the `e :> localEs` constraint in the `EffectHandler` to allow more
   flexibility in handling higher order effects.

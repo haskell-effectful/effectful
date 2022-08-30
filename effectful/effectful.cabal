@@ -67,7 +67,7 @@ library
                     , async               >= 2.2.2
                     , bytestring          >= 0.10
                     , directory           >= 1.3.2
-                    , effectful-core      >= 2.1.0.0   && < 2.1.1.0
+                    , effectful-core      >= 2.2.0.0   && < 2.2.1.0
                     , process             >= 1.6.9
 
                     , time                >= 1.9.2
@@ -122,6 +122,7 @@ test-suite test
                     , effectful-core
                     , exceptions
                     , lifted-base
+                    , primitive
                     , tasty
                     , tasty-hunit
                     , unliftio
@@ -136,6 +137,7 @@ test-suite test
                     EnvTests
                     EnvironmentTests
                     ErrorTests
+                    PrimTests
                     ReaderTests
                     StateTests
                     TimeoutTests

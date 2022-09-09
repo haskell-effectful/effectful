@@ -18,6 +18,7 @@ import qualified Cleff.State as C
 
 -- effectful
 import qualified Effectful as E
+import qualified Effectful.STE as E
 import qualified Effectful.Dispatch.Dynamic as E
 import qualified Effectful.Reader.Static as E
 import qualified Effectful.State.Dynamic as ED
@@ -107,6 +108,38 @@ countdownMtlDeep n = runIdentity
     runR = flip M.runReaderT ()
 
 #endif
+
+----------------------------------------
+-- effectful (STE)
+
+programEffectfulSte :: E.STE s E.:> es => E.MutVar s Integer -> E.Eff es Integer
+programEffectfulSte ref = do
+  n <- E.readMutVar ref
+  if n <= 0
+    then pure n
+    else do
+      E.writeMutVar ref (n - 1)
+      programEffectfulSte ref
+{-# NOINLINE programEffectfulSte #-}
+
+countdownEffectfulSte :: Integer -> (Integer, Integer)
+countdownEffectfulSte n = E.runPureEff $ E.runSTE $ do
+  ref <- E.newMutVar n
+  a <- programEffectfulSte ref
+  s <- E.readMutVar ref
+  pure (a, s)
+
+countdownEffectfulSteDeep :: Integer -> (Integer, Integer)
+countdownEffectfulSteDeep n = E.runPureEff
+  $ runR . runR . runR . runR . runR
+  $ E.runSTE
+  $ runR . runR . runR . runR . runR
+  $ do ref <- E.newMutVar n
+       a <- programEffectfulSte ref
+       s <- E.readMutVar ref
+       pure (a, s)
+  where
+    runR = E.runReader ()
 
 ----------------------------------------
 -- effectful (pure)

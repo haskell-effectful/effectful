@@ -25,8 +25,12 @@ main = defaultMain
 
 countdown :: Integer -> Benchmark
 countdown n = bgroup (show n)
-  [ bench "reference (pure)"             $ nf countdownRef n
-  , bench "reference (ST)"               $ nf countdownST n
+  [ bench "reference (pure)" $ nf countdownRef n
+  , bench "reference (ST)"   $ nf countdownST n
+  , bgroup "effectful (STE)"
+    [ bench "shallow" $ nf countdownEffectfulSte n
+    , bench "deep"    $ nf countdownEffectfulSteDeep n
+    ]
   , bgroup "effectful (local/static)"
     [ bench "shallow" $ nf countdownEffectfulLocal n
     , bench "deep"    $ nf countdownEffectfulLocalDeep n

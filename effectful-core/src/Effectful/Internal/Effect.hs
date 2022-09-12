@@ -10,6 +10,7 @@ module Effectful.Internal.Effect
   , (:>)(..)
   , (:>>)
   , Subset(..)
+  , KnownPrefix(..)
 
   -- * Re-exports
   , Type
@@ -66,13 +67,23 @@ type family xs :>> es :: Constraint where
 ----------------------------------------
 
 -- | Provide evidence that @xs@ is a subset of @es@.
-class Subset (xs :: [Effect]) (es :: [Effect]) where
+class KnownPrefix es => Subset (xs :: [Effect]) (es :: [Effect]) where
   reifyIndices :: [Int]
   reifyIndices = -- Don't show "minimal complete definition" in haddock.
                  error "unimplemented"
 
-instance Subset '[] es where
+instance {-# INCOHERENT #-} KnownPrefix es => Subset xs es where
   reifyIndices = []
 
 instance (e :> es, Subset xs es) => Subset (e : xs) es where
   reifyIndices = reifyIndex @e @es : reifyIndices @xs @es
+
+-- | Calculate length of a statically known prefix of @es@.
+class KnownPrefix (es :: [Effect]) where
+  prefixLength :: Int
+
+instance KnownPrefix es => KnownPrefix (e : es) where
+  prefixLength = 1 + prefixLength @es
+
+instance {-# INCOHERENT #-} KnownPrefix es where
+  prefixLength = 0

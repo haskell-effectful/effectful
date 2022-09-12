@@ -42,9 +42,9 @@ test_subsumeEnv = runEff $ do
   U.assertEqual "exepcted result" 3 s
 
 test_injectEnv :: Assertion
-test_injectEnv = runEff $ runReader () $ do
+test_injectEnv = runEff . runReader () $ do
   s <- execState @Int 0 $ inject action
-  U.assertEqual "expected result" 15 s
+  U.assertEqual "expected result" 63 s
   where
     action :: Eff [State Int, IOE, Reader (), State Int] ()
     action = do
@@ -53,10 +53,16 @@ test_injectEnv = runEff $ runReader () $ do
         modify @Int (+2)
         inject innerAction
 
-    innerAction :: Eff [State Int, State Int, IOE] ()
+    innerAction :: Eff [State Int, Reader (), State Int] ()
     innerAction = do
       modify @Int (+4)
       raise $ modify @Int (+8)
+      hideReader $ do
+        modify @Int (+16)
+        raise $ modify @Int (+32)
+
+    hideReader :: Eff (State s : es) r -> Eff (State s : Reader r : es) r
+    hideReader = inject
 
 ----------------------------------------
 

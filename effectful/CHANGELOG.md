@@ -3,6 +3,8 @@
   `Prim` effect from executing arbitrary `IO` actions via `ioToPrim`.
 * Deprecate `(:>>)` as [GHC can't efficiently deal with recursive type
   families](https://gitlab.haskell.org/ghc/ghc/-/issues/19238).
+* Add support for the `Alternative` and `MonadPlus` instances for `Eff` via the
+  `NonDet` effect.
 
 # effectful-2.1.0.0 (2022-08-22)
 * Include the `e :> localEs` constraint in the `EffectHandler` to allow more

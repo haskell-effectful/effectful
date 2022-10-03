@@ -18,6 +18,7 @@ module Effectful.Internal.Env
     -- * Operations
   , emptyEnv
   , cloneEnv
+  , restoreEnv
   , sizeEnv
   , tailEnv
 
@@ -156,6 +157,28 @@ cloneEnv (Env offset refs storage0) = do
   relinkEffects storageSize
   pure $ Env offset refs storage
 {-# NOINLINE cloneEnv #-}
+
+-- | Restore the environment from its clone.
+--
+-- @since 2.2.0.0
+restoreEnv
+  :: Env es -- ^ Destination.
+  -> Env es -- ^ Source.
+  -> IO ()
+restoreEnv dest src = do
+  destStorage <- readIORef (envStorage dest)
+  srcStorage  <- readIORef (envStorage src)
+  let destStorageSize = stSize destStorage
+      srcStorageSize  = stSize srcStorage
+  when (destStorageSize /= srcStorageSize) $ do
+    error $ "destStorageSize (" ++ show destStorageSize
+         ++ ") /= srcStorageSize (" ++ show srcStorageSize ++ ")"
+  writeIORef (envStorage dest) $! srcStorage
+    -- Decreasing the counter allows leakage of unsafeCoerce (see unsafeCoerce2
+    -- in the EnvTests module).
+    { stVersion = max (stVersion destStorage) (stVersion srcStorage)
+    }
+{-# NOINLINE restoreEnv #-}
 
 -- | Get the current size of the environment.
 sizeEnv :: Env es -> IO Int

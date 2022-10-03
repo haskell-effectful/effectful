@@ -7,6 +7,7 @@ import ConcurrencyTests
 import EnvTests
 import EnvironmentTests
 import ErrorTests
+import NonDetTests
 import PrimTests
 import ReaderTests
 import StateTests
@@ -20,6 +21,7 @@ main = defaultMain $ testGroup "effectful"
   , envTests
   , environmentTests
   , errorTests
+  , nonDetTests
   , primTests
   , readerTests
   , stateTests

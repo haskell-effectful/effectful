@@ -15,6 +15,9 @@ module Effectful.Internal.Monad
   , unsafeEff
   , unsafeEff_
 
+  -- * NonDet
+  , NonDet(..)
+
   -- * Fail
   , Fail(..)
 
@@ -75,7 +78,8 @@ module Effectful.Internal.Monad
   , modifyEnv
   ) where
 
-import Control.Applicative (liftA2)
+import Control.Applicative
+import Control.Monad
 import Control.Monad.Base
 import Control.Monad.Fix
 import Control.Monad.IO.Class
@@ -222,6 +226,27 @@ instance Monad (Eff es) where
 
 instance MonadFix (Eff es) where
   mfix f = unsafeEff $ \es -> mfix $ \a -> unEff (f a) es
+
+----------------------------------------
+-- NonDet
+
+-- | Provide the ability to use the 'Alternative' and 'MonadPlus' instance of
+-- 'Eff'.
+--
+-- @since 2.2.0.0
+data NonDet :: Effect where
+  Empty   :: NonDet m a
+  (:<|>:) :: m a -> m a -> NonDet m a
+
+type instance DispatchOf NonDet = Dynamic
+
+-- | @since: 2.2.0.0
+instance NonDet :> es => Alternative (Eff es) where
+  empty   = withFrozenCallStack (send Empty)
+  a <|> b = send (a :<|>: b)
+
+-- | @since: 2.2.0.0
+instance NonDet :> es => MonadPlus (Eff es)
 
 ----------------------------------------
 -- Exception

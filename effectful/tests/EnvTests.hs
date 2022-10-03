@@ -7,6 +7,8 @@ import Test.Tasty.HUnit
 
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Dispatch.Static
+import Effectful.Dispatch.Static.Primitive
 import Effectful.Reader.Static
 import Effectful.State.Static.Local
 import qualified Utils as U
@@ -60,11 +62,13 @@ test_injectEnv = runEff $ runReader () $ do
 
 test_noUnsafeCoerce :: Assertion
 test_noUnsafeCoerce = do
-  r <- try @ErrorCall . evaluate $ unsafeCoerce @Int 'a'
-  assertBool "unsafeCoerce" (isLeft r)
+  r1 <- try @ErrorCall . evaluate $ unsafeCoerce1 @Int 'a'
+  assertBool "unsafeCoerce1" (isLeft r1)
+  r2 <- try @ErrorCall . evaluate $ unsafeCoerce2 @Int 'a'
+  assertBool "unsafeCoerce2" (isLeft r2)
 
-unsafeCoerce :: forall b a. a -> b
-unsafeCoerce a = runPureEff $ do
+unsafeCoerce1 :: forall b a. a -> b
+unsafeCoerce1 a = runPureEff $ do
   -- 'oops' gains access to the effect stack with Reader (Box b) via the
   -- unlifting function that escaped its scope. The problem here is that this
   -- effect is no longer in scope.
@@ -72,7 +76,27 @@ unsafeCoerce a = runPureEff $ do
     raiseWith SeqUnlift $ \unlift -> do
       pure . unlift $ ask @(Box b)
   -- Put Reader (Box a) where the Reader (Box b) was before and attempt to
-  -- retrieve 'a' coerced to 'b'. It fails because 'getLocation' in
+  -- retrieve 'a' coerced to 'b'. It should fail because 'getLocation' in
+  -- 'Effectful.Internal.Env' checks that version of the reference is the same
+  -- as version of the effect.
+  Box b <- runReader (Box a) $ raise oops
+  pure b
+
+unsafeCoerce2 :: forall b a. a -> b
+unsafeCoerce2 a = runPureEff $ do
+  backupEs <- unsafeEff cloneEnv
+  -- 'oops' gains access to the effect stack with Reader (Box b) via the
+  -- unlifting function that escaped its scope. The problem here is that this
+  -- effect is no longer in scope.
+  oops <- runReader @(Box b) (Box undefined) $ do
+    raiseWith SeqUnlift $ \unlift -> do
+      pure . unlift $ ask @(Box b)
+  -- If restoreEnv messes up versioning (i.e. restores the version counter from
+  -- before the above Reader was used), below code will succeed because the
+  -- Reader (Box a) will have the same version as Reader (Box b).
+  unsafeEff $ \es -> restoreEnv es backupEs
+  -- Put Reader (Box a) where the Reader (Box b) was before and attempt to
+  -- retrieve 'a' coerced to 'b'. It should fail because 'getLocation' in
   -- 'Effectful.Internal.Env' checks that version of the reference is the same
   -- as version of the effect.
   Box b <- runReader (Box a) $ raise oops

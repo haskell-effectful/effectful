@@ -232,6 +232,8 @@ instance MonadFix (Eff es) where
 
 -- | __NOTE__: 'empty' will throw an 'AlternativeException' which you have to
 -- catch yourself.
+--
+-- @since: 2.2.0.0
 instance Alternative (Eff es) where
   empty = unsafeEff_ (E.throwIO EmptyAlternative)
   Eff mx <|> Eff my = unsafeEff $ \es0 -> do
@@ -246,6 +248,8 @@ instance MonadPlus (Eff es)
 
 -- | An exception that is thrown in the empty case of an alternative:
 -- > try Control.Applicative.empty  ~  Left EmptyAlternative
+--
+-- @since: 2.2.0.0
 data AlternativeException = EmptyAlternative
 
 instance C.Exception AlternativeException

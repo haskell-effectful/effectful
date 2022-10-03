@@ -18,6 +18,7 @@ module Effectful.Internal.Env
     -- * Operations
   , emptyEnv
   , cloneEnv
+  , overwriteEnvWith
   , sizeEnv
   , tailEnv
 
@@ -156,6 +157,13 @@ cloneEnv (Env offset refs storage0) = do
   relinkEffects storageSize
   pure $ Env offset refs storage
 {-# NOINLINE cloneEnv #-}
+
+-- | Overwrite an environment with another one.
+overwriteEnvWith :: Env es -> Env es -> IO ()
+overwriteEnvWith es0 es = do
+  -- TODO: Update offset ? Check that those are equal ?
+  -- TODO: Update refs ? Check that those are equal ?
+  writeIORef (envStorage es0) =<< readIORef (envStorage es)
 
 -- | Get the current size of the environment.
 sizeEnv :: Env es -> IO Int

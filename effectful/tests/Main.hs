@@ -2,6 +2,7 @@ module Main (main) where
 
 import Test.Tasty
 
+import AlternativeTests
 import AsyncTests
 import ConcurrencyTests
 import EnvTests
@@ -15,7 +16,8 @@ import UnliftTests
 
 main :: IO ()
 main = defaultMain $ testGroup "effectful"
-  [ asyncTests
+  [ alternativeTests
+  , asyncTests
   , concurrencyTests
   , envTests
   , environmentTests

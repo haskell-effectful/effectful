@@ -15,6 +15,9 @@ module Effectful.Internal.Monad
   , unsafeEff
   , unsafeEff_
 
+  -- * Alternative
+  , AlternativeException(..)
+
   -- * Fail
   , Fail(..)
 
@@ -75,7 +78,8 @@ module Effectful.Internal.Monad
   , modifyEnv
   ) where
 
-import Control.Applicative (liftA2)
+import Control.Applicative (Alternative(..), liftA2)
+import Control.Monad (MonadPlus)
 import Control.Monad.Base
 import Control.Monad.Fix
 import Control.Monad.IO.Class
@@ -222,6 +226,30 @@ instance Monad (Eff es) where
 
 instance MonadFix (Eff es) where
   mfix f = unsafeEff $ \es -> mfix $ \a -> unEff (f a) es
+
+----------------------------------------
+-- Alternative and MonadPlus
+
+instance Alternative (Eff es) where
+  empty = unsafeEff_ (E.throwIO EmptyAlternative)
+  Eff mx <|> Eff my = unsafeEff $ \es0 -> do
+    let branch m = do
+          es <- cloneEnv es0
+          r <- m es
+          es0 `overwriteEnvWith` es
+          pure r
+    branch mx `E.catch` (\EmptyAlternative -> branch my)
+
+instance MonadPlus (Eff es)
+
+-- | An exception that is thrown in the empty case of an alternative:
+-- > try Control.Applicative.empty  ~  Left EmptyAlternative
+data AlternativeException = EmptyAlternative
+
+instance C.Exception AlternativeException
+
+instance Show AlternativeException where
+    show EmptyAlternative = "empty alternative"
 
 ----------------------------------------
 -- Exception

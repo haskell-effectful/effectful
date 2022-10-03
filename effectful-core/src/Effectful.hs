@@ -53,6 +53,9 @@ module Effectful
   , inject
   , Subset
 
+    -- * Exceptions
+  , AlternativeException(..)
+
     -- * Re-exports
   , MonadIO(..)
   , MonadUnliftIO(..)

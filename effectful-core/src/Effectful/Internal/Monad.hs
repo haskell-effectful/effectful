@@ -233,12 +233,12 @@ instance MonadFix (Eff es) where
 instance Alternative (Eff es) where
   empty = unsafeEff_ (E.throwIO EmptyAlternative)
   Eff mx <|> Eff my = unsafeEff $ \es0 -> do
-    let branch m = do
+    let mx' = do
           es <- cloneEnv es0
-          r <- m es
+          r <- mx es
           es0 `overwriteEnvWith` es
           pure r
-    branch mx `E.catch` (\EmptyAlternative -> branch my)
+    mx' `E.catch` (\EmptyAlternative -> my es0)
 
 instance MonadPlus (Eff es)
 

@@ -230,6 +230,8 @@ instance MonadFix (Eff es) where
 ----------------------------------------
 -- Alternative and MonadPlus
 
+-- | __NOTE__: 'empty' will throw an 'AlternativeException' which you have to
+-- catch yourself.
 instance Alternative (Eff es) where
   empty = unsafeEff_ (E.throwIO EmptyAlternative)
   Eff mx <|> Eff my = unsafeEff $ \es0 -> do

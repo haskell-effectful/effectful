@@ -161,7 +161,7 @@ cloneEnv (Env offset refs storage0) = do
 -- | Overwrite an environment with another one.
 overwriteEnvWith :: Env es -> Env es -> IO ()
 overwriteEnvWith es0 es = do
-  -- TODO: Update offset ? Check that those are equal ?
+  -- TODO: Check if offset are equal ?
   -- TODO: Update refs ? Check that those are equal ?
   writeIORef (envStorage es0) =<< readIORef (envStorage es)
 

@@ -28,19 +28,19 @@ class MPTC a b where
 instance MPTC Bool Int where
   mptc _ = 1000
 
-uniquelyInt :: [State Int, State String] :>> es => Eff es ()
+uniquelyInt :: (State Int :> es, State String :> es) => Eff es ()
 uniquelyInt = put 10
 
-uniquelyA :: (Num a, [State a, State b] :>> es) => Eff es ()
+uniquelyA :: (Num a, State a :> es, State b :> es) => Eff es ()
 uniquelyA = put 10
 
-uniquelyString :: [State Int, State String] :>> es => Eff es ()
+uniquelyString :: (State Int :> es, State String :> es) => Eff es ()
 uniquelyString = put mempty
 
-uniquelyB :: (MPTC Bool b, [State String, State b] :>> es) => Eff es ()
+uniquelyB :: (MPTC Bool b, State String :> es, State b :> es) => Eff es ()
 uniquelyB = put $ mptc False
 
-uniquelyState' :: [Error (), State ()] :>> es => Eff es ()
+uniquelyState' :: (Error () :> es, State () :> es) => Eff es ()
 uniquelyState' = pure ()
 
 idState :: State s :> es => Eff es ()
@@ -66,7 +66,7 @@ err =
     (throwError (error ""))
     (\_ _ -> pure True)
 
-errState :: Num s => [Error e, State s] :>> es => Eff es Bool
+errState :: (Num s, Error e :> es, State s :> es) => Eff es Bool
 errState = do
   numState
   err
@@ -100,7 +100,7 @@ runTaggedState s = reinterpret (runState s) $ \_ -> \case
   TaggedGet    -> get
   TaggedPut s' -> put s'
 
-test :: [TaggedState Char Int, TaggedState Bool Int] :>> es => Eff es ()
+test :: (TaggedState Char Int :> es, TaggedState Bool Int :> es) => Eff es ()
 test = do
   send $ TaggedPut @Bool 10
   send $ TaggedPut @Char (-10)

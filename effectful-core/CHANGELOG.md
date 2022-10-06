@@ -1,6 +1,8 @@
 # effectful-core-2.2.0.0 (2022-??-??)
 * Change `PrimState` for `Eff` from `RealWorld` to `PrimStateEff` to prevent the
   `Prim` effect from executing arbitrary `IO` actions via `ioToPrim`.
+* Deprecate `(:>>)` as [GHC can't efficiently deal with recursive type
+  families](https://gitlab.haskell.org/ghc/ghc/-/issues/19238).
 
 # effectful-core-2.1.0.0 (2022-08-22)
 * Include the `e :> localEs` constraint in the `EffectHandler` to allow more

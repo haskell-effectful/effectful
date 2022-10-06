@@ -25,7 +25,7 @@ test_localInHandler
 test_localInHandler runR = runEff . runR "global" . interpret f $ do
   local (const "local") $ send SomeAction
   where
-    f :: [IOE, Reader String] :>> es => EffectHandler SomeEff es
+    f :: (IOE :> es, Reader String :> es) => EffectHandler SomeEff es
     f _ SomeAction = U.assertEqual "expected result" "local" =<< ask
 
 -- | Purely dynamic Reader for testing purposes.

@@ -15,7 +15,7 @@ ghc-options: -fplugin=Effectful.Plugin
 The following code:
 
 ```haskell
-action :: [State Int, State String] :>> es => Eff es ()
+action :: (State Int :> es, State String :> es) => Eff es ()
 action = do
   x <- get
   put (x + 1)
@@ -26,7 +26,7 @@ will not compile out of the box because `GHC` doesn't know that you meant to
 polymorphic. You have to write:
 
 ```haskell
-action :: [State Int, State String] :>> es => Eff es ()
+action :: (State Int :> es, State String :> es) => Eff es ()
 action = do
   x <- get @Int
   put (x + 1)

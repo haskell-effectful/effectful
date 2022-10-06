@@ -61,6 +61,7 @@ instance e :> es => e :> (x : es) where
 type family xs :>> es :: Constraint where
   '[]      :>> es = ()
   (x : xs) :>> es = (x :> es, xs :>> es)
+{-# DEPRECATED (:>>) "GHC can't efficiently handle recursive type families (see https://gitlab.haskell.org/ghc/ghc/-/issues/19238), thus (:>>) will be removed in 3.0.0.0" #-}
 
 ----------------------------------------
 

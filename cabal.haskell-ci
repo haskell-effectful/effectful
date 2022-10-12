@@ -4,6 +4,7 @@ doctest:        <9.3
 tests:          True
 benchmarks:     True
 
+ghcup-jobs:     True
 jobs-selection: any
 
 raw-project

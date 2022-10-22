@@ -85,7 +85,7 @@ import Control.Monad.Trans.Control
 import Data.Kind (Constraint)
 import GHC.Exts (oneShot)
 import GHC.IO (IO(..))
-import GHC.Stack (HasCallStack)
+import GHC.Stack
 import System.IO.Unsafe (unsafeDupablePerformIO)
 import Unsafe.Coerce (unsafeCoerce)
 import qualified Control.Exception as E
@@ -259,7 +259,7 @@ data Fail :: Effect where
 type instance DispatchOf Fail = Dynamic
 
 instance Fail :> es => MonadFail (Eff es) where
-  fail = send . Fail
+  fail msg = withFrozenCallStack $ send (Fail msg)
 
 ----------------------------------------
 -- IO

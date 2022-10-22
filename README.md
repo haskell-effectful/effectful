@@ -51,11 +51,9 @@ necessary condition for broader adoption of the library.
 
 However, `eff` uses delimited continuations underneath, which:
 
-- Are not yet supported by GHC (though [the
-proposal](https://github.com/ghc-proposals/ghc-proposals/pull/313) for including
-support for them has been accepted).
+- Are supported by GHC >= 9.6.
 
-- Are quite hard to understand.
+- Are somewhat hard to understand.
 
 - Make the library "too powerful" in a sense as it faces
   [a](https://github.com/hasura/eff/issues/13)

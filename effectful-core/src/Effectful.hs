@@ -116,7 +116,7 @@ import Effectful.Internal.Monad
 -- $integration
 --
 -- Integration with most of existing libraries and frameworks can be done quite
--- easily. The main difference on how that looks like depends on the way a
+-- easily. The main difference in how that looks like depends on the way a
 -- library operates in a monadic context.
 --
 -- There are three main groups a library might fall into. It either operates:

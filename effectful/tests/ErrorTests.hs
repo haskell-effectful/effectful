@@ -9,29 +9,29 @@ import Effectful.Error.Static
 
 errorTests :: TestTree
 errorTests = testGroup "Error"
-  [ testCase "error from interpret" test_errorFromInterpret
+  [ testCase "different handlers are independent" test_independentHandlers
   ]
 
-test_errorFromInterpret :: Assertion
-test_errorFromInterpret = runEff $ do
-  result <- runError @String . runNestedErr $ do
-    runError @String nestedErr
+test_independentHandlers :: Assertion
+test_independentHandlers = runEff $ do
+  result <- runError @String . runOuterThrow $ do
+    runError @String outerThrow
   liftIO $ case result of
     Left (cs, _) -> assertBool "stack trace points to the correct action" $
-      "nestedErr" == fst (last $ getCallStack cs)
+      "outerThrow" == fst (last $ getCallStack cs)
     Right _ -> assertFailure "error caught by the wrong (inner) handler"
 
 ----------------------------------------
 -- Helpers
 
-data NestedErr :: Effect where
-  NestedErr :: NestedErr m ()
+data OuterThrow :: Effect where
+  OuterThrow :: OuterThrow m ()
 
-type instance DispatchOf NestedErr = Dynamic
+type instance DispatchOf OuterThrow = Dynamic
 
-nestedErr :: (HasCallStack, NestedErr :> es) => Eff es ()
-nestedErr = send NestedErr
+outerThrow :: (HasCallStack, OuterThrow :> es) => Eff es ()
+outerThrow = send OuterThrow
 
-runNestedErr :: Error String :> es => Eff (NestedErr : es) a -> Eff es a
-runNestedErr = interpret $ \_ -> \case
-  NestedErr -> throwError "nested error"
+runOuterThrow :: Error String :> es => Eff (OuterThrow : es) a -> Eff es a
+runOuterThrow = interpret $ \_ -> \case
+  OuterThrow -> throwError "outer"

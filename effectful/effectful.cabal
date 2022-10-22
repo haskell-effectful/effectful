@@ -127,7 +127,7 @@ test-suite test
                     , tasty-hunit
                     , unliftio
 
-    hs-source-dirs: tests examples
+    hs-source-dirs: tests
 
     type:           exitcode-stdio-1.0
     main-is:        Main.hs
@@ -143,9 +143,6 @@ test-suite test
                     TimeoutTests
                     UnliftTests
                     Utils
-                    -- These are examples; We do not actually run them but list
-                    -- them here in order to check if they compile.
-                    FileSystem
 
 benchmark bench
     import:         language

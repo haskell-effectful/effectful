@@ -147,9 +147,10 @@ The effect system is split among several libraries:
 
 ## Example
 
-A `Filesystem` effect with two handlers, one that runs in `IO` and another that
-uses an in-memory virtual file system can be found
-[here](https://github.com/haskell-effectful/effectful/blob/master/effectful/examples/FileSystem.hs).
+For the examples see the *Introduction* sections of
+[`Effectful.Dispatch.Dynamic`](https://hackage.haskell.org/package/effectful-core/docs/Effectful-Dispatch-Dynamic.html)
+and
+[`Effectful.Dispatch.Static`](https://hackage.haskell.org/package/effectful-core/docs/Effectful-Dispatch-Static.html).
 
 ## Resources
 

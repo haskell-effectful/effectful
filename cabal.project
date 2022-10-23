@@ -8,4 +8,3 @@ packages:
 allow-newer: cleff:base
            , cleff:template-haskell
            , freer-simple:template-haskell
-           , fused-effects:base

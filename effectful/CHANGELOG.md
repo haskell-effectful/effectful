@@ -1,8 +1,8 @@
 # effectful-2.2.0.0 (2022-??-??)
 * Change `PrimState` for `Eff` from `RealWorld` to `PrimStateEff` to prevent the
   `Prim` effect from executing arbitrary `IO` actions via `ioToPrim`.
-* Deprecate `(:>>)` as [GHC can't efficiently deal with recursive type
-  families](https://gitlab.haskell.org/ghc/ghc/-/issues/19238).
+* Deprecate `(:>>)` as [GHC can't efficiently deal with type
+  families](https://github.com/haskell-effectful/effectful/issues/52#issuecomment-1269155485).
 * Add support for the `Alternative` and `MonadPlus` instances for `Eff` via the
   `NonDet` effect.
 

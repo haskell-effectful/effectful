@@ -200,9 +200,9 @@ import Effectful.Internal.Monad
 --
 -- If an effect makes use of the @m@ parameter, it is a /higher order effect/.
 --
--- Interpretation of higher order effects is slightly more involved. To see why,
--- let's consider the @Profiling@ effect for logging how much time a specific
--- action took to run:
+-- Interpretation of higher order effects is slightly more involving. To see
+-- why, let's consider the @Profiling@ effect for logging how much time a
+-- specific action took to run:
 --
 -- >>> :{
 --   data Profiling :: Effect where

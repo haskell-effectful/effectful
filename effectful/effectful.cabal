@@ -101,6 +101,7 @@ library
                          , Effectful.Error.Static
                          , Effectful.Error.Dynamic
                          , Effectful.Fail
+                         , Effectful.NonDet
                          , Effectful.Prim
                          , Effectful.Reader.Dynamic
                          , Effectful.Reader.Static
@@ -137,6 +138,7 @@ test-suite test
                     EnvTests
                     EnvironmentTests
                     ErrorTests
+                    NonDetTests
                     PrimTests
                     ReaderTests
                     StateTests

@@ -93,6 +93,7 @@ library
                      Effectful.Internal.Env
                      Effectful.Internal.Monad
                      Effectful.Internal.Unlift
+                     Effectful.NonDet
                      Effectful.Prim
                      Effectful.Reader.Dynamic
                      Effectful.Reader.Static

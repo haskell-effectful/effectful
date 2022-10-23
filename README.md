@@ -99,8 +99,19 @@ optimization passes, it just works.
 
 ### Any downsides?
 
-As always, there's no free lunch. The `Eff` monad doesn't support `NonDet` nor
-`Coroutine` effects. However, the `NonDet` effect in existing libraries is
+As always, there's no free lunch. The `Eff` monad doesn't support effect
+handlers that require the ability to suspend or capture the rest of the
+computation and resume it later (potentially multiple times). This prevents
+`effectful` from providing (in particular):
+
+- A `NonDet` effect handler that executes multiple
+[`Alternative`](https://hackage.haskell.org/package/base/docs/Control-Applicative.html#t:Alternative)
+branches and collects their results.
+
+- A `Coroutine` effect.
+
+It needs to be noted however that such `NonDet` effect handler in existing
+libraries is
 [broken](https://github.com/lexi-lambda/eff/blob/8c4df4bf54faf22456354be18095b14825be5e85/notes/semantics-zoo.md)
 and none of the ones with support for higher order effects provide the
 `Coroutine` effect, so arguably it's not a big loss.

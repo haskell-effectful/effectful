@@ -1,4 +1,4 @@
-# effectful-core-2.2.0.0 (2022-??-??)
+# effectful-core-2.2.0.0 (2022-10-24)
 * Change `PrimState` for `Eff` from `RealWorld` to `PrimStateEff` to prevent the
   `Prim` effect from executing arbitrary `IO` actions via `ioToPrim`.
 * Deprecate `(:>>)` as [GHC can't efficiently deal with type

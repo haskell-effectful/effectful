@@ -49,17 +49,11 @@ The second point is arguably the most important, because it allows focusing on
 things that matter instead of reinventing all kinds of wheels, hence being a
 necessary condition for broader adoption of the library.
 
-However, `eff` uses delimited continuations underneath, which:
-
-- Are supported by GHC >= 9.6.
-
-- Are somewhat hard to understand.
-
-- Make the library "too powerful" in a sense as it faces
-  [a](https://github.com/hasura/eff/issues/13)
-  [few](https://github.com/hasura/eff/issues/7)
-  [issues](https://github.com/hasura/eff/issues/12) with no clear path towards
-  their resolution.
+Unfortunately, the development of `eff` has stalled due to a
+[few](https://github.com/hasura/eff/issues/13)
+[subtle](https://github.com/hasura/eff/issues/7)
+[issues](https://github.com/hasura/eff/issues/12) related to its use of
+delimited continuations underneath.
 
 ### What about `mtl`?
 
@@ -119,7 +113,7 @@ and none of the ones with support for higher order effects provide the
 If you need such capability in your application, there are well established
 libraries such as [conduit](https://hackage.haskell.org/package/conduit) or
 [list-t](https://hackage.haskell.org/package/list-t) that can be used with
-`effectful` without any issues.
+`effectful` without any hassle.
 
 ### Summary
 

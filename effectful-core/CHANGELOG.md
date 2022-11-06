@@ -1,3 +1,6 @@
+# effectful-core-2.2.1.0 (2022-??-??)
+* Add `localSeqLift` and `localLift` to `Effectful.Dispatch.Dynamic`.
+
 # effectful-core-2.2.0.0 (2022-10-24)
 * Change `PrimState` for `Eff` from `RealWorld` to `PrimStateEff` to prevent the
   `Prim` effect from executing arbitrary `IO` actions via `ioToPrim`.

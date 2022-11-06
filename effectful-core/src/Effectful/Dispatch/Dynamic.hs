@@ -33,6 +33,8 @@ module Effectful.Dispatch.Dynamic
   , localUnliftIO
 
     -- *** Lifts
+  , localSeqLift
+  , localLift
   , withLiftMap
   , withLiftMapIO
 
@@ -508,6 +510,47 @@ localUnliftIO
 localUnliftIO (LocalEnv les) strategy k = case strategy of
   SeqUnlift      -> liftIO $ seqUnliftIO les k
   ConcUnlift p l -> liftIO $ concUnliftIO les p l k
+
+----------------------------------------
+-- Lifts
+
+-- | Create a local lifting function with the 'SeqUnlift' strategy. For the
+-- general version see 'localLift'.
+--
+-- @since 2.2.1.0
+localSeqLift
+  :: (HasCallStack, SharedSuffix es handlerEs)
+  => LocalEnv localEs handlerEs
+  -- ^ Local environment.
+  -> ((forall r. Eff es r -> Eff localEs r) -> Eff es a)
+  -- ^ Continuation with the lifting function in scope.
+  -> Eff es a
+localSeqLift !_ k = unsafeEff $ \es -> do
+  -- The LocalEnv parameter is not used, but we need it to constraint the
+  -- localEs type variable. It's also strict so that callers don't cheat.
+  seqUnliftIO es $ \unlift -> do
+    (`unEff` es) $ k $ unsafeEff_ . unlift
+
+-- | Create a local lifting function with the given strategy.
+--
+-- @since 2.2.1.0
+localLift
+  :: (HasCallStack, SharedSuffix es handlerEs)
+  => LocalEnv localEs handlerEs
+  -- ^ Local environment.
+  -> UnliftStrategy
+  -> ((forall r. Eff es r -> Eff localEs r) -> Eff es a)
+  -- ^ Continuation with the lifting function in scope.
+  -> Eff es a
+localLift !_ strategy k = case strategy of
+  -- The LocalEnv parameter is not used, but we need it to constraint the
+  -- localEs type variable. It's also strict so that callers don't cheat.
+  SeqUnlift -> unsafeEff $ \es -> do
+    seqUnliftIO es $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
+  ConcUnlift p l -> unsafeEff $ \es -> do
+    concUnliftIO es p l $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
 
 -- | Utility for lifting 'Eff' computations of type
 --

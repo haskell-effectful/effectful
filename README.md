@@ -40,10 +40,11 @@ Do we really need yet another library for handling effects? There's
 [polysemy](https://hackage.haskell.org/package/polysemy),
 [eff](https://github.com/hasura/eff) and probably a few more.
 
-Unfortunately, of all of them only `eff` is a promising proposition because of
-reasonable performance characteristics (see the talk [Effects for
-Less](https://www.youtube.com/watch?v=0jI-AlWEwYI) for more information) and
-potential for good interoperability with the existing ecosystem.
+It needs to be noted that of all of them only the work-in-progress `eff` library
+is a promising proposition because of reasonable performance characteristics
+(see the talk [Effects for Less](https://www.youtube.com/watch?v=0jI-AlWEwYI)
+for more information) and potential for good interoperability with the existing
+ecosystem.
 
 The second point is arguably the most important, because it allows focusing on
 things that matter instead of reinventing all kinds of wheels, hence being a
@@ -88,8 +89,8 @@ This concept is quite simple, so:
 
 What is more, the `Eff` monad is concrete, so GHC has many possibilities for
 optimization, which results in a very fast code at a default optimization
-level. There is no need to mark every function `INLINE` or enable additional
-optimization passes, it just works.
+level. There is no need to explicitly mark functions with `INLINE` pragmas or
+enable additional optimization passes, it just works.
 
 ### Any downsides?
 

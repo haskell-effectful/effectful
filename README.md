@@ -118,13 +118,19 @@ libraries such as [conduit](https://hackage.haskell.org/package/conduit) or
 
 ### Summary
 
-`effectful` is an extensible effects library that aims to replace "boring"
-transformer stacks (which consist of a dozen of newtype'd `ExceptT`, `ReaderT`,
-`StateT` and `WriterT` transformers) and their derivatives by providing
-equivalent effects with improved semantics, performance and usability (it also
-makes it easy to reuse them for your own effects). It doesn't try to make monad
-transformers obsolete, so you're free to use it with `ConduitT`, `ContT`,
-`ListT` etc. when necessary.
+`effectful` is an extensible effects library that aims to be the replacement
+for:
+
+- The bare `ReaderT` pattern by being essentially its enriched version.
+
+- Monad transformer stacks typically encountered in the wild (i.e. consisting of
+  a dozen of newtype'd `ExceptT`, `ReaderT`, `StateT` and `WriterT` transformers
+  and their derivatives) by providing equivalent effects with improved
+  semantics, performance, usability and making it easy to reuse them for your
+  own effects.
+
+It doesn't try to make monad transformers obsolete, so you're free to
+use it with `ConduitT`, `ContT`, `ListT` etc. when necessary.
 
 ## Package structure
 

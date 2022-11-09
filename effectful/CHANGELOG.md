@@ -1,4 +1,4 @@
-# effectful-2.2.1.0 (2022-??-??)
+# effectful-2.2.1.0 (2022-11-09)
 * Add `localSeqLift` and `localLift` to `Effectful.Dispatch.Dynamic`.
 
 # effectful-2.2.0.0 (2022-10-24)

@@ -134,26 +134,27 @@ use it with `ConduitT`, `ContT`, `ListT` etc. when necessary.
 
 ## Package structure
 
-The effect system is split among several libraries:
+The library is split among several packages:
 
 - The [`effectful-core`](https://hackage.haskell.org/package/effectful-core)
-  library contains the core of the effect system along with the basic
-  effects. It aims for a small dependency footprint and provides building blocks
-  for more advanced effects.
+  package contains the core of the library along with basic effects. It aims for
+  a small dependency footprint and provides building blocks for more advanced
+  effects.
 
 - The [`effectful-plugin`](https://hackage.haskell.org/package/effectful-plugin)
-  library provides an optional GHC plugin for improving disambiguation of
+  package provides an optional GHC plugin for improving disambiguation of
   effects (see
   [here](https://github.com/haskell-effectful/effectful/blob/master/effectful-plugin/README.md)
   for more information).
 
-- The [`effectful-th`](https://hackage.haskell.org/package/effectful-th) library
+- The [`effectful-th`](https://hackage.haskell.org/package/effectful-th) package
   provides utilities for generating bits of effect-related boilerplate via
   Template Haskell.
 
-- The [`effectful`](https://hackage.haskell.org/package/effectful) library
+- The [`effectful`](https://hackage.haskell.org/package/effectful) package
   re-exports public modules of `effectful-core` and additionally provides most
-  features of the `unliftio` library divided into appropriate effects.
+  features of the [`unliftio`](https://hackage.haskell.org/package/unliftio)
+  package divided into appropriate effects.
 
 ## Example
 

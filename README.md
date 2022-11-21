@@ -156,7 +156,7 @@ The library is split among several packages:
   features of the [`unliftio`](https://hackage.haskell.org/package/unliftio)
   package divided into appropriate effects.
 
-## Example
+## Examples
 
 For the examples see the *Introduction* sections of
 [`Effectful.Dispatch.Dynamic`](https://hackage.haskell.org/package/effectful-core/docs/Effectful-Dispatch-Dynamic.html)
@@ -165,8 +165,6 @@ and
 
 ## Acknowledgements
 
-### People
-
 To all contributors of existing effect libraries - thank you for putting the
 time and effort to explore the space. In particular, conversations in issue
 trackers of `cleff`, `eff`, `freer-simple`, `fused-effects` and `polysemy`
@@ -174,6 +172,9 @@ repositories were invaluable in helping me discover and understand challenges in
 the space.
 
 ### Resources
+
+Resources that inspired the rise of this library and had a lot of impact on its
+design.
 
 Talks:
 

@@ -163,10 +163,17 @@ For the examples see the *Introduction* sections of
 and
 [`Effectful.Dispatch.Static`](https://hackage.haskell.org/package/effectful-core/docs/Effectful-Dispatch-Static.html).
 
-## Resources
+## Acknowledgements
 
-Resources that inspired the rise of this library and had a lot of impact on its
-design.
+### People
+
+To all contributors of existing effect libraries - thank you for putting the
+time and effort to explore the space. In particular, conversations in issue
+trackers of `cleff`, `eff`, `freer-simple`, `fused-effects` and `polysemy`
+repositories were invaluable in helping me discover and understand challenges in
+the space.
+
+### Resources
 
 Talks:
 

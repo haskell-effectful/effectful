@@ -43,6 +43,8 @@ module Effectful.Internal.Monad
   , unliftStrategy
   , withUnliftStrategy
   , withEffToIO
+  , withSeqEffToIO
+  , withConcEffToIO
 
   -- ** Low-level unlifts
   , seqUnliftIO
@@ -179,8 +181,27 @@ withEffToIO
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 withEffToIO f = unliftStrategy >>= \case
-  SeqUnlift -> unsafeEff $ \es -> seqUnliftIO es f
+  SeqUnlift      -> unsafeEff $ \es -> seqUnliftIO es f
   ConcUnlift p b -> unsafeEff $ \es -> concUnliftIO es p b f
+
+-- | Create an unlifting function with the 'SeqUnlift' strategy.
+withSeqEffToIO
+  :: (HasCallStack, IOE :> es)
+  => ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
+  -> Eff es a
+withSeqEffToIO f = unsafeEff $ \es -> seqUnliftIO es f
+
+-- | Create an unlifting function with the 'ConcUnlift' strategy.
+withConcEffToIO
+  :: (HasCallStack, IOE :> es)
+  => Persistence
+  -> Limit
+  -> ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
+  -> Eff es a
+withConcEffToIO persistence limit f = unsafeEff $ \es ->
+  concUnliftIO es persistence limit f
 
 -- | Create an unlifting function with the 'SeqUnlift' strategy.
 seqUnliftIO

@@ -39,7 +39,6 @@ module Effectful.Internal.Env
 
 import Control.Monad
 import Control.Monad.Primitive
-import Data.IORef
 import Data.Primitive.PrimArray
 import Data.Primitive.SmallArray
 import GHC.Stack (HasCallStack)
@@ -75,7 +74,7 @@ type role Env nominal
 data Env (es :: [Effect]) = Env
   { envOffset  :: !Int
   , envRefs    :: !(PrimArray Int)
-  , envStorage :: !(IORef Storage)
+  , envStorage :: !(IORef' Storage)
   }
 
 -- | A storage of effects.
@@ -128,12 +127,12 @@ type family EffectRep (d :: Dispatch) :: Effect -> Type
 emptyEnv :: IO (Env '[])
 emptyEnv = Env 0
   <$> (unsafeFreezePrimArray =<< newPrimArray 0)
-  <*> (newIORef =<< emptyStorage)
+  <*> (newIORef' =<< emptyStorage)
 
 -- | Clone the environment to use it in a different thread.
 cloneEnv :: Env es -> IO (Env es)
 cloneEnv (Env offset refs storage0) = do
-  Storage storageSize version vs0 es0 fs0 <- readIORef storage0
+  Storage storageSize version vs0 es0 fs0 <- readIORef' storage0
   let vsSize = sizeofMutablePrimArray  vs0
       esSize = sizeofSmallMutableArray es0
       fsSize = sizeofSmallMutableArray fs0
@@ -144,7 +143,7 @@ cloneEnv (Env offset refs storage0) = do
   vs <- cloneMutablePrimArray  vs0 0 vsSize
   es <- cloneSmallMutableArray es0 0 esSize
   fs <- cloneSmallMutableArray fs0 0 fsSize
-  storage <- newIORef $ Storage storageSize version vs es fs
+  storage <- newIORef' $ Storage storageSize version vs es fs
   let relinkEffects = \case
         0 -> pure ()
         k -> do
@@ -166,14 +165,14 @@ restoreEnv
   -> Env es -- ^ Source.
   -> IO ()
 restoreEnv dest src = do
-  destStorage <- readIORef (envStorage dest)
-  srcStorage  <- readIORef (envStorage src)
+  destStorage <- readIORef' (envStorage dest)
+  srcStorage  <- readIORef' (envStorage src)
   let destStorageSize = stSize destStorage
       srcStorageSize  = stSize srcStorage
   when (destStorageSize /= srcStorageSize) $ do
     error $ "destStorageSize (" ++ show destStorageSize
          ++ ") /= srcStorageSize (" ++ show srcStorageSize ++ ")"
-  writeIORef (envStorage dest) $! srcStorage
+  writeIORef' (envStorage dest) $ srcStorage
     -- Decreasing the counter allows leakage of unsafeCoerce (see unsafeCoerce2
     -- in the EnvTests module).
     { stVersion = max (stVersion destStorage) (stVersion srcStorage)
@@ -343,7 +342,7 @@ getLocation (Env offset refs storage) = do
   let i       = offset + 2 * reifyIndex @e @es
       ref     = indexPrimArray refs  i
       version = indexPrimArray refs (i + 1)
-  Storage _ _ vs es _ <- readIORef storage
+  Storage _ _ vs es _ <- readIORef' storage
   storageVersion <- readPrimArray vs ref
   -- If version of the reference is different than version in the storage, it
   -- means that the effect in the storage is not the one that was initially
@@ -365,13 +364,13 @@ emptyStorage = Storage 0 (noVersion + 1)
 
 -- | Insert an effect into the storage and return its reference.
 insertEffect
-  :: IORef Storage
+  :: IORef' Storage
   -> EffectRep (DispatchOf e) e
   -- ^ The representation of the effect.
   -> Relinker (EffectRep (DispatchOf e)) e
   -> IO (Int, Int)
 insertEffect storage e f = do
-  Storage size version vs0 es0 fs0 <- readIORef storage
+  Storage size version vs0 es0 fs0 <- readIORef' storage
   let len0 = sizeofSmallMutableArray es0
   case size `compare` len0 of
     GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
@@ -379,7 +378,7 @@ insertEffect storage e f = do
       writePrimArray   vs0 size version
       writeSmallArray' es0 size (toAny e)
       writeSmallArray' fs0 size (toAny f)
-      writeIORef storage $! Storage (size + 1) (version + 1) vs0 es0 fs0
+      writeIORef' storage $ Storage (size + 1) (version + 1) vs0 es0 fs0
       pure (size, version)
     EQ -> do
       let len = doubleCapacity len0
@@ -392,23 +391,23 @@ insertEffect storage e f = do
       writePrimArray   vs size version
       writeSmallArray' es size (toAny e)
       writeSmallArray' fs size (toAny f)
-      writeIORef storage $! Storage (size + 1) (version + 1) vs es fs
+      writeIORef' storage $ Storage (size + 1) (version + 1) vs es fs
       pure (size, version)
 
 -- | Given a reference to an effect from the top of the stack, delete it from
 -- the storage.
-deleteEffect :: IORef Storage -> Int -> IO ()
+deleteEffect :: IORef' Storage -> Int -> IO ()
 deleteEffect storage ref = do
-  Storage size version vs es fs <- readIORef storage
+  Storage size version vs es fs <- readIORef' storage
   when (ref /= size - 1) $ do
     error $ "ref (" ++ show ref ++ ") /= size - 1 (" ++ show (size - 1) ++ ")"
   writePrimArray  vs ref noVersion
   writeSmallArray es ref undefinedData
   writeSmallArray fs ref undefinedData
-  writeIORef storage $! Storage (size - 1) version vs es fs
+  writeIORef' storage $ Storage (size - 1) version vs es fs
 
 -- | Relink the environment to use the new storage.
-relinkEnv :: IORef Storage -> Env es -> IO (Env es)
+relinkEnv :: IORef' Storage -> Env es -> IO (Env es)
 relinkEnv storage (Env offset refs _) = pure $ Env offset refs storage
 
 -- | Double the capacity of an array.

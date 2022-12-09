@@ -144,20 +144,19 @@ ephemeralConcUnlift uses k es0 unEff = do
   -- use. This can't be done from inside the callback as the environment might
   -- have already changed by then.
   esTemplate <- cloneEnv es0
-  mvUses <- newMVar uses
+  mvUses <- newMVar' uses
   k $ \m -> do
     es <- myThreadId >>= \case
       tid | tid0 `eqThreadId` tid -> pure es0
-      _ -> modifyMVar mvUses $ \case
+      _ -> modifyMVar' mvUses $ \case
         0 -> error
            $ "Number of permitted calls (" ++ show uses ++ ") to the unlifting "
           ++ "function in other threads was exceeded. Please increase the limit "
           ++ "or use the unlimited variant."
         1 -> pure (0, esTemplate)
         n -> do
-          let newUses = n - 1
           es <- cloneEnv esTemplate
-          newUses `seq` pure (newUses, es)
+          pure (n - 1, es)
     unEff m es
 
 -- | Concurrent unlift that preserves the environment between calls to the
@@ -179,11 +178,11 @@ persistentConcUnlift cleanUp threads k es0 unEff = do
   -- use. This can't be done from inside the callback as the environment might
   -- have already changed by then.
   esTemplate <- cloneEnv es0
-  mvEntries <- newMVar $ ThreadEntries threads IM.empty
+  mvEntries <- newMVar' $ ThreadEntries threads IM.empty
   k $ \m -> do
     es <- myThreadId >>= \case
       tid | tid0 `eqThreadId` tid -> pure es0
-      tid -> modifyMVar mvEntries $ \te -> do
+      tid -> modifyMVar' mvEntries $ \te -> do
         let wkTid = weakThreadId tid
         (mes, i) <- case wkTid `IM.lookup` teEntries te of
           Just (ThreadEntry i td) -> (, i) <$> lookupEnv tid td
@@ -201,7 +200,7 @@ persistentConcUnlift cleanUp threads k es0 unEff = do
                     { teCapacity = teCapacity te - 1
                     , teEntries  = addThreadData wkTid i wkTidEs $ teEntries te
                     }
-              newEntries `seq` pure (newEntries, esTemplate)
+              pure (newEntries, esTemplate)
             _ -> do
               es      <- cloneEnv esTemplate
               wkTidEs <- mkWeakThreadIdEnv tid es wkTid i mvEntries cleanUp
@@ -209,7 +208,7 @@ persistentConcUnlift cleanUp threads k es0 unEff = do
                     { teCapacity = teCapacity te - 1
                     , teEntries  = addThreadData wkTid i wkTidEs $ teEntries te
                     }
-              newEntries `seq` pure (newEntries, es)
+              pure (newEntries, es)
     unEff m es
 
 ----------------------------------------
@@ -246,7 +245,7 @@ mkWeakThreadIdEnv
   -> Env es
   -> Int
   -> EntryId
-  -> MVar (ThreadEntries es)
+  -> MVar' (ThreadEntries es)
   -> Bool
   -> IO (Weak (ThreadId, Env es))
 mkWeakThreadIdEnv t@(ThreadId t#) es wkTid i v = \case
@@ -292,17 +291,16 @@ consThreadData w (ThreadEntry i td) =
 
 ----------------------------------------
 
-deleteThreadData :: Int -> EntryId -> MVar (ThreadEntries es) -> IO ()
-deleteThreadData wkTid i v = modifyMVar_ v $ \te -> do
-  let newEntries = ThreadEntries
-        { teCapacity = case teCapacity te of
-            -- If the template copy of the environment hasn't been consumed
-            -- yet, the capacity can be restored.
-            0 -> 0
-            n -> n + 1
-        , teEntries = IM.update (cleanThreadEntry i) wkTid $ teEntries te
-        }
-  newEntries `seq` pure newEntries
+deleteThreadData :: Int -> EntryId -> MVar' (ThreadEntries es) -> IO ()
+deleteThreadData wkTid i v = modifyMVar_' v $ \te -> do
+  pure ThreadEntries
+    { teCapacity = case teCapacity te of
+        -- If the template copy of the environment hasn't been consumed
+        -- yet, the capacity can be restored.
+        0 -> 0
+        n -> n + 1
+    , teEntries = IM.update (cleanThreadEntry i) wkTid $ teEntries te
+    }
 
 cleanThreadEntry :: EntryId -> ThreadEntry es -> Maybe (ThreadEntry es)
 cleanThreadEntry i0 (ThreadEntry i td0) = case cleanThreadData i0 td0 of

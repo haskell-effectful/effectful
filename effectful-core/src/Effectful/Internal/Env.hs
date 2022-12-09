@@ -152,7 +152,7 @@ cloneEnv (Env offset refs storage0) = do
           Relinker f <- fromAny <$> readSmallArray fs i
           readSmallArray es i
             >>= f (relinkEnv storage) . fromAny
-            >>= writeSmallArray es i . toAny
+            >>= writeSmallArray' es i . toAny
           relinkEffects i
   relinkEffects storageSize
   pure $ Env offset refs storage
@@ -309,7 +309,7 @@ putEnv
   -> IO ()
 putEnv env e = do
   (i, es) <- getLocation @e env
-  e `seq` writeSmallArray es i (toAny e)
+  writeSmallArray' es i (toAny e)
 
 -- | Modify the data type in the environment and return a value (in place).
 stateEnv
@@ -320,7 +320,7 @@ stateEnv
 stateEnv env f = do
   (i, es) <- getLocation @e env
   (a, e) <- f . fromAny =<< readSmallArray es i
-  e `seq` writeSmallArray es i (toAny e)
+  writeSmallArray' es i (toAny e)
   pure a
 
 -- | Modify the data type in the environment (in place).
@@ -332,7 +332,7 @@ modifyEnv
 modifyEnv env f = do
   (i, es) <- getLocation @e env
   e <- f . fromAny =<< readSmallArray es i
-  e `seq` writeSmallArray es i (toAny e)
+  writeSmallArray' es i (toAny e)
 
 -- | Determine location of the effect in the environment.
 getLocation
@@ -376,9 +376,9 @@ insertEffect storage e f = do
   case size `compare` len0 of
     GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
     LT -> do
-      writePrimArray          vs0 size version
-      e `seq` writeSmallArray es0 size (toAny e)
-      f `seq` writeSmallArray fs0 size (toAny f)
+      writePrimArray   vs0 size version
+      writeSmallArray' es0 size (toAny e)
+      writeSmallArray' fs0 size (toAny f)
       writeIORef storage $! Storage (size + 1) (version + 1) vs0 es0 fs0
       pure (size, version)
     EQ -> do
@@ -389,9 +389,9 @@ insertEffect storage e f = do
       copyMutablePrimArray  vs 0 vs0 0 size
       copySmallMutableArray es 0 es0 0 size
       copySmallMutableArray fs 0 fs0 0 size
-      writePrimArray          vs size version
-      e `seq` writeSmallArray es size (toAny e)
-      f `seq` writeSmallArray fs size (toAny f)
+      writePrimArray   vs size version
+      writeSmallArray' es size (toAny e)
+      writeSmallArray' fs size (toAny f)
       writeIORef storage $! Storage (size + 1) (version + 1) vs es fs
       pure (size, version)
 
@@ -420,3 +420,7 @@ noVersion = 0
 
 undefinedData :: HasCallStack => a
 undefinedData = error "undefined data"
+
+-- | A strict version of 'writeSmallArray'.
+writeSmallArray' :: SmallMutableArray RealWorld a -> Int -> a -> IO ()
+writeSmallArray' arr i a = a `seq` writeSmallArray arr i a

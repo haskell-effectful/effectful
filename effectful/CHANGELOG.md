@@ -1,3 +1,7 @@
+# effectful-2.2.2.0 (????-??-??)
+* Add `withSeqEffToIO` and `withConcEffToIO` to `Effectful`.
+* Use strict `IORef` and `MVar` variants where appropriate.
+
 # effectful-2.2.1.0 (2022-11-09)
 * Add `localSeqLift` and `localLift` to `Effectful.Dispatch.Dynamic`.
 

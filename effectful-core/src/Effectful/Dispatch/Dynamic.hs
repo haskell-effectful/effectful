@@ -20,6 +20,8 @@ module Effectful.Dispatch.Dynamic
   , EffectHandler
   , interpret
   , reinterpret
+  , reinterpret2
+  , reinterpret3
   , interpose
   , impose
 
@@ -371,6 +373,44 @@ reinterpret
 reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
   (`unEff` es) . runHandlerEs . unsafeEff $ \handlerEs -> do
     (`unEff` es) $ runHandler (Handler handlerEs handler) m
+
+-- | Interpret two effects using other, private effects.
+reinterpret2
+  :: (DispatchOf e1 ~ Dynamic, DispatchOf e2 ~ Dynamic)
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handlers.
+  -> EffectHandler e1 handlerEs
+  -- ^ The first effect handler.
+  -> EffectHandler e2 handlerEs
+  -- ^ The second effect handler.
+  -> Eff (e1 : e2 : es) a
+  -> Eff            es  b
+reinterpret2 runHandlerEs handler1 handler2 m = unsafeEff $ \es -> do
+  (`unEff` es) . runHandlerEs . unsafeEff $ \handlerEs -> do
+    (`unEff` es) . runHandler (Handler handlerEs handler2)
+                 . runHandler (Handler handlerEs handler1)
+                 $ m
+
+-- | Interpret three effects using other, private effects.
+reinterpret3
+  :: (DispatchOf e1 ~ Dynamic, DispatchOf e2 ~ Dynamic, DispatchOf e3 ~ Dynamic)
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handlers.
+  -> EffectHandler e1 handlerEs
+  -- ^ The first effect handler.
+  -> EffectHandler e2 handlerEs
+  -- ^ The second effect handler.
+  -> EffectHandler e3 handlerEs
+  -- ^ The third effect handler.
+  -> Eff (e1 : e2 : e3 : es) a
+  -> Eff                 es  b
+reinterpret3 runHandlerEs handler1 handler2 handler3 m = unsafeEff $ \es -> do
+  (`unEff` es) . runHandlerEs . unsafeEff $ \handlerEs -> do
+    (`unEff` es) . runHandler (Handler handlerEs handler3)
+                 . runHandler (Handler handlerEs handler2)
+                 . runHandler (Handler handlerEs handler1)
+                 $ m
+
 
 -- | Replace the handler of an existing effect with a new one.
 --

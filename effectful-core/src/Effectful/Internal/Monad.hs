@@ -401,12 +401,20 @@ subsume m = unsafeEff $ \es -> unEff m =<< subsumeEnv es
 -- | Allow for running an effect stack @xs@ within @es@ as long as @xs@ is a
 -- permutation (with possible duplicates) of a subset of @es@.
 --
--- Generalizes 'raise' and 'subsume'. In particular, it allows for hiding
--- specific effects from downstream:
+-- Generalizes 'raise' and 'subsume'.
 --
 -- >>> data E1 :: Effect
 -- >>> data E2 :: Effect
 -- >>> data E3 :: Effect
+--
+-- It makes it possible to rearrange the effect stack however you like:
+--
+-- >>> :{
+--   shuffle :: Eff (E3 : E1 : E2 : es) a -> Eff (E1 : E2 : E3 : es) a
+--   shuffle = inject
+-- :}
+--
+-- Moreover, it allows for hiding specific effects from downstream:
 --
 -- >>> :{
 --   onlyE1 :: Eff (E1 : es) a -> Eff (E1 : E2 : E3 : es) a
@@ -422,6 +430,17 @@ subsume m = unsafeEff $ \es -> unEff m =<< subsumeEnv es
 --   onlyE3 :: Eff (E3 : es) a -> Eff (E1 : E2 : E3 : es) a
 --   onlyE3 = inject
 -- :}
+--
+-- However, it's not possible to inject a computation into an incompatible
+-- effect stack:
+--
+-- >>> :{
+--   coerceEs :: Eff es1 a -> Eff es2 a
+--   coerceEs = inject
+-- :}
+-- ...
+-- ...Couldn't match type ‘es1’ with ‘es2’
+-- ...
 inject :: Subset xs es => Eff xs a -> Eff es a
 inject m = unsafeEff $ \es -> unEff m =<< injectEnv es
 

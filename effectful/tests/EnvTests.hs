@@ -59,10 +59,13 @@ test_injectEnv = runEff . runReader () $ do
       raise $ modify @Int (+8)
       hideReader $ do
         modify @Int (+16)
-        raise $ modify @Int (+32)
+        onlyState $ modify @Int (+32)
 
     hideReader :: Eff (State s : es) r -> Eff (State s : Reader r : es) r
     hideReader = inject
+
+    onlyState :: Eff '[State s] a -> Eff (State s : es) a
+    onlyState = inject
 
 ----------------------------------------
 

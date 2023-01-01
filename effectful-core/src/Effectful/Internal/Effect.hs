@@ -11,6 +11,7 @@ module Effectful.Internal.Effect
   , (:>>)
   , Subset(..)
   , KnownPrefix(..)
+  , IsUnknownSuffixOf
 
   -- * Re-exports
   , Type
@@ -72,11 +73,22 @@ class KnownPrefix es => Subset (xs :: [Effect]) (es :: [Effect]) where
   reifyIndices = -- Don't show "minimal complete definition" in haddock.
                  error "unimplemented"
 
-instance {-# INCOHERENT #-} KnownPrefix es => Subset xs es where
+-- If the subset is not fully known, make sure the subset and the base stack
+-- have the same unknown suffix.
+instance {-# INCOHERENT #-}
+  ( KnownPrefix es
+  , xs `IsUnknownSuffixOf` es
+  ) => Subset xs es where
+  reifyIndices = []
+
+-- If the subset is fully known, we're done.
+instance KnownPrefix es => Subset '[] es where
   reifyIndices = []
 
 instance (e :> es, Subset xs es) => Subset (e : xs) es where
   reifyIndices = reifyIndex @e @es : reifyIndices @xs @es
+
+----
 
 -- | Calculate length of a statically known prefix of @es@.
 class KnownPrefix (es :: [Effect]) where
@@ -87,3 +99,10 @@ instance KnownPrefix es => KnownPrefix (e : es) where
 
 instance {-# INCOHERENT #-} KnownPrefix es where
   prefixLength = 0
+
+----
+
+-- | Require that @xs@ is the unknown suffix of @es@.
+class (xs :: [Effect]) `IsUnknownSuffixOf` (es :: [Effect])
+instance {-# INCOHERENT #-} xs ~ es => xs `IsUnknownSuffixOf` es
+instance xs `IsUnknownSuffixOf` es => xs `IsUnknownSuffixOf` (e : es)

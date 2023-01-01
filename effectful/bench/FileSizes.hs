@@ -54,7 +54,6 @@ import qualified Control.Monad.Reader as M
 import qualified Polysemy as P
 import qualified Polysemy.Reader as P
 import qualified Polysemy.State as P
-import qualified Polysemy.Internal as P
 #endif
 
 tryGetFileSize :: FilePath -> IO (Maybe Int)

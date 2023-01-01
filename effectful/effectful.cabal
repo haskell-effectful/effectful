@@ -22,7 +22,7 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
-tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.4 || ==9.4.2
+tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.5 || ==9.4.4
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head
@@ -164,7 +164,7 @@ benchmark bench
           build-depends: fused-effects >= 1.1.2.0
 
        if impl(ghc < 9.5)
-          build-depends: polysemy >= 1.7.1.0
+          build-depends: polysemy >= 1.9.0.0
 
     build-depends:    base
                     , async

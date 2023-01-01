@@ -35,6 +35,7 @@ module Effectful.Internal.Monad
   , raiseWith
   , subsume
   , inject
+  , Subset
 
   -- * Unlifting
   , UnliftStrategy(..)
@@ -400,12 +401,27 @@ subsume m = unsafeEff $ \es -> unEff m =<< subsumeEnv es
 -- | Allow for running an effect stack @xs@ within @es@ as long as @xs@ is a
 -- permutation (with possible duplicates) of a subset of @es@.
 --
--- Generalizes 'raise' and 'subsume'.
+-- Generalizes 'raise' and 'subsume'. In particular, it allows for hiding
+-- specific effects from downstream:
 --
--- /Note:/ this function should be needed rarely, usually when you have to cross
--- API boundaries and monomorphic effect stacks are involved. Using monomorphic
--- stacks is discouraged (see 'Eff'), but sometimes might be necessary due to
--- external constraints.
+-- >>> data E1 :: Effect
+-- >>> data E2 :: Effect
+-- >>> data E3 :: Effect
+--
+-- >>> :{
+--   onlyE1 :: Eff (E1 : es) a -> Eff (E1 : E2 : E3 : es) a
+--   onlyE1 = inject
+-- :}
+--
+-- >>> :{
+--   onlyE2 :: Eff (E2 : es) a -> Eff (E1 : E2 : E3 : es) a
+--   onlyE2 = inject
+-- :}
+--
+-- >>> :{
+--   onlyE3 :: Eff (E3 : es) a -> Eff (E1 : E2 : E3 : es) a
+--   onlyE3 = inject
+-- :}
 inject :: Subset xs es => Eff xs a -> Eff es a
 inject m = unsafeEff $ \es -> unEff m =<< injectEnv es
 

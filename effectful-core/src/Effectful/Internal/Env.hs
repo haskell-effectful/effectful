@@ -274,16 +274,22 @@ subsumeEnv (Env offset refs0 storage) = do
 -- duplicates) of a subset of effects from the input environment.
 injectEnv :: forall xs es. Subset xs es => Env es -> IO (Env xs)
 injectEnv (Env offset refs0 storage) = do
-  let xs = reifyIndices @xs @es
-  mrefs <- newPrimArray (2 * length xs)
-  let writeRefs i = \case
+  let xs         = reifyIndices @xs @es
+      permSize   = 2 * length xs
+      prefixSize = 2 * prefixLength @es
+      suffixSize = sizeofPrimArray refs0 - offset - prefixSize
+  when (prefixSize == 0 && permSize /= 0) $ do
+    error $ "prefixSize == 0, yet permSize == " ++ show permSize
+  mrefs <- newPrimArray (permSize + suffixSize)
+  copyPrimArray mrefs permSize refs0 (offset + prefixSize) suffixSize
+  let writePermRefs i = \case
         []       -> pure ()
         (e : es) -> do
           let ix = offset + 2 * e
           writePrimArray mrefs  i      $ indexPrimArray refs0  ix
           writePrimArray mrefs (i + 1) $ indexPrimArray refs0 (ix + 1)
-          writeRefs (i + 2) es
-  writeRefs 0 xs
+          writePermRefs (i + 2) es
+  writePermRefs 0 xs
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage
 {-# NOINLINE injectEnv #-}

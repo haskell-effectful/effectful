@@ -348,6 +348,9 @@ import Effectful.Internal.Monad
 -- Handling effects
 
 -- | Interpret an effect.
+--
+-- /Note:/ 'interpret' can be turned into a 'reinterpret' with the use of
+-- 'inject'.
 interpret
   :: DispatchOf e ~ Dynamic
   => EffectHandler e es

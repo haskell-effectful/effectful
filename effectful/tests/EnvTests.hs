@@ -43,29 +43,51 @@ test_subsumeEnv = runEff $ do
 
 test_injectEnv :: Assertion
 test_injectEnv = runEff . runReader () $ do
+  assertEnvSize "runEff" 2
   s <- execState @Int 0 $ inject action
   U.assertEqual "expected result" 63 s
   where
     action :: Eff [State Int, IOE, Reader (), State Int] ()
     action = do
-      modify @Int (+1)
-      raise $ do
-        modify @Int (+2)
-        inject innerAction
+      assertEnvSize "action" 4
+      injectId $ do
+        assertEnvSize "injectId" 4
+        modify @Int (+1)
+        raise $ do
+          assertEnvSize "action.raise" 3
+          modify @Int (+2)
+          inject innerAction
+        injectPure $
+          assertEnvSize "injectPure" 0
 
     innerAction :: Eff [State Int, Reader (), State Int] ()
     innerAction = do
+      assertEnvSize "innerAction" 3
       modify @Int (+4)
-      raise $ modify @Int (+8)
+      raise $ do
+        assertEnvSize "innerAction.raise" 2
+        modify @Int (+8)
       hideReader $ do
+        assertEnvSize "hideReader" 2
         modify @Int (+16)
-        onlyState $ modify @Int (+32)
+        onlyState $ do
+          assertEnvSize "onlyState" 1
+          modify @Int (+32)
 
     hideReader :: Eff (State s : es) r -> Eff (State s : Reader r : es) r
     hideReader = inject
 
     onlyState :: Eff '[State s] a -> Eff (State s : es) a
     onlyState = inject
+
+    injectId :: Eff es a -> Eff es a
+    injectId = inject
+
+    injectPure :: Eff '[] a -> Eff es a
+    injectPure = inject
+
+    assertEnvSize label n = unsafeEff $ \es -> do
+      assertEqual ("expected Env size (" ++ label ++ ")") n =<< sizeEnv es
 
 ----------------------------------------
 

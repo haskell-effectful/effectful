@@ -69,9 +69,15 @@ type family xs :>> es :: Constraint where
 
 -- | Provide evidence that @xs@ is a subset of @es@.
 class KnownPrefix es => Subset (xs :: [Effect]) (es :: [Effect]) where
+  subsetFullyKnown :: Bool
+  subsetFullyKnown =
+    -- Don't show "minimal complete definition" in haddock.
+    error "subsetFullyKnown"
+
   reifyIndices :: [Int]
-  reifyIndices = -- Don't show "minimal complete definition" in haddock.
-                 error "unimplemented"
+  reifyIndices =
+    -- Don't show "minimal complete definition" in haddock.
+    error "reifyIndices"
 
 -- If the subset is not fully known, make sure the subset and the base stack
 -- have the same unknown suffix.
@@ -79,13 +85,16 @@ instance {-# INCOHERENT #-}
   ( KnownPrefix es
   , xs `IsUnknownSuffixOf` es
   ) => Subset xs es where
+  subsetFullyKnown = False
   reifyIndices = []
 
 -- If the subset is fully known, we're done.
 instance KnownPrefix es => Subset '[] es where
+  subsetFullyKnown = True
   reifyIndices = []
 
 instance (e :> es, Subset xs es) => Subset (e : xs) es where
+  subsetFullyKnown = subsetFullyKnown @xs @es
   reifyIndices = reifyIndex @e @es : reifyIndices @xs @es
 
 ----

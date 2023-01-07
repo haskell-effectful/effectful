@@ -277,7 +277,9 @@ injectEnv (Env offset refs0 storage) = do
   let xs         = reifyIndices @xs @es
       permSize   = 2 * length xs
       prefixSize = 2 * prefixLength @es
-      suffixSize = sizeofPrimArray refs0 - offset - prefixSize
+      suffixSize = if subsetFullyKnown @xs @es
+                   then 0
+                   else sizeofPrimArray refs0 - offset - prefixSize
   when (prefixSize == 0 && permSize /= 0) $ do
     error $ "prefixSize == 0, yet permSize == " ++ show permSize
   mrefs <- newPrimArray (permSize + suffixSize)

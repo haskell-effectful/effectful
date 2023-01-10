@@ -40,8 +40,9 @@ class (e :: Effect) :> (es :: [Effect]) where
   -- /Note:/ GHC is kind enough to cache these values as they're top level CAFs,
   -- so the lookup is amortized @O(1)@ without any language level tricks.
   reifyIndex :: Int
-  reifyIndex = -- Don't show "minimal complete definition" in haddock.
-               error "unimplemented"
+  reifyIndex =
+    -- Don't show "minimal complete definition" in haddock.
+    error "reifyIndex"
 
 instance TypeError
   ( Text "There is no handler for '" :<>: ShowType e :<>: Text "' in the context"

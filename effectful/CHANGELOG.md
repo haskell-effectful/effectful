@@ -1,4 +1,4 @@
-# effectful-2.2.2.0 (????-??-??)
+# effectful-2.2.2.0 (2023-01-11)
 * Add `withSeqEffToIO` and `withConcEffToIO` to `Effectful`.
 * Use strict `IORef` and `MVar` variants where appropriate.
 * Make `inject` work with effect stacks sharing a polymorphic suffix.

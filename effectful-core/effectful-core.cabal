@@ -1,7 +1,7 @@
 cabal-version:      2.4
 build-type:         Simple
 name:               effectful-core
-version:            2.2.2.0
+version:            2.2.2.1
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control
@@ -54,22 +54,10 @@ common language
                         TypeFamilies
                         TypeOperators
 
-library effectful-internal-utils
-    import:          language
-
-    build-depends:   base
-
-    hs-source-dirs:  utils
-    c-sources:       utils/utils.c
-
-    exposed-modules: Effectful.Internal.Utils
-
 library
     import:         language
 
     ghc-options:    -O2
-
-    build-depends:  effectful-internal-utils
 
     build-depends:    base                >= 4.13      && < 5
                     , containers          >= 0.6
@@ -80,6 +68,8 @@ library
                     , unliftio-core       >= 0.2.0.1
 
     hs-source-dirs:  src
+
+    c-sources:       cbits/utils.c
 
     exposed-modules: Effectful
                      Effectful.Dispatch.Dynamic
@@ -93,6 +83,7 @@ library
                      Effectful.Internal.Env
                      Effectful.Internal.Monad
                      Effectful.Internal.Unlift
+                     Effectful.Internal.Utils
                      Effectful.NonDet
                      Effectful.Prim
                      Effectful.Reader.Dynamic
@@ -103,5 +94,3 @@ library
                      Effectful.Writer.Dynamic
                      Effectful.Writer.Static.Local
                      Effectful.Writer.Static.Shared
-
-    reexported-modules: Effectful.Internal.Utils

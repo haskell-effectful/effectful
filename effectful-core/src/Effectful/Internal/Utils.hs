@@ -30,31 +30,43 @@ import Control.Concurrent.MVar
 import Data.IORef
 import Foreign.C.Types
 import GHC.Conc.Sync (ThreadId(..))
-import GHC.Exts (Any, ThreadId#)
+import GHC.Exts (Addr#, Any, ThreadId#, unsafeCoerce#)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Get an id of a thread that doesn't prevent its garbage collection.
 weakThreadId :: ThreadId -> Int
-weakThreadId (ThreadId t#) = fromIntegral $ rts_getThreadId t#
+weakThreadId (ThreadId t#) = fromIntegral $ rts_getThreadId (threadIdToAddr# t#)
 
 foreign import ccall unsafe "rts_getThreadId"
 #if __GLASGOW_HASKELL__ >= 904
   -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6163
-  rts_getThreadId :: ThreadId# -> CULLong
+  rts_getThreadId :: Addr# -> CULLong
 #elif __GLASGOW_HASKELL__ >= 900
   -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/1254
-  rts_getThreadId :: ThreadId# -> CLong
+  rts_getThreadId :: Addr# -> CLong
 #else
-  rts_getThreadId :: ThreadId# -> CInt
+  rts_getThreadId :: Addr# -> CInt
 #endif
 
 -- | 'Eq' instance for 'ThreadId' is broken in GHC < 9, see
 -- https://gitlab.haskell.org/ghc/ghc/-/issues/16761 for more info.
 eqThreadId :: ThreadId -> ThreadId -> Bool
-eqThreadId (ThreadId t1#) (ThreadId t2#) = eq_thread t1# t2# == 1
+eqThreadId (ThreadId t1#) (ThreadId t2#) =
+  eq_thread (threadIdToAddr# t1#) (threadIdToAddr# t2#) == 1
 
 foreign import ccall unsafe "effectful_eq_thread"
-  eq_thread :: ThreadId# -> ThreadId# -> CLong
+  eq_thread :: Addr# -> Addr# -> CLong
+
+-- Note: FFI imports take Addr# instead of ThreadId# because of
+-- https://gitlab.haskell.org/ghc/ghc/-/issues/8281, which would prevent loading
+-- effectful-core into GHCi.
+--
+-- Previous workaround was to use an internal library with just this module, but
+-- this is not viable because of bugs in stack (sigh).
+--
+-- The coercion is fine because GHC represents ThreadId# as a pointer.
+threadIdToAddr# :: ThreadId# -> Addr#
+threadIdToAddr# = unsafeCoerce#
 
 ----------------------------------------
 

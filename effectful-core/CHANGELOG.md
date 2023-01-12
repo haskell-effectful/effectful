@@ -1,3 +1,6 @@
+# effectful-core-2.2.2.1 (2023-01-12)
+* Stop using the internal library because of bugs in `stack`.
+
 # effectful-core-2.2.2.0 (2023-01-11)
 * Add `withSeqEffToIO` and `withConcEffToIO` to `Effectful`.
 * Use strict `IORef` and `MVar` variants where appropriate.

@@ -186,6 +186,8 @@ withEffToIO f = unliftStrategy >>= \case
   ConcUnlift p b -> unsafeEff $ \es -> concUnliftIO es p b f
 
 -- | Create an unlifting function with the 'SeqUnlift' strategy.
+--
+-- @since 2.2.2.0
 withSeqEffToIO
   :: (HasCallStack, IOE :> es)
   => ((forall r. Eff es r -> IO r) -> IO a)
@@ -194,6 +196,8 @@ withSeqEffToIO
 withSeqEffToIO f = unsafeEff $ \es -> seqUnliftIO es f
 
 -- | Create an unlifting function with the 'ConcUnlift' strategy.
+--
+-- @since 2.2.2.0
 withConcEffToIO
   :: (HasCallStack, IOE :> es)
   => Persistence

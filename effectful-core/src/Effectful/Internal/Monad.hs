@@ -266,12 +266,12 @@ data NonDet :: Effect where
 
 type instance DispatchOf NonDet = Dynamic
 
--- | @since: 2.2.0.0
+-- | @since 2.2.0.0
 instance NonDet :> es => Alternative (Eff es) where
   empty   = withFrozenCallStack (send Empty)
   a <|> b = send (a :<|>: b)
 
--- | @since: 2.2.0.0
+-- | @since 2.2.0.0
 instance NonDet :> es => MonadPlus (Eff es)
 
 ----------------------------------------

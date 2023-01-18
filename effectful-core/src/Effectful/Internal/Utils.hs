@@ -33,6 +33,10 @@ import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (Addr#, Any, ThreadId#, unsafeCoerce#)
 import Unsafe.Coerce (unsafeCoerce)
 
+#if __GLASGOW_HASKELL__ >= 904
+import Data.Word
+#endif
+
 -- | Get an id of a thread that doesn't prevent its garbage collection.
 weakThreadId :: ThreadId -> Int
 weakThreadId (ThreadId t#) = fromIntegral $ rts_getThreadId (threadIdToAddr# t#)
@@ -40,7 +44,7 @@ weakThreadId (ThreadId t#) = fromIntegral $ rts_getThreadId (threadIdToAddr# t#)
 foreign import ccall unsafe "rts_getThreadId"
 #if __GLASGOW_HASKELL__ >= 904
   -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6163
-  rts_getThreadId :: Addr# -> CULLong
+  rts_getThreadId :: Addr# -> Word64
 #elif __GLASGOW_HASKELL__ >= 900
   -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/1254
   rts_getThreadId :: Addr# -> CLong

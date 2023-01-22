@@ -1,6 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE CPP #-}
-module Effectful.Plugin.Internal (Plugin, Names, makePlugin) where
+module Effectful.Plugin (plugin) where
 
 import           Data.Function           (on)
 import           Data.IORef              (IORef, modifyIORef, newIORef, readIORef)
@@ -43,6 +43,9 @@ import           TcSMonad                (newWantedEq, runTcSDeriveds)
 import           TcType                  (tcSplitTyConApp)
 import           Unify                   (tcUnifyTy)
 #endif
+
+plugin :: Plugin
+plugin = makePlugin [("effectful", "Effectful.Internal.Effect", ":>")]
 
 -- | A list of unique, unambiguous Haskell names in the format of @(packageName, moduleName, identifier)@.
 type Names = [(String, String, String)]

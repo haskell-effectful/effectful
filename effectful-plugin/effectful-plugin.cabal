@@ -1,7 +1,7 @@
 cabal-version:      2.4
 build-type:         Simple
 name:               effectful-plugin
-version:            1.0.0.0
+version:            1.1.0.0
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control
@@ -17,7 +17,7 @@ description:
 extra-source-files: CHANGELOG.md
                     README.md
 
-tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.5
+tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.5 || ==9.4.4
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head
@@ -26,10 +26,6 @@ source-repository head
 
 common language
     ghc-options:        -Wall -Wcompat -Wno-unticked-promoted-constructors
-
-    -- The plugin doesn't build with GHC 9.4 yet.
-    if !impl(ghc < 9.3)
-       buildable: False
 
     default-language:   Haskell2010
 
@@ -61,13 +57,17 @@ library
     build-depends:    base                >= 4.13      && < 5
                     , effectful-core      >= 1.0.0.0   && < 3.0.0.0
                     , containers          >= 0.5
-                    , ghc                 >= 8.6       && < 9.3
-                    , ghc-tcplugins-extra >= 0.3       && < 0.5
+                    , ghc                 >= 8.6       && < 9.7
 
-    hs-source-dirs:  src
+    if impl(ghc < 9.4)
+      build-depends:  ghc-tcplugins-extra >= 0.3       && < 0.5
+
+    if impl(ghc < 9.4)
+      hs-source-dirs: src-legacy
+    else
+      hs-source-dirs: src
 
     exposed-modules: Effectful.Plugin
-                     Effectful.Plugin.Internal
 
 test-suite plugin-tests
     import:         language

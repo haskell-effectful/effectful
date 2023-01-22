@@ -1,2 +1,5 @@
+# effectful-plugin-1.1.0.0 (2023-??-??)
+* Add support for GHC 9.4 and 9.6.
+
 # effectful-plugin-1.0.0.0 (2022-07-13)
 * Initial release.

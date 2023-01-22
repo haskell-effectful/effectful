@@ -133,7 +133,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-67f405ea
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-87e8ffab
           path: ~/.haskell-ci-tools
       - name: install cabal-plan
         run: |
@@ -156,7 +156,7 @@ jobs:
         run: |
           touch cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful-core" >> cabal.project
-          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then echo "packages: $GITHUB_WORKSPACE/source/effectful-plugin" >> cabal.project ; fi
+          echo "packages: $GITHUB_WORKSPACE/source/effectful-plugin" >> cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful-th" >> cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful" >> cabal.project
           cat cabal.project
@@ -182,13 +182,13 @@ jobs:
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_effectful_core}" >> cabal.project
-          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then echo "packages: ${PKGDIR_effectful_plugin}" >> cabal.project ; fi
+          echo "packages: ${PKGDIR_effectful_plugin}" >> cabal.project
           echo "packages: ${PKGDIR_effectful_th}" >> cabal.project
           echo "packages: ${PKGDIR_effectful}" >> cabal.project
           echo "package effectful-core" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
-          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then echo "package effectful-plugin" >> cabal.project ; fi
-          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
+          echo "package effectful-plugin" >> cabal.project
+          echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           echo "package effectful-th" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           echo "package effectful" >> cabal.project
@@ -231,8 +231,6 @@ jobs:
         run: |
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
-          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful_plugin} || false ; fi
-          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
           if [ $((HCNUMVER < 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
@@ -241,8 +239,8 @@ jobs:
         run: |
           cd ${PKGDIR_effectful_core} || false
           ${CABAL} -vnormal check
-          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful_plugin} || false ; fi
-          if [ $((HCNUMVER < 90400)) -ne 0 ] ; then ${CABAL} -vnormal check ; fi
+          cd ${PKGDIR_effectful_plugin} || false
+          ${CABAL} -vnormal check
           cd ${PKGDIR_effectful_th} || false
           ${CABAL} -vnormal check
           cd ${PKGDIR_effectful} || false

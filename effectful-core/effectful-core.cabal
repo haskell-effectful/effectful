@@ -21,7 +21,7 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
-tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.5 || ==9.4.4
+tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.5 || ==9.4.4 || ==9.6.1
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head

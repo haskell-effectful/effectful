@@ -1,6 +1,6 @@
 branches:       master
 
-doctest:        <9.3
+doctest:        <9.5
 doctest-skip:   effectful-plugin
 
 tests:          True
@@ -8,6 +8,8 @@ benchmarks:     True
 
 ghcup-jobs:     True
 jobs-selection: any
+
+cabal-install-version: 3.8.1.0
 
 raw-project
   package effectful

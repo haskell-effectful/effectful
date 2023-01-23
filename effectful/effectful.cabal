@@ -157,7 +157,7 @@ benchmark bench
        if impl(ghc < 9.5)
           build-depends: cleff >= 0.3.3.0
 
-       if impl(ghc < 9.7)
+       if impl(ghc < 9.5)
           build-depends: freer-simple >= 1.2.1.2
 
        if impl(ghc < 9.7)

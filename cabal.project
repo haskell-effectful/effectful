@@ -1,14 +1,8 @@
 packages:
   effectful-core/*.cabal
-  effectful-plugin/*.cabal
-  effectful-th/*.cabal
   effectful/*.cabal
 
--- GHC 9.4
-allow-newer: cleff:base
-           , cleff:template-haskell
-           , freer-simple:template-haskell
+package effectful
+  flags: +benchmark-foreign-libraries
 
--- GHC 9.6
-allow-newer: fused-effects:transformers
-           , polysemy:transformers
+allow-newer: *

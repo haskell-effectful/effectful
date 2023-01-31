@@ -76,6 +76,7 @@ threadIdToAddr# = unsafeCoerce#
 
 -- | A strict variant of 'IORef'.
 newtype IORef' a = IORef' (IORef a)
+  deriving Eq
 
 newIORef' :: a -> IO (IORef' a)
 newIORef' a = a `seq` (IORef' <$> newIORef a)
@@ -90,6 +91,7 @@ writeIORef' (IORef' var) a = a `seq` writeIORef var a
 
 -- | A strict variant of 'MVar'.
 newtype MVar' a = MVar' (MVar a)
+  deriving Eq
 
 toMVar' :: MVar a -> IO (MVar' a)
 toMVar' var = do

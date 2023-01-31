@@ -10,6 +10,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Dispatch.Static
 import Effectful.Dispatch.Static.Primitive
 import Effectful.Reader.Static
+import Effectful.Reified
 import Effectful.State.Static.Local
 import qualified Utils as U
 
@@ -20,6 +21,7 @@ envTests = testGroup "Env"
   , testCase "inject works" test_injectEnv
   , testCase "unsafeCoerce doesn't work" test_noUnsafeCoerce
   , testCase "interpose works" test_interpose
+  , testCase "interpose/reified works" test_interposeReified
   ]
 
 test_tailEnv :: Assertion
@@ -145,30 +147,54 @@ data Box a = Box a
 
 test_interpose :: IO ()
 test_interpose = runEff $ do
-  runA . runB . runReader () $ do
+  runA 2 . runB . runReader () $ do
     a1 <- send A
     b1 <- send B
-    U.assertEqual "a1 original" 3 a1
-    U.assertEqual "b1 original" 3 b1
+    U.assertEqual "a1 original" 2 a1
+    U.assertEqual "b1 original" 2 b1
     doubleA $ do
       a2 <- send A
       b2 <- send B
-      U.assertEqual "a2 interposed" 6 a2
-      U.assertEqual "b2 interposed" 6 b2
+      U.assertEqual "a2 interposed" 4 a2
+      U.assertEqual "b2 interposed" 4 b2
     a3 <- send A
     b3 <- send B
-    U.assertEqual "a3 original" 3 a3
-    U.assertEqual "b3 original" 3 b3
+    U.assertEqual "a3 original" 2 a3
+    U.assertEqual "b3 original" 2 b3
+
+test_interposeReified :: IO ()
+test_interposeReified = runEff $ do
+  runA 2 . runReified_ (\() -> runB) $ do
+    runA 3 . reify_ @B $ do
+      b0 <- send B
+      U.assertEqual "b0" 2 b0
+    reify_ @B $ do
+      b1 <- send B
+      b2 <- doubleA $ send B
+      U.assertEqual "b1" 2 b1
+      U.assertEqual "b2" 4 b2
+      runA 5 $ do
+        b3 <- send B
+        b4 <- doubleA $ send B
+        b5 <- raise . doubleA $ send B
+        U.assertEqual "b3" 2 b3
+        U.assertEqual "b4" 2 b4
+        U.assertEqual "b5" 4 b5
+      doubleB $ do
+        b6 <- send B
+        b7 <- doubleA $ send B
+        U.assertEqual "b6" 4 b6
+        U.assertEqual "b7" 8 b7
 
 data A :: Effect where
   A :: A m Int
 type instance DispatchOf A = Dynamic
 
-runA :: IOE :> es => Eff (A : es) a -> Eff es a
-runA = interpret $ \_ -> \case
-  A -> pure 3
+runA :: Int -> Eff (A : es) a -> Eff es a
+runA n = interpret $ \_ -> \case
+  A -> pure n
 
-doubleA :: (IOE :> es, A :> es) => Eff es a -> Eff es a
+doubleA :: A :> es => Eff es a -> Eff es a
 doubleA = interpose $ \_ -> \case
   A -> (+) <$> send A <*> send A
 
@@ -176,6 +202,10 @@ data B :: Effect where
   B :: B m Int
 type instance DispatchOf B = Dynamic
 
-runB :: (IOE :> es, A :> es) => Eff (B : es) a -> Eff es a
+runB :: A :> es => Eff (B : es) a -> Eff es a
 runB = interpret $ \_ -> \case
   B -> send A
+
+doubleB :: B :> es => Eff es a -> Eff es a
+doubleB = interpose $ \_ -> \case
+  B -> (+) <$> send B <*> send B

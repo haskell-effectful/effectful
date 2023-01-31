@@ -3,6 +3,8 @@
 * Make `withEffToIO` take an explicit unlifting strategy for the sake of
   consistency with unlifting functions from `Effectful.Dispatch.Dynamic` and
   easier to understand API.
+* Add support for turning an effect handler into an effectful operation via the
+  `Reified` effect.
 
 # effectful-2.2.2.0 (2023-01-11)
 * Add `withSeqEffToIO` and `withConcEffToIO` to `Effectful`.

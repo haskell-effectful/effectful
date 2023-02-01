@@ -280,8 +280,6 @@ injectEnv (Env offset refs0 storage) = do
       suffixSize = if subsetFullyKnown @xs @es
                    then 0
                    else sizeofPrimArray refs0 - offset - prefixSize
-  when (prefixSize == 0 && permSize /= 0) $ do
-    error $ "prefixSize == 0, yet permSize == " ++ show permSize
   mrefs <- newPrimArray (permSize + suffixSize)
   copyPrimArray mrefs permSize refs0 (offset + prefixSize) suffixSize
   let writePermRefs i = \case

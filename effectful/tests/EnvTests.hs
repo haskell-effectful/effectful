@@ -45,7 +45,7 @@ test_injectEnv :: Assertion
 test_injectEnv = runEff . runReader () $ do
   assertEnvSize "runEff" 2
   s <- execState @Int 0 $ inject action
-  U.assertEqual "expected result" 63 s
+  U.assertEqual "expected result" 127 s
   where
     action :: Eff [State Int, IOE, Reader (), State Int] ()
     action = do
@@ -67,15 +67,21 @@ test_injectEnv = runEff . runReader () $ do
       raise $ do
         assertEnvSize "innerAction.raise" 2
         modify @Int (+8)
+        only @(State Int) $ do
+          assertEnvSize "only" 1
+          modify @Int (+16)
       hideReader $ do
         assertEnvSize "hideReader" 2
-        modify @Int (+16)
+        modify @Int (+32)
         onlyState $ do
           assertEnvSize "onlyState" 1
-          modify @Int (+32)
+          modify @Int (+64)
 
     hideReader :: Eff (State s : es) r -> Eff (State s : Reader r : es) r
     hideReader = inject
+
+    only :: e :> es => Eff '[e] a -> Eff es a
+    only = inject
 
     onlyState :: Eff '[State s] a -> Eff (State s : es) a
     onlyState = inject

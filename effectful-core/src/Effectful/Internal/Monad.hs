@@ -475,7 +475,7 @@ type EffectHandler e es
 -- | An internal representation of dynamically dispatched effects, i.e. the
 -- effect handler bundled with its environment.
 data Handler :: Effect -> Type where
-  Handler :: !(Env es) -> !(EffectHandler e es) -> Handler e
+  Handler :: !(Env handlerEs) -> !(EffectHandler e handlerEs) -> Handler e
 type instance EffectRep Dynamic = Handler
 
 relinkHandler :: Relinker Handler e

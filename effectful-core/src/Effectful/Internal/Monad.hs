@@ -418,6 +418,13 @@ subsume m = unsafeEff $ \es -> unEff m =<< subsumeEnv es
 --   shuffle = inject
 -- :}
 --
+-- It can also turn a monomorphic effect stack into a polymorphic one:
+--
+-- >>> :{
+--   toPoly :: (E1 :> es, E2 :> es, E3 :> es) => Eff [E1, E2, E3] a -> Eff es a
+--   toPoly = inject
+-- :}
+--
 -- Moreover, it allows for hiding specific effects from downstream:
 --
 -- >>> :{

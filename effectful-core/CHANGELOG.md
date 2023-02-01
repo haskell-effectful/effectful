@@ -1,3 +1,6 @@
+# effectful-core-2.2.2.2 (2023-??-??)
+* Allow `inject` to turn a monomorphic effect stack into a polymorphic one.
+
 # effectful-core-2.2.2.1 (2023-01-12)
 * Stop using the internal library because of bugs in `stack`.
 

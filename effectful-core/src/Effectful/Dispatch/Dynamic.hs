@@ -49,7 +49,6 @@ module Effectful.Dispatch.Dynamic
   , HasCallStack
   ) where
 
-import Control.Exception (bracket)
 import Control.Monad.IO.Unlift
 import GHC.Stack (HasCallStack)
 import GHC.TypeLits
@@ -57,6 +56,7 @@ import GHC.TypeLits
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Monad
+import Effectful.Internal.Utils
 
 -- $intro
 --
@@ -410,21 +410,22 @@ interpose
   -> Eff es a
   -> Eff es a
 interpose handler m = unsafeEff $ \es -> do
-  bracket (do
-              origHandler <- getEnv @e es
-              replaceEnv origHandler relinkHandler es
-          )
-          (\newEs -> do
-              -- Restore the original handler.
-              putEnv es =<< getEnv @e newEs
-              unreplaceEnv @e newEs
-          )
-          (\newEs -> do
-              -- Replace the original handler with a new one. Note that 'newEs'
-              -- will still see the original handler.
-              putEnv es (Handler newEs handler)
-              unEff m es
-          )
+  inlineBracket
+    (do
+        origHandler <- getEnv @e es
+        replaceEnv origHandler relinkHandler es
+    )
+    (\newEs -> do
+        -- Restore the original handler.
+        putEnv es =<< getEnv @e newEs
+        unreplaceEnv @e newEs
+    )
+    (\newEs -> do
+        -- Replace the original handler with a new one. Note that 'newEs'
+        -- will still see the original handler.
+        putEnv es (Handler newEs handler)
+        unEff m es
+    )
 
 -- | Replace the handler of an existing effect with a new one that uses other,
 -- private effects.
@@ -439,23 +440,24 @@ impose
   -> Eff es a
   -> Eff es b
 impose runHandlerEs handler m = unsafeEff $ \es -> do
-  bracket (do
-              origHandler <- getEnv @e es
-              replaceEnv origHandler relinkHandler es
-          )
-          (\newEs -> do
-              -- Restore the original handler.
-              putEnv es =<< getEnv @e newEs
-              unreplaceEnv @e newEs
-          )
-          (\newEs -> do
-              (`unEff` newEs) . runHandlerEs . unsafeEff $ \handlerEs -> do
-                -- Replace the original handler with a new one. Note that
-                -- 'newEs' (and thus 'handlerEs') wil still see the original
-                -- handler.
-                putEnv es (Handler handlerEs handler)
-                unEff m es
-          )
+  inlineBracket
+    (do
+        origHandler <- getEnv @e es
+        replaceEnv origHandler relinkHandler es
+    )
+    (\newEs -> do
+        -- Restore the original handler.
+        putEnv es =<< getEnv @e newEs
+        unreplaceEnv @e newEs
+    )
+    (\newEs -> do
+        (`unEff` newEs) . runHandlerEs . unsafeEff $ \handlerEs -> do
+          -- Replace the original handler with a new one. Note that
+          -- 'newEs' (and thus 'handlerEs') wil still see the original
+          -- handler.
+          putEnv es (Handler handlerEs handler)
+          unEff m es
+    )
 
 ----------------------------------------
 -- Unlifts

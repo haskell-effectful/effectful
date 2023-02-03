@@ -3,7 +3,9 @@
 {-# LANGUAGE UnliftedFFITypes #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Effectful.Internal.Utils
-  ( weakThreadId
+  ( inlineBracket
+
+  , weakThreadId
   , eqThreadId
 
   -- * Strict 'IORef'
@@ -27,6 +29,7 @@ module Effectful.Internal.Utils
   ) where
 
 import Control.Concurrent.MVar
+import Control.Exception
 import Data.IORef
 import Foreign.C.Types
 import GHC.Conc.Sync (ThreadId(..))
@@ -36,6 +39,16 @@ import Unsafe.Coerce (unsafeCoerce)
 #if __GLASGOW_HASKELL__ >= 904
 import Data.Word
 #endif
+
+-- | Version of bracket with an INLINE pragma to work around
+-- https://gitlab.haskell.org/ghc/ghc/-/issues/22824.
+inlineBracket :: IO a -> (a -> IO b) -> (a -> IO c) -> IO c
+inlineBracket before after action = mask $ \unmask -> do
+  a <- before
+  r <- unmask (action a) `onException` after a
+  _ <- after a
+  pure r
+{-# INLINE inlineBracket #-}
 
 -- | Get an id of a thread that doesn't prevent its garbage collection.
 weakThreadId :: ThreadId -> Int

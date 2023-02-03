@@ -102,6 +102,7 @@ import qualified Control.Monad.Catch as C
 import Effectful.Internal.Effect
 import Effectful.Internal.Env
 import Effectful.Internal.Unlift
+import Effectful.Internal.Utils
 
 type role Eff nominal representational
 
@@ -494,9 +495,10 @@ relinkHandler = Relinker $ \relink (Handler handlerEs handle) -> do
 -- | Run a dynamically dispatched effect with the given handler.
 runHandler :: DispatchOf e ~ Dynamic => Handler e -> Eff (e : es) a -> Eff es a
 runHandler e m = unsafeEff $ \es0 -> do
-  E.bracket (consEnv e relinkHandler es0)
-            unconsEnv
-            (\es -> unEff m es)
+  inlineBracket
+    (consEnv e relinkHandler es0)
+    unconsEnv
+    (\es -> unEff m es)
 
 -- | Send an operation of the given effect to its handler for execution.
 send
@@ -530,9 +532,10 @@ runStaticRep
   -> Eff (e : es) a
   -> Eff es (a, StaticRep e)
 runStaticRep e0 m = unsafeEff $ \es0 -> do
-  E.bracket (consEnv e0 dummyRelinker es0)
-            unconsEnv
-            (\es -> (,) <$> unEff m es <*> getEnv es)
+  inlineBracket
+    (consEnv e0 dummyRelinker es0)
+    unconsEnv
+    (\es -> (,) <$> unEff m es <*> getEnv es)
 
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final value, discarding the final representation.
@@ -542,9 +545,10 @@ evalStaticRep
   -> Eff (e : es) a
   -> Eff es a
 evalStaticRep e m = unsafeEff $ \es0 -> do
-  E.bracket (consEnv e dummyRelinker es0)
-            unconsEnv
-            (\es -> unEff m es)
+  inlineBracket
+    (consEnv e dummyRelinker es0)
+    unconsEnv
+    (\es -> unEff m es)
 
 -- | Run a statically dispatched effect with the given initial representation
 -- and return the final representation, discarding the final value.
@@ -554,9 +558,10 @@ execStaticRep
   -> Eff (e : es) a
   -> Eff es (StaticRep e)
 execStaticRep e0 m = unsafeEff $ \es0 -> do
-  E.bracket (consEnv e0 dummyRelinker es0)
-            unconsEnv
-            (\es -> unEff m es *> getEnv es)
+  inlineBracket
+    (consEnv e0 dummyRelinker es0)
+    unconsEnv
+    (\es -> unEff m es *> getEnv es)
 
 -- | Fetch the current representation of the effect.
 getStaticRep :: (DispatchOf e ~ Static sideEffects, e :> es) => Eff es (StaticRep e)
@@ -594,6 +599,7 @@ localStaticRep
   -> Eff es a
   -> Eff es a
 localStaticRep f m = unsafeEff $ \es -> do
-  E.bracket (stateEnv es $ \s -> pure (s, f s))
-            (\s -> putEnv es s)
-            (\_ -> unEff m es)
+  inlineBracket
+    (stateEnv es $ \s -> pure (s, f s))
+    (\s -> putEnv es s)
+    (\_ -> unEff m es)

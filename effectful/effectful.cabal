@@ -101,6 +101,7 @@ library
                          , Effectful.Error.Static
                          , Effectful.Error.Dynamic
                          , Effectful.Fail
+                         , Effectful.Labeled
                          , Effectful.NonDet
                          , Effectful.Prim
                          , Effectful.Provider

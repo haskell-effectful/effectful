@@ -9,7 +9,6 @@ module Effectful.Labeled
   , runLabeled
   ) where
 
-import Data.Kind (Constraint)
 import Unsafe.Coerce (unsafeCoerce)
 
 import Effectful
@@ -19,13 +18,25 @@ import Effectful
 -- >>> import Effectful.Reader.Static
 --
 -- >>> :{
+--  action
+--    :: ( Labeled "a" (Reader String) :> es
+--       , Labeled "b" (Reader String) :> es
+--       , Reader String :> es
+--       )
+--    => Eff es String
+--  action = do
+--    a <- labeled @"b" @(Reader String) $ do
+--      labeled @"a" @(Reader String) ask
+--    b <- labeled @"b" @(Reader String) ask
+--    pure $ a ++ b
+-- :}
+--
+-- >>> :{
 --  runPureEff @String
 --    . runLabeled @"a" (runReader "a")
 --    . runLabeled @"b" (runReader "b")
---    $ do
---      a <- labeled @"a" @(Reader String) ask
---      b <- labeled @"b" @(Reader String) ask
---      pure $ a ++ b
+--    . runReader "c"
+--    $ action
 -- :}
 -- "ab"
 --
@@ -37,21 +48,21 @@ runLabeled
   -- ^ The effect handler.
   -> Eff (Labeled label e : es) a
   -> Eff es b
-runLabeled runE m = unsafeCoerce runE m
+runLabeled runE m = runE (fromLabeled m)
 
 labeled
   :: forall label e es a
    . Labeled label e :> es
-  => (e :> es => Eff es a)
-  -- ^ An action using the effect.
+  => Eff (e : es) a
+  -- ^ The action using the effect.
   -> Eff es a
-labeled r = case fromLabeled @label @e @es Dict of Dict -> r
+labeled m = subsume @(Labeled label e) (toLabeled m)
 
 ----------------------------------------
 -- Helpers
 
-data Dict (c :: Constraint) where
-  Dict :: c => Dict c
-
-fromLabeled :: Dict (Labeled label e :> es) -> Dict (e :> es)
+fromLabeled :: Eff (Labeled label e : es) a -> Eff (e : es) a
 fromLabeled = unsafeCoerce
+
+toLabeled :: Eff (e : es) a -> Eff (Labeled label e : es) a
+toLabeled = unsafeCoerce

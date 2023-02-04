@@ -43,6 +43,10 @@ countdown n = bgroup (show n)
     [ bench "shallow" $ nf countdownEffectfulDynLocal n
     , bench "deep"    $ nf countdownEffectfulDynLocalDeep n
     ]
+  , bgroup "effectful (local/dynamic/labeled)"
+    [ bench "shallow" $ nf countdownEffectfulLabeledDynLocal n
+    , bench "deep"    $ nf countdownEffectfulLabeledDynLocalDeep n
+    ]
   , bgroup "effectful (local/dynamic/double)"
     [ bench "shallow" $ nf countdownEffectfulDoubleDynLocal n
     , bench "deep"    $ nf countdownEffectfulDoubleDynLocalDeep n
@@ -54,6 +58,10 @@ countdown n = bgroup (show n)
   , bgroup "effectful (shared/dynamic)"
     [ bench "shallow" $ nf countdownEffectfulDynShared n
     , bench "deep"    $ nf countdownEffectfulDynSharedDeep n
+    ]
+  , bgroup "effectful (shared/dynamic/labeled)"
+    [ bench "shallow" $ nf countdownEffectfulLabeledDynShared n
+    , bench "deep"    $ nf countdownEffectfulLabeledDynSharedDeep n
     ]
   , bgroup "effectful (shared/dynamic/double)"
     [ bench "shallow" $ nf countdownEffectfulDoubleDynShared n

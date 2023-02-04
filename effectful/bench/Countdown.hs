@@ -19,6 +19,7 @@ import qualified Cleff.State as C
 -- effectful
 import qualified Effectful as E
 import qualified Effectful.Dispatch.Dynamic as E
+import qualified Effectful.Labeled as E
 import qualified Effectful.Reader.Static as E
 import qualified Effectful.State.Dynamic as ED
 import qualified Effectful.State.Static.Local as EL
@@ -281,6 +282,47 @@ countdownEffectfulDoubleDynSharedDeep n = E.runPureEff
   . runDoubleStateShared n
   . runR . runR . runR . runR . runR
   $ programEffectfulDynamic
+  where
+    runR = E.runReader ()
+
+----------------------------------------
+-- effectful (labeled-dynamic)
+
+programEffectfulLabeledDynamic
+  :: E.Labeled "s" (ED.State Integer) E.:> es
+  => E.Eff es Integer
+programEffectfulLabeledDynamic = do
+  n <- E.labeled @"s" @(ED.State Integer) $ ED.get @Integer
+  if n <= 0
+    then pure n
+    else do
+      E.labeled @"s" @(ED.State Integer) $ ED.put (n - 1)
+      programEffectfulLabeledDynamic
+{-# NOINLINE programEffectfulLabeledDynamic #-}
+
+countdownEffectfulLabeledDynLocal :: Integer -> (Integer, Integer)
+countdownEffectfulLabeledDynLocal n =
+  E.runPureEff . E.runLabeled @"s" (ED.runStateLocal n) $ programEffectfulLabeledDynamic
+
+countdownEffectfulLabeledDynShared :: Integer -> (Integer, Integer)
+countdownEffectfulLabeledDynShared n =
+  E.runPureEff . E.runLabeled @"s" (ED.runStateShared n) $ programEffectfulLabeledDynamic
+
+countdownEffectfulLabeledDynLocalDeep :: Integer -> (Integer, Integer)
+countdownEffectfulLabeledDynLocalDeep n = E.runPureEff
+  . runR . runR . runR . runR . runR
+  . E.runLabeled @"s" (ED.runStateLocal n)
+  . runR . runR . runR . runR . runR
+  $ programEffectfulLabeledDynamic
+  where
+    runR = E.runReader ()
+
+countdownEffectfulLabeledDynSharedDeep :: Integer -> (Integer, Integer)
+countdownEffectfulLabeledDynSharedDeep n = E.runPureEff
+  . runR . runR . runR . runR . runR
+  . E.runLabeled @"s" (ED.runStateShared n)
+  . runR . runR . runR . runR . runR
+  $ programEffectfulLabeledDynamic
   where
     runR = E.runReader ()
 

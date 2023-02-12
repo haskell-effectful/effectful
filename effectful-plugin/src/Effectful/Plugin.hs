@@ -43,7 +43,6 @@ import GHC.Types.Unique.FM (emptyUFM)
 import GHC.Unit.Finder (FindResult (..), findPluginModule)
 import GHC.Unit.Module (Module, ModuleName, mkModuleName)
 import GHC.Utils.Outputable (Outputable (..), showSDocUnsafe)
-import GHC.Utils.Panic (panicDoc)
 
 #if __GLASGOW_HASKELL__ >= 906
 type TCvSubst = Subst
@@ -52,7 +51,7 @@ type TCvSubst = Subst
 plugin :: Plugin
 plugin = defaultPlugin
   { tcPlugin = \_ -> Just TcPlugin
-    { tcPluginInit = initPlugin "Effectful.Internal.Effect" ":>"
+    { tcPluginInit = initPlugin
     , tcPluginRewrite = \_ -> emptyUFM
     , tcPluginSolve = solveFakedep
     , tcPluginStop = \_ -> pure ()
@@ -95,10 +94,10 @@ instance Ord OrdType where
 
 type VisitedSet = Set (OrdType, OrdType)
 
-initPlugin :: String -> String -> TcPluginM (Class, IORef VisitedSet)
-initPlugin modName clsName = do
-  recMod <- lookupModule (mkModuleName modName)
-  cls <- tcLookupClass =<< lookupOrig recMod (mkTcOcc clsName)
+initPlugin :: TcPluginM (Class, IORef VisitedSet)
+initPlugin = do
+  recMod <- lookupModule $ mkModuleName "Effectful.Internal.Effect"
+  cls <- tcLookupClass =<< lookupOrig recMod (mkTcOcc ":>")
   visited <- tcPluginIO $ newIORef Set.empty
   pure (cls, visited)
   where
@@ -112,8 +111,7 @@ initPlugin modName clsName = do
           home_unit = hsc_home_unit hsc_env
       tcPluginIO (findPluginModule fc fopts units (Just home_unit) mod_nm) >>= \case
         Found _ md -> pure md
-        _ -> panicDoc "Couldn't find module" (ppr mod_nm)
-
+        _ -> errorWithoutStackTrace "Please add effectful-core to the list of dependencies."
 
 solveFakedep
   :: (Class, IORef VisitedSet)

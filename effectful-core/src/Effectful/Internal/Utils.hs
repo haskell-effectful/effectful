@@ -5,39 +5,41 @@
 module Effectful.Internal.Utils
   ( inlineBracket
 
+    -- * Utils for 'ThreadId'
   , weakThreadId
   , eqThreadId
 
-  -- * Strict 'IORef'
+    -- * Utils for 'Any'
+  , Any
+  , toAny
+  , fromAny
+
+    -- * Strict 'IORef'
   , IORef'
   , newIORef'
   , readIORef'
   , writeIORef'
 
-  -- * Strict 'MVar'
+    -- * Strict 'MVar'
   , MVar'
   , toMVar'
   , newMVar'
   , readMVar'
   , modifyMVar'
   , modifyMVar_'
-
-  -- * Utils for 'Any'
-  , Any
-  , toAny
-  , fromAny
   ) where
 
 import Control.Concurrent.MVar
 import Control.Exception
 import Data.IORef
-import Foreign.C.Types
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (Addr#, Any, ThreadId#, unsafeCoerce#)
 import Unsafe.Coerce (unsafeCoerce)
 
 #if __GLASGOW_HASKELL__ >= 904
 import Data.Word
+#else
+import Foreign.C.Types
 #endif
 
 -- | Version of bracket with an INLINE pragma to work around
@@ -49,6 +51,8 @@ inlineBracket before after action = mask $ \unmask -> do
   _ <- after a
   pure r
 {-# INLINE inlineBracket #-}
+
+----------------------------------------
 
 -- | Get an id of a thread that doesn't prevent its garbage collection.
 weakThreadId :: ThreadId -> Int
@@ -65,15 +69,6 @@ foreign import ccall unsafe "rts_getThreadId"
   rts_getThreadId :: Addr# -> CInt
 #endif
 
--- | 'Eq' instance for 'ThreadId' is broken in GHC < 9, see
--- https://gitlab.haskell.org/ghc/ghc/-/issues/16761 for more info.
-eqThreadId :: ThreadId -> ThreadId -> Bool
-eqThreadId (ThreadId t1#) (ThreadId t2#) =
-  eq_thread (threadIdToAddr# t1#) (threadIdToAddr# t2#) == 1
-
-foreign import ccall unsafe "effectful_eq_thread"
-  eq_thread :: Addr# -> Addr# -> CLong
-
 -- Note: FFI imports take Addr# instead of ThreadId# because of
 -- https://gitlab.haskell.org/ghc/ghc/-/issues/8281, which would prevent loading
 -- effectful-core into GHCi.
@@ -84,6 +79,34 @@ foreign import ccall unsafe "effectful_eq_thread"
 -- The coercion is fine because GHC represents ThreadId# as a pointer.
 threadIdToAddr# :: ThreadId# -> Addr#
 threadIdToAddr# = unsafeCoerce#
+
+----------------------------------------
+
+#if __GLASGOW_HASKELL__ < 900
+
+-- | 'Eq' instance for 'ThreadId' is broken in GHC < 9, see
+-- https://gitlab.haskell.org/ghc/ghc/-/issues/16761 for more info.
+eqThreadId :: ThreadId -> ThreadId -> Bool
+eqThreadId (ThreadId t1#) (ThreadId t2#) =
+  eq_thread (threadIdToAddr# t1#) (threadIdToAddr# t2#) == 1
+
+foreign import ccall unsafe "effectful_eq_thread"
+  eq_thread :: Addr# -> Addr# -> CLong
+
+#else
+
+eqThreadId :: ThreadId -> ThreadId -> Bool
+eqThreadId = (==)
+
+#endif
+
+----------------------------------------
+
+toAny :: a -> Any
+toAny = unsafeCoerce
+
+fromAny :: Any -> a
+fromAny = unsafeCoerce
 
 ----------------------------------------
 
@@ -129,11 +152,3 @@ modifyMVar_' (MVar' var) action = modifyMVar_ var $ \a0 -> do
   a <- action a0
   a `seq` pure a
 {-# INLINE modifyMVar_' #-}
-
-----------------------------------------
-
-toAny :: a -> Any
-toAny = unsafeCoerce
-
-fromAny :: Any -> a
-fromAny = unsafeCoerce

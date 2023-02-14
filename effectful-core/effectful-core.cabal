@@ -69,7 +69,8 @@ library
 
     hs-source-dirs:  src
 
-    c-sources:       cbits/utils.c
+    if impl(ghc < 9)
+      c-sources:     cbits/utils.c
 
     exposed-modules: Effectful
                      Effectful.Dispatch.Dynamic

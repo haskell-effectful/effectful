@@ -9,6 +9,8 @@ benchmarks:     True
 ghcup-jobs:     True
 jobs-selection: any
 
+head-hackage:   False
+
 raw-project
   package effectful
     flags: +benchmark-foreign-libraries

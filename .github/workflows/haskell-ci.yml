@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.15.20230211
+# version: 0.15.20230304
 #
-# REGENDATA ("0.15.20230211",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.15.20230304",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -32,6 +32,11 @@ jobs:
     strategy:
       matrix:
         include:
+          - compiler: ghc-9.6.0.20230302
+            compilerKind: ghc
+            compilerVersion: 9.6.0.20230302
+            setup-method: ghcup
+            allow-failure: true
           - compiler: ghc-9.4.4
             compilerKind: ghc
             compilerVersion: 9.4.4
@@ -118,6 +123,18 @@ jobs:
           repository hackage.haskell.org
             url: http://hackage.haskell.org/
           EOF
+          if $HEADHACKAGE; then
+          cat >> $CABAL_CONFIG <<EOF
+          repository head.hackage.ghc.haskell.org
+             url: https://ghc.gitlab.haskell.org/head.hackage/
+             secure: True
+             root-keys: 7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
+                        26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
+                        f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
+             key-threshold: 3
+          active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
+          EOF
+          fi
           cat >> $CABAL_CONFIG <<EOF
           program-default-options
             ghc-options: $GHCJOBS +RTS -M3G -RTS
@@ -147,8 +164,8 @@ jobs:
           cabal-plan --version
       - name: install doctest
         run: |
-          $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.20'
-          doctest --version
+          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.20' ; fi
+          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then doctest --version ; fi
       - name: save cache (tools)
         uses: actions/cache/save@v3
         if: always()
@@ -201,15 +218,23 @@ jobs:
           echo "package effectful" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           cat >> cabal.project <<EOF
+          allow-newer: freer-simple:template-haskell
+          allow-newer: async:base
           allow-newer: cleff:base
           allow-newer: cleff:template-haskell
-          allow-newer: freer-simple:template-haskell
+          allow-newer: fused-effects:base
           allow-newer: fused-effects:transformers
+          allow-newer: hashable:base
+          allow-newer: hashable:ghc-prim
           allow-newer: polysemy:transformers
+          allow-newer: unliftio-core:base
 
           package effectful
             flags: +benchmark-foreign-libraries
           EOF
+          if $HEADHACKAGE; then
+          echo "allow-newer: $($HCPKG list --simple-output | sed -E 's/([a-zA-Z-]+)-[0-9.]+/*:\1,/g')" >> cabal.project
+          fi
           $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(effectful|effectful-core|effectful-plugin|effectful-th)$/; }' >> cabal.project.local
           cat cabal.project
           cat cabal.project.local
@@ -238,12 +263,12 @@ jobs:
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: doctest
         run: |
-          cd ${PKGDIR_effectful_core} || false
-          doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
-          cd ${PKGDIR_effectful_th} || false
-          doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
-          cd ${PKGDIR_effectful} || false
-          doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
+          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
+          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
+          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
+          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
+          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
+          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful_core} || false

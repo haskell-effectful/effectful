@@ -5,10 +5,15 @@ packages:
   effectful/*.cabal
 
 -- GHC 9.4
-allow-newer: cleff:base
-           , cleff:template-haskell
-           , freer-simple:template-haskell
+allow-newer: freer-simple:template-haskell
 
 -- GHC 9.6
-allow-newer: fused-effects:transformers
+allow-newer: async:base
+           , cleff:base
+           , cleff:template-haskell
+           , fused-effects:base
+           , fused-effects:transformers
+           , hashable:base
+           , hashable:ghc-prim
            , polysemy:transformers
+           , unliftio-core:base

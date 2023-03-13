@@ -1,6 +1,8 @@
-# effectful-core-2.2.2.2 (2023-??-??)
+# effectful-core-2.2.2.2 (2023-03-13)
 * Allow `inject` to turn a monomorphic effect stack into a polymorphic one.
 * Use C sources only with GHC < 9.
+* Force inlining of `bracket` early to work around excessive inlining problem
+  with GHC 9.6 (https://gitlab.haskell.org/ghc/ghc/-/issues/22824).
 
 # effectful-core-2.2.2.1 (2023-01-12)
 * Stop using the internal library because of bugs in `stack`.

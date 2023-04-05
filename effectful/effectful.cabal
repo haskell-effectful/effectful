@@ -77,7 +77,10 @@ library
 
     hs-source-dirs:  src
 
-    exposed-modules: Effectful.Concurrent
+    exposed-modules: Effectful.ByteString.Static
+                     Effectful.ByteString.Builder.Static
+                     Effectful.ByteString.Lazy.Static
+                     Effectful.Concurrent
                      Effectful.Concurrent.Async
                      Effectful.Concurrent.Chan
                      Effectful.Concurrent.MVar
@@ -85,6 +88,7 @@ library
                      Effectful.Concurrent.STM
                      Effectful.Concurrent.QSem
                      Effectful.Concurrent.QSemN
+                     Effectful.Console.Static
                      Effectful.Environment
                      Effectful.FileSystem
                      Effectful.FileSystem.IO

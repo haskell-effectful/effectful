@@ -6,7 +6,7 @@
 --
 -- > import Data.ByteString.Builder (Builder)
 -- > import qualified Data.ByteString.Builder as BS.Builder
--- > import qualified Effectful.ByteString.Builder.Static as EBS.Builder
+-- > import qualified Effectful.FileSystem.IO.ByteString.Builder.Static as EBS.Builder
 --
 module Effectful.FileSystem.IO.ByteString.Builder.Static
   ( -- * Executing Builders

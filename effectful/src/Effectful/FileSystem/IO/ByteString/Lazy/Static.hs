@@ -4,7 +4,7 @@
 --
 -- > import Data.ByteString.Lazy (ByteString)
 -- > import qualified Data.ByteString.Lazy as LBS
--- > import qualified Effectful.ByteString.Lazy.Static as ELBS
+-- > import qualified Effectful.FileSystem.IO.ByteString.Lazy.Static as ELBS
 --
 module Effectful.FileSystem.IO.ByteString.Lazy.Static
   ( -- * Files

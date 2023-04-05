@@ -6,7 +6,7 @@
 --
 -- > import Data.ByteString (ByteString)
 -- > import qualified Data.ByteString as BS
--- > import qualified Effectful.ByteString.Static as EBS
+-- > import qualified Effectful.FileSystem.IO.ByteString.Static as EBS
 --
 module Effectful.FileSystem.IO.ByteString.Static
 #if MIN_VERSION_bytestring(0,11,2)

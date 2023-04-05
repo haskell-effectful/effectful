@@ -85,6 +85,9 @@ library
                      Effectful.Concurrent.STM
                      Effectful.Concurrent.QSem
                      Effectful.Concurrent.QSemN
+                     Effectful.Console.ByteString.Static
+                     Effectful.Console.ByteString.Lazy.Static
+                     Effectful.Console.Static
                      Effectful.Environment
                      Effectful.FileSystem
                      Effectful.FileSystem.IO

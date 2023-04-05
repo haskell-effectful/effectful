@@ -6,14 +6,9 @@
 -- > import qualified Data.ByteString.Lazy as LBS
 -- > import qualified Effectful.ByteString.Lazy.Static as ELBS
 --
-module Effectful.ByteString.Lazy.Static
-  ( -- * Standard input and output
-    getContents
-  , putStr
-  , interact
-
-    -- * Files
-  , readFile
+module Effectful.FileSystem.IO.ByteString.Lazy.Static
+  ( -- * Files
+    readFile
   , writeFile
   , appendFile
 
@@ -27,9 +22,6 @@ module Effectful.ByteString.Lazy.Static
 
 import Prelude hiding
   ( appendFile
-  , getContents
-  , interact
-  , putStr
   , readFile
   , writeFile
   )
@@ -39,24 +31,8 @@ import qualified Data.ByteString.Lazy as LBS
 import System.IO (Handle)
 
 import Effectful
-import Effectful.Console.Static
 import Effectful.Dispatch.Static
 import Effectful.FileSystem
-
-----------------------------------------
--- Standard input and output
-
--- | Lifted 'LBS.getContents'.
-getContents :: Console :> es => Eff es ByteString
-getContents = unsafeEff_ LBS.getContents
-
--- | Lifted 'LBS.putStr'.
-putStr :: Console :> es => ByteString -> Eff es ()
-putStr = unsafeEff_ . LBS.putStr
-
--- | Lifted 'LBS.interact'.
-interact :: Console :> es => (ByteString -> ByteString) -> Eff es ()
-interact = unsafeEff_ . LBS.interact
 
 ----------------------------------------
 -- Files

@@ -8,24 +8,18 @@
 -- > import qualified Data.ByteString as BS
 -- > import qualified Effectful.ByteString.Static as EBS
 --
-module Effectful.ByteString.Static
+module Effectful.FileSystem.IO.ByteString.Static
 #if MIN_VERSION_bytestring(0,11,2)
   ( -- * Introducing and eliminating ByteStrings
     fromFilePath
   , toFilePath
 
-    -- * Standard input and output
-  , getLine
-#else
-  ( -- * Standard input and output
-    getLine
-#endif
-  , getContents
-  , putStr
-  , interact
-
     -- * Files
   , readFile
+#else
+  ( -- * Files
+    readFile
+#endif
   , writeFile
   , appendFile
 
@@ -41,10 +35,6 @@ module Effectful.ByteString.Static
 
 import Prelude hiding
   ( appendFile
-  , getContents
-  , getLine
-  , interact
-  , putStr
   , readFile
   , writeFile
   )
@@ -54,7 +44,6 @@ import qualified Data.ByteString as BS
 import System.IO (Handle)
 
 import Effectful
-import Effectful.Console.Static
 import Effectful.Dispatch.Static
 import Effectful.FileSystem
 
@@ -70,25 +59,6 @@ fromFilePath = unsafeEff_ . BS.fromFilePath
 toFilePath :: IOE :> es => ByteString -> Eff es FilePath
 toFilePath = unsafeEff_ . BS.toFilePath
 #endif
-
-----------------------------------------
--- Standard input and output
-
--- | Lifted 'BS.getLine'.
-getLine :: Console :> es => Eff es ByteString
-getLine = unsafeEff_ BS.getLine
-
--- | Lifted 'BS.getContents'.
-getContents :: Console :> es => Eff es ByteString
-getContents = unsafeEff_ BS.getContents
-
--- | Lifted 'BS.putStr'.
-putStr :: Console :> es => ByteString -> Eff es ()
-putStr = unsafeEff_ . BS.putStr
-
--- | Lifted 'BS.interact'.
-interact :: Console :> es => (ByteString -> ByteString) -> Eff es ()
-interact = unsafeEff_ . BS.interact
 
 ----------------------------------------
 -- Files

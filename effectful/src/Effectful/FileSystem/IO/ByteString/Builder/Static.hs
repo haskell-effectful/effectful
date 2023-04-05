@@ -8,7 +8,7 @@
 -- > import qualified Data.ByteString.Builder as BS.Builder
 -- > import qualified Effectful.ByteString.Builder.Static as EBS.Builder
 --
-module Effectful.ByteString.Builder.Static
+module Effectful.FileSystem.IO.ByteString.Builder.Static
   ( -- * Executing Builders
     hPutBuilder
 #if MIN_VERSION_bytestring(0,11,2)

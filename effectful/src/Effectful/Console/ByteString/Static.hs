@@ -5,12 +5,11 @@
 --
 -- > import Data.ByteString (ByteString)
 -- > import qualified Data.ByteString as BS
--- > import qualified Effectful.Console.ByteString.Static as EBS
+-- > import Effectful.Console.ByteString.Static (Console)
+-- > import qualified Effectful.Console.ByteString.Static as Console
 --
--- "Effectful.Console.Static" is re-exported here for convenience.
 module Effectful.Console.ByteString.Static
-  ( -- * Effect
-    module Effectful.Console.Static
+  ( module Effectful.Console.Static
 
     -- * Operations
   , getLine

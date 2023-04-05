@@ -87,7 +87,6 @@ library
                      Effectful.Concurrent.QSemN
                      Effectful.Console.ByteString.Static
                      Effectful.Console.ByteString.Lazy.Static
-                     Effectful.Console.Static
                      Effectful.Environment
                      Effectful.FileSystem
                      Effectful.FileSystem.IO
@@ -100,6 +99,7 @@ library
                      Effectful.Timeout
 
     other-modules:   Effectful.Concurrent.Effect
+                     Effectful.Console.Static
                      Effectful.FileSystem.Effect
 
     reexported-modules:    Effectful

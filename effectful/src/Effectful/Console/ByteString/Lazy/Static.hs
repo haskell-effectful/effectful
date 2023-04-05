@@ -5,13 +5,13 @@
 --
 -- > import Data.ByteString.Lazy (ByteString)
 -- > import qualified Data.ByteString.Lazy as LBS
--- > import qualified Effectful.Console.ByteString.Lazy.Static as ELBS
+-- > import Effectful.Console.ByteString.Lazy.Static (Console)
+-- > import qualified Effectful.Console.ByteString.Lazy.Static as Console
 --
 module Effectful.Console.ByteString.Lazy.Static
-  ( -- * Effect
-    module Effectful.Console.Static
+  ( module Effectful.Console.Static
 
-    -- * Standard input and output
+    -- * Operations
   , getContents
   , putStr
   , interact

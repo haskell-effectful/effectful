@@ -5,10 +5,10 @@
 --
 -- > import Data.ByteString (ByteString)
 -- > import qualified Data.ByteString as BS
--- > import Effectful.Console.ByteString.Static (Console)
--- > import qualified Effectful.Console.ByteString.Static as Console
+-- > import Effectful.Console.ByteString (Console)
+-- > import qualified Effectful.Console.ByteString as Console
 --
-module Effectful.Console.ByteString.Static
+module Effectful.Console.ByteString
   ( module Effectful.Console.Effect
 
     -- * Operations

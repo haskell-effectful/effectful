@@ -2,8 +2,8 @@
 -- This module does intentionally provide no operations for the effect; Instead
 -- those are implemented in more specfic module like:
 --
---  * "Effectful.Console.ByteString.Static"
---  * "Effectful.Console.ByteString.Lazy.Static"
+--  * "Effectful.Console.ByteString"
+--  * "Effectful.Console.ByteString.Lazy"
 --
 -- The contents of this module is re-exported from those, so you probably want
 -- to import one of those instead of this one.

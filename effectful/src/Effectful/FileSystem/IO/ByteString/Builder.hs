@@ -5,10 +5,10 @@
 -- to avoid name clashes with the functions provided by "Prelude", e.g.:
 --
 -- > import Data.ByteString.Builder (Builder)
--- > import qualified Data.ByteString.Builder as BS.Builder
--- > import qualified Effectful.FileSystem.IO.ByteString.Builder.Static as EBS.Builder
+-- > import qualified Data.ByteString.Builder as BSB
+-- > import qualified Effectful.FileSystem.IO.ByteString.Builder as EBSB
 --
-module Effectful.FileSystem.IO.ByteString.Builder.Static
+module Effectful.FileSystem.IO.ByteString.Builder
   ( -- * Executing Builders
     hPutBuilder
 #if MIN_VERSION_bytestring(0,11,2)
@@ -19,7 +19,7 @@ module Effectful.FileSystem.IO.ByteString.Builder.Static
 import Prelude hiding (writeFile)
 
 import Data.ByteString.Builder (Builder)
-import qualified Data.ByteString.Builder as BS.Builder
+import qualified Data.ByteString.Builder as BSB
 import System.IO (Handle)
 
 import Effectful
@@ -31,10 +31,10 @@ import Effectful.FileSystem
 
 -- | Lifted 'BS.Builder.hPutBuilder'.
 hPutBuilder :: FileSystem :> es => Handle -> Builder -> Eff es ()
-hPutBuilder h = unsafeEff_ . BS.Builder.hPutBuilder h
+hPutBuilder h = unsafeEff_ . BSB.hPutBuilder h
 
 #if MIN_VERSION_bytestring(0,11,2)
 -- | Lifted 'BS.Builder.writeFile'.
 writeFile :: FileSystem :> es => FilePath -> Builder -> Eff es ()
-writeFile fp = unsafeEff_ . BS.Builder.writeFile fp
+writeFile fp = unsafeEff_ . BSB.writeFile fp
 #endif

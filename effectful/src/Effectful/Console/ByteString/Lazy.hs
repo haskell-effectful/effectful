@@ -5,10 +5,10 @@
 --
 -- > import Data.ByteString.Lazy (ByteString)
 -- > import qualified Data.ByteString.Lazy as LBS
--- > import Effectful.Console.ByteString.Lazy.Static (Console)
--- > import qualified Effectful.Console.ByteString.Lazy.Static as Console
+-- > import Effectful.Console.ByteString.Lazy (Console)
+-- > import qualified Effectful.Console.ByteString.Lazy as Console
 --
-module Effectful.Console.ByteString.Lazy.Static
+module Effectful.Console.ByteString.Lazy
   ( module Effectful.Console.Effect
 
     -- * Operations

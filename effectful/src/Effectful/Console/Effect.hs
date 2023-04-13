@@ -1,12 +1,3 @@
--- | An effect for reading/writing to standard streams.
--- This module does intentionally provide no operations for the effect; Instead
--- those are implemented in more specfic module like:
---
---  * "Effectful.Console.ByteString"
---  * "Effectful.Console.ByteString.Lazy"
---
--- The contents of this module is re-exported from those, so you probably want
--- to import one of those instead of this one.
 module Effectful.Console.Effect
   ( -- * Effect
     Console
@@ -22,8 +13,9 @@ import Effectful.Dispatch.Static
 -- or 'System.IO.stderr'.
 data Console :: Effect
 
-type instance DispatchOf Console = 'Static 'WithSideEffects
+type instance DispatchOf Console = Static WithSideEffects
 data instance StaticRep Console = Console
 
-runConsole :: IOE :> es => Eff (Console ': es) a -> Eff es a
+-- | Run the 'Console' effect.
+runConsole :: IOE :> es => Eff (Console : es) a -> Eff es a
 runConsole = evalStaticRep Console

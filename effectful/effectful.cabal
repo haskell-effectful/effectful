@@ -99,7 +99,7 @@ library
                      Effectful.Timeout
 
     other-modules:   Effectful.Concurrent.Effect
-                     Effectful.Console.Static
+                     Effectful.Console.Effect
                      Effectful.FileSystem.Effect
 
     reexported-modules:    Effectful

@@ -7,7 +7,7 @@
 --
 -- The contents of this module is re-exported from those, so you probably want
 -- to import one of those instead of this one.
-module Effectful.Console.Static
+module Effectful.Console.Effect
   ( -- * Effect
     Console
 

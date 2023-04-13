@@ -9,7 +9,7 @@
 -- > import qualified Effectful.Console.ByteString.Static as Console
 --
 module Effectful.Console.ByteString.Static
-  ( module Effectful.Console.Static
+  ( module Effectful.Console.Effect
 
     -- * Operations
   , getLine
@@ -29,7 +29,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 
 import Effectful
-import Effectful.Console.Static
+import Effectful.Console.Effect
 import Effectful.Dispatch.Static
 
 -- | Lifted 'BS.getLine'.

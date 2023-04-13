@@ -9,7 +9,7 @@
 -- > import qualified Effectful.Console.ByteString.Lazy.Static as Console
 --
 module Effectful.Console.ByteString.Lazy.Static
-  ( module Effectful.Console.Static
+  ( module Effectful.Console.Effect
 
     -- * Operations
   , getContents
@@ -27,7 +27,7 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 
 import Effectful
-import Effectful.Console.Static
+import Effectful.Console.Effect
 import Effectful.Dispatch.Static
 
 -- | Lifted 'LBS.getContents'.

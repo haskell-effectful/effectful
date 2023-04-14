@@ -9,7 +9,11 @@
 -- > import qualified Effectful.Console.ByteString as Console
 --
 module Effectful.Console.ByteString
-  ( module Effectful.Console.Effect
+  ( -- * Effect
+    Console
+
+    -- ** Handlers
+  , runConsole
 
     -- * Operations
   , getLine

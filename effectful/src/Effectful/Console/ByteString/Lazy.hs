@@ -9,7 +9,11 @@
 -- > import qualified Effectful.Console.ByteString.Lazy as Console
 --
 module Effectful.Console.ByteString.Lazy
-  ( module Effectful.Console.Effect
+  ( -- * Effect
+    Console
+
+    -- ** Handlers
+  , runConsole
 
     -- * Operations
   , getContents

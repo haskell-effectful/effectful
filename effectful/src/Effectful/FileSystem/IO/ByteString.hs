@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP#-}
+{-# LANGUAGE CPP #-}
 
 -- | Lifted "Data.ByteString".
 -- Like the original module, you probably want to import this module qualified

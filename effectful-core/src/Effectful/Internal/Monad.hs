@@ -266,7 +266,7 @@ instance MonadFix (Eff es) where
 ----------------------------------------
 -- NonDet
 
--- | Provide the ability to use the 'Alternative' and 'MonadPlus' instance of
+-- | Provide the ability to use the 'Alternative' and 'MonadPlus' instance for
 -- 'Eff'.
 --
 -- @since 2.2.0.0

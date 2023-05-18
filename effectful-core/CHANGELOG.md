@@ -1,3 +1,9 @@
+# effectful-core-2.3.0.0 (2023-??-??)
+* Deprecate `withConcEffToIO`.
+* Make `withEffToIO` take an explicit unlifting strategy for the sake of
+  consistency with unlifting functions from `Effectful.Dispatch.Dynamic` and
+  easier to understand API.
+
 # effectful-core-2.2.2.2 (2023-03-13)
 * Allow `inject` to turn a monomorphic effect stack into a polymorphic one.
 * Use C sources only with GHC < 9.

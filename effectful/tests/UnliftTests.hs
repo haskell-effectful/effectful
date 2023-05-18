@@ -28,59 +28,52 @@ test_threadStrategy :: Assertion
 test_threadStrategy = runEff $ do
   let strategy = ConcUnlift Ephemeral Unlimited
   s <- withUnliftStrategy strategy $ do
-    withEffToIO $ \runInIO -> do
+    withRunInIO $ \runInIO -> do
       inThread $ runInIO unliftStrategy
   U.assertEqual "correct strategy" strategy s
 
 test_seqUnliftInNewThread :: Assertion
 test_seqUnliftInNewThread = runEff $ do
   assertThrowsUnliftError "InvalidUseOfSeqUnlift error" $ do
-    withUnliftStrategy SeqUnlift $ do
-      withEffToIO $ \runInIO -> do
-        inThread $ runInIO $ return ()
+    withEffToIO SeqUnlift $ \runInIO -> do
+      inThread $ runInIO $ return ()
 
 test_ephemeralInvalid :: Assertion
 test_ephemeralInvalid = runEff $ do
   assertThrowsUnliftError "InvalidNumberOfUses error" $ do
-    withUnliftStrategy (ConcUnlift Ephemeral $ Limited 0) $ do
-      withEffToIO $ \_ -> return ()
+    withEffToIO (ConcUnlift Ephemeral $ Limited 0) $ \_ -> return ()
 
 test_ephemeralSameThread :: Assertion
 test_ephemeralSameThread = runEff $ do
   assertThrowsUnliftError "ExceededNumberOfUses error" $ do
-    withUnliftStrategy (ConcUnlift Ephemeral $ Limited 1) $ do
-      withEffToIO $ \runInIO -> inThread $ do
-        runInIO $ return ()
-        runInIO $ return ()
+    withEffToIO (ConcUnlift Ephemeral $ Limited 1) $ \runInIO -> inThread $ do
+      runInIO $ return ()
+      runInIO $ return ()
 
 test_ephemeralMultipleThreads :: Assertion
 test_ephemeralMultipleThreads = runEff $ do
   assertThrowsUnliftError "ExceededNumberOfUses error" $ do
-    withUnliftStrategy (ConcUnlift Ephemeral $ Limited 1) $ do
-      withEffToIO $ \runInIO -> do
-        inThread $ runInIO $ return ()
-        inThread $ runInIO $ return ()
+    withEffToIO (ConcUnlift Ephemeral $ Limited 1) $ \runInIO -> do
+      inThread $ runInIO $ return ()
+      inThread $ runInIO $ return ()
 
 test_persistentInvalid :: Assertion
 test_persistentInvalid = runEff $ do
   assertThrowsUnliftError "InvalidNumberOfThreads error" $ do
-    withUnliftStrategy (ConcUnlift Persistent $ Limited 0) $ do
-      withEffToIO $ \_ -> return ()
+    withEffToIO (ConcUnlift Persistent $ Limited 0) $ \_ -> return ()
 
 test_persistentSameThread :: Assertion
 test_persistentSameThread = runEff $ do
-  withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
-    withEffToIO $ \runInIO -> inThread $ do
-      runInIO $ return ()
-      runInIO $ return ()
+  withEffToIO (ConcUnlift Persistent $ Limited 1) $ \runInIO -> inThread $ do
+    runInIO $ return ()
+    runInIO $ return ()
 
 test_persistentMultipleThreads :: Assertion
 test_persistentMultipleThreads = runEff $ do
   assertThrowsUnliftError "ExceededNumberOfThreads error" $ do
-    withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
-      withEffToIO $ \runInIO -> do
-        inThread $ runInIO $ return ()
-        inThread $ runInIO $ return ()
+    withEffToIO (ConcUnlift Persistent $ Limited 1) $ \runInIO -> do
+      inThread $ runInIO $ return ()
+      inThread $ runInIO $ return ()
 
 ----------------------------------------
 -- Helpers

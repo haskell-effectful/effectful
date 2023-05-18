@@ -44,8 +44,8 @@ module Effectful.Internal.Monad
   , Limit(..)
   , unliftStrategy
   , withUnliftStrategy
-  , withEffToIO
   , withSeqEffToIO
+  , withEffToIO
   , withConcEffToIO
 
   -- ** Low-level unlifts
@@ -164,30 +164,23 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 -- Unlifting IO
 
 -- | Get the current 'UnliftStrategy'.
+--
+-- /Note:/ this strategy is implicitly used by the 'MonadUnliftIO' and
+-- 'MonadBaseControl' instance for 'Eff'.
 unliftStrategy :: IOE :> es => Eff es UnliftStrategy
 unliftStrategy = do
   IOE unlift <- getStaticRep
   pure unlift
 
--- | Locally override the 'UnliftStrategy' with the given value.
+-- | Locally override the current 'UnliftStrategy' with the given value.
 withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
 withUnliftStrategy unlift = localStaticRep $ \_ -> IOE unlift
 
--- | Create an unlifting function with the current 'UnliftStrategy'.
+-- | Create an unlifting function with the 'SeqUnlift' strategy. For the general
+-- version see 'withEffToIO'.
 --
--- This function is equivalent to 'Effectful.withRunInIO', but has a
--- 'HasCallStack' constraint for accurate stack traces in case an insufficiently
--- powerful 'UnliftStrategy' is used and the unlifting function fails.
-withEffToIO
-  :: (HasCallStack, IOE :> es)
-  => ((forall r. Eff es r -> IO r) -> IO a)
-  -- ^ Continuation with the unlifting function in scope.
-  -> Eff es a
-withEffToIO f = unliftStrategy >>= \case
-  SeqUnlift      -> unsafeEff $ \es -> seqUnliftIO es f
-  ConcUnlift p b -> unsafeEff $ \es -> concUnliftIO es p b f
-
--- | Create an unlifting function with the 'SeqUnlift' strategy.
+-- /Note:/ usage of this function is preferrable to 'Effectful.withRunInIO'
+-- because of explicit unlifting strategy and better error reporting.
 --
 -- @since 2.2.2.0
 withSeqEffToIO
@@ -196,6 +189,20 @@ withSeqEffToIO
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 withSeqEffToIO f = unsafeEff $ \es -> seqUnliftIO es f
+
+-- | Create an unlifting function with the given strategy.
+--
+-- /Note:/ usage of this function is preferrable to 'Effectful.withRunInIO'
+-- because of explicit unlifting strategy and better error reporting.
+withEffToIO
+  :: (HasCallStack, IOE :> es)
+  => UnliftStrategy
+  -> ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
+  -> Eff es a
+withEffToIO strategy f = case strategy of
+  SeqUnlift      -> unsafeEff $ \es -> seqUnliftIO es f
+  ConcUnlift p b -> unsafeEff $ \es -> concUnliftIO es p b f
 
 -- | Create an unlifting function with the 'ConcUnlift' strategy.
 --
@@ -209,6 +216,7 @@ withConcEffToIO
   -> Eff es a
 withConcEffToIO persistence limit f = unsafeEff $ \es ->
   concUnliftIO es persistence limit f
+{-# DEPRECATED withConcEffToIO "Use withEffToIO with the appropriate strategy." #-}
 
 -- | Create an unlifting function with the 'SeqUnlift' strategy.
 seqUnliftIO
@@ -305,7 +313,7 @@ instance C.MonadMask (Eff es) where
 ----------------------------------------
 -- Fail
 
--- | Provide the ability to use the 'MonadFail' instance of 'Eff'.
+-- | Provide the ability to use the 'MonadFail' instance for 'Eff'.
 data Fail :: Effect where
   Fail :: String -> Fail m a
 
@@ -336,20 +344,32 @@ runEff m = unEff m =<< consEnv (IOE SeqUnlift) dummyRelinker =<< emptyEnv
 instance IOE :> es => MonadIO (Eff es) where
   liftIO = unsafeEff_
 
--- | Use 'withEffToIO' if you want accurate stack traces on errors.
+-- | Instance included for compatibility with existing code.
+--
+-- Usage of 'withEffToIO' is preferrable as it allows specifying the
+-- 'UnliftStrategy' on a case-by-case basis and has better error reporting.
+--
+-- /Note:/ the unlifting strategy for 'withRunInIO' is taken from the 'IOE'
+-- context (see 'unliftStrategy').
 instance IOE :> es => MonadUnliftIO (Eff es) where
-  withRunInIO = withEffToIO
+  withRunInIO k = unliftStrategy >>= (`withEffToIO` k)
 
--- | Instance included for compatibility with existing code, usage of 'liftIO'
--- is preferrable.
+-- | Instance included for compatibility with existing code.
+--
+-- Usage of 'liftIO' is preferrable as it's a standard.
 instance IOE :> es => MonadBase IO (Eff es) where
   liftBase = unsafeEff_
 
--- | Instance included for compatibility with existing code, usage of
--- 'Effectful.withRunInIO' is preferrable.
+-- | Instance included for compatibility with existing code.
+--
+-- Usage of 'withEffToIO' is preferrable as it allows specifying the
+-- 'UnliftStrategy' on a case-by-case basis and has better error reporting.
+--
+-- /Note:/ the unlifting strategy for 'liftBaseWith' is taken from the 'IOE'
+-- context (see 'unliftStrategy').
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
-  liftBaseWith = withEffToIO
+  liftBaseWith k = unliftStrategy >>= (`withEffToIO` k)
   restoreM = pure
 
 ----------------------------------------

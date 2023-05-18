@@ -77,21 +77,20 @@ test_errorHandling = runEff . evalStateShared (0::Int) $ do
 
 test_unliftMany :: Assertion
 test_unliftMany = runEff . evalStateLocal "initial value" $ do
-  withUnliftStrategy (ConcUnlift Persistent $ Limited 1) $ do
-    x <- withRunInIO $ \runInIO -> async $ do
-      v1 <- runInIO $ get @String  -- 1
-      threadDelay 20000
-      v2 <- runInIO $ get @String -- 3
-      runInIO $ put "inner change"
-      v3 <- runInIO $ get @String
-      return (v1, v2, v3)
-    liftIO $ threadDelay 10000
-    put "outer change"  -- 2
-    (v1, v2, v3) <- liftIO $ wait x
-    v4 <- get  -- 4
-    U.assertEqual "expected result"
-      ("initial value", "initial value", "inner change", "outer change")
-      (v1, v2, v3, v4)
+  x <- withEffToIO (ConcUnlift Persistent $ Limited 1) $ \runInIO -> async $ do
+    v1 <- runInIO $ get @String  -- 1
+    threadDelay 20000
+    v2 <- runInIO $ get @String -- 3
+    runInIO $ put "inner change"
+    v3 <- runInIO $ get @String
+    return (v1, v2, v3)
+  liftIO $ threadDelay 10000
+  put "outer change"  -- 2
+  (v1, v2, v3) <- liftIO $ wait x
+  v4 <- get  -- 4
+  U.assertEqual "expected result"
+    ("initial value", "initial value", "inner change", "outer change")
+    (v1, v2, v3, v4)
 
 test_asyncWithUnmask :: Assertion
 test_asyncWithUnmask = runEff . evalStateLocal "initial" $ do

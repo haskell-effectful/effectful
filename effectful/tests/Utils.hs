@@ -6,8 +6,7 @@ module Utils
   , Ex(..)
   ) where
 
-import Control.Exception
-import Control.Monad
+import Control.Monad.Catch
 import GHC.Stack
 import qualified Test.Tasty.HUnit as T
 
@@ -33,14 +32,10 @@ assertThrows
   -> (e -> Bool)
   -> Eff es a
   -> Eff es ()
-assertThrows msg p k = withEffToIO $ \runInIO -> do
-  let k' = do
-        void $ runInIO k
-        T.assertFailure msg
-
-  k' `catch` \e -> if p e
-    then return ()
-    else throwIO e
+assertThrows msg p k = catchJust
+  (\e -> if p e then Just () else Nothing)
+  (k >> liftIO (T.assertFailure msg))
+  pure
 
 data Ex = Ex deriving (Eq, Show)
 instance Exception Ex

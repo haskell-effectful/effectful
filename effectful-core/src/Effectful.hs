@@ -44,8 +44,8 @@ module Effectful
   , Limit(..)
   , unliftStrategy
   , withUnliftStrategy
-  , withEffToIO
   , withSeqEffToIO
+  , withEffToIO
   , withConcEffToIO
 
     -- ** Lifting
@@ -160,9 +160,9 @@ import Effectful.Internal.Monad
 -- If a library operates in 'IO', there are a couple of ways to integrate it.
 --
 -- The easiest way is to use its functions selectively in the 'Eff' monad with
--- the help of 'liftIO' or 'withEffToIO' / 'withRunInIO'. However, this is not
--- particularly robust, since it vastly broadens the scope in which the 'IOE'
--- effect is needed (not to mention that explicit lifting is annoying).
+-- the help of 'liftIO' or 'withEffToIO'. However, this is not particularly
+-- robust, since it vastly broadens the scope in which the 'IOE' effect is
+-- needed (not to mention that explicit lifting is annoying).
 --
 -- A somewhat better approach is to create a dummy static effect with
 -- lightweight wrappers of the library functions. As an example have a look at

@@ -10,7 +10,7 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Dispatch.Static
 import Effectful.Dispatch.Static.Primitive
 import Effectful.Reader.Static
-import Effectful.Reified
+import Effectful.Provider
 import Effectful.State.Static.Local
 import qualified Utils as U
 
@@ -21,7 +21,7 @@ envTests = testGroup "Env"
   , testCase "inject works" test_injectEnv
   , testCase "unsafeCoerce doesn't work" test_noUnsafeCoerce
   , testCase "interpose works" test_interpose
-  , testCase "interpose/reified works" test_interposeReified
+  , testCase "interpose/provider works" test_interposeProvider
   ]
 
 test_tailEnv :: Assertion
@@ -162,13 +162,13 @@ test_interpose = runEff $ do
     U.assertEqual "a3 original" 2 a3
     U.assertEqual "b3 original" 2 b3
 
-test_interposeReified :: IO ()
-test_interposeReified = runEff $ do
-  runA 2 . runReified_ (\() -> runB) $ do
-    runA 3 . reify_ @B $ do
+test_interposeProvider :: IO ()
+test_interposeProvider = runEff $ do
+  runA 2 . runProvider_ (\() -> runB) $ do
+    runA 3 . provide_ @B $ do
       b0 <- send B
       U.assertEqual "b0" 2 b0
-    reify_ @B $ do
+    provide_ @B $ do
       b1 <- send B
       b2 <- doubleA $ send B
       U.assertEqual "b1" 2 b1

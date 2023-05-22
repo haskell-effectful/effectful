@@ -87,9 +87,9 @@ library
                      Effectful.Internal.Utils
                      Effectful.NonDet
                      Effectful.Prim
+                     Effectful.Provider
                      Effectful.Reader.Dynamic
                      Effectful.Reader.Static
-                     Effectful.Reified
                      Effectful.State.Dynamic
                      Effectful.State.Static.Local
                      Effectful.State.Static.Shared

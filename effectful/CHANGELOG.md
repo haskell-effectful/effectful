@@ -4,7 +4,7 @@
   consistency with unlifting functions from `Effectful.Dispatch.Dynamic` and
   easier to understand API.
 * Add support for turning an effect handler into an effectful operation via the
-  `Reified` effect.
+  `Provider` effect.
 
 # effectful-2.2.2.0 (2023-01-11)
 * Add `withSeqEffToIO` and `withConcEffToIO` to `Effectful`.

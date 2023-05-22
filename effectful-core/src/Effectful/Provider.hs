@@ -1,21 +1,21 @@
 -- | Turn an effect handler into an effectful operation.
-module Effectful.Reified
+module Effectful.Provider
   ( -- * Example
     -- $example
 
     -- * Effect
-    Reified
-  , Reified_
+    Provider
+  , Provider_
 
     -- ** Handlers
-  , runReified
-  , runReified_
+  , runProvider
+  , runProvider_
 
     -- ** Operations
-  , reify
-  , reify_
-  , reifyWith
-  , reifyWith_
+  , provide
+  , provide_
+  , provideWith
+  , provideWith_
   ) where
 
 import Control.Monad
@@ -51,20 +51,20 @@ import Effectful.Internal.Utils
 -- :}
 --
 -- the opearation of handling it can be turned into an effectful operation with
--- 'Reified':
+-- the 'Provider' effect:
 --
 -- >>> :{
---   action :: Reified_ Write FilePath :> es => Eff es ()
+--   action :: Provider_ Write FilePath :> es => Eff es ()
 --   action = do
---     reifyWith_ @Write "in.txt" $ do
+--     provideWith_ @Write "in.txt" $ do
 --       write "hi"
 --       write "there"
---     reifyWith_ @Write "out.txt" $ do
+--     provideWith_ @Write "out.txt" $ do
 --       write "good"
 --       write "bye"
 -- :}
 --
--- Then, given two interpreters:
+-- Then, given multiple interpreters:
 --
 -- >>> :{
 --   runWriteIO
@@ -86,11 +86,11 @@ import Effectful.Internal.Utils
 --     Write msg -> modify $ M.insertWith (++) fp [msg]
 -- :}
 --
--- @action@ can be supplied with the appropriate one for different behavior:
+-- @action@ can be supplied with either of them for the appropriate behavior:
 --
 -- >>> :{
 --   runEff
---     . runReified_ runWriteIO
+--     . runProvider_ runWriteIO
 --     $ action
 -- :}
 -- in.txt: hi
@@ -102,78 +102,78 @@ import Effectful.Internal.Utils
 --   runPureEff
 --     . fmap (fmap reverse)
 --     . execState @(M.Map FilePath [String]) M.empty
---     . runReified_ runWritePure
+--     . runProvider_ runWritePure
 --     $ action
 -- :}
 -- fromList [("in.txt",["hi","there"]),("out.txt",["good","bye"])]
 
 -- | Provide a way to run a handler of @e@ with a given @input@.
 --
--- /Note:/ @f@ can be used to alter the return type of the handler. If you don't
--- need it, use 'Reified_'.
-data Reified (e :: Effect) (input :: Type) (f :: Type -> Type) :: Effect
+-- /Note:/ @f@ can be used to alter the return type of the effect handler. If
+-- that's unnecessary, use 'Provider_'.
+data Provider (e :: Effect) (input :: Type) (f :: Type -> Type) :: Effect
 
--- | A restricted variant of 'Reified' with unchanged return type of the effect
+-- | A restricted variant of 'Provider' with unchanged return type of the effect
 -- handler.
-type Reified_ e input = Reified e input Identity
+type Provider_ e input = Provider e input Identity
 
-type instance DispatchOf (Reified e input f) = Static NoSideEffects
+type instance DispatchOf (Provider e input f) = Static NoSideEffects
 
-data instance StaticRep (Reified e input f) where
-  Reified :: !(Env handlerEs)
-          -> !(forall r. input -> Eff (e : handlerEs) r -> Eff handlerEs (f r))
-          -> StaticRep (Reified e input f)
+data instance StaticRep (Provider e input f) where
+  Provider :: !(Env handlerEs)
+           -> !(forall r. input -> Eff (e : handlerEs) r -> Eff handlerEs (f r))
+           -> StaticRep (Provider e input f)
 
--- | Run the 'Reified' effect with a given effect handler.
-runReified
+-- | Run the 'Provider' effect with a given effect handler.
+runProvider
   :: (forall r. input -> Eff (e : es) r -> Eff es (f r))
   -- ^ The effect handler.
-  -> Eff (Reified e input f : es) a
+  -> Eff (Provider e input f : es) a
   -> Eff es a
-runReified run m = unsafeEff $ \es0 -> do
+runProvider run m = unsafeEff $ \es0 -> do
   inlineBracket
-    (consEnv (Reified es0 run) relinkReified es0)
+    (consEnv (Provider es0 run) relinkProvider es0)
     unconsEnv
     (\es -> unEff m es)
 
--- | Run the 'Reified' effect with a given effect handler that doesn't change
+-- | Run the 'Provider' effect with a given effect handler that doesn't change
 -- its return type.
-runReified_
+runProvider_
   :: (forall r. input -> Eff (e : es) r -> Eff es r)
   -- ^ The effect handler.
-  -> Eff (Reified_ e input : es) a
+  -> Eff (Provider_ e input : es) a
   -> Eff es a
-runReified_ run = runReified $ \input -> coerce . run input
+runProvider_ run = runProvider $ \input -> coerce . run input
 
 -- | Run the effect handler.
-reify :: Reified e () f :> es => Eff (e : es) a -> Eff es (f a)
-reify = reifyWith ()
+provide :: Provider e () f :> es => Eff (e : es) a -> Eff es (f a)
+provide = provideWith ()
 
 -- | Run the effect handler with unchanged return type.
-reify_ :: Reified_ e () :> es => Eff (e : es) a -> Eff es a
-reify_ = reifyWith_ ()
+provide_ :: Provider_ e () :> es => Eff (e : es) a -> Eff es a
+provide_ = provideWith_ ()
 
 -- | Run the effect handler with a given input.
-reifyWith
-  :: Reified e input f :> es
+provideWith
+  :: Provider e input f :> es
   => input
   -- ^ The input to the effect handler.
   -> Eff (e : es) a
   -> Eff es (f a)
-reifyWith input action = unsafeEff $ \es -> do
-  Reified handlerEs run <- getEnv es
+provideWith input action = unsafeEff $ \es -> do
+  Provider handlerEs run <- getEnv es
   (`unEff` handlerEs) . run input . unsafeEff $ \eHandlerEs -> do
     unEff action =<< copyRef eHandlerEs es
 
 -- | Run the effect handler that doesn't change its return type with a given
 -- input.
-reifyWith_
-  :: Reified_ e input :> es
+provideWith_
+  :: Provider_ e input :> es
   => input
   -- ^ The input to the effect handler.
   -> Eff (e : es) a
   -> Eff es a
-reifyWith_ input = adapt . reifyWith input
+provideWith_ input = adapt . provideWith input
   where
     adapt :: Eff es (Identity a) -> Eff es a
     adapt = coerce
@@ -181,10 +181,10 @@ reifyWith_ input = adapt . reifyWith input
 ----------------------------------------
 -- Helpers
 
-relinkReified :: Relinker StaticRep (Reified e input f)
-relinkReified = Relinker $ \relink (Reified handlerEs run) -> do
+relinkProvider :: Relinker StaticRep (Provider e input f)
+relinkProvider = Relinker $ \relink (Provider handlerEs run) -> do
   newHandlerEs <- relink handlerEs
-  pure $ Reified newHandlerEs run
+  pure $ Provider newHandlerEs run
 
 copyRef :: Env (e : handlerEs) -> Env es -> IO (Env (e : es))
 copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do

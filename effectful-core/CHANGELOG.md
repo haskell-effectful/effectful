@@ -4,7 +4,7 @@
   consistency with unlifting functions from `Effectful.Dispatch.Dynamic` and
   easier to understand API.
 * Add support for turning an effect handler into an effectful operation via the
-  `Reified` effect.
+  `Provider` effect.
 
 # effectful-core-2.2.2.2 (2023-03-13)
 * Allow `inject` to turn a monomorphic effect stack into a polymorphic one.

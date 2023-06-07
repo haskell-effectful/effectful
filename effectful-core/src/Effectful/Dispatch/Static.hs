@@ -48,7 +48,7 @@ import Effectful.Internal.Monad
 --
 -- Unlike dynamically dispatched effects, statically dispatched effects have a
 -- single, set interpretation that cannot be changed at runtime, which makes
--- them useful in specific scenatios. For example:
+-- them useful in specific scenarios. For example:
 --
 -- * If you'd like to ensure that a specific effect will behave in a certain way
 --   at all times, using a statically dispatched version is the only way to

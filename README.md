@@ -103,7 +103,7 @@ computation and resume it later (potentially multiple times). This prevents
 [`Alternative`](https://hackage.haskell.org/package/base/docs/Control-Applicative.html#t:Alternative)
 branches and collects their results.
 
-- A `Coroutine` effect.
+- A `Coroutine` effect handler with multi-shot semantics.
 
 It needs to be noted however that such `NonDet` effect handler in existing
 libraries is

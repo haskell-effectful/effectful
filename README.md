@@ -38,7 +38,7 @@ Do we really need yet another library for handling effects? There's
 [freer-simple](https://hackage.haskell.org/package/freer-simple),
 [fused-effects](https://hackage.haskell.org/package/fused-effects),
 [polysemy](https://hackage.haskell.org/package/polysemy),
-[eff](https://github.com/hasura/eff) and probably a few more.
+[eff](https://github.com/lexi-lambda/eff) and probably a few more.
 
 It needs to be noted that of all of them only the work-in-progress `eff` library
 is a promising proposition because of reasonable performance characteristics

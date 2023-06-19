@@ -4,16 +4,7 @@ packages:
   effectful-th/*.cabal
   effectful/*.cabal
 
--- GHC 9.4
-allow-newer: freer-simple:template-haskell
-
--- GHC 9.6
-allow-newer: async:base
-           , cleff:base
+-- GHC 9.4 & 9.6
+allow-newer: cleff:base
            , cleff:template-haskell
-           , fused-effects:base
-           , fused-effects:transformers
-           , hashable:base
-           , hashable:ghc-prim
-           , polysemy:transformers
-           , unliftio-core:base
+           , freer-simple:template-haskell

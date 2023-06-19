@@ -6,6 +6,13 @@ packages:
 
 -- Ignore dependencies of other effect libraries.
 allow-newer: cleff:*
+           , eff:*
            , freer-simple:*
            , fused-effects:*
            , polysemy:*
+
+source-repository-package
+    type: git
+    location: https://github.com/lexi-lambda/eff
+    branch: a6ad3c7d7c62d21cf088af109ceb1d10a56b7125
+    subdir: eff

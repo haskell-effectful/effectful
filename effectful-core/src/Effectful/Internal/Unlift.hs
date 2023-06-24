@@ -8,17 +8,19 @@
 module Effectful.Internal.Unlift
   ( -- * Unlifting strategies
     UnliftStrategy(..)
+  , SyncPolicy(..)
   , Persistence(..)
   , Limit(..)
 
     -- * Unlifting functions
   , seqUnlift
+  , syncUnlift
   , concUnlift
-  , ephemeralConcUnlift
-  , persistentConcUnlift
   ) where
 
 import Control.Concurrent
+import Control.Concurrent.STM
+import Control.Exception
 import Control.Monad
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
@@ -41,12 +43,39 @@ import Effectful.Internal.Utils
 data UnliftStrategy
   = SeqUnlift
   -- ^ The fastest strategy and a default setting for t'Effectful.IOE'. An
-  -- attempt to call the unlifting function in threads distinct from its creator
+  -- attempt to call the unlifting function in thread distinct from its creator
   -- will result in a runtime error.
+  | SyncUnlift !SyncPolicy
+  -- ^ Synchronized strategy is a middle ground between 'SeqUnlift' and
+  -- 'ConcUnlift'. It allows you to run the unlifting function in any thread as
+  -- long as only one unlifted computation runs at any given time.
+  --
+  -- Especially useful for cases where running unlifted computations in
+  -- different threads is an implementation detail and concurrency is not
+  -- observable from outside.
+  --
+  -- /Note:/ this strategy preserves changes made by unlifted computations to
+  -- thread local state.
+  --
+  -- 'SyncPolicy' determines what happens when you attempt to run an unlifted
+  -- computation while another one is already running.
+  --
+  -- @since 2.3.0.0
   | ConcUnlift !Persistence !Limit
   -- ^ A strategy that makes it possible for the unlifting function to be called
   -- in threads distinct from its creator. See 'Persistence' and 'Limit'
   -- settings for more information.
+  deriving (Eq, Generic, Ord, Show)
+
+-- | Policy for the 'SyncUnlift' strategy when the unlifting function detects
+-- that an unlifted computation is already running.
+--
+-- @since 2.3.0.0
+data SyncPolicy
+  = SyncError
+  -- ^ Treat such case as an invariant violation and throw an error.
+  | SyncWait
+  -- ^ Wait until the computation finishes.
   deriving (Eq, Generic, Ord, Show)
 
 -- | Persistence setting for the 'ConcUnlift' strategy.
@@ -106,9 +135,44 @@ seqUnlift k es unEff = do
       then unEff m es
       else error
          $ "If you want to use the unlifting function to run Eff computations "
-        ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
+        ++ "in multiple threads, have a look at the UnliftStrategy (SyncUnlift "
+        ++ "or ConcUnlift)."
 
--- | Concurrent unlift for various strategies and limits.
+-- | Synchronized unlift.
+--
+-- @since 2.3.0.0
+syncUnlift
+  :: HasCallStack
+  => SyncPolicy
+  -> ((forall r. m r -> IO r) -> IO a)
+  -> Env es
+  -> (forall r. m r -> Env es -> IO r)
+  -> IO a
+syncUnlift policy k es unEff = do
+  -- Synchronization is tied to the storage of effects so that users don't
+  -- bypass it by creating multiple unlifting functions.
+  syncVar <- syncVarEnv es
+  activeVar <- newTVarIO True
+  let cleanUp = atomically $ do
+        inProgress <- readTVar syncVar
+        -- Wait for any unlifted computation to finish before exiting.
+        when inProgress retry
+        -- Prevent the unlifting function to be used out the scope.
+        writeTVar activeVar False
+  (`finally` cleanUp) $ k $ \m -> do
+    inlineBracket
+      (atomically $ do
+          active <- readTVar activeVar
+          unless active $ error "The unlifted function is no longer active"
+          inProgress <- swapTVar syncVar True
+          when inProgress $ case policy of
+            SyncError -> error "An unlifted computation is already running"
+            SyncWait  -> retry
+      )
+      (\_ -> atomically $ writeTVar syncVar False)
+      (\_ -> unEff m es)
+
+-- | Concurrent unlift.
 concUnlift
   :: HasCallStack
   => Persistence
@@ -125,6 +189,9 @@ concUnlift Persistent (Limited threads) k =
   persistentConcUnlift False threads k
 concUnlift Persistent Unlimited k =
   persistentConcUnlift True maxBound k
+
+----------------------------------------
+-- Internal
 
 -- | Concurrent unlift that doesn't preserve the environment between calls to
 -- the unlifting function in threads other than its creator.

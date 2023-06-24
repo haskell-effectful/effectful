@@ -5,6 +5,9 @@
   easier to understand API.
 * Add support for turning an effect handler into an effectful operation via the
   `Provider` effect.
+* Add the `SyncUnlift` strategy for cases where running unlifted computations in
+  different threads is an implementation detail and concurrency is not
+  observable from outside.
 
 # effectful-core-2.2.2.2 (2023-03-13)
 * Allow `inject` to turn a monomorphic effect stack into a polymorphic one.

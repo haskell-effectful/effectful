@@ -40,6 +40,7 @@ module Effectful
 
     -- ** Unlifting
   , UnliftStrategy(..)
+  , SyncPolicy(..)
   , Persistence(..)
   , Limit(..)
   , unliftStrategy

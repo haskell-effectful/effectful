@@ -42,11 +42,11 @@ import Effectful.Internal.Utils
 -- family.
 data UnliftStrategy
   = SeqUnlift
-  -- ^ The fastest strategy and a default setting for t'Effectful.IOE'. An
-  -- attempt to call the unlifting function in thread distinct from its creator
-  -- will result in a runtime error.
+  -- ^ The sequential strategy is the fastest and a default setting for
+  -- t'Effectful.IOE'. Any attempt of calling the unlifting function in threads
+  -- distinct from its creator will result in a runtime error.
   | SyncUnlift !SyncPolicy
-  -- ^ Synchronized strategy is a middle ground between 'SeqUnlift' and
+  -- ^ The synchronized strategy is a middle ground between 'SeqUnlift' and
   -- 'ConcUnlift'. It allows you to run the unlifting function in any thread as
   -- long as only one unlifted computation runs at any given time.
   --
@@ -62,9 +62,9 @@ data UnliftStrategy
   --
   -- @since 2.3.0.0
   | ConcUnlift !Persistence !Limit
-  -- ^ A strategy that makes it possible for the unlifting function to be called
-  -- in threads distinct from its creator. See 'Persistence' and 'Limit'
-  -- settings for more information.
+  -- ^ The concurrent strategy makes it possible for the unlifting function to
+  -- be called in threads distinct from its creator. See 'Persistence' and
+  -- 'Limit' settings for more information.
   deriving (Eq, Generic, Ord, Show)
 
 -- | Policy for the 'SyncUnlift' strategy when the unlifting function detects

@@ -40,7 +40,6 @@ module Effectful.Internal.Monad
 
   -- * Unlifting
   , UnliftStrategy(..)
-  , SyncPolicy(..)
   , Persistence(..)
   , Limit(..)
   , unliftStrategy
@@ -51,7 +50,6 @@ module Effectful.Internal.Monad
 
   -- ** Low-level unlifts
   , seqUnliftIO
-  , syncUnliftIO
   , concUnliftIO
 
   -- * Dispatch
@@ -204,7 +202,6 @@ withEffToIO
   -> Eff es a
 withEffToIO strategy f = case strategy of
   SeqUnlift      -> unsafeEff $ \es -> seqUnliftIO es f
-  SyncUnlift p   -> unsafeEff $ \es -> syncUnliftIO es p f
   ConcUnlift p b -> unsafeEff $ \es -> concUnliftIO es p b f
 
 -- | Create an unlifting function with the 'ConcUnlift' strategy.
@@ -230,19 +227,6 @@ seqUnliftIO
   -- ^ Continuation with the unlifting function in scope.
   -> IO a
 seqUnliftIO es k = seqUnlift k es unEff
-
--- | Create an unlifting function with the 'SyncUnlift' strategy.
---
--- @since 2.3.0.0
-syncUnliftIO
-  :: HasCallStack
-  => Env es
-  -- ^ The environment.
-  -> SyncPolicy
-  -> ((forall r. Eff es r -> IO r) -> IO a)
-  -- ^ Continuation with the unlifting function in scope.
-  -> IO a
-syncUnliftIO es policy k = syncUnlift policy k es unEff
 
 -- | Create an unlifting function with the 'ConcUnlift' strategy.
 concUnliftIO
@@ -431,7 +415,6 @@ raiseWith strategy k = case strategy of
     es <- tailEnv ees
     seqUnliftIO ees $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
-  SyncUnlift _ -> error "SyncUnlift is for unlifting IO computations only"
   ConcUnlift p l -> unsafeEff $ \ees -> do
     es <- tailEnv ees
     concUnliftIO ees p l $ \unlift -> do

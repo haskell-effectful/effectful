@@ -431,10 +431,7 @@ raiseWith strategy k = case strategy of
     es <- tailEnv ees
     seqUnliftIO ees $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
-  SyncUnlift p -> unsafeEff $ \ees -> do
-    es <- tailEnv ees
-    syncUnliftIO ees p $ \unlift -> do
-      (`unEff` es) $ k $ unsafeEff_ . unlift
+  SyncUnlift _ -> error "SyncUnlift is for unlifting IO computations only"
   ConcUnlift p l -> unsafeEff $ \ees -> do
     es <- tailEnv ees
     concUnliftIO ees p l $ \unlift -> do

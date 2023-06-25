@@ -499,9 +499,7 @@ localUnlift (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
     seqUnliftIO les $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
-  SyncUnlift p -> unsafeEff $ \es -> do
-    syncUnliftIO les p $ \unlift -> do
-      (`unEff` es) $ k $ unsafeEff_ . unlift
+  SyncUnlift _ -> error "SyncUnlift is for unlifting IO computations only"
   ConcUnlift p l -> unsafeEff $ \es -> do
     concUnliftIO les p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
@@ -557,9 +555,7 @@ localLift !_ strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
     seqUnliftIO es $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
-  SyncUnlift p -> unsafeEff $ \es -> do
-    syncUnliftIO es p $ \unlift -> do
-      (`unEff` es) $ k $ unsafeEff_ . unlift
+  SyncUnlift _ -> error "SyncUnlift is for unlifting IO computations only"
   ConcUnlift p l -> unsafeEff $ \es -> do
     concUnliftIO es p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
@@ -649,10 +645,7 @@ localLiftUnlift (LocalEnv les) strategy k = case strategy of
     seqUnliftIO es $ \unliftEs -> do
       seqUnliftIO les $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
-  SyncUnlift p -> unsafeEff $ \es -> do
-    syncUnliftIO es p $ \unliftEs -> do
-      syncUnliftIO les p $ \unliftLocalEs -> do
-        (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
+  SyncUnlift _ -> error "SyncUnlift is for unlifting IO computations only"
   ConcUnlift p l -> unsafeEff $ \es -> do
     concUnliftIO es p l $ \unliftEs -> do
       concUnliftIO les p l $ \unliftLocalEs -> do

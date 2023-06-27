@@ -20,7 +20,6 @@ module Effectful.Internal.Env
   , cloneEnv
   , restoreEnv
   , sizeEnv
-  , syncVarEnv
   , tailEnv
 
     -- ** Modification of the effect stack
@@ -38,7 +37,6 @@ module Effectful.Internal.Env
   , modifyEnv
   ) where
 
-import Control.Concurrent.STM.TVar
 import Control.Monad
 import Control.Monad.Primitive
 import Data.Primitive.PrimArray
@@ -86,7 +84,6 @@ data Storage = Storage
   , stVersions  :: !(MutablePrimArray RealWorld Int)
   , stEffects   :: !(SmallMutableArray RealWorld Any)
   , stRelinkers :: !(SmallMutableArray RealWorld Any)
-  , stSyncVar   :: !(TVar Bool)
   }
 
 ----------------------------------------
@@ -135,7 +132,7 @@ emptyEnv = Env 0
 -- | Clone the environment to use it in a different thread.
 cloneEnv :: Env es -> IO (Env es)
 cloneEnv (Env offset refs storage0) = do
-  Storage storageSize version vs0 es0 fs0 _ <- readIORef' storage0
+  Storage storageSize version vs0 es0 fs0 <- readIORef' storage0
   let vsSize = sizeofMutablePrimArray  vs0
       esSize = sizeofSmallMutableArray es0
       fsSize = sizeofSmallMutableArray fs0
@@ -146,8 +143,7 @@ cloneEnv (Env offset refs storage0) = do
   vs <- cloneMutablePrimArray  vs0 0 vsSize
   es <- cloneSmallMutableArray es0 0 esSize
   fs <- cloneSmallMutableArray fs0 0 fsSize
-  syncVar <- newTVarIO False
-  storage <- newIORef' $ Storage storageSize version vs es fs syncVar
+  storage <- newIORef' $ Storage storageSize version vs es fs
   let relinkEffects = \case
         0 -> pure ()
         k -> do
@@ -187,12 +183,6 @@ restoreEnv dest src = do
 sizeEnv :: Env es -> IO Int
 sizeEnv (Env offset refs _) = do
   pure $ (sizeofPrimArray refs - offset) `div` 2
-
--- | Get the variable for the synchronized unlift.
---
--- @since 2.3.0.0
-syncVarEnv :: Env es -> IO (TVar Bool)
-syncVarEnv env = stSyncVar <$> readIORef' (envStorage env)
 
 -- | Access the tail of the environment.
 tailEnv :: Env (e : es) -> IO (Env es)
@@ -358,7 +348,7 @@ getLocation (Env offset refs storage) = do
   let i       = offset + 2 * reifyIndex @e @es
       ref     = indexPrimArray refs  i
       version = indexPrimArray refs (i + 1)
-  Storage _ _ vs es _ _ <- readIORef' storage
+  Storage _ _ vs es _ <- readIORef' storage
   storageVersion <- readPrimArray vs ref
   -- If version of the reference is different than version in the storage, it
   -- means that the effect in the storage is not the one that was initially
@@ -377,7 +367,6 @@ emptyStorage = Storage 0 (noVersion + 1)
   <$> newPrimArray 0
   <*> newSmallArray 0 undefinedData
   <*> newSmallArray 0 undefinedData
-  <*> newTVarIO False
 
 -- | Insert an effect into the storage and return its reference.
 insertEffect
@@ -387,7 +376,7 @@ insertEffect
   -> Relinker (EffectRep (DispatchOf e)) e
   -> IO (Int, Int)
 insertEffect storage e f = do
-  Storage size version vs0 es0 fs0 syncVar <- readIORef' storage
+  Storage size version vs0 es0 fs0 <- readIORef' storage
   let len0 = sizeofSmallMutableArray es0
   case size `compare` len0 of
     GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
@@ -395,7 +384,7 @@ insertEffect storage e f = do
       writePrimArray   vs0 size version
       writeSmallArray' es0 size (toAny e)
       writeSmallArray' fs0 size (toAny f)
-      writeIORef' storage $ Storage (size + 1) (version + 1) vs0 es0 fs0 syncVar
+      writeIORef' storage $ Storage (size + 1) (version + 1) vs0 es0 fs0
       pure (size, version)
     EQ -> do
       let len = doubleCapacity len0
@@ -408,20 +397,20 @@ insertEffect storage e f = do
       writePrimArray   vs size version
       writeSmallArray' es size (toAny e)
       writeSmallArray' fs size (toAny f)
-      writeIORef' storage $ Storage (size + 1) (version + 1) vs es fs syncVar
+      writeIORef' storage $ Storage (size + 1) (version + 1) vs es fs
       pure (size, version)
 
 -- | Given a reference to an effect from the top of the stack, delete it from
 -- the storage.
 deleteEffect :: IORef' Storage -> Int -> IO ()
 deleteEffect storage ref = do
-  Storage size version vs es fs syncVar <- readIORef' storage
+  Storage size version vs es fs <- readIORef' storage
   when (ref /= size - 1) $ do
     error $ "ref (" ++ show ref ++ ") /= size - 1 (" ++ show (size - 1) ++ ")"
   writePrimArray  vs ref noVersion
   writeSmallArray es ref undefinedData
   writeSmallArray fs ref undefinedData
-  writeIORef' storage $ Storage (size - 1) version vs es fs syncVar
+  writeIORef' storage $ Storage (size - 1) version vs es fs
 
 -- | Relink the environment to use the new storage.
 relinkEnv :: IORef' Storage -> Env es -> IO (Env es)

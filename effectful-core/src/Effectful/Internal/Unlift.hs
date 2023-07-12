@@ -104,8 +104,7 @@ seqUnlift k es unEff = do
       then unEff m es
       else error
          $ "If you want to use the unlifting function to run Eff computations "
-        ++ "in multiple threads, have a look at the UnliftStrategy (SyncUnlift "
-        ++ "or ConcUnlift)."
+        ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
 
 -- | Concurrent unlift.
 concUnlift

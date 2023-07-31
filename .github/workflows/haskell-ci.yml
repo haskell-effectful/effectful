@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.16.3
+# version: 0.16.6
 #
-# REGENDATA ("0.16.3",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.16.6",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -32,6 +32,11 @@ jobs:
     strategy:
       matrix:
         include:
+          - compiler: ghc-9.8.1-alpha1
+            compilerKind: ghc
+            compilerVersion: 9.8.1-alpha1
+            setup-method: ghcup
+            allow-failure: true
           - compiler: ghc-9.6.2
             compilerKind: ghc
             compilerVersion: 9.6.2
@@ -69,8 +74,9 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr curl git software-properties-common libtinfo5
           mkdir -p "$HOME/.ghcup/bin"
-          curl -sL https://downloads.haskell.org/ghcup/0.1.19.2/x86_64-linux-ghcup-0.1.19.2 > "$HOME/.ghcup/bin/ghcup"
+          curl -sL https://downloads.haskell.org/ghcup/0.1.19.5/x86_64-linux-ghcup-0.1.19.5 > "$HOME/.ghcup/bin/ghcup"
           chmod a+x "$HOME/.ghcup/bin/ghcup"
+          "$HOME/.ghcup/bin/ghcup" config add-release-channel https://raw.githubusercontent.com/haskell/ghcup-metadata/master/ghcup-prereleases-0.0.7.yaml;
           "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER" || (cat "$HOME"/.ghcup/logs/*.* && false)
           "$HOME/.ghcup/bin/ghcup" install cabal 3.10.1.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
         env:
@@ -122,6 +128,18 @@ jobs:
           repository hackage.haskell.org
             url: http://hackage.haskell.org/
           EOF
+          if $HEADHACKAGE; then
+          cat >> $CABAL_CONFIG <<EOF
+          repository head.hackage.ghc.haskell.org
+             url: https://ghc.gitlab.haskell.org/head.hackage/
+             secure: True
+             root-keys: 7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
+                        26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
+                        f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
+             key-threshold: 3
+          active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
+          EOF
+          fi
           cat >> $CABAL_CONFIG <<EOF
           program-default-options
             ghc-options: $GHCJOBS +RTS -M3G -RTS
@@ -214,6 +232,9 @@ jobs:
           package effectful
             flags: +benchmark-foreign-libraries
           EOF
+          if $HEADHACKAGE; then
+          echo "allow-newer: $($HCPKG list --simple-output | sed -E 's/([a-zA-Z-]+)-[0-9.]+/*:\1,/g')" >> cabal.project
+          fi
           $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(effectful|effectful-core|effectful-plugin|effectful-th)$/; }' >> cabal.project.local
           cat cabal.project
           cat cabal.project.local

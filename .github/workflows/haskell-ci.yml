@@ -205,16 +205,11 @@ jobs:
           echo "package effectful" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           cat >> cabal.project <<EOF
-          allow-newer: freer-simple:template-haskell
-          allow-newer: async:base
           allow-newer: cleff:base
           allow-newer: cleff:template-haskell
-          allow-newer: fused-effects:base
-          allow-newer: fused-effects:transformers
-          allow-newer: hashable:base
-          allow-newer: hashable:ghc-prim
-          allow-newer: polysemy:transformers
-          allow-newer: unliftio-core:base
+          allow-newer: cleff:th-abstraction
+          allow-newer: freer-simple:template-haskell
+          allow-newer: polysemy:th-abstraction
 
           package effectful
             flags: +benchmark-foreign-libraries

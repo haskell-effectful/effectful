@@ -168,11 +168,7 @@ makeCon makeSig name = do
   --
   -- Sadly the version for GHC < 9 will not compile due to ambiguity error.
   let fnBody =
-        let tvFlag = \case
-              PlainTV  _ flag   -> flag
-              KindedTV _ flag _ -> flag
-
-            tyApps = (`mapMaybe` origActionVars) $ \v -> case tvFlag v of
+        let tyApps = (`mapMaybe` origActionVars) $ \v -> case tvFlag v of
               InferredSpec  -> Nothing
               SpecifiedSpec -> Just $ if maybeMonadName == Just (tvName v)
                                       then ConT ''Eff `AppT` esVar

@@ -59,7 +59,7 @@ library
                     , effectful-core      >= 1.0.0.0   && < 3.0.0.0
                     , exceptions          >= 0.10.4
                     , template-haskell    >= 2.15      && < 2.21
-                    , th-abstraction      >= 0.4       && < 0.7
+                    , th-abstraction      >= 0.6       && < 0.7
 
     hs-source-dirs:  src
 

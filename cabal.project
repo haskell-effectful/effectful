@@ -4,7 +4,8 @@ packages:
   effectful-th/*.cabal
   effectful/*.cabal
 
--- GHC 9.4 & 9.6
 allow-newer: cleff:base
            , cleff:template-haskell
+           , cleff:th-abstraction
            , freer-simple:template-haskell
+           , polysemy:th-abstraction

@@ -1,3 +1,6 @@
+# effectful-plugin-1.1.0.2 (2023-??-??)
+* Add support for GHC 9.8.
+
 # effectful-plugin-1.1.0.1 (2023-03-13)
 * Show accurate error message in GHC >= 9.4 if `Effectful.Internal.Effect` is
   not found.

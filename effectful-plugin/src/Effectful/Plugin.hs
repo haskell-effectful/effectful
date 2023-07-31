@@ -32,6 +32,9 @@ import GHC.Tc.Types.Constraint
   ( Ct (..)
   , CtEvidence (..)
   , CtLoc
+#if __GLASGOW_HASKELL__ >= 908
+  , DictCt (..)
+#endif
   , ctPred
   , emptyRewriterSet
   )
@@ -221,9 +224,15 @@ solveFakedep (elemCls, visitedRef) _ allGivens allWanteds = do
     -- Determine whether a given constraint is of form 'e :> es'.
     maybeEffGiven :: Ct -> Maybe EffGiven
     maybeEffGiven = \case
+#if __GLASGOW_HASKELL__ < 908
       CDictCan { cc_class = cls
                , cc_tyargs = [eff, es]
                } ->
+#else
+      CDictCan DictCt { di_cls = cls
+                      , di_tys = [eff, es]
+                      } ->
+#endif
         if cls == elemCls
         then Just EffGiven { givenEffHead = fst $ splitAppTys eff
                            , givenEff = eff
@@ -235,10 +244,17 @@ solveFakedep (elemCls, visitedRef) _ allGivens allWanteds = do
     -- Determine whether a wanted constraint is of form 'e :> es'.
     splitWanteds :: Ct -> Either PredType EffWanted
     splitWanteds = \case
+#if __GLASGOW_HASKELL__ < 908
       ct@CDictCan { cc_ev = CtWanted { ctev_loc = loc }
                , cc_class = cls
                , cc_tyargs = [eff, es]
                } ->
+#else
+      ct@(CDictCan DictCt { di_ev = CtWanted { ctev_loc = loc }
+                          , di_cls = cls
+                          , di_tys = [eff, es]
+                          }) ->
+#endif
         if cls == elemCls
         then Right EffWanted { wantedEffHead = fst $ splitAppTys eff
                              , wantedEff = eff

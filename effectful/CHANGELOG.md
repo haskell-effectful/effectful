@@ -5,6 +5,8 @@
   easier to understand API.
 * Add support for turning an effect handler into an effectful operation via the
   `Provider` effect.
+* Add `runErrorWith` and `runErrorNoCallStackWith` to `Effectful.Error.Dynamic`
+  and `Effectful.Error.Static`.
 
 # effectful-2.2.2.0 (2023-01-11)
 * Add `withSeqEffToIO` and `withConcEffToIO` to `Effectful`.

@@ -5,6 +5,8 @@
   easier to understand API.
 * Add support for turning an effect handler into an effectful operation via the
   `Provider` effect.
+* Add `runErrorWith` and `runErrorNoCallStackWith` to `Effectful.Error.Dynamic`
+  and `Effectful.Error.Static`.
 
 # effectful-core-2.2.2.2 (2023-03-13)
 * Allow `inject` to turn a monomorphic effect stack into a polymorphic one.

@@ -81,7 +81,9 @@ module Effectful.Error.Static
 
     -- ** Handlers
   , runError
+  , runErrorWith
   , runErrorNoCallStack
+  , runErrorNoCallStackWith
 
     -- ** Operations
   , throwError
@@ -128,12 +130,33 @@ runError m = unsafeEff $ \es0 -> mask $ \unmask -> do
       Left ex -> tryHandler ex eid (\cs e -> Left (cs, e))
                $ throwIO ex
 
+-- | Handle errors of type @e@ with a specific error handler.
+runErrorWith
+  :: (CallStack -> e -> Eff es a)
+  -- ^ The error handler.
+  -> Eff (Error e : es) a
+  -> Eff es a
+runErrorWith handler m = runError m >>= \case
+  Left (cs, e) -> handler cs e
+  Right a -> pure a
+
 -- | Handle errors of type @e@. In case of an error discard the 'CallStack'.
 runErrorNoCallStack
   :: forall e es a
   .  Eff (Error e : es) a
   -> Eff es (Either e a)
 runErrorNoCallStack = fmap (either (Left . snd) Right) . runError
+
+-- | Handle errors of type @e@ with a specific error handler. In case of an
+-- error discard the 'CallStack'.
+runErrorNoCallStackWith
+  :: (e -> Eff es a)
+  -- ^ The error handler.
+  -> Eff (Error e : es) a
+  -> Eff es a
+runErrorNoCallStackWith handler m = runErrorNoCallStack m >>= \case
+  Left e -> handler e
+  Right a -> pure a
 
 -- | Throw an error of type @e@.
 throwError

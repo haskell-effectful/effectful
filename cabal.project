@@ -9,3 +9,8 @@ allow-newer: cleff:base
            , cleff:th-abstraction
            , freer-simple:template-haskell
            , polysemy:th-abstraction
+
+-- GHC 9.8
+allow-newer: *:base
+           , *:deepseq
+           , *:template-haskell

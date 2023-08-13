@@ -12,6 +12,7 @@ module Effectful.Labeled
 import Unsafe.Coerce (unsafeCoerce)
 
 import Effectful
+import Effectful.Dispatch.Static
 
 -- | Demo:
 --
@@ -41,6 +42,10 @@ import Effectful
 -- "ab"
 --
 data Labeled (label :: k) (e :: Effect) :: Effect
+
+type instance DispatchOf (Labeled label e) = Static NoSideEffects
+
+data instance StaticRep (Labeled label e)
 
 runLabeled
   :: forall label e es a b

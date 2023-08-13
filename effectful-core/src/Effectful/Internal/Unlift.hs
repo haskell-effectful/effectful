@@ -14,8 +14,6 @@ module Effectful.Internal.Unlift
     -- * Unlifting functions
   , seqUnlift
   , concUnlift
-  , ephemeralConcUnlift
-  , persistentConcUnlift
   ) where
 
 import Control.Concurrent
@@ -40,13 +38,13 @@ import Effectful.Internal.Utils
 -- family.
 data UnliftStrategy
   = SeqUnlift
-  -- ^ The fastest strategy and a default setting for t'Effectful.IOE'. An
-  -- attempt to call the unlifting function in threads distinct from its creator
-  -- will result in a runtime error.
+  -- ^ The sequential strategy is the fastest and a default setting for
+  -- t'Effectful.IOE'. Any attempt of calling the unlifting function in threads
+  -- distinct from its creator will result in a runtime error.
   | ConcUnlift !Persistence !Limit
-  -- ^ A strategy that makes it possible for the unlifting function to be called
-  -- in threads distinct from its creator. See 'Persistence' and 'Limit'
-  -- settings for more information.
+  -- ^ The concurrent strategy makes it possible for the unlifting function to
+  -- be called in threads distinct from its creator. See 'Persistence' and
+  -- 'Limit' settings for more information.
   deriving (Eq, Generic, Ord, Show)
 
 -- | Persistence setting for the 'ConcUnlift' strategy.
@@ -108,7 +106,7 @@ seqUnlift k es unEff = do
          $ "If you want to use the unlifting function to run Eff computations "
         ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
 
--- | Concurrent unlift for various strategies and limits.
+-- | Concurrent unlift.
 concUnlift
   :: HasCallStack
   => Persistence
@@ -125,6 +123,9 @@ concUnlift Persistent (Limited threads) k =
   persistentConcUnlift False threads k
 concUnlift Persistent Unlimited k =
   persistentConcUnlift True maxBound k
+
+----------------------------------------
+-- Internal
 
 -- | Concurrent unlift that doesn't preserve the environment between calls to
 -- the unlifting function in threads other than its creator.

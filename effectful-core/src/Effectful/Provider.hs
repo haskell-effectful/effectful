@@ -50,8 +50,8 @@ import Effectful.Internal.Utils
 --   write = send . Write
 -- :}
 --
--- the opearation of handling it can be turned into an effectful operation with
--- the 'Provider' effect:
+-- its handler can be turned into an effectful operation with the 'Provider'
+-- effect:
 --
 -- >>> :{
 --   action :: Provider_ Write FilePath :> es => Eff es ()

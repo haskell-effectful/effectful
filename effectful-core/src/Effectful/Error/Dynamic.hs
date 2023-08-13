@@ -9,7 +9,9 @@ module Effectful.Error.Dynamic
 
     -- ** Handlers
   , runError
+  , runErrorWith
   , runErrorNoCallStack
+  , runErrorNoCallStackWith
 
     -- ** Operations
   , throwError
@@ -46,12 +48,34 @@ runError = reinterpret E.runError $ \env -> \case
   CatchError m h -> localSeqUnlift env $ \unlift -> do
     E.catchError (unlift m) (\cs -> unlift . h cs)
 
+-- | Handle errors of type @e@ (via "Effectful.Error.Static") with a specific
+-- error handler.
+runErrorWith
+  :: (E.CallStack -> e -> Eff es a)
+  -- ^ The error handler.
+  -> Eff (Error e : es) a
+  -> Eff es a
+runErrorWith handler m = runError m >>= \case
+  Left (cs, e) -> handler cs e
+  Right a -> pure a
+
 -- | Handle errors of type @e@ (via "Effectful.Error.Static"). In case of an
 -- error discard the 'E.CallStack'.
 runErrorNoCallStack
   :: Eff (Error e : es) a
   -> Eff es (Either e a)
 runErrorNoCallStack = fmap (either (Left . snd) Right) . runError
+
+-- | Handle errors of type @e@ (via "Effectful.Error.Static") with a specific
+-- error handler. In case of an error discard the 'CallStack'.
+runErrorNoCallStackWith
+  :: (e -> Eff es a)
+  -- ^ The error handler.
+  -> Eff (Error e : es) a
+  -> Eff es a
+runErrorNoCallStackWith handler m = runErrorNoCallStack m >>= \case
+  Left e -> handler e
+  Right a -> pure a
 
 -- | Throw an error of type @e@.
 throwError

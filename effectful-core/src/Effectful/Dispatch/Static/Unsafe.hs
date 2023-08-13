@@ -19,10 +19,13 @@ import Effectful.Internal.Monad
 -- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
 --   computations.
 --
--- - The 'IO' computation must not run its argument in a different thread, but
---   it's not checked anywhere.
+-- - The 'IO' computation must run its argument in a way that's perceived as
+--   sequential to the outside observer, e.g. in the same thread or in a worker
+--   thread that finishes before the argument is run again.
 --
--- __If you disregard the second point, segmentation faults await.__
+-- __Warning:__ if you disregard the second point, the following might happen:
+-- data races, internal consistency check failures or (in extreme cases)
+-- segmentation faults.
 reallyUnsafeLiftMapIO :: (IO a -> IO b) -> Eff es a -> Eff es b
 reallyUnsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
 
@@ -33,9 +36,13 @@ reallyUnsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
 -- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
 --   computations.
 --
--- - Unlifted 'Eff' computations must not be run in a thread distinct from the
---   caller of 'reallyUnsafeUnliftIO', but it's not checked anywhere.
+-- - Unlifted 'Eff' computations must be run in a way that's perceived as
+--   sequential to the outside observer, e.g. in the same thread as the caller
+--   of 'reallyUnsafeUnliftIO' or in a worker thread that finishes before
+--   another unlifted computation is run.
 --
--- __If you disregard the second point, segmentation faults await.__
+-- __Warning:__ if you disregard the second point, the following might happen:
+-- data races, internal consistency check failures or (in extreme cases)
+-- segmentation faults.
 reallyUnsafeUnliftIO :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
 reallyUnsafeUnliftIO k = unsafeEff $ \es -> k (`unEff` es)

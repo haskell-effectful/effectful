@@ -17,7 +17,8 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
-tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.7 || ==9.4.4 || ==9.6.1
+tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.8 || ==9.4.5 || ==9.6.2
+              || ==9.8.1
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head
@@ -59,7 +60,7 @@ library
                     , effectful-core      >= 1.0.0.0   && < 3.0.0.0
                     , exceptions          >= 0.10.4
                     , template-haskell    >= 2.15      && < 2.21
-                    , th-abstraction      >= 0.4       && < 0.6
+                    , th-abstraction      >= 0.6       && < 0.7
 
     hs-source-dirs:  src
 

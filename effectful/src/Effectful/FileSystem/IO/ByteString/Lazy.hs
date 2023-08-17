@@ -18,6 +18,8 @@ module Effectful.FileSystem.IO.ByteString.Lazy
   , hGetNonBlocking
   , hPut
   , hPutNonBlocking
+  , hPutStr
+  , hPutStrLn
   ) where
 
 import Prelude hiding
@@ -28,6 +30,7 @@ import Prelude hiding
 
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Lazy.Char8 as LBS8
 import System.IO (Handle)
 
 import Effectful
@@ -71,3 +74,11 @@ hPut h = unsafeEff_ . LBS.hPut h
 -- | Lifted 'LBS.hPutNonBlocking'.
 hPutNonBlocking :: FileSystem :> es => Handle -> ByteString -> Eff es ByteString
 hPutNonBlocking h = unsafeEff_ . LBS.hPutNonBlocking h
+
+-- | Lifted 'LBS.hPutStr'.
+hPutStr :: FileSystem :> es => Handle -> ByteString -> Eff es ()
+hPutStr h = unsafeEff_ . LBS.hPutStr h
+
+-- | Lifted 'LBS8.hPutStrLn'.
+hPutStrLn :: FileSystem :> es => Handle -> ByteString -> Eff es ()
+hPutStrLn h = unsafeEff_ . LBS8.hPutStrLn h

@@ -31,6 +31,8 @@ module Effectful.FileSystem.IO.ByteString
   , hGetNonBlocking
   , hPut
   , hPutNonBlocking
+  , hPutStr
+  , hPutStrLn
   ) where
 
 import Prelude hiding
@@ -41,6 +43,7 @@ import Prelude hiding
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BS8
 import System.IO (Handle)
 
 import Effectful
@@ -105,3 +108,11 @@ hPut h = unsafeEff_ . BS.hPut h
 -- | Lifted 'BS.hPutNonBlocking'.
 hPutNonBlocking :: FileSystem :> es => Handle -> ByteString -> Eff es ByteString
 hPutNonBlocking h = unsafeEff_ . BS.hPutNonBlocking h
+
+-- | Lifted 'BS.hPutStr'.
+hPutStr :: FileSystem :> es => Handle -> ByteString -> Eff es ()
+hPutStr h = unsafeEff_ . BS.hPutStr h
+
+-- | Lifted 'BS8.hPutStrLn'.
+hPutStrLn :: FileSystem :> es => Handle -> ByteString -> Eff es ()
+hPutStrLn h = unsafeEff_ . BS8.hPutStrLn h

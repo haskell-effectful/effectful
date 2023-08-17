@@ -19,6 +19,7 @@ module Effectful.Console.ByteString
   , getLine
   , getContents
   , putStr
+  , putStrLn
   , interact
   ) where
 
@@ -27,10 +28,12 @@ import Prelude hiding
   , getLine
   , interact
   , putStr
+  , putStrLn
   )
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BS8
 
 import Effectful
 import Effectful.Console.Effect
@@ -47,6 +50,10 @@ getContents = unsafeEff_ BS.getContents
 -- | Lifted 'BS.putStr'.
 putStr :: Console :> es => ByteString -> Eff es ()
 putStr = unsafeEff_ . BS.putStr
+
+-- | Lifted 'BS8.putStrLn'.
+putStrLn :: Console :> es => ByteString -> Eff es ()
+putStrLn = unsafeEff_ . BS8.putStrLn
 
 -- | Lifted 'BS.interact'.
 interact :: Console :> es => (ByteString -> ByteString) -> Eff es ()

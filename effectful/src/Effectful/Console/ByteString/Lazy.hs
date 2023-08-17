@@ -18,6 +18,7 @@ module Effectful.Console.ByteString.Lazy
     -- * Operations
   , getContents
   , putStr
+  , putStrLn
   , interact
   ) where
 
@@ -25,10 +26,12 @@ import Prelude hiding
   ( getContents
   , interact
   , putStr
+  , putStrLn
   )
 
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Lazy.Char8 as LBS8
 
 import Effectful
 import Effectful.Console.Effect
@@ -41,6 +44,10 @@ getContents = unsafeEff_ LBS.getContents
 -- | Lifted 'LBS.putStr'.
 putStr :: Console :> es => ByteString -> Eff es ()
 putStr = unsafeEff_ . LBS.putStr
+
+-- | Lifted 'LBS8.putStrLn'.
+putStrLn :: Console :> es => ByteString -> Eff es ()
+putStrLn = unsafeEff_ . LBS8.putStrLn
 
 -- | Lifted 'LBS.interact'.
 interact :: Console :> es => (ByteString -> ByteString) -> Eff es ()

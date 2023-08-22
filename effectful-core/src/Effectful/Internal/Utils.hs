@@ -27,13 +27,18 @@ module Effectful.Internal.Utils
   , readMVar'
   , modifyMVar'
   , modifyMVar_'
+
+    -- * Unique
+  , Unique
+  , newUnique
   ) where
 
 import Control.Concurrent.MVar
 import Control.Exception
 import Data.IORef
+import Data.Primitive.ByteArray
 import GHC.Conc.Sync (ThreadId(..))
-import GHC.Exts (Addr#, Any, ThreadId#, unsafeCoerce#)
+import GHC.Exts (Addr#, Any, RealWorld, ThreadId#, unsafeCoerce#)
 import Unsafe.Coerce (unsafeCoerce)
 
 #if __GLASGOW_HASKELL__ >= 904
@@ -152,3 +157,14 @@ modifyMVar_' (MVar' var) action = modifyMVar_ var $ \a0 -> do
   a <- action a0
   a `seq` pure a
 {-# INLINE modifyMVar_' #-}
+
+----------------------------------------
+
+-- | A unique with no possibility for CAS contention.
+--
+-- Credits for this go to Edward Kmett.
+newtype Unique = Unique (MutableByteArray RealWorld)
+  deriving Eq
+
+newUnique :: IO Unique
+newUnique = Unique <$> newByteArray 0

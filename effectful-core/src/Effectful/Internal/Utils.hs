@@ -164,7 +164,9 @@ modifyMVar_' (MVar' var) action = modifyMVar_ var $ \a0 -> do
 --
 -- Credits for this go to Edward Kmett.
 newtype Unique = Unique (MutableByteArray RealWorld)
-  deriving Eq
+
+instance Eq Unique where
+  Unique a == Unique b = sameMutableByteArray a b
 
 newUnique :: IO Unique
 newUnique = Unique <$> newByteArray 0

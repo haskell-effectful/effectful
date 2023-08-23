@@ -150,13 +150,11 @@ modifyMVar' :: MVar' a -> (a -> IO (a, r)) -> IO r
 modifyMVar' (MVar' var) action = modifyMVar var $ \a0 -> do
   (a, r) <- action a0
   a `seq` pure (a, r)
-{-# INLINE modifyMVar' #-}
 
 modifyMVar_' :: MVar' a -> (a -> IO a) -> IO ()
 modifyMVar_' (MVar' var) action = modifyMVar_ var $ \a0 -> do
   a <- action a0
   a `seq` pure a
-{-# INLINE modifyMVar_' #-}
 
 ----------------------------------------
 

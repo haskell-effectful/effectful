@@ -99,7 +99,6 @@ module Effectful.Error.Static
   ) where
 
 import Control.Exception
-import Data.Unique
 import GHC.Stack
 
 import Effectful

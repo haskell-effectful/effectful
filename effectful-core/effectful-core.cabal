@@ -86,6 +86,7 @@ library
                      Effectful.Internal.Monad
                      Effectful.Internal.Unlift
                      Effectful.Internal.Utils
+                     Effectful.Labeled
                      Effectful.NonDet
                      Effectful.Prim
                      Effectful.Provider

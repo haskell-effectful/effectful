@@ -66,52 +66,52 @@ toFilePath = unsafeEff_ . BS.toFilePath
 ----------------------------------------
 -- Files
 
--- | Lifted 'BS.readFile'.
+-- | Lifted 'BS8.readFile'.
 readFile :: FileSystem :> es => FilePath -> Eff es ByteString
-readFile = unsafeEff_ . BS.readFile
+readFile = unsafeEff_ . BS8.readFile
 
--- | Lifted 'BS.writeFile'.
+-- | Lifted 'BS8.writeFile'.
 writeFile :: FileSystem :> es => FilePath -> ByteString -> Eff es ()
-writeFile fp = unsafeEff_ . BS.writeFile fp
+writeFile fp = unsafeEff_ . BS8.writeFile fp
 
--- | Lifted 'BS.appendFile'.
+-- | Lifted 'BS8.appendFile'.
 appendFile :: FileSystem :> es => FilePath -> ByteString -> Eff es ()
-appendFile fp = unsafeEff_ . BS.appendFile fp
+appendFile fp = unsafeEff_ . BS8.appendFile fp
 
 ----------------------------------------
 -- I/O with Handles
 
--- | Lifted 'BS.hGetLine'.
+-- | Lifted 'BS8.hGetLine'.
 hGetLine :: FileSystem :> es => Handle -> Eff es ByteString
-hGetLine = unsafeEff_ . BS.hGetLine
+hGetLine = unsafeEff_ . BS8.hGetLine
 
--- | Lifted 'BS.hGetContents'.
+-- | Lifted 'BS8.hGetContents'.
 hGetContents :: FileSystem :> es => Handle -> Eff es ByteString
-hGetContents = unsafeEff_ . BS.hGetContents
+hGetContents = unsafeEff_ . BS8.hGetContents
 
--- | Lifted 'BS.hGet'.
+-- | Lifted 'BS8.hGet'.
 hGet :: FileSystem :> es => Handle -> Int -> Eff es ByteString
-hGet h = unsafeEff_ . BS.hGet h
+hGet h = unsafeEff_ . BS8.hGet h
 
--- | Lifted 'BS.hGetSome'.
+-- | Lifted 'BS8.hGetSome'.
 hGetSome :: FileSystem :> es => Handle -> Int -> Eff es ByteString
-hGetSome h = unsafeEff_ . BS.hGetSome h
+hGetSome h = unsafeEff_ . BS8.hGetSome h
 
--- | Lifted 'BS.hGetNonBlocking'.
+-- | Lifted 'BS8.hGetNonBlocking'.
 hGetNonBlocking :: FileSystem :> es => Handle -> Int -> Eff es ByteString
-hGetNonBlocking h = unsafeEff_ . BS.hGetNonBlocking h
+hGetNonBlocking h = unsafeEff_ . BS8.hGetNonBlocking h
 
--- | Lifted 'BS.hPut'.
+-- | Lifted 'BS8.hPut'.
 hPut :: FileSystem :> es => Handle -> ByteString -> Eff es ()
-hPut h = unsafeEff_ . BS.hPut h
+hPut h = unsafeEff_ . BS8.hPut h
 
--- | Lifted 'BS.hPutNonBlocking'.
+-- | Lifted 'BS8.hPutNonBlocking'.
 hPutNonBlocking :: FileSystem :> es => Handle -> ByteString -> Eff es ByteString
-hPutNonBlocking h = unsafeEff_ . BS.hPutNonBlocking h
+hPutNonBlocking h = unsafeEff_ . BS8.hPutNonBlocking h
 
--- | Lifted 'BS.hPutStr'.
+-- | Lifted 'BS8.hPutStr'.
 hPutStr :: FileSystem :> es => Handle -> ByteString -> Eff es ()
-hPutStr h = unsafeEff_ . BS.hPutStr h
+hPutStr h = unsafeEff_ . BS8.hPutStr h
 
 -- | Lifted 'BS8.hPutStrLn'.
 hPutStrLn :: FileSystem :> es => Handle -> ByteString -> Eff es ()

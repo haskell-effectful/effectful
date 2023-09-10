@@ -1,9 +1,9 @@
--- | Lifted "Data.ByteString.Lazy".
+-- | Lifted "Data.ByteString.Lazy.Char8".
 -- Like the original module, you probably want to import this module qualified
 -- to avoid name clashes with the functions provided by "Prelude", e.g.:
 --
 -- > import Data.ByteString.Lazy (ByteString)
--- > import qualified Data.ByteString.Lazy as LBS
+-- > import qualified Data.ByteString.Lazy.Char8 as LBS8
 -- > import qualified Effectful.FileSystem.IO.ByteString.Lazy as ELBS
 --
 module Effectful.FileSystem.IO.ByteString.Lazy
@@ -29,7 +29,6 @@ import Prelude hiding
   )
 
 import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as LBS8
 import System.IO (Handle)
 
@@ -40,44 +39,44 @@ import Effectful.FileSystem
 ----------------------------------------
 -- Files
 
--- | Lifted 'LBS.readFile'.
+-- | Lifted 'LBS8.readFile'.
 readFile :: FileSystem :> es => FilePath -> Eff es ByteString
-readFile = unsafeEff_ . LBS.readFile
+readFile = unsafeEff_ . LBS8.readFile
 
--- | Lifted 'LBS.writeFile'.
+-- | Lifted 'LBS8.writeFile'.
 writeFile :: FileSystem :> es => FilePath -> ByteString -> Eff es ()
-writeFile fp = unsafeEff_ . LBS.writeFile fp
+writeFile fp = unsafeEff_ . LBS8.writeFile fp
 
--- | Lifted 'LBS.appendFile'.
+-- | Lifted 'LBS8.appendFile'.
 appendFile :: FileSystem :> es => FilePath -> ByteString -> Eff es ()
-appendFile fp = unsafeEff_ . LBS.appendFile fp
+appendFile fp = unsafeEff_ . LBS8.appendFile fp
 
 ----------------------------------------
 -- I/O with Handles
 
--- | Lifted 'LBS.hGetContents'.
+-- | Lifted 'LBS8.hGetContents'.
 hGetContents :: FileSystem :> es => Handle -> Eff es ByteString
-hGetContents = unsafeEff_ . LBS.hGetContents
+hGetContents = unsafeEff_ . LBS8.hGetContents
 
--- | Lifted 'LBS.hGet'.
+-- | Lifted 'LBS8.hGet'.
 hGet :: FileSystem :> es => Handle -> Int -> Eff es ByteString
-hGet h = unsafeEff_ . LBS.hGet h
+hGet h = unsafeEff_ . LBS8.hGet h
 
--- | Lifted 'LBS.hGetNonBlocking'.
+-- | Lifted 'LBS8.hGetNonBlocking'.
 hGetNonBlocking :: FileSystem :> es => Handle -> Int -> Eff es ByteString
-hGetNonBlocking h = unsafeEff_ . LBS.hGetNonBlocking h
+hGetNonBlocking h = unsafeEff_ . LBS8.hGetNonBlocking h
 
--- | Lifted 'LBS.hPut'.
+-- | Lifted 'LBS8.hPut'.
 hPut :: FileSystem :> es => Handle -> ByteString -> Eff es ()
-hPut h = unsafeEff_ . LBS.hPut h
+hPut h = unsafeEff_ . LBS8.hPut h
 
--- | Lifted 'LBS.hPutNonBlocking'.
+-- | Lifted 'LBS8.hPutNonBlocking'.
 hPutNonBlocking :: FileSystem :> es => Handle -> ByteString -> Eff es ByteString
-hPutNonBlocking h = unsafeEff_ . LBS.hPutNonBlocking h
+hPutNonBlocking h = unsafeEff_ . LBS8.hPutNonBlocking h
 
--- | Lifted 'LBS.hPutStr'.
+-- | Lifted 'LBS8.hPutStr'.
 hPutStr :: FileSystem :> es => Handle -> ByteString -> Eff es ()
-hPutStr h = unsafeEff_ . LBS.hPutStr h
+hPutStr h = unsafeEff_ . LBS8.hPutStr h
 
 -- | Lifted 'LBS8.hPutStrLn'.
 hPutStrLn :: FileSystem :> es => Handle -> ByteString -> Eff es ()

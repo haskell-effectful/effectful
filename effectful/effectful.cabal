@@ -178,7 +178,7 @@ benchmark bench
     build-depends:    base
                     , async
                     , effectful
-                    , tasty-bench
+                    , tasty-bench >=0.3.5 && <0.4
                     , unix
                     , unliftio
                     , text

@@ -55,11 +55,11 @@ import Effectful.FileSystem
 
 #if MIN_VERSION_bytestring(0,11,2)
 -- | Lifted 'BS.fromFilePath'.
-fromFilePath :: IOE :> es => FilePath -> Eff es ByteString
+fromFilePath :: FileSystem :> es => FilePath -> Eff es ByteString
 fromFilePath = unsafeEff_ . BS.fromFilePath
 
 -- | Lifted 'BS.toFilePath'.
-toFilePath :: IOE :> es => ByteString -> Eff es FilePath
+toFilePath :: FileSystem :> es => ByteString -> Eff es FilePath
 toFilePath = unsafeEff_ . BS.toFilePath
 #endif
 

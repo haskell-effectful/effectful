@@ -27,7 +27,7 @@ import Effectful.Internal.Monad
 -- bugs, data races or internal consistency check failures.
 --
 -- When in doubt, use 'Effectful.Dispatch.Static.unsafeLiftMapIO', especially
--- since this version saves only one pointer comparison per call of
+-- since this version saves only a simple safety check per call of
 -- @reallyUnsafeLiftMapIO f@.
 reallyUnsafeLiftMapIO :: (IO a -> IO b) -> Eff es a -> Eff es b
 reallyUnsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
@@ -48,7 +48,7 @@ reallyUnsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
 -- bugs, data races or internal consistency check failures.
 --
 -- When in doubt, use 'Effectful.Dispatch.Static.unsafeSeqUnliftIO', especially
--- since this version saves only one pointer comparison per call of the
--- unlifting function.
+-- since this version saves only a simple safety check per call of the unlifting
+-- function.
 reallyUnsafeUnliftIO :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
 reallyUnsafeUnliftIO k = unsafeEff $ \es -> k (`unEff` es)

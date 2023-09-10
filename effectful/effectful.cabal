@@ -85,15 +85,21 @@ library
                      Effectful.Concurrent.STM
                      Effectful.Concurrent.QSem
                      Effectful.Concurrent.QSemN
+                     Effectful.Console.ByteString
+                     Effectful.Console.ByteString.Lazy
                      Effectful.Environment
                      Effectful.FileSystem
                      Effectful.FileSystem.IO
+                     Effectful.FileSystem.IO.ByteString
+                     Effectful.FileSystem.IO.ByteString.Builder
+                     Effectful.FileSystem.IO.ByteString.Lazy
                      Effectful.FileSystem.IO.File
                      Effectful.Process
                      Effectful.Temporary
                      Effectful.Timeout
 
     other-modules:   Effectful.Concurrent.Effect
+                     Effectful.Console.Effect
                      Effectful.FileSystem.Effect
 
     reexported-modules:    Effectful
@@ -172,7 +178,7 @@ benchmark bench
     build-depends:    base
                     , async
                     , effectful
-                    , tasty-bench
+                    , tasty-bench >=0.3.5 && <0.4
                     , unix
                     , unliftio
                     , text

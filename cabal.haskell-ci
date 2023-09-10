@@ -4,7 +4,7 @@ doctest:        <9.5
 doctest-skip:   effectful-plugin
 
 tests:          True
-benchmarks:     True
+benchmarks:     <9.8
 
 ghcup-jobs:     True
 jobs-selection: any

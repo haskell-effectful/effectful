@@ -5,8 +5,8 @@
 -- sufficient.
 --
 -- /Warning:/ playing the so called "type tetris" with functions from this
--- module is not enough. Their misuse might lead to memory corruption or
--- segmentation faults, so make sure you understand what you're doing.
+-- module is not enough. Their misuse might lead to data races or internal
+-- consistency check failures, so make sure you understand what you're doing.
 module Effectful.Dispatch.Static.Primitive
   ( -- * The environment
     Env

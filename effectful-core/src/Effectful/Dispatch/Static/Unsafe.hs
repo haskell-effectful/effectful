@@ -14,7 +14,7 @@ import Effectful.Internal.Monad
 --
 -- @'Eff' es a -> 'Eff' es b@
 --
--- This function is __highly unsafe__ because:
+-- This function is __really unsafe__ because:
 --
 -- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
 --   computations.
@@ -23,15 +23,18 @@ import Effectful.Internal.Monad
 --   sequential to the outside observer, e.g. in the same thread or in a worker
 --   thread that finishes before the argument is run again.
 --
--- __Warning:__ if you disregard the second point, the following might happen:
--- data races, internal consistency check failures or (in extreme cases)
--- segmentation faults.
+-- __Warning:__ if you disregard the second point, you will experience weird
+-- bugs, data races or internal consistency check failures.
+--
+-- When in doubt, use 'Effectful.Dispatch.Static.unsafeLiftMapIO', especially
+-- since this version saves only one pointer comparison per call of
+-- @reallyUnsafeLiftMapIO f@.
 reallyUnsafeLiftMapIO :: (IO a -> IO b) -> Eff es a -> Eff es b
 reallyUnsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
 
 -- | Create an unlifting function.
 --
--- This function is __highly unsafe__ because:
+-- This function is __really unsafe__ because:
 --
 -- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
 --   computations.
@@ -41,8 +44,11 @@ reallyUnsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
 --   of 'reallyUnsafeUnliftIO' or in a worker thread that finishes before
 --   another unlifted computation is run.
 --
--- __Warning:__ if you disregard the second point, the following might happen:
--- data races, internal consistency check failures or (in extreme cases)
--- segmentation faults.
+-- __Warning:__ if you disregard the second point, you will experience weird
+-- bugs, data races or internal consistency check failures.
+--
+-- When in doubt, use 'Effectful.Dispatch.Static.unsafeSeqUnliftIO', especially
+-- since this version saves only one pointer comparison per call of the
+-- unlifting function.
 reallyUnsafeUnliftIO :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
 reallyUnsafeUnliftIO k = unsafeEff $ \es -> k (`unEff` es)

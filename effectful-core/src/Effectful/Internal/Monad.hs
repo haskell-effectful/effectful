@@ -524,7 +524,7 @@ runHandler e m = unsafeEff $ \es0 -> do
 send
   :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => e (Eff es) a
-  -- ^ The effect.
+  -- ^ The operation.
   -> Eff es a
 send op = unsafeEff $ \es -> do
   Handler handlerEs handle <- getEnv es

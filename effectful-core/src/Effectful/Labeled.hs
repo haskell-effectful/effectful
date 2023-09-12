@@ -1,12 +1,18 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE PolyKinds #-}
+-- | Labeled effects.
 module Effectful.Labeled
-  ( -- * Effect
+  ( -- * Example
+    -- $example
+
+    -- * Effect
     Labeled
-  , labeled
 
     -- ** Handlers
   , runLabeled
+
+    -- ** Operations
+  , labeled
   ) where
 
 import Unsafe.Coerce (unsafeCoerce)
@@ -14,7 +20,10 @@ import Unsafe.Coerce (unsafeCoerce)
 import Effectful
 import Effectful.Dispatch.Static
 
--- | Demo:
+-- $example
+--
+-- An effect can be assigned multiple labels and you can have all of them
+-- available at the same time.
 --
 -- >>> import Effectful.Reader.Static
 --
@@ -27,8 +36,10 @@ import Effectful.Dispatch.Static
 --    => Eff es String
 --  action = do
 --    a <- labeled @"b" @(Reader String) $ do
---      labeled @"a" @(Reader String) ask
---    b <- labeled @"b" @(Reader String) ask
+--      labeled @"a" @(Reader String) $ do
+--        ask
+--    b <- labeled @"b" @(Reader String) $ do
+--      ask
 --    pure $ a ++ b
 -- :}
 --
@@ -40,13 +51,15 @@ import Effectful.Dispatch.Static
 --    $ action
 -- :}
 -- "ab"
---
+
+-- | Assign a label to an effect.
 data Labeled (label :: k) (e :: Effect) :: Effect
 
 type instance DispatchOf (Labeled label e) = Static NoSideEffects
 
 data instance StaticRep (Labeled label e)
 
+-- | Run a 'Labeled' effect with a given effect handler.
 runLabeled
   :: forall label e es a b
    . (Eff (e : es) a -> Eff es b)
@@ -55,6 +68,7 @@ runLabeled
   -> Eff es b
 runLabeled runE m = runE (fromLabeled m)
 
+-- | Bring an effect into scope to be able to run its operations.
 labeled
   :: forall label e es a
    . Labeled label e :> es

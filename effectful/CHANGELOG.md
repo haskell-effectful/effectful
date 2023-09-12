@@ -9,6 +9,8 @@
   and `Effectful.Error.Static`.
 * Add support for having multiple effects of the same type in scope via the
   `Labeled` effect.
+* Add various `ByteString` related functions to the `FileSystem` effect.
+* Add the `Console` effect.
 
 # effectful-2.2.2.0 (2023-01-11)
 * Add `withSeqEffToIO` and `withConcEffToIO` to `Effectful`.

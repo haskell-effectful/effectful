@@ -1,4 +1,4 @@
-# effectful-core-2.3.0.0 (2023-??-??)
+# effectful-core-2.3.0.0 (2023-09-13)
 * Deprecate `withConcEffToIO`.
 * Make `withEffToIO` take an explicit unlifting strategy for the sake of
   consistency with unlifting functions from `Effectful.Dispatch.Dynamic` and

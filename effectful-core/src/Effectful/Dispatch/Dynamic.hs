@@ -13,6 +13,9 @@ module Effectful.Dispatch.Dynamic
     -- ** Integration with @mtl@ style effects
     -- $integration
 
+    -- *** Functional dependencies
+    -- $mtl-fundeps
+
     -- * Sending operations to the handler
     send
 
@@ -343,6 +346,52 @@ import Effectful.Internal.Utils
 -- >>> runEff . runDummyRNG $ randomString 3
 -- "777"
 --
+
+-- $mtl-fundeps
+--
+-- For dealing with classes that employ functional dependencies an additional
+-- trick is needed.
+--
+-- Consider the following:
+--
+-- >>> :set -XFunctionalDependencies
+--
+-- >>> :{
+--   class Monad m => MonadInput i m | i -> m where
+--     input :: m i
+-- :}
+--
+-- An attempt to define the instance as in the example above leads to violation
+-- of the liberal coverage condition:
+--
+-- >>> :{
+--   instance Reader i :> es => MonadInput i (Eff es) where
+--     input = ask
+-- :}
+-- ...
+-- ...Illegal instance declaration for ‘MonadInput i (Eff es)’...
+-- ...  The liberal coverage condition fails in class ‘MonadInput’...
+-- ...    for functional dependency: ‘i -> m’...
+-- ...
+--
+-- However, there exists a [dirty
+-- trick](https://www.youtube.com/watch?v=ZXtdd8e7CQQ) for bypassing the
+-- coverage condition, i.e. including the instance head in the context:
+--
+-- >>> :{
+--   instance (MonadInput i (Eff es), Reader i :> es) => MonadInput i (Eff es) where
+--     input = ask
+-- :}
+--
+-- Now the @MonadInput@ class can be used with the 'Eff' monad:
+--
+-- >>> :{
+--   double :: MonadInput Int m => m Int
+--   double = (+) <$> input <*> input
+-- :}
+--
+-- >>> runPureEff . runReader @Int 3 $ double
+-- 6
 
 ----------------------------------------
 -- Handling effects

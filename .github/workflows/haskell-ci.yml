@@ -158,7 +158,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache/restore@v3
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-b1ce34ec
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-ffb5680b
           path: ~/.haskell-ci-tools
       - name: install cabal-plan
         run: |
@@ -171,13 +171,13 @@ jobs:
           cabal-plan --version
       - name: install doctest
         run: |
-          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.20' ; fi
-          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then doctest --version ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.22' ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then doctest --version ; fi
       - name: save cache (tools)
         uses: actions/cache/save@v3
         if: always()
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-b1ce34ec
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-ffb5680b
           path: ~/.haskell-ci-tools
       - name: checkout
         uses: actions/checkout@v3
@@ -268,12 +268,12 @@ jobs:
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: doctest
         run: |
-          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
-          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
-          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
-          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
-          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 90600)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful_core} || false

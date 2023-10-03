@@ -130,7 +130,7 @@ import Effectful.Internal.Monad
 --  runLog logger = evalStaticRep (Log logger)
 -- :}
 -- ...
--- ...No instance for (IOE :> es) arising from a use of ‘evalStaticRep’
+-- ...No instance for ...IOE :> es... arising from a use of ‘evalStaticRep’
 -- ...
 --
 -- Including @'IOE' :> es@ in the context fixes the problem:

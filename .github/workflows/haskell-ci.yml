@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.17.20230826
+# version: 0.17.20230929
 #
-# REGENDATA ("0.17.20230826",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.17.20230929",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -32,14 +32,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.8.0.20230822
+          - compiler: ghc-9.8.0.20230929
             compilerKind: ghc
-            compilerVersion: 9.8.0.20230822
+            compilerVersion: 9.8.0.20230929
             setup-method: ghcup
             allow-failure: true
-          - compiler: ghc-9.6.2
+          - compiler: ghc-9.6.3
             compilerKind: ghc
-            compilerVersion: 9.6.2
+            compilerVersion: 9.6.3
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.4.7
@@ -225,14 +225,15 @@ jobs:
           echo "package effectful" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           cat >> cabal.project <<EOF
-          allow-newer: cleff:base
-          allow-newer: cleff:template-haskell
-          allow-newer: cleff:th-abstraction
-          allow-newer: freer-simple:template-haskell
-          allow-newer: polysemy:th-abstraction
+          allow-newer: cleff:*
+          allow-newer: freer-simple:*
+          allow-newer: fused-effects:*
+          allow-newer: polysemy:*
           allow-newer: *:base
+          allow-newer: *:bytestring
           allow-newer: *:deepseq
           allow-newer: *:template-haskell
+          allow-newer: *:text
 
           package effectful
             flags: +benchmark-foreign-libraries

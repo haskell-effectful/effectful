@@ -4,13 +4,15 @@ packages:
   effectful-th/*.cabal
   effectful/*.cabal
 
-allow-newer: cleff:base
-           , cleff:template-haskell
-           , cleff:th-abstraction
-           , freer-simple:template-haskell
-           , polysemy:th-abstraction
+-- Ignore dependencies of other effect libraries.
+allow-newer: cleff:*
+           , freer-simple:*
+           , fused-effects:*
+           , polysemy:*
 
 -- GHC 9.8
 allow-newer: *:base
+           , *:bytestring
            , *:deepseq
            , *:template-haskell
+           , *:text

@@ -33,7 +33,7 @@ import Effectful.Dispatch.Dynamic
 --
 -- >>> :kind! DispatchOf E
 -- DispatchOf E :: Dispatch
--- = 'Dynamic
+-- ...Dynamic
 --
 -- >>> :i op1
 -- op1 :: (HasCallStack, E :> es) => Int -> Eff es a -> Eff es a

@@ -38,13 +38,18 @@ import Control.Exception
 import Data.IORef
 import Data.Primitive.ByteArray
 import GHC.Conc.Sync (ThreadId(..))
-import GHC.Exts (Addr#, Any, RealWorld, ThreadId#, unsafeCoerce#)
+import GHC.Exts (Any, RealWorld)
 import Unsafe.Coerce (unsafeCoerce)
 
+#if MIN_VERSION_base(4,19,0)
+import GHC.Conc.Sync (fromThreadId)
+#else
+import GHC.Exts (Addr#, ThreadId#, unsafeCoerce#)
 #if __GLASGOW_HASKELL__ >= 904
 import Data.Word
 #else
 import Foreign.C.Types
+#endif
 #endif
 
 -- | Version of bracket with an INLINE pragma to work around
@@ -61,6 +66,9 @@ inlineBracket before after action = mask $ \unmask -> do
 
 -- | Get an id of a thread that doesn't prevent its garbage collection.
 weakThreadId :: ThreadId -> Int
+#if MIN_VERSION_base(4,19,0)
+weakThreadId = fromIntegral . fromThreadId
+#else
 weakThreadId (ThreadId t#) = fromIntegral $ rts_getThreadId (threadIdToAddr# t#)
 
 foreign import ccall unsafe "rts_getThreadId"
@@ -84,6 +92,7 @@ foreign import ccall unsafe "rts_getThreadId"
 -- The coercion is fine because GHC represents ThreadId# as a pointer.
 threadIdToAddr# :: ThreadId# -> Addr#
 threadIdToAddr# = unsafeCoerce#
+#endif
 
 ----------------------------------------
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE UndecidableInstances #-}
 -- | Dynamically dispatched effects.
 module Effectful.Dispatch.Dynamic
@@ -407,7 +408,9 @@ interpret
   -> Eff (e : es) a
   -> Eff      es  a
 interpret handler m = unsafeEff $ \es -> do
-  (`unEff` es) $ runHandler (Handler es handler) m
+  (`unEff` es) $ runHandler (mkHandler es) m
+  where
+    mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | Interpret an effect using other, private effects.
 --
@@ -422,7 +425,9 @@ reinterpret
   -> Eff      es  b
 reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
   (`unEff` es) . runHandlerEs . unsafeEff $ \handlerEs -> do
-    (`unEff` es) $ runHandler (Handler handlerEs handler) m
+    (`unEff` es) $ runHandler (mkHandler handlerEs) m
+  where
+    mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | Replace the handler of an existing effect with a new one.
 --
@@ -472,9 +477,11 @@ interpose handler m = unsafeEff $ \es -> do
     (\newEs -> do
         -- Replace the original handler with a new one. Note that 'newEs'
         -- will still see the original handler.
-        putEnv es (Handler newEs handler)
+        putEnv es $ mkHandler newEs
         unEff m es
     )
+  where
+    mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | Replace the handler of an existing effect with a new one that uses other,
 -- private effects.
@@ -504,9 +511,11 @@ impose runHandlerEs handler m = unsafeEff $ \es -> do
           -- Replace the original handler with a new one. Note that
           -- 'newEs' (and thus 'handlerEs') wil still see the original
           -- handler.
-          putEnv es (Handler handlerEs handler)
+          putEnv es $ mkHandler handlerEs
           unEff m es
     )
+  where
+    mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 ----------------------------------------
 -- Unlifts

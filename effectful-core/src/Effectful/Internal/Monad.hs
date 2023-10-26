@@ -508,9 +508,9 @@ data Handler :: Effect -> Type where
 type instance EffectRep Dynamic = Handler
 
 relinkHandler :: Relinker Handler e
-relinkHandler = Relinker $ \relink (Handler handlerEs handle) -> do
+relinkHandler = Relinker $ \relink (Handler handlerEs handler) -> do
   newHandlerEs <- relink handlerEs
-  pure $ Handler newHandlerEs handle
+  pure $ Handler newHandlerEs handler
 
 -- | Run a dynamically dispatched effect with the given handler.
 runHandler :: DispatchOf e ~ Dynamic => Handler e -> Eff (e : es) a -> Eff es a
@@ -527,8 +527,12 @@ send
   -- ^ The operation.
   -> Eff es a
 send op = unsafeEff $ \es -> do
-  Handler handlerEs handle <- getEnv es
-  unEff (handle (LocalEnv es) op) handlerEs
+  Handler handlerEs handler <- getEnv es
+  -- Prevent internal functions that rebind the effect handler from polluting
+  -- its call stack by freezing it. Note that functions 'interpret',
+  -- 'reinterpret', 'interpose' and 'impose' need to thaw it so that useful
+  -- stack frames from inside the effect handler continue to be added.
+  unEff (withFrozenCallStack handler (LocalEnv es) op) handlerEs
 {-# NOINLINE send #-}
 
 ----------------------------------------

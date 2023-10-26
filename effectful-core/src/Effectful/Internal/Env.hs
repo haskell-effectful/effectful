@@ -133,9 +133,9 @@ emptyEnv = Env 0
 cloneEnv :: Env es -> IO (Env es)
 cloneEnv (Env offset refs storage0) = do
   Storage storageSize version vs0 es0 fs0 <- readIORef' storage0
-  let vsSize = sizeofMutablePrimArray  vs0
-      esSize = sizeofSmallMutableArray es0
-      fsSize = sizeofSmallMutableArray fs0
+  vsSize <- getSizeofMutablePrimArray  vs0
+  esSize <- getSizeofSmallMutableArray es0
+  fsSize <- getSizeofSmallMutableArray fs0
   when (vsSize /= esSize) $ do
     error $ "vsSize (" ++ show vsSize ++ ") /= esSize (" ++ show esSize ++ ")"
   when (esSize /= fsSize) $ do
@@ -377,7 +377,7 @@ insertEffect
   -> IO (Int, Int)
 insertEffect storage e f = do
   Storage size version vs0 es0 fs0 <- readIORef' storage
-  let len0 = sizeofSmallMutableArray es0
+  len0 <- getSizeofSmallMutableArray es0
   case size `compare` len0 of
     GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
     LT -> do

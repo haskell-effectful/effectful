@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Effectful.Internal.Env
   ( -- * The environment
@@ -429,3 +430,8 @@ undefinedData = error "undefined data"
 -- | A strict version of 'writeSmallArray'.
 writeSmallArray' :: SmallMutableArray RealWorld a -> Int -> a -> IO ()
 writeSmallArray' arr i a = a `seq` writeSmallArray arr i a
+
+#if !MIN_VERSION_primitive(0,9,0)
+getSizeofSmallMutableArray :: SmallMutableArray RealWorld a -> IO Int
+getSizeofSmallMutableArray arr = pure $! sizeofSmallMutableArray arr
+#endif

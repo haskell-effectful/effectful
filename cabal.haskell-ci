@@ -1,6 +1,6 @@
 branches:       master
 
-doctest:        <9.7
+doctest:        <9.9
 doctest-skip:   effectful-plugin
 
 tests:          True

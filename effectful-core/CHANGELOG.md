@@ -1,3 +1,6 @@
+# effectful-core-2.3.0.1 (2023-??-??)
+* Prevent internal functions from appending calls stack frames to handlers.
+
 # effectful-core-2.3.0.0 (2023-09-13)
 * Deprecate `withConcEffToIO`.
 * Make `withEffToIO` take an explicit unlifting strategy for the sake of

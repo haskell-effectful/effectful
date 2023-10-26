@@ -31,6 +31,9 @@ module Effectful.Internal.Utils
     -- * Unique
   , Unique
   , newUnique
+
+  -- * CallStack
+  , thawCallStack
   ) where
 
 import Control.Concurrent.MVar
@@ -39,6 +42,7 @@ import Data.IORef
 import Data.Primitive.ByteArray
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (Any, RealWorld)
+import GHC.Stack.Types (CallStack(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 #if MIN_VERSION_base(4,19,0)
@@ -177,3 +181,10 @@ instance Eq Unique where
 
 newUnique :: IO Unique
 newUnique = Unique <$> newByteArray 0
+
+----------------------------------------
+
+thawCallStack :: CallStack -> CallStack
+thawCallStack = \case
+  FreezeCallStack cs -> thawCallStack cs
+  cs -> cs

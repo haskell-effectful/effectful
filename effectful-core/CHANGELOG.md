@@ -1,4 +1,4 @@
-# effectful-core-2.3.0.1 (2023-??-??)
+# effectful-core-2.3.0.1 (2023-11-13)
 * Prevent internal functions from appending calls stack frames to handlers.
 
 # effectful-core-2.3.0.0 (2023-09-13)

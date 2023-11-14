@@ -227,10 +227,6 @@ data ErrorWrapper = ErrorWrapper !ErrorId CallStack Any
 instance Show ErrorWrapper where
   showsPrec p (ErrorWrapper _ cs _)
     = ("Effectful.Error.Static.ErrorWrapper\n\n" ++)
-    . ("If you see this, most likely there is a stray 'Async' action that\n" ++)
-    . ("outlived the scope of the 'Error' effect, was interacted with and threw\n" ++)
-    . ("an error to the parent thread. If that scenario sounds unlikely, please\n" ++)
-    . ("file a ticket at https://github.com/haskell-effectful/effectful/issues.\n\n" ++)
     . showsPrec p (prettyCallStack cs)
 instance Exception ErrorWrapper
 

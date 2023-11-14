@@ -1,5 +1,8 @@
+# effectful-core-2.3.0.2 (2023-??-??)
+* Remove inaccurate information from the `Show` instance of `ErrorWrapper`.
+
 # effectful-core-2.3.0.1 (2023-11-13)
-* Prevent internal functions from appending calls stack frames to handlers.
+* Prevent internal functions from appending call stack frames to handlers.
 
 # effectful-core-2.3.0.0 (2023-09-13)
 * Deprecate `withConcEffToIO`.

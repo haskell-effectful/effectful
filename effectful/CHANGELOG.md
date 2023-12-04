@@ -1,3 +1,7 @@
+# effectful-2.3.1.0 (????-??-??)
+* Remove inaccurate information from the `Show` instance of `ErrorWrapper`.
+* Add `Effectful.Provider.List`, generalization of `Effectful.Provider`.
+
 # effectful-2.3.0.0 (2023-09-13)
 * Deprecate `withConcEffToIO`.
 * Make `withEffToIO` take an explicit unlifting strategy for the sake of

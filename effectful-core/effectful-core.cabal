@@ -1,7 +1,7 @@
 cabal-version:      2.4
 build-type:         Simple
 name:               effectful-core
-version:            2.3.0.2
+version:            2.3.1.0
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control
@@ -90,6 +90,7 @@ library
                      Effectful.NonDet
                      Effectful.Prim
                      Effectful.Provider
+                     Effectful.Provider.List
                      Effectful.Reader.Dynamic
                      Effectful.Reader.Static
                      Effectful.State.Dynamic

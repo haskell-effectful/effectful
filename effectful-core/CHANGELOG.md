@@ -1,5 +1,6 @@
-# effectful-core-2.3.0.2 (2023-??-??)
+# effectful-core-2.3.1.0 (????-??-??)
 * Remove inaccurate information from the `Show` instance of `ErrorWrapper`.
+* Add `Effectful.Provider.List`, generalization of `Effectful.Provider`.
 
 # effectful-core-2.3.0.1 (2023-11-13)
 * Prevent internal functions from appending call stack frames to handlers.

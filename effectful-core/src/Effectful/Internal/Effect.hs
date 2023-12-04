@@ -12,6 +12,8 @@ module Effectful.Internal.Effect
   , Subset(..)
   , KnownPrefix(..)
   , IsUnknownSuffixOf
+  , type (++)
+  , KnownEffects(..)
 
   -- * Re-exports
   , Type
@@ -116,3 +118,22 @@ instance {-# INCOHERENT #-} KnownPrefix es where
 class (xs :: [Effect]) `IsUnknownSuffixOf` (es :: [Effect])
 instance {-# INCOHERENT #-} xs ~ es => xs `IsUnknownSuffixOf` es
 instance xs `IsUnknownSuffixOf` es => xs `IsUnknownSuffixOf` (e : es)
+
+----
+
+-- | Append two type-level lists together.
+type family (xs :: [Effect]) ++ (ys :: [Effect]) :: [Effect] where
+  '[] ++ ys  = ys
+  (x : xs) ++ ys = x : xs ++ ys
+
+infixr 5 ++
+
+-- | Calculate length of a list of known effects.
+class KnownEffects (es :: [Effect]) where
+  knownEffectsLength :: Int
+
+instance KnownEffects es => KnownEffects (e : es) where
+  knownEffectsLength = 1 + knownEffectsLength @es
+
+instance KnownEffects '[] where
+  knownEffectsLength = 0

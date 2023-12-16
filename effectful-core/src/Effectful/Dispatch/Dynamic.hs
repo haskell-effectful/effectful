@@ -46,14 +46,18 @@ module Effectful.Dispatch.Dynamic
   , localLiftUnlift
   , localLiftUnliftIO
 
-    -- *** Utils
+    -- *** Misc
+  , localSeqHandle
+  , localHandle
   , SharedSuffix
 
     -- * Re-exports
   , HasCallStack
   ) where
 
+import Control.Monad
 import Control.Monad.IO.Unlift
+import Data.Primitive.PrimArray
 import GHC.Stack (HasCallStack)
 import GHC.TypeLits
 
@@ -726,7 +730,93 @@ localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
   ConcUnlift p l -> liftIO $ concUnliftIO les p l $ k unsafeEff_
 
 ----------------------------------------
--- Utils
+-- Misc
+
+-- | Create a local handler of an effect available in the current environment.
+--
+-- Consider the following effect:
+--
+-- >>> :{
+--   data D :: Effect where
+--     D :: D m ()
+--   type instance DispatchOf D = Dynamic
+-- :}
+--
+-- and an auxiliary effect that requires both @IOE@ and @D@ to run:
+--
+-- >>> :{
+--   data E :: Effect
+--   runE :: (IOE :> es, D :> es) => Eff (E : es) a -> Eff es a
+--   runE = error "runE"
+-- :}
+--
+-- Trying to use @runE@ inside the handler of @D@ doesn't work out of the box:
+--
+-- >>> :{
+--   runD :: IOE :> es => Eff (D : es) a -> Eff es a
+--   runD = interpret $ \env -> \case
+--     D -> localSeqUnlift env $ \unlift -> do
+--       unlift . runE $ pure ()
+-- :}
+-- ...
+-- ...Could not deduce ...IOE :> localEs... arising from a use of ‘runE’
+-- ...from the context: IOE :> es
+-- ...
+--
+-- The problem is that @runE@ needs @IOE :> localEs@, but only @IOE :> es@ is
+-- available. This function allows us to bridge the gap:
+--
+-- >>> :{
+--   runD :: IOE :> es => Eff (D : es) a -> Eff es a
+--   runD = interpret $ \env -> \case
+--     D -> localSeqUnlift env $ \unlift -> do
+--       localSeqHandle @IOE env $ \withIOE -> do
+--         unlift . withIOE . runE $ pure ()
+-- :}
+localSeqHandle
+  :: (e :> es, SharedSuffix es handlerEs)
+  => LocalEnv localEs handlerEs
+  -> ((forall r. Eff (e : localEs) r -> Eff localEs r) -> Eff es a)
+  -- ^ Continuation with the local handler in scope.
+  -> Eff es a
+localSeqHandle (LocalEnv les) k = unsafeEff $ \es -> do
+  eles <- copyRef es les
+  seqUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+
+-- | Create a local handler of an effect available in the current environment
+-- with a given unlifting strategy.
+--
+-- Generalizes 'localSeqHandle'.
+localHandle
+  :: (e :> es, SharedSuffix es handlerEs)
+  => LocalEnv localEs handlerEs
+  -> UnliftStrategy
+  -> ((forall r. Eff (e : localEs) r -> Eff localEs r) -> Eff es a)
+  -- ^ Continuation with the local handler in scope.
+  -> Eff es a
+localHandle (LocalEnv les) strategy k = case strategy of
+  SeqUnlift -> unsafeEff $ \es -> do
+    eles <- copyRef es les
+    seqUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+  ConcUnlift p l -> unsafeEff $ \es -> do
+    eles <- copyRef es les
+    concUnliftIO eles p l $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+
+copyRef
+  :: forall e es localEs. e :> es
+  => Env es
+  -> Env localEs
+  -> IO (Env (e : localEs))
+copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
+  when (hstorage /= storage) $ do
+    error "storages do not match"
+  let size = sizeofPrimArray refs0 - offset
+      i = 2 * reifyIndex @e @es
+  mrefs <- newPrimArray (size + 2)
+  copyPrimArray mrefs 0 hrefs (hoffset + i) 2
+  copyPrimArray mrefs 2 refs0 offset size
+  refs <- unsafeFreezePrimArray mrefs
+  pure $ Env 0 refs storage
 
 -- | Require that both effect stacks share an opaque suffix.
 --

@@ -130,6 +130,8 @@ runError m = unsafeEff $ \es0 -> mask $ \unmask -> do
                $ throwIO ex
 
 -- | Handle errors of type @e@ with a specific error handler.
+--
+-- @since 2.3.0.0
 runErrorWith
   :: (CallStack -> e -> Eff es a)
   -- ^ The error handler.
@@ -140,6 +142,8 @@ runErrorWith handler m = runError m >>= \case
   Right a -> pure a
 
 -- | Handle errors of type @e@. In case of an error discard the 'CallStack'.
+--
+-- @since 2.3.0.0
 runErrorNoCallStack
   :: forall e es a
   .  Eff (Error e : es) a

@@ -773,6 +773,8 @@ localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
 --       localSeqHandle @IOE env $ \withIOE -> do
 --         unlift . withIOE . runE $ pure ()
 -- :}
+--
+-- @since 2.3.1.0
 localSeqHandle
   :: (e :> es, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
@@ -787,6 +789,8 @@ localSeqHandle (LocalEnv les) k = unsafeEff $ \es -> do
 -- with a given unlifting strategy.
 --
 -- Generalizes 'localSeqHandle'.
+--
+-- @since 2.3.1.0
 localHandle
   :: (e :> es, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs

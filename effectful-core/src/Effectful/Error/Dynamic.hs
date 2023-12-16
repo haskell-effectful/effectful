@@ -50,6 +50,8 @@ runError = reinterpret E.runError $ \env -> \case
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static") with a specific
 -- error handler.
+--
+-- @since 2.3.0.0
 runErrorWith
   :: (E.CallStack -> e -> Eff es a)
   -- ^ The error handler.
@@ -61,6 +63,8 @@ runErrorWith handler m = runError m >>= \case
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static"). In case of an
 -- error discard the 'E.CallStack'.
+--
+-- @since 2.3.0.0
 runErrorNoCallStack
   :: Eff (Error e : es) a
   -> Eff es (Either e a)

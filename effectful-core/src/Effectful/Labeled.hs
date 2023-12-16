@@ -1,6 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE PolyKinds #-}
 -- | Labeled effects.
+--
+-- @since 2.3.0.0
 module Effectful.Labeled
   ( -- * Example
     -- $example

@@ -1,7 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 -- | Turn a handler of multiple effects into an effectful operation.
 --
--- Generalization of "Effectful.Provider".
+-- Generalizes "Effectful.Provider".
+--
+-- @since 2.3.1.0
 module Effectful.Provider.List
   ( -- * Effect
     ProviderList

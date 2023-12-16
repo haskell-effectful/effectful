@@ -1,4 +1,6 @@
 -- | Turn an effect handler into an effectful operation.
+--
+-- @since 2.3.0.0
 module Effectful.Provider
   ( -- * Example
     -- $example

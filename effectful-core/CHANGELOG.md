@@ -1,6 +1,7 @@
 # effectful-core-2.3.1.0 (????-??-??)
 * Remove inaccurate information from the `Show` instance of `ErrorWrapper`.
 * Add `Effectful.Provider.List`, generalization of `Effectful.Provider`.
+* Respect `withFrozenCallStack` used by callers of `send`.
 
 # effectful-core-2.3.0.1 (2023-11-13)
 * Prevent internal functions from appending call stack frames to handlers.

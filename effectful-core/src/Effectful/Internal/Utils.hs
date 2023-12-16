@@ -186,5 +186,5 @@ newUnique = Unique <$> newByteArray 0
 
 thawCallStack :: CallStack -> CallStack
 thawCallStack = \case
-  FreezeCallStack cs -> thawCallStack cs
+  FreezeCallStack cs -> cs
   cs -> cs

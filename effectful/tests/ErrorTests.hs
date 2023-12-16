@@ -6,10 +6,12 @@ import Test.Tasty.HUnit
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
+import qualified Effectful.Error.Dynamic as D
 
 errorTests :: TestTree
 errorTests = testGroup "Error"
   [ testCase "different handlers are independent" test_independentHandlers
+  , testCase "call stack of dynamic throwError doesn't show internal details" test_dynamicThrowErrorCallStack
   ]
 
 test_independentHandlers :: Assertion
@@ -20,6 +22,13 @@ test_independentHandlers = runEff $ do
     Left (cs, _) -> assertBool "stack trace points to the correct action" $
       "outerThrow" == fst (last $ getCallStack cs)
     Right _ -> assertFailure "error caught by the wrong (inner) handler"
+
+test_dynamicThrowErrorCallStack :: Assertion
+test_dynamicThrowErrorCallStack = do
+  Left (cs, ()) <- runEff . D.runError @() $ D.throwError ()
+  case getCallStack cs of
+    [("throwError", _)] -> pure ()
+    _ -> assertFailure $ "invalid call stack: " ++ prettyCallStack cs
 
 ----------------------------------------
 -- Helpers

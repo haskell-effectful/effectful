@@ -131,6 +131,9 @@ infixr 5 ++
 -- | Calculate length of a list of known effects.
 class KnownEffects (es :: [Effect]) where
   knownEffectsLength :: Int
+  knownEffectsLength =
+  -- Don't show "minimal complete definition" in haddock.
+    error "knownEffectsLength"
 
 instance KnownEffects es => KnownEffects (e : es) where
   knownEffectsLength = 1 + knownEffectsLength @es

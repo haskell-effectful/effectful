@@ -9,10 +9,3 @@ allow-newer: cleff:*
            , freer-simple:*
            , fused-effects:*
            , polysemy:*
-
--- GHC 9.8
-allow-newer: *:base
-           , *:bytestring
-           , *:deepseq
-           , *:template-haskell
-           , *:text

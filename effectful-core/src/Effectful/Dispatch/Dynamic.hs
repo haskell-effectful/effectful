@@ -838,7 +838,7 @@ copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
 -- Running local actions in a more specific environment is fine:
 --
 -- >>> :{
---  runE1 :: Eff (E ': es) a -> Eff es a
+--  runE1 :: Eff (E : es) a -> Eff es a
 --  runE1 = interpret $ \env -> \case
 --    E m -> runReader () $ do
 --      localSeqUnlift env $ \unlift -> unlift m
@@ -847,7 +847,7 @@ copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
 -- Running local actions in a more general environment is fine:
 --
 -- >>> :{
---  runE2 :: Eff (E ': es) a -> Eff es a
+--  runE2 :: Eff (E : es) a -> Eff es a
 --  runE2 = reinterpret (runReader ()) $ \env -> \case
 --    E m -> raise $ do
 --      localSeqUnlift env $ \unlift -> unlift m
@@ -857,7 +857,7 @@ copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
 -- this would make it possible to run anything within 'runPureEff':
 --
 -- >>> :{
---  runE3 :: Eff (E ': es) a -> Eff es a
+--  runE3 :: Eff (E : es) a -> Eff es a
 --  runE3 = reinterpret (runReader ()) $ \env -> \case
 --    E m -> pure . runPureEff $ do
 --      localSeqUnlift env $ \unlift -> unlift m
@@ -870,7 +870,7 @@ copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
 -- this makes a special case of the above possible:
 --
 -- >>> :{
---  runE4 :: Eff '[E, IOE] a -> Eff '[IOE] a
+--  runE4 :: Eff [E, IOE] a -> Eff '[IOE] a
 --  runE4 = interpret $ \env -> \case
 --    E m -> pure . runPureEff $ do
 --      localSeqUnlift env $ \unlift -> unlift m

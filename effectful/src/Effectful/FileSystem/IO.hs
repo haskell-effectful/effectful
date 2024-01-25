@@ -39,7 +39,7 @@ module Effectful.FileSystem.IO
   ) where
 
 import System.IO (Handle, IOMode (..))
-import qualified System.IO as IO
+import System.IO qualified as IO
 
 import Effectful
 import Effectful.Dispatch.Static

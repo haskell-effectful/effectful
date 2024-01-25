@@ -1,4 +1,4 @@
-cabal-version:      2.4
+cabal-version:      3.0
 build-type:         Simple
 name:               effectful-core
 version:            2.3.1.0
@@ -21,8 +21,7 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
-tested-with: GHC ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.3
-              || ==9.8.1
+tested-with: GHC == { 8.10.7, 9.0.2, 9.2.8, 9.4.8, 9.6.4, 9.8.1 }
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head
@@ -31,6 +30,7 @@ source-repository head
 
 common language
     ghc-options:        -Wall -Wcompat -Wno-unticked-promoted-constructors
+                        -Werror=prepositive-qualified-module
 
     default-language:   Haskell2010
 
@@ -43,6 +43,7 @@ common language
                         FlexibleInstances
                         GADTs
                         GeneralizedNewtypeDeriving
+                        ImportQualifiedPost
                         LambdaCase
                         MultiParamTypeClasses
                         NoStarIsType
@@ -60,7 +61,7 @@ library
 
     ghc-options:    -O2
 
-    build-depends:    base                >= 4.13      && < 5
+    build-depends:    base                >= 4.14      && < 5
                     , containers          >= 0.6
                     , exceptions          >= 0.10.4
                     , monad-control       >= 1.0.3

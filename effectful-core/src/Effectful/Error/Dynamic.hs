@@ -30,7 +30,7 @@ import GHC.Stack (withFrozenCallStack)
 
 import Effectful
 import Effectful.Dispatch.Dynamic
-import qualified Effectful.Error.Static as E
+import Effectful.Error.Static qualified as E
 
 -- | Provide the ability to handle errors of type @e@.
 data Error e :: Effect where

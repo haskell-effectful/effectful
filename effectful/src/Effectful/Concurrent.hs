@@ -59,13 +59,13 @@ module Effectful.Concurrent
   , C.rtsSupportsBoundThreads
   ) where
 
+import Control.Concurrent qualified as C
 import Control.Exception (Exception, SomeException)
 import Data.Bifunctor (second)
+import GHC.Conc qualified as GHC
 import System.Mem.Weak (Weak)
 import System.Posix.Types (Fd)
 import UnliftIO.STM (STM)
-import qualified Control.Concurrent as C
-import qualified GHC.Conc as GHC
 
 import Effectful
 import Effectful.Concurrent.Effect

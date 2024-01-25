@@ -92,7 +92,7 @@ module Effectful.FileSystem
   ) where
 
 import Data.Time (UTCTime)
-import qualified System.Directory as D
+import System.Directory qualified as D
 
 import Effectful
 import Effectful.Dispatch.Static

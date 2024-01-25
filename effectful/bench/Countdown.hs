@@ -6,51 +6,51 @@ import Data.STRef
 
 -- eff
 #ifdef VERSION_eff
-import qualified Control.Effect as L
+import Control.Effect qualified as L
 #endif
 
 -- cleff
 #ifdef VERSION_cleff
-import qualified Cleff as C
-import qualified Cleff.Reader as C
-import qualified Cleff.State as C
+import Cleff qualified as C
+import Cleff.Reader qualified as C
+import Cleff.State qualified as C
 #endif
 
 -- effectful
-import qualified Effectful as E
-import qualified Effectful.Dispatch.Dynamic as E
-import qualified Effectful.Labeled as E
-import qualified Effectful.Reader.Static as E
-import qualified Effectful.State.Dynamic as ED
-import qualified Effectful.State.Static.Local as EL
-import qualified Effectful.State.Static.Shared as ES
+import Effectful qualified as E
+import Effectful.Dispatch.Dynamic qualified as E
+import Effectful.Labeled qualified as E
+import Effectful.Reader.Static qualified as E
+import Effectful.State.Dynamic qualified as ED
+import Effectful.State.Static.Local qualified as EL
+import Effectful.State.Static.Shared qualified as ES
 
 -- freer-simple
 #ifdef VERSION_freer_simple
-import qualified Control.Monad.Freer as FS
-import qualified Control.Monad.Freer.Reader as FS
-import qualified Control.Monad.Freer.State as FS
+import Control.Monad.Freer qualified as FS
+import Control.Monad.Freer.Reader qualified as FS
+import Control.Monad.Freer.State qualified as FS
 #endif
 
 -- fused-effects
 #ifdef VERSION_fused_effects
-import qualified Control.Algebra as FE
-import qualified Control.Carrier.Reader as FE
-import qualified Control.Carrier.State.Strict as FE
+import Control.Algebra qualified as FE
+import Control.Carrier.Reader qualified as FE
+import Control.Carrier.State.Strict qualified as FE
 #endif
 
 -- mtl
 #ifdef VERSION_mtl
-import qualified Control.Monad.Reader as M
-import qualified Control.Monad.State as M
+import Control.Monad.Reader qualified as M
+import Control.Monad.State qualified as M
 import Data.Functor.Identity
 #endif
 
 -- polysemy
 #ifdef VERSION_polysemy
-import qualified Polysemy as P
-import qualified Polysemy.Reader as P
-import qualified Polysemy.State as P
+import Polysemy qualified as P
+import Polysemy.Reader qualified as P
+import Polysemy.State qualified as P
 #endif
 
 ----------------------------------------

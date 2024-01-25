@@ -18,6 +18,7 @@ module Effectful.Internal.Unlift
 
 import Control.Concurrent
 import Control.Monad
+import Data.IntMap.Strict qualified as IM
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
 import GHC.Generics (Generic)
@@ -25,7 +26,6 @@ import GHC.IO (IO(..))
 import GHC.Stack (HasCallStack)
 import GHC.Weak (Weak(..))
 import System.Mem.Weak (deRefWeak)
-import qualified Data.IntMap.Strict as IM
 
 import Effectful.Internal.Env
 import Effectful.Internal.Utils

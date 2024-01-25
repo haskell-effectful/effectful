@@ -1,3 +1,6 @@
+# effectful-plugin-1.1.0.3 (2024-??-??)
+* Drop support for GHC 8.8.
+
 # effectful-plugin-1.1.0.2 (2023-09-13)
 * Add support for GHC 9.8.
 

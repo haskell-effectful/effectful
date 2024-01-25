@@ -19,7 +19,7 @@ module Effectful.Reader.Dynamic
 
 import Effectful
 import Effectful.Dispatch.Dynamic
-import qualified Effectful.Reader.Static as R
+import Effectful.Reader.Static qualified as R
 
 data Reader r :: Effect where
   Ask   :: Reader r m r

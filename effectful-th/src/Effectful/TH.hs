@@ -10,11 +10,11 @@ module Effectful.TH
 import Control.Monad
 import Data.Char (toLower)
 import Data.Foldable (foldl')
+import Data.Map.Strict qualified as Map
 import Data.Maybe
 import Language.Haskell.TH
 import Language.Haskell.TH.Datatype
 import Language.Haskell.TH.Datatype.TyVarBndr
-import qualified Data.Map.Strict as Map
 
 import Effectful
 import Effectful.Dispatch.Dynamic

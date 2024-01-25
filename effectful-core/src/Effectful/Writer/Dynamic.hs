@@ -25,8 +25,8 @@ module Effectful.Writer.Dynamic
 
 import Effectful
 import Effectful.Dispatch.Dynamic
-import qualified Effectful.Writer.Static.Local as L
-import qualified Effectful.Writer.Static.Shared as S
+import Effectful.Writer.Static.Local qualified as L
+import Effectful.Writer.Static.Shared qualified as S
 
 -- | Provide access to a write only value of type @w@.
 data Writer w :: Effect where

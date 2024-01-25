@@ -2,15 +2,15 @@ module ConcurrencyTests (concurrencyTests) where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad
+import Data.Set qualified as S
 import Test.Tasty
 import Test.Tasty.HUnit
 import UnliftIO
-import qualified Data.Set as S
 
 import Effectful
 import Effectful.Error.Static
 import Effectful.State.Dynamic
-import qualified Utils as U
+import Utils qualified as U
 
 concurrencyTests :: TestTree
 concurrencyTests = testGroup "Concurrency"

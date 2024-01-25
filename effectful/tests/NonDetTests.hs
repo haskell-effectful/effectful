@@ -9,7 +9,7 @@ import Effectful.NonDet
 import Effectful.Reader.Static
 import Effectful.State.Dynamic
 
-import qualified Utils as U
+import Utils qualified as U
 
 nonDetTests :: TestTree
 nonDetTests = testGroup "NonDet"

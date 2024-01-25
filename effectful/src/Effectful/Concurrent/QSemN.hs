@@ -14,7 +14,7 @@ module Effectful.Concurrent.QSemN
   ) where
 
 import Control.Concurrent.QSemN (QSemN)
-import qualified Control.Concurrent.QSemN as Q
+import Control.Concurrent.QSemN qualified as Q
 
 import Effectful
 import Effectful.Concurrent.Effect

@@ -15,7 +15,7 @@ module Effectful.FileSystem.IO.File
 
 import Data.ByteString (ByteString)
 import System.IO (Handle, IOMode (..))
-import qualified UnliftIO.IO.File as U
+import UnliftIO.IO.File qualified as U
 
 import Effectful
 import Effectful.Dispatch.Static

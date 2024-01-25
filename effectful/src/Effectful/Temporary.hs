@@ -13,7 +13,7 @@ module Effectful.Temporary
   ) where
 
 import System.IO
-import qualified UnliftIO.Temporary as T
+import UnliftIO.Temporary qualified as T
 
 import Effectful
 import Effectful.Dispatch.Static

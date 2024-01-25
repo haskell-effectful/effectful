@@ -8,7 +8,7 @@ module Utils
 
 import Control.Monad.Catch
 import GHC.Stack
-import qualified Test.Tasty.HUnit as T
+import Test.Tasty.HUnit qualified as T
 
 import Effectful
 

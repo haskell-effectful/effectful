@@ -6,7 +6,7 @@ import System.IO.Error (isDoesNotExistError)
 
 import Effectful
 import Effectful.Environment
-import qualified Utils as U
+import Utils qualified as U
 
 environmentTests :: TestTree
 environmentTests = testCaseSteps "Environment" $ \step -> do

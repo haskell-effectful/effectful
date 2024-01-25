@@ -35,15 +35,10 @@ module Effectful.FileSystem.IO.ByteString
   , hPutStrLn
   ) where
 
-import Prelude hiding
-  ( appendFile
-  , readFile
-  , writeFile
-  )
-
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as BS8
+import Data.ByteString qualified as BS
+import Data.ByteString.Char8 qualified as BS8
+import Prelude hiding (appendFile, readFile, writeFile)
 import System.IO (Handle)
 
 import Effectful

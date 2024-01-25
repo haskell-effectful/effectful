@@ -80,9 +80,9 @@ import Control.Concurrent.Async (Async)
 import Control.Exception (Exception, SomeException)
 import Control.Monad (forever)
 import Data.Kind (Type)
-import qualified Control.Concurrent.Async as A
-import qualified UnliftIO.Async as U
-import qualified UnliftIO.Internals.Async as I
+import Control.Concurrent.Async qualified as A
+import UnliftIO.Async qualified as U
+import UnliftIO.Internals.Async qualified as I
 
 import Effectful
 import Effectful.Concurrent.Effect

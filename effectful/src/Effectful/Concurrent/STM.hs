@@ -90,7 +90,7 @@ module Effectful.Concurrent.STM
   ) where
 
 import Control.Concurrent.STM (STM, TVar, TMVar, TChan, TQueue, TBQueue)
-import qualified Control.Concurrent.STM as STM
+import Control.Concurrent.STM qualified as STM
 import System.Mem.Weak (Weak)
 import GHC.Natural (Natural)
 

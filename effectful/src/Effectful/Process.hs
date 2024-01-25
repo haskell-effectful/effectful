@@ -51,7 +51,7 @@ module Effectful.Process
 import System.Exit (ExitCode)
 import System.IO (Handle)
 import System.Posix.Internals (FD)
-import qualified System.Process as P
+import System.Process qualified as P
 
 import Effectful
 import Effectful.Dispatch.Static

@@ -9,7 +9,7 @@ module Effectful.Timeout
   , timeout
   ) where
 
-import qualified System.Timeout as T
+import System.Timeout qualified as T
 
 import Effectful
 import Effectful.Dispatch.Static

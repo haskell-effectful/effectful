@@ -30,7 +30,7 @@ module Effectful.Concurrent.MVar.Strict
 
 import System.Mem.Weak (Weak)
 import Control.Concurrent.MVar (MVar)
-import qualified Control.Concurrent.MVar as M
+import Control.Concurrent.MVar qualified as M
 
 import Effectful
 import Effectful.Concurrent.Effect

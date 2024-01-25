@@ -9,12 +9,12 @@ import Criterion
 import Test.Tasty.Bench
 #endif
 
-import qualified UnliftIO as U
+import UnliftIO qualified as U
 
 import Effectful
+import Effectful.Concurrent.Async qualified as A
 import Effectful.State.Dynamic
 import Utils
-import qualified Effectful.Concurrent.Async as A
 
 unliftBenchmark :: Benchmark
 unliftBenchmark = bgroup "unlifting"

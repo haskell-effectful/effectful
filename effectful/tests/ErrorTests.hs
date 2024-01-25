@@ -5,8 +5,8 @@ import Test.Tasty.HUnit
 
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Error.Dynamic qualified as D
 import Effectful.Error.Static
-import qualified Effectful.Error.Dynamic as D
 
 errorTests :: TestTree
 errorTests = testGroup "Error"

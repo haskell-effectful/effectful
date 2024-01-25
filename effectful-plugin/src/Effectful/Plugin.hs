@@ -6,8 +6,8 @@ import Data.Function
 import Data.IORef
 import Data.Maybe
 import Data.Set (Set)
+import Data.Set qualified as Set
 import Data.Traversable
-import qualified Data.Set as Set
 
 import GHC.Core.Class (Class)
 import GHC.Core.InstEnv (InstEnvs, lookupInstEnv)

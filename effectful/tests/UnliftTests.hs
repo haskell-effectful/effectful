@@ -3,10 +3,10 @@ module UnliftTests (unliftTests) where
 import Control.Exception
 import Test.Tasty
 import Test.Tasty.HUnit
-import qualified UnliftIO.Async as A
+import UnliftIO.Async qualified as A
 
 import Effectful
-import qualified Utils as U
+import Utils qualified as U
 
 unliftTests :: TestTree
 unliftTests = testGroup "Unlift"

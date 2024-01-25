@@ -31,8 +31,8 @@ module Effectful.State.Dynamic
 
 import Effectful
 import Effectful.Dispatch.Dynamic
-import qualified Effectful.State.Static.Local as L
-import qualified Effectful.State.Static.Shared as S
+import Effectful.State.Static.Local qualified as L
+import Effectful.State.Static.Shared qualified as S
 
 -- | Provide access to a mutable value of type @s@.
 data State s :: Effect where

@@ -20,7 +20,7 @@ module Effectful.Environment
   , withProgName
   ) where
 
-import qualified System.Environment as E
+import System.Environment qualified as E
 
 import Effectful
 import Effectful.Dispatch.Static

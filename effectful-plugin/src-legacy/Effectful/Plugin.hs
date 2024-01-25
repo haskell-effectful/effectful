@@ -2,46 +2,56 @@
 {-# LANGUAGE CPP #-}
 module Effectful.Plugin (plugin) where
 
-import           Data.Function           (on)
-import           Data.IORef              (IORef, modifyIORef, newIORef, readIORef)
-import           Data.Maybe              (isNothing, mapMaybe)
-import           Data.Set                (Set)
-import qualified Data.Set                as Set
-import           Data.Traversable        (for)
-import           GHC.TcPluginM.Extra     (lookupModule, lookupName)
+import Data.Function (on)
+import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
+import Data.Maybe (isNothing, mapMaybe)
+import Data.Set (Set)
+import Data.Set qualified as Set
+import Data.Traversable (for)
+import GHC.TcPluginM.Extra (lookupModule, lookupName)
 
 #if __GLASGOW_HASKELL__ >= 900
-import           GHC.Core.Class          (Class)
-import           GHC.Core.InstEnv        (InstEnvs, lookupInstEnv)
-import           GHC.Core.Unify          (tcUnifyTy)
-import           GHC.Plugins             (Outputable (ppr), Plugin (pluginRecompile, tcPlugin), PredType,
-                                          Role (Nominal), TCvSubst, Type, defaultPlugin, eqType, fsLit, mkModuleName,
-                                          mkTcOcc, nonDetCmpType, purePlugin, showSDocUnsafe, splitAppTys, substTys,
-                                          tyConClass_maybe)
-import           GHC.Tc.Plugin           (tcLookupClass, tcPluginIO)
-import           GHC.Tc.Solver.Monad     (newWantedEq, runTcSDeriveds)
-import           GHC.Tc.Types            (TcM, TcPlugin (TcPlugin, tcPluginInit, tcPluginSolve, tcPluginStop),
-                                          TcPluginM, TcPluginResult (TcPluginOk), unsafeTcPluginTcM)
-import           GHC.Tc.Types.Constraint (Ct (CDictCan, CNonCanonical), CtEvidence (CtWanted), CtLoc, ctPred)
-import           GHC.Tc.Utils.Env        (tcGetInstEnvs)
-import           GHC.Tc.Utils.TcType     (tcSplitTyConApp)
+import GHC.Core.Class (Class)
+import GHC.Core.InstEnv (InstEnvs, lookupInstEnv)
+import GHC.Core.Unify (tcUnifyTy)
+import GHC.Plugins
+  ( Outputable (ppr), Plugin (pluginRecompile, tcPlugin), PredType
+  , Role (Nominal), TCvSubst, Type, defaultPlugin, eqType, fsLit, mkModuleName
+  , mkTcOcc, nonDetCmpType, purePlugin, showSDocUnsafe, splitAppTys, substTys
+  , tyConClass_maybe
+  )
+import GHC.Tc.Plugin (tcLookupClass, tcPluginIO)
+import GHC.Tc.Solver.Monad (newWantedEq, runTcSDeriveds)
+import GHC.Tc.Types
+  ( TcM, TcPlugin (TcPlugin, tcPluginInit, tcPluginSolve, tcPluginStop)
+  , TcPluginM, TcPluginResult (TcPluginOk), unsafeTcPluginTcM
+  )
+import GHC.Tc.Types.Constraint
+  (Ct (CDictCan, CNonCanonical), CtEvidence (CtWanted), CtLoc, ctPred
+  )
+import GHC.Tc.Utils.Env (tcGetInstEnvs)
+import GHC.Tc.Utils.TcType (tcSplitTyConApp)
 
 #else
-import           Class                   (Class)
+import Class (Class)
 #if __GLASGOW_HASKELL__ >= 810
-import           Constraint              (Ct (CDictCan, CNonCanonical), CtEvidence (CtWanted), CtLoc, ctPred)
+import Constraint
+  (Ct (CDictCan, CNonCanonical), CtEvidence (CtWanted), CtLoc, ctPred
+  )
 #endif
-import           GhcPlugins              (Outputable (ppr), Plugin (pluginRecompile, tcPlugin), PredType,
-                                          Role (Nominal), TCvSubst, Type, defaultPlugin, eqType, fsLit, mkModuleName,
-                                          mkTcOcc, nonDetCmpType, purePlugin, showSDocUnsafe, splitAppTys, substTys,
-                                          tyConClass_maybe)
-import           InstEnv                 (InstEnvs, lookupInstEnv)
-import           TcEnv                   (tcGetInstEnvs)
-import           TcPluginM               (tcLookupClass, tcPluginIO)
-import           TcRnTypes
-import           TcSMonad                (newWantedEq, runTcSDeriveds)
-import           TcType                  (tcSplitTyConApp)
-import           Unify                   (tcUnifyTy)
+import GhcPlugins
+  ( Outputable (ppr), Plugin (pluginRecompile, tcPlugin), PredType
+  , Role (Nominal), TCvSubst, Type, defaultPlugin, eqType, fsLit, mkModuleName
+  , mkTcOcc, nonDetCmpType, purePlugin, showSDocUnsafe, splitAppTys, substTys
+  , tyConClass_maybe
+  )
+import InstEnv (InstEnvs, lookupInstEnv)
+import TcEnv (tcGetInstEnvs)
+import TcPluginM (tcLookupClass, tcPluginIO)
+import TcRnTypes
+import TcSMonad (newWantedEq, runTcSDeriveds)
+import TcType (tcSplitTyConApp)
+import Unify (tcUnifyTy)
 #endif
 
 plugin :: Plugin

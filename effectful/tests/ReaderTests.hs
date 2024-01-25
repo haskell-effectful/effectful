@@ -6,7 +6,7 @@ import Test.Tasty.HUnit
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Reader.Dynamic
-import qualified Utils as U
+import Utils qualified as U
 
 readerTests :: TestTree
 readerTests = testGroup "Reader"

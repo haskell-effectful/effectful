@@ -83,8 +83,10 @@ module Effectful.Internal.Monad
   ) where
 
 import Control.Applicative
+import Control.Exception qualified as E
 import Control.Monad
 import Control.Monad.Base
+import Control.Monad.Catch qualified as C
 import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
@@ -96,8 +98,6 @@ import GHC.IO (IO(..))
 import GHC.Stack
 import System.IO.Unsafe (unsafeDupablePerformIO)
 import Unsafe.Coerce (unsafeCoerce)
-import qualified Control.Exception as E
-import qualified Control.Monad.Catch as C
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Env

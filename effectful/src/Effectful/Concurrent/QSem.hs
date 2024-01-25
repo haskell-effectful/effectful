@@ -14,7 +14,7 @@ module Effectful.Concurrent.QSem
   ) where
 
 import Control.Concurrent.QSem (QSem)
-import qualified Control.Concurrent.QSem as Q
+import Control.Concurrent.QSem qualified as Q
 
 import Effectful
 import Effectful.Concurrent.Effect

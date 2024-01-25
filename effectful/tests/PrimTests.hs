@@ -3,7 +3,7 @@ module PrimTests (primTests) where
 import Data.Primitive.MutVar
 import Test.Tasty
 import Test.Tasty.HUnit
-import qualified Utils as U
+import Utils qualified as U
 
 import Effectful
 import Effectful.Prim

@@ -1,15 +1,15 @@
 module StateTests (stateTests) where
 
+import Control.Exception.Lifted qualified as LE
+import Control.Monad.Catch qualified as E
 import Test.Tasty
 import Test.Tasty.HUnit
-import qualified Control.Monad.Catch as E
-import qualified Control.Exception.Lifted as LE
-import qualified UnliftIO.Exception as UE
+import UnliftIO.Exception qualified as UE
 
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.State.Static.Local
-import qualified Utils as U
+import Utils qualified as U
 
 stateTests :: TestTree
 stateTests = testGroup "State"

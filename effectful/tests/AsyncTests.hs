@@ -2,16 +2,16 @@ module AsyncTests (asyncTests) where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad
+import Data.Set qualified as S
 import Test.Tasty
 import Test.Tasty.HUnit
-import qualified Data.Set as S
 
 import Effectful
 import Effectful.Concurrent.Async
 import Effectful.Error.Static
 import Effectful.State.Dynamic
 
-import qualified Utils as U
+import Utils qualified as U
 
 asyncTests :: TestTree
 asyncTests = testGroup "Async"

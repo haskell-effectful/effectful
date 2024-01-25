@@ -1,3 +1,6 @@
+# effectful-th-1.0.0.2 (2024-??-??)
+* Drop support for GHC 8.8.
+
 # effectful-th-1.0.0.1 (2023-01-13)
 * Depend on `effectful-core`, not `effectful`.
 

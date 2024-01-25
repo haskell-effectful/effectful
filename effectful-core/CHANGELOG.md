@@ -1,4 +1,5 @@
 # effectful-core-2.3.1.0 (????-??-??)
+* Drop support for GHC 8.8.
 * Remove inaccurate information from the `Show` instance of `ErrorWrapper`.
 * Add `Effectful.Provider.List`, generalization of `Effectful.Provider`.
 * Respect `withFrozenCallStack` used by callers of `send`.

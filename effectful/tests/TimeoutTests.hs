@@ -6,7 +6,7 @@ import Test.Tasty.HUnit
 
 import Effectful
 import Effectful.Timeout
-import qualified Utils as U
+import Utils qualified as U
 
 timeoutTests :: TestTree
 timeoutTests = testGroup "Timeout"

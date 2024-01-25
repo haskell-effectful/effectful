@@ -11,9 +11,9 @@ import Test.Tasty.Bench hiding (env)
 
 import Control.Concurrent.Async
 import Control.Monad
-import qualified Effectful.Concurrent.Async as A
 
 import Effectful
+import Effectful.Concurrent.Async qualified as A
 import Effectful.Dispatch.Dynamic
 import Utils
 

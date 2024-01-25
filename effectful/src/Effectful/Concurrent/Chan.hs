@@ -17,7 +17,7 @@ module Effectful.Concurrent.Chan
   ) where
 
 import Control.Concurrent.Chan (Chan)
-import qualified Control.Concurrent.Chan as C
+import Control.Concurrent.Chan qualified as C
 
 import Effectful
 import Effectful.Concurrent.Effect

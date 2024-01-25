@@ -29,7 +29,7 @@ import Prelude hiding
   )
 
 import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as LBS8
+import Data.ByteString.Lazy.Char8 qualified as LBS8
 import System.IO (Handle)
 
 import Effectful

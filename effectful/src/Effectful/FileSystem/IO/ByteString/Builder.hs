@@ -16,10 +16,9 @@ module Effectful.FileSystem.IO.ByteString.Builder
 #endif
   ) where
 
-import Prelude hiding (writeFile)
-
 import Data.ByteString.Builder (Builder)
-import qualified Data.ByteString.Builder as BSB
+import Data.ByteString.Builder qualified as BSB
+import Prelude hiding (writeFile)
 import System.IO (Handle)
 
 import Effectful

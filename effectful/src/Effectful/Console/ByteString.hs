@@ -32,7 +32,7 @@ import Prelude hiding
   )
 
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Char8 as BS8
+import Data.ByteString.Char8 qualified as BS8
 
 import Effectful
 import Effectful.Console.Effect

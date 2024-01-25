@@ -12,7 +12,7 @@ import Effectful.Dispatch.Static.Primitive
 import Effectful.Reader.Static
 import Effectful.Provider
 import Effectful.State.Static.Local
-import qualified Utils as U
+import Utils qualified as U
 
 envTests :: TestTree
 envTests = testGroup "Env"

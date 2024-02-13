@@ -76,7 +76,7 @@ makeEffectImpl makeSig effName = do
   checkRequiredExtensions
   info <- reifyDatatype effName
   dispatch <- do
-    e <- getEff (ConT $ datatypeName info) (datatypeInstTypes info)
+    e <- getEff (ConT $ datatypeName info) (const WildCardT <$> datatypeInstTypes info)
     let dispatchE = ConT ''DispatchOf `AppT` e
         dynamic   = PromotedT 'Dynamic
     pure . TySynInstD $ TySynEqn Nothing dispatchE dynamic

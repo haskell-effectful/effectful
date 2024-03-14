@@ -9,7 +9,7 @@ benchmarks:     True
 ghcup-jobs:     True
 jobs-selection: any
 
-head-hackage:   False
+installed: -all
 
 raw-project
   package effectful

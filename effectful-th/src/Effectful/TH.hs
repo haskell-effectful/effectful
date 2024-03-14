@@ -9,7 +9,7 @@ module Effectful.TH
 
 import Control.Monad
 import Data.Char (toLower)
-import Data.Foldable (foldl')
+import Data.Foldable qualified as F
 import Data.Map.Strict qualified as Map
 import Data.Maybe
 import Language.Haskell.TH
@@ -175,16 +175,16 @@ makeCon makeSig name = do
                                       else VarT (tvName v)
 
             effCon = if makeSig
-              then foldl' AppTypeE (ConE name) tyApps
+              then F.foldl' AppTypeE (ConE name) tyApps
               else                  ConE name
-        in VarE 'send `AppE` foldl' (\f -> AppE f . VarE) effCon fnArgs
+        in VarE 'send `AppE` F.foldl' (\f -> AppE f . VarE) effCon fnArgs
 #else
   -- In GHC < 9.0, generate the following body:
   --
   -- e :: E v1 .. vN :> es => x1 -> .. -> xK -> E v1 .. vN (Eff es) r
   -- e x1 .. xK = send (E x1 .. xN :: E v1 .. vK (Eff es) r)
   let fnBody =
-        let effOp  = foldl' (\f -> AppE f . VarE) (ConE name) fnArgs
+        let effOp  = F.foldl' (\f -> AppE f . VarE) (ConE name) fnArgs
             effSig = effTy `AppT` (ConT ''Eff `AppT` esVar) `AppT` substM resTy
         in if makeSig
            then VarE 'send `AppE` SigE effOp effSig
@@ -194,8 +194,14 @@ makeCon makeSig name = do
         (ConT ''HasCallStack : UInfixT effTy ''(:>) esVar : actionCtx)
         (makeTyp esVar substM resTy actionParams)
 
+#if MIN_VERSION_template_haskell(2,22,0)
+  let rest = FunD fnName [Clause (VisAP . VarP <$> fnArgs) (NormalB fnBody) []]
+           : maybeToList ((\fix -> InfixD fix DataNamespaceSpecifier name) <$> fixity)
+#else
   let rest = FunD fnName [Clause (VarP <$> fnArgs) (NormalB fnBody) []]
            : maybeToList ((`InfixD` name) <$> fixity)
+#endif
+
   (++ rest) <$> withHaddock name [SigD fnName fnSig | makeSig]
 
 ----------------------------------------

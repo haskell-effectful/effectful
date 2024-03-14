@@ -1,4 +1,5 @@
 # effectful-th-1.0.0.2 (2024-??-??)
+* Add support for GHC 9.10.
 * Drop support for GHC 8.8.
 * `makeEffect` no longer generates `Wunused-type-patterns` warning ([#200](https://github.com/haskell-effectful/effectful/pull/200)).
 

@@ -17,6 +17,9 @@ data SimpleADT (m :: Type -> Type) (a :: Type)
   = SimpleADTC1 Int
   | SimpleADTC2 String
 
+-- Test generation of fixity information.
+infixl 1 `SimpleADTC1`
+
 makeEffect ''SimpleADT
 
 data ADTSyntax1 (m :: Type -> Type) (a :: Type)

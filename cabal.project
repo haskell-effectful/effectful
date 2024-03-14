@@ -9,3 +9,12 @@ allow-newer: cleff:*
            , freer-simple:*
            , fused-effects:*
            , polysemy:*
+
+-- GHC 9.10
+allow-newer: async:base
+           , hashable:base
+           , hashable:containers
+           , primitive:base
+           , tagged:template-haskell
+           , th-abstraction:containers
+           , th-abstraction:template-haskell

@@ -88,6 +88,10 @@ library
                      Effectful.Internal.Unlift
                      Effectful.Internal.Utils
                      Effectful.Labeled
+                     Effectful.Labeled.Error
+                     Effectful.Labeled.Reader
+                     Effectful.Labeled.State
+                     Effectful.Labeled.Writer
                      Effectful.NonDet
                      Effectful.Prim
                      Effectful.Provider
@@ -100,3 +104,10 @@ library
                      Effectful.Writer.Dynamic
                      Effectful.Writer.Static.Local
                      Effectful.Writer.Static.Shared
+
+    if impl(ghc >= 9.10)
+      exposed-modules: Effectful.Labeled.Error.VDQ
+                       Effectful.Labeled.Reader.VDQ
+                       Effectful.Labeled.State.VDQ
+                       Effectful.Labeled.VDQ
+                       Effectful.Labeled.Writer.VDQ

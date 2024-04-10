@@ -64,6 +64,10 @@ countdown n = bgroup (show n)
     [ bench "shallow" $ nf countdownEffectfulDynLocal n
     , bench "deep"    $ nf countdownEffectfulDynLocalDeep n
     ]
+  , bgroup "effectful (local/dynamic/labeled/send)"
+    [ bench "shallow" $ nf countdownEffectfulLabeledDynSendLocal n
+    , bench "deep"    $ nf countdownEffectfulLabeledDynSendLocalDeep n
+    ]
   , bgroup "effectful (shared/static)"
     [ bench "shallow" $ nf countdownEffectfulShared n
     , bench "deep"    $ nf countdownEffectfulSharedDeep n
@@ -71,6 +75,10 @@ countdown n = bgroup (show n)
   , bgroup "effectful (shared/dynamic)"
     [ bench "shallow" $ nf countdownEffectfulDynShared n
     , bench "deep"    $ nf countdownEffectfulDynSharedDeep n
+    ]
+  , bgroup "effectful (shared/dynamic/labeled/send)"
+    [ bench "shallow" $ nf countdownEffectfulLabeledDynSendShared n
+    , bench "deep"    $ nf countdownEffectfulLabeledDynSendSharedDeep n
     ]
 #ifdef VERSION_cleff
   , bgroup "cleff (local)"

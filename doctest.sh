@@ -23,8 +23,8 @@ run_doctest() {
     -XFlexibleInstances \
     -XGADTs \
     -XGeneralizedNewtypeDeriving \
-    -XLambdaCase \
     -XImportQualifiedPost \
+    -XLambdaCase \
     -XMultiParamTypeClasses \
     -XNoStarIsType \
     -XRankNTypes \

@@ -159,6 +159,7 @@ ephemeralConcUnlift uses k es0 unEff = do
           es <- cloneEnv esTemplate
           pure (n - 1, es)
     unEff m es
+{-# NOINLINE ephemeralConcUnlift #-}
 
 -- | Concurrent unlift that preserves the environment between calls to the
 -- unlifting function within a particular thread.
@@ -211,6 +212,7 @@ persistentConcUnlift cleanUp threads k es0 unEff = do
                     }
               pure (newEntries, es)
     unEff m es
+{-# NOINLINE persistentConcUnlift #-}
 
 ----------------------------------------
 -- Data types

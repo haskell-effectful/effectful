@@ -564,6 +564,7 @@ localUnlift (LocalEnv les) strategy k = case strategy of
   ConcUnlift p l -> unsafeEff $ \es -> do
     concUnliftIO les p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
+{-# INLINE localUnlift #-}
 
 -- | Create a local unlifting function with the given strategy.
 localUnliftIO
@@ -577,6 +578,7 @@ localUnliftIO
 localUnliftIO (LocalEnv les) strategy k = case strategy of
   SeqUnlift      -> liftIO $ seqUnliftIO les k
   ConcUnlift p l -> liftIO $ concUnliftIO les p l k
+{-# INLINE localUnliftIO #-}
 
 ----------------------------------------
 -- Lifts
@@ -618,6 +620,7 @@ localLift !_ strategy k = case strategy of
   ConcUnlift p l -> unsafeEff $ \es -> do
     concUnliftIO es p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
+{-# INLINE localLift #-}
 
 -- | Utility for lifting 'Eff' computations of type
 --
@@ -708,6 +711,7 @@ localLiftUnlift (LocalEnv les) strategy k = case strategy of
     concUnliftIO es p l $ \unliftEs -> do
       concUnliftIO les p l $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
+{-# INLINE localLiftUnlift #-}
 
 -- | Create a local unlifting function with the given strategy along with an
 -- unrestricted lifting function.
@@ -728,6 +732,7 @@ localLiftUnliftIO
 localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
   SeqUnlift      -> liftIO $ seqUnliftIO les $ k unsafeEff_
   ConcUnlift p l -> liftIO $ concUnliftIO les p l $ k unsafeEff_
+{-# INLINE localLiftUnliftIO #-}
 
 ----------------------------------------
 -- Misc
@@ -805,6 +810,7 @@ localHandle (LocalEnv les) strategy k = case strategy of
   ConcUnlift p l -> unsafeEff $ \es -> do
     eles <- copyRef es les
     concUnliftIO eles p l $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+{-# INLINE localHandle #-}
 
 copyRef
   :: forall e es localEs. e :> es

@@ -200,9 +200,10 @@ withEffToIO
   -> ((forall r. Eff es r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-withEffToIO strategy f = case strategy of
-  SeqUnlift      -> unsafeEff $ \es -> seqUnliftIO es f
-  ConcUnlift p b -> unsafeEff $ \es -> concUnliftIO es p b f
+withEffToIO strategy k = case strategy of
+  SeqUnlift      -> unsafeEff $ \es -> seqUnliftIO es k
+  ConcUnlift p b -> unsafeEff $ \es -> concUnliftIO es p b k
+{-# INLINE withEffToIO #-}
 
 -- | Create an unlifting function with the 'ConcUnlift' strategy.
 --
@@ -419,6 +420,7 @@ raiseWith strategy k = case strategy of
     es <- tailEnv ees
     concUnliftIO ees p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
+{-# INLINE raiseWith #-}
 
 -- | Eliminate a duplicate effect from the top of the effect stack.
 subsume :: e :> es => Eff (e : es) a -> Eff es a

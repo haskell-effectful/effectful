@@ -194,13 +194,14 @@ makeCon makeSig name = do
         (ConT ''HasCallStack : UInfixT effTy ''(:>) esVar : actionCtx)
         (makeTyp esVar substM resTy actionParams)
 
+  let mkDec fix =
 #if MIN_VERSION_template_haskell(2,22,0)
-  let rest = FunD fnName [Clause (VisAP . VarP <$> fnArgs) (NormalB fnBody) []]
-           : maybeToList ((\fix -> InfixD fix DataNamespaceSpecifier name) <$> fixity)
+        InfixD fix DataNamespaceSpecifier name
 #else
-  let rest = FunD fnName [Clause (VarP <$> fnArgs) (NormalB fnBody) []]
-           : maybeToList ((`InfixD` name) <$> fixity)
+        InfixD fix name
 #endif
+      rest = FunD fnName [Clause (VarP <$> fnArgs) (NormalB fnBody) []]
+           : maybeToList (mkDec <$> fixity)
 
   (++ rest) <$> withHaddock name [SigD fnName fnSig | makeSig]
 

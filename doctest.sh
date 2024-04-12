@@ -24,6 +24,7 @@ run_doctest() {
     -XGADTs \
     -XGeneralizedNewtypeDeriving \
     -XLambdaCase \
+    -XImportQualifiedPost \
     -XMultiParamTypeClasses \
     -XNoStarIsType \
     -XRankNTypes \

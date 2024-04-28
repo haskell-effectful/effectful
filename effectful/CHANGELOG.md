@@ -3,8 +3,9 @@
 * Remove inaccurate information from the `Show` instance of `ErrorWrapper`.
 * Add `Effectful.Provider.List`, generalization of `Effectful.Provider`.
 * Respect `withFrozenCallStack` used by callers of `send`.
-* Support using effects from the current environment in the local one via
-  `localSeqHandle` and `localHandle` from `Effectful.Dispatch.Dynamic`.
+* Support exchange of effects between the environment of the handler and the
+  local one via `localSeqLend`, `localLend`, `localSeqBorrow` and `localBorrow`
+  from `Effectful.Dispatch.Dynamic`.
 
 # effectful-2.3.0.0 (2023-09-13)
 * Deprecate `withConcEffToIO`.

@@ -47,8 +47,10 @@ module Effectful.Dispatch.Dynamic
   , localLiftUnliftIO
 
     -- *** Misc
-  , localSeqHandle
-  , localHandle
+  , localSeqLend
+  , localLend
+  , localSeqBorrow
+  , localBorrow
   , SharedSuffix
 
     -- * Re-exports
@@ -737,7 +739,7 @@ localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
 ----------------------------------------
 -- Misc
 
--- | Create a local handler of an effect available in the current environment.
+-- | Lend an effect to the local environment.
 --
 -- Consider the following effect:
 --
@@ -775,53 +777,87 @@ localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
 --   runD :: IOE :> es => Eff (D : es) a -> Eff es a
 --   runD = interpret $ \env -> \case
 --     D -> localSeqUnlift env $ \unlift -> do
---       localSeqHandle @IOE env $ \withIOE -> do
---         unlift . withIOE . runE $ pure ()
+--       localSeqLend @IOE env $ \useIOE -> do
+--         unlift . useIOE . runE $ pure ()
 -- :}
 --
 -- @since 2.3.1.0
-localSeqHandle
+localSeqLend
   :: (e :> es, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -> ((forall r. Eff (e : localEs) r -> Eff localEs r) -> Eff es a)
-  -- ^ Continuation with the local handler in scope.
+  -- ^ Continuation with the lent handler in scope.
   -> Eff es a
-localSeqHandle (LocalEnv les) k = unsafeEff $ \es -> do
+localSeqLend (LocalEnv les) k = unsafeEff $ \es -> do
   eles <- copyRef es les
   seqUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
 
--- | Create a local handler of an effect available in the current environment
--- with a given unlifting strategy.
+-- | Lend an effect to the local environment with a given unlifting strategy.
 --
--- Generalizes 'localSeqHandle'.
+-- Generalizes 'localSeqLend'.
 --
 -- @since 2.3.1.0
-localHandle
+localLend
   :: (e :> es, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -> UnliftStrategy
   -> ((forall r. Eff (e : localEs) r -> Eff localEs r) -> Eff es a)
-  -- ^ Continuation with the local handler in scope.
+  -- ^ Continuation with the lent handler in scope.
   -> Eff es a
-localHandle (LocalEnv les) strategy k = case strategy of
+localLend (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
     eles <- copyRef es les
     seqUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
   ConcUnlift p l -> unsafeEff $ \es -> do
     eles <- copyRef es les
     concUnliftIO eles p l $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
-{-# INLINE localHandle #-}
+{-# INLINE localLend #-}
+
+-- | Borrow an effect from the local environment.
+--
+-- @since 2.3.1.0
+localSeqBorrow
+  :: (e :> localEs, SharedSuffix es handlerEs)
+  => LocalEnv localEs handlerEs
+  -> ((forall r. Eff (e : es) r -> Eff es r) -> Eff es a)
+  -- ^ Continuation with the borrowed handler in scope.
+  -> Eff es a
+localSeqBorrow (LocalEnv les) k = unsafeEff $ \es -> do
+  ees <- copyRef les es
+  seqUnliftIO ees $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+
+-- | Borrow an effect from the local environment with a given unlifting
+-- strategy.
+--
+-- Generalizes 'localSeqBorrow'.
+--
+-- @since 2.3.1.0
+localBorrow
+  :: (e :> localEs, SharedSuffix es handlerEs)
+  => LocalEnv localEs handlerEs
+  -> UnliftStrategy
+  -> ((forall r. Eff (e : es) r -> Eff es r) -> Eff es a)
+  -- ^ Continuation with the borrowed handler in scope.
+  -> Eff es a
+localBorrow (LocalEnv les) strategy k = case strategy of
+  SeqUnlift -> unsafeEff $ \es -> do
+    ees <- copyRef les es
+    seqUnliftIO ees $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+  ConcUnlift p l -> unsafeEff $ \es -> do
+    ees <- copyRef les es
+    concUnliftIO ees p l $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+{-# INLINE localBorrow #-}
 
 copyRef
-  :: forall e es localEs. e :> es
-  => Env es
-  -> Env localEs
-  -> IO (Env (e : localEs))
+  :: forall e srcEs destEs. e :> srcEs
+  => Env srcEs
+  -> Env destEs
+  -> IO (Env (e : destEs))
 copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
   when (hstorage /= storage) $ do
     error "storages do not match"
   let size = sizeofPrimArray refs0 - offset
-      i = 2 * reifyIndex @e @es
+      i = 2 * reifyIndex @e @srcEs
   mrefs <- newPrimArray (size + 2)
   copyPrimArray mrefs 0 hrefs (hoffset + i) 2
   copyPrimArray mrefs 2 refs0 offset size

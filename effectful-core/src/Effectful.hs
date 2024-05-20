@@ -97,7 +97,8 @@ import Effectful.Internal.Monad
 --
 -- It implements support for extensible effects with both dynamic and static
 -- dispatch. For more information about each type consult the documentation in
--- "Effectful.Dispatch.Dynamic" and "Effectful.Dispatch.Static".
+-- "Effectful.Dispatch.Dynamic" and "Effectful.Dispatch.Static" (when in doubt,
+-- start with dynamic dispatch).
 --
 -- The library provides:
 --
@@ -109,7 +110,8 @@ import Effectful.Internal.Monad
 --   t'Effectful.Writer.Static.Local.Writer'.
 --
 -- - Utilities for defining new effects and interpreting them, possibly in terms
---   of already existing ones.
+--   of already existing ones (see introduction of the
+--   "Effectful.Dispatch.Dynamic" module for more information).
 --
 -- While basic effects can be used out of the box, in general it's recommended
 -- to create your own that serve a more specific purpose.

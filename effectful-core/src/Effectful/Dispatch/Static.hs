@@ -57,9 +57,7 @@ import Effectful.Internal.Monad
 -- * If the effect you're about to define has only one reasonable
 --   implementation, it makes a lot of sense to make it statically dispatched.
 --
--- Statically dispatched effects also perform slightly better than dynamically
--- dispatched ones, because their operations are implemented as standard top
--- level functions, so the compiler can apply more optimizations to them.
+-- __When in doubt, use dynamic dispatch as it's more flexible.__
 --
 
 -- $example

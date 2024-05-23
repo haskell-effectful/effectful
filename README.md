@@ -161,7 +161,8 @@ The library is split among several packages:
 For the examples see the *Introduction* sections of
 [`Effectful.Dispatch.Dynamic`](https://hackage.haskell.org/package/effectful-core/docs/Effectful-Dispatch-Dynamic.html)
 and
-[`Effectful.Dispatch.Static`](https://hackage.haskell.org/package/effectful-core/docs/Effectful-Dispatch-Static.html).
+[`Effectful.Dispatch.Static`](https://hackage.haskell.org/package/effectful-core/docs/Effectful-Dispatch-Static.html)
+(when in doubt, start with dynamic dispatch).
 
 ## Acknowledgements
 

@@ -1,4 +1,4 @@
-# effectful-core-2.3.1.0 (????-??-??)
+# effectful-core-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.
 * Remove inaccurate information from the `Show` instance of `ErrorWrapper`.
 * Add `Effectful.Provider.List`, generalization of `Effectful.Provider`.

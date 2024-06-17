@@ -739,6 +739,9 @@ localUnlift (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
     seqUnliftIO les $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
+  SeqForkUnlift -> unsafeEff $ \es -> do
+    seqForkUnliftIO les $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
   ConcUnlift p l -> unsafeEff $ \es -> do
     concUnliftIO les p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
@@ -755,6 +758,7 @@ localUnliftIO
   -> Eff es a
 localUnliftIO (LocalEnv les) strategy k = case strategy of
   SeqUnlift      -> liftIO $ seqUnliftIO les k
+  SeqForkUnlift  -> liftIO $ seqForkUnliftIO les k
   ConcUnlift p l -> liftIO $ concUnliftIO les p l k
 {-# INLINE localUnliftIO #-}
 
@@ -794,6 +798,9 @@ localLift !_ strategy k = case strategy of
   -- localEs type variable. It's also strict so that callers don't cheat.
   SeqUnlift -> unsafeEff $ \es -> do
     seqUnliftIO es $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
+  SeqForkUnlift -> unsafeEff $ \es -> do
+    seqForkUnliftIO es $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
   ConcUnlift p l -> unsafeEff $ \es -> do
     concUnliftIO es p l $ \unlift -> do
@@ -885,6 +892,10 @@ localLiftUnlift (LocalEnv les) strategy k = case strategy of
     seqUnliftIO es $ \unliftEs -> do
       seqUnliftIO les $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
+  SeqForkUnlift -> unsafeEff $ \es -> do
+    seqForkUnliftIO es $ \unliftEs -> do
+      seqForkUnliftIO les $ \unliftLocalEs -> do
+        (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
   ConcUnlift p l -> unsafeEff $ \es -> do
     concUnliftIO es p l $ \unliftEs -> do
       concUnliftIO les p l $ \unliftLocalEs -> do
@@ -909,6 +920,7 @@ localLiftUnliftIO
   -> Eff es a
 localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
   SeqUnlift      -> liftIO $ seqUnliftIO les $ k unsafeEff_
+  SeqForkUnlift  -> liftIO $ seqForkUnliftIO les $ k unsafeEff_
   ConcUnlift p l -> liftIO $ concUnliftIO les p l $ k unsafeEff_
 {-# INLINE localLiftUnliftIO #-}
 
@@ -987,6 +999,9 @@ localLend (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
     eles <- copyRefs @lentEs es les
     seqUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+  SeqForkUnlift -> unsafeEff $ \es -> do
+    eles <- copyRefs @lentEs es les
+    seqForkUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
   ConcUnlift p l -> unsafeEff $ \es -> do
     eles <- copyRefs @lentEs es les
     concUnliftIO eles p l $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
@@ -1025,6 +1040,9 @@ localBorrow (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
     ees <- copyRefs @borrowedEs les es
     seqUnliftIO ees $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+  SeqForkUnlift -> unsafeEff $ \es -> do
+    ees <- copyRefs @borrowedEs les es
+    seqForkUnliftIO ees $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
   ConcUnlift p l -> unsafeEff $ \es -> do
     ees <- copyRefs @borrowedEs les es
     concUnliftIO ees p l $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift

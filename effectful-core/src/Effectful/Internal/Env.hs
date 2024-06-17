@@ -383,7 +383,10 @@ getLocation (Env offset refs storage) = do
   -- referenced.
   when (version /= storageVersion) $ do
     error $ "version (" ++ show version ++ ") /= storageVersion ("
-         ++ show storageVersion ++ ")"
+         ++ show storageVersion ++ ")\n"
+         ++ "If you're attempting to run an unlifting function outside "
+         ++ "of the scope of effects it captures, have a look at "
+         ++ "UnliftingStrategy (SeqForkUnlift)."
   pure (ref, es)
 
 ----------------------------------------

@@ -44,6 +44,54 @@ data UnliftStrategy
   -- ^ The sequential strategy is the fastest and a default setting for
   -- t'Effectful.IOE'. Any attempt of calling the unlifting function in threads
   -- distinct from its creator will result in a runtime error.
+  | SeqForkUnlift
+  -- ^ Like 'SeqUnlift', but all unlifted actions will be executed in a cloned
+  -- environment.
+  --
+  -- The main consequence is that thread local state is forked at the point of
+  -- creation of the unlifting function and its modifications in unlifted
+  -- actions will not affect the main thread of execution (and vice versa):
+  --
+  -- >>> import Effectful
+  -- >>> import Effectful.State.Dynamic
+  -- >>> :{
+  --  action :: (IOE :> es, State Int :> es) => Eff es ()
+  --  action = do
+  --    modify @Int (+1)
+  --    withEffToIO SeqForkUnlift $ \unlift -> unlift $ modify @Int (+2)
+  --    modify @Int (+4)
+  -- :}
+  --
+  -- >>> runEff . execStateLocal @Int 0 $ action
+  -- 5
+  --
+  -- >>> runEff . execStateShared @Int 0 $ action
+  -- 7
+  --
+  -- Because of this it's possible to safely use the unlifting function outside
+  -- of the scope of effects it captures, e.g. by creating an @IO@ action that
+  -- executes effectful operations and running it later:
+  --
+  -- >>> :{
+  --   delayed :: UnliftStrategy -> IO (IO String)
+  --   delayed strategy = runEff . evalStateLocal "Hey" $ do
+  --     r <- withEffToIO strategy $ \unlift -> pure $ unlift get
+  --     modify (++ "!!!")
+  --     pure r
+  -- :}
+  --
+  -- This doesn't work with the 'SeqUnlift' strategy because when the returned
+  -- action runs, @State@ is no longer in scope:
+  --
+  -- >>> join $ delayed SeqUnlift
+  -- *** Exception: version (...) /= storageVersion (0)
+  -- ...
+  --
+  -- However, it does with the 'SeqForkUnlift' strategy:
+  --
+  -- >>> join $ delayed SeqForkUnlift
+  -- "Hey"
+  --
   | ConcUnlift !Persistence !Limit
   -- ^ The concurrent strategy makes it possible for the unlifting function to
   -- be called in threads distinct from its creator. See 'Persistence' and

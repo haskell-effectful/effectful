@@ -50,6 +50,7 @@ module Effectful.Internal.Monad
 
   -- ** Low-level unlifts
   , seqUnliftIO
+  , seqForkUnliftIO
   , concUnliftIO
 
   -- * Dispatch
@@ -202,6 +203,7 @@ withEffToIO
   -> Eff es a
 withEffToIO strategy k = case strategy of
   SeqUnlift      -> unsafeEff $ \es -> seqUnliftIO es k
+  SeqForkUnlift  -> unsafeEff $ \es -> seqForkUnliftIO es k
   ConcUnlift p b -> unsafeEff $ \es -> concUnliftIO es p b k
 {-# INLINE withEffToIO #-}
 
@@ -228,6 +230,16 @@ seqUnliftIO
   -- ^ Continuation with the unlifting function in scope.
   -> IO a
 seqUnliftIO es k = seqUnlift k es unEff
+
+-- | Create an unlifting function with the 'SeqForkUnlift' strategy.
+seqForkUnliftIO
+  :: HasCallStack
+  => Env es
+  -- ^ The environment.
+  -> ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
+  -> IO a
+seqForkUnliftIO es0 k = cloneEnv es0 >>= \es -> seqUnlift k es unEff
 
 -- | Create an unlifting function with the 'ConcUnlift' strategy.
 concUnliftIO
@@ -415,6 +427,10 @@ raiseWith strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \ees -> do
     es <- tailEnv ees
     seqUnliftIO ees $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
+  SeqForkUnlift -> unsafeEff $ \ees -> do
+    es <- tailEnv ees
+    seqForkUnliftIO ees $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
   ConcUnlift p l -> unsafeEff $ \ees -> do
     es <- tailEnv ees

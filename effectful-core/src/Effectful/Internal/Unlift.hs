@@ -41,6 +41,7 @@ data UnliftStrategy
   -- ^ The sequential strategy is the fastest and a default setting for
   -- t'Effectful.IOE'. Any attempt of calling the unlifting function in threads
   -- distinct from its creator will result in a runtime error.
+  | SeqForkUnlift
   | ConcUnlift !Persistence !Limit
   -- ^ The concurrent strategy makes it possible for the unlifting function to
   -- be called in threads distinct from its creator. See 'Persistence' and

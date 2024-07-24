@@ -1,3 +1,8 @@
+# effectful-core-2.4.0.0 (????-??-??)
+* Improve `Effectful.Labeled` and add `Effectful.Labeled.Error`,
+  `Effectful.Labeled.Reader`, `Effectful.Labeled.State` and
+  `Effectful.Labeled.Writer`.
+
 # effectful-core-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.
 * Remove inaccurate information from the `Show` instance of `ErrorWrapper`.

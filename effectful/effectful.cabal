@@ -1,7 +1,7 @@
 cabal-version:      3.0
 build-type:         Simple
 name:               effectful
-version:            2.3.1.0
+version:            2.4.0.0
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control
@@ -69,7 +69,7 @@ library
                     , async               >= 2.2.2
                     , bytestring          >= 0.10
                     , directory           >= 1.3.2
-                    , effectful-core      >= 2.3.1.0   && < 2.3.2.0
+                    , effectful-core      >= 2.4.0.0   && < 2.4.1.0
                     , process             >= 1.6.9
 
                     , time                >= 1.9.2
@@ -126,13 +126,6 @@ library
                          , Effectful.Writer.Dynamic
                          , Effectful.Writer.Static.Local
                          , Effectful.Writer.Static.Shared
-
-    if impl(ghc >= 9.10)
-      reexported-modules:  Effectful.Labeled.Error.VDQ
-                         , Effectful.Labeled.Reader.VDQ
-                         , Effectful.Labeled.State.VDQ
-                         , Effectful.Labeled.VDQ
-                         , Effectful.Labeled.Writer.VDQ
 
 test-suite test
     import:         language

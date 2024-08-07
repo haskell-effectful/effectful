@@ -26,6 +26,10 @@ module Effectful.Dispatch.Dynamic
   , reinterpret
   , interpose
   , impose
+  , handle
+  , interpret_
+  , reinterpret_
+  , handle_
 
     -- ** Handling local 'Eff' computations
   , LocalEnv
@@ -151,14 +155,14 @@ import Effectful.Internal.Utils
 --    :: (IOE :> es, Error FsError :> es)
 --    => Eff (FileSystem : es) a
 --    -> Eff es a
---  runFileSystemIO = interpret $ \_ -> \case
+--  runFileSystemIO = interpret_ $ \case
 --    ReadFile path           -> adapt $ IO.readFile path
 --    WriteFile path contents -> adapt $ IO.writeFile path contents
 --    where
 --      adapt m = liftIO m `catch` \(e::IOException) -> throwError . FsError $ show e
 -- :}
 --
--- Here, we use 'interpret' and simply execute corresponding 'IO' actions for
+-- Here, we use 'interpret_' and simply execute corresponding 'IO' actions for
 -- each operation, additionally doing a bit of error management.
 --
 -- On the other hand, maybe there is a situation in which instead of interacting
@@ -174,14 +178,14 @@ import Effectful.Internal.Utils
 --     => M.Map FilePath String
 --     -> Eff (FileSystem : es) a
 --     -> Eff es a
---   runFileSystemPure fs0 = reinterpret (evalState fs0) $ \_ -> \case
+--   runFileSystemPure fs0 = reinterpret_ (evalState fs0) $ \case
 --     ReadFile path -> gets (M.lookup path) >>= \case
 --       Just contents -> pure contents
 --       Nothing       -> throwError . FsError $ "File not found: " ++ show path
 --     WriteFile path contents -> modify $ M.insert path contents
 -- :}
 --
--- Here, we use 'reinterpret' and introduce a
+-- Here, we use 'reinterpret_' and introduce a
 -- t'Effectful.State.Static.Local.State' effect for the storage that is private
 -- to the effect handler and cannot be accessed outside of it.
 --
@@ -234,7 +238,7 @@ import Effectful.Internal.Utils
 --
 -- >>> :{
 --  runProfiling :: IOE :> es => Eff (Profiling : es) a -> Eff es a
---  runProfiling = interpret $ \_ -> \case
+--  runProfiling = interpret_ $ \case
 --    Profile label action -> do
 --      t1 <- liftIO getMonotonicTime
 --      r <- action
@@ -251,7 +255,8 @@ import Effectful.Internal.Utils
 -- in which the @Profile@ operation was called, which is opaque as the effect
 -- handler cannot possibly know how it looks like.
 --
--- The solution is to use the 'LocalEnv' that an 'EffectHandler' is given to run
+-- The solution is to use the more powerful 'interpret' function,whose 'EffectHandler'
+-- is passsed a 'LocalEnv'. We can use that to run
 -- the action using one of the functions from the 'localUnlift' family:
 --
 -- >>> :{
@@ -343,7 +348,7 @@ import Effectful.Internal.Utils
 --
 -- >>> :{
 --   runDummyRNG :: Eff (RNG : es) a -> Eff es a
---   runDummyRNG = interpret $ \_ -> \case
+--   runDummyRNG = interpret_ $ \case
 --     RandomInt -> pure 55
 -- :}
 --
@@ -522,6 +527,52 @@ impose runHandlerEs handler m = unsafeEff $ \es -> do
     )
   where
     mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
+
+-- | An 'EffectHandler' that does not look at the environment.
+type EffectHandler_ e es
+  = forall a localEs. (HasCallStack, e :> localEs)
+  => e (Eff localEs) a
+  -- ^ The effect performed in the local environment.
+  -> Eff es a
+
+-- | Flipped version of 'interpret'.
+handle
+  :: DispatchOf e ~ Dynamic
+  => Eff (e : es) a
+  -> EffectHandler e es
+  -- ^ The effect handler.
+  -> Eff      es  a
+m `handle` handler = interpret handler m
+
+-- | A version of 'interpret' where the handler doesn't look at the environment.
+interpret_
+  :: DispatchOf e ~ Dynamic
+  => EffectHandler_ e es
+  -- ^ The effect handler.
+  -> Eff (e : es) a
+  -> Eff      es  a
+interpret_ handler = interpret (const handler)
+
+-- | A version of 'reinterpret' where the handler doesn't look at the environment.
+reinterpret_
+  :: DispatchOf e ~ Dynamic
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handler.
+  -> EffectHandler_ e handlerEs
+  -- ^ The effect handler.
+  -> Eff (e : es) a
+  -> Eff      es  b
+reinterpret_ runHandlerEs handler = reinterpret runHandlerEs (const handler)
+
+-- | Flipped version of 'interpret_'.
+handle_
+  :: DispatchOf e ~ Dynamic
+  => Eff (e : es) a
+  -> EffectHandler_ e es
+  -- ^ The effect handler.
+  -> Eff      es  a
+m `handle_` handler = interpret_ handler m
+
 
 ----------------------------------------
 -- Unlifts

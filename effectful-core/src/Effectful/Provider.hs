@@ -74,7 +74,7 @@ import Effectful.Internal.Utils
 --     => FilePath
 --     -> Eff (Write : es) a
 --     -> Eff es a
---   runWriteIO fp = interpret $ \_ -> \case
+--   runWriteIO fp = interpret_ $ \case
 --     Write msg -> liftIO . putStrLn $ fp ++ ": " ++ msg
 -- :}
 --
@@ -84,7 +84,7 @@ import Effectful.Internal.Utils
 --     => FilePath
 --     -> Eff (Write : es) a
 --     -> Eff es a
---   runWritePure fp = interpret $ \_ -> \case
+--   runWritePure fp = interpret_ $ \case
 --     Write msg -> modify $ M.insertWith (++) fp [msg]
 -- :}
 --

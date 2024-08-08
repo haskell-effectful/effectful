@@ -53,6 +53,13 @@ module Effectful.Dispatch.Dynamic
   , localBorrow
   , SharedSuffix
 
+    -- ** Utils for first order effects
+  , EffectHandler_
+  , interpret_
+  , reinterpret_
+  , interpose_
+  , impose_
+
     -- * Re-exports
   , HasCallStack
   ) where
@@ -212,6 +219,9 @@ import Effectful.Internal.Utils
 --
 -- If an effect makes use of the @m@ parameter, it is a /higher order effect/.
 --
+-- /Note:/ for handling first order effects you can use 'interpret_' or
+-- 'reinterpret_' whose 'EffectHandler_' doesn't take the 'LocalEnv' parameter.
+--
 -- Interpretation of higher order effects is slightly more involving. To see
 -- why, let's consider the @Profiling@ effect for logging how much time a
 -- specific action took to run:
@@ -343,7 +353,7 @@ import Effectful.Internal.Utils
 --
 -- >>> :{
 --   runDummyRNG :: Eff (RNG : es) a -> Eff es a
---   runDummyRNG = interpret $ \_ -> \case
+--   runDummyRNG = interpret_ $ \case
 --     RandomInt -> pure 55
 -- :}
 --
@@ -448,7 +458,7 @@ reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
 --
 -- >>> :{
 --   runE :: IOE :> es => Eff (E : es) a -> Eff es a
---   runE = interpret $ \_ Op -> liftIO (putStrLn "op")
+--   runE = interpret_ $ \Op -> liftIO (putStrLn "op")
 -- :}
 --
 -- >>> runEff . runE $ send Op
@@ -456,7 +466,7 @@ reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
 --
 -- >>> :{
 --   augmentE :: (E :> es, IOE :> es) => Eff es a -> Eff es a
---   augmentE = interpose $ \_ Op -> liftIO (putStrLn "augmented op") >> send Op
+--   augmentE = interpose_ $ \Op -> liftIO (putStrLn "augmented op") >> send Op
 -- :}
 --
 -- >>> runEff . runE . augmentE $ send Op
@@ -522,6 +532,66 @@ impose runHandlerEs handler m = unsafeEff $ \es -> do
     )
   where
     mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
+
+----------------------------------------
+-- First order effects
+
+-- | Type signature of a first order effect handler.
+--
+-- @since 2.4.0.0
+type EffectHandler_ e es
+  = forall a localEs. HasCallStack
+  => e (Eff localEs) a
+  -- ^ The operation.
+  -> Eff es a
+
+-- | 'interpret' for first order effects.
+--
+-- @since 2.4.0.0
+interpret_
+  :: DispatchOf e ~ Dynamic
+  => EffectHandler_ e es
+  -- ^ The effect handler.
+  -> Eff (e : es) a
+  -> Eff      es  a
+interpret_ handler = interpret (const handler)
+
+-- | 'reinterpret' for first order effects.
+--
+-- @since 2.4.0.0
+reinterpret_
+  :: DispatchOf e ~ Dynamic
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handler.
+  -> EffectHandler_ e handlerEs
+  -- ^ The effect handler.
+  -> Eff (e : es) a
+  -> Eff      es  b
+reinterpret_ runHandlerEs handler = reinterpret runHandlerEs (const handler)
+
+-- | 'interpose' for first order effects.
+--
+-- @since 2.4.0.0
+interpose_
+  :: forall e es a. (DispatchOf e ~ Dynamic, e :> es)
+  => EffectHandler_ e es
+  -- ^ The effect handler.
+  -> Eff es a
+  -> Eff es a
+interpose_ handler = interpose (const handler)
+
+-- | 'impose' for first order effects.
+--
+-- @since 2.4.0.0
+impose_
+  :: forall e es handlerEs a b. (DispatchOf e ~ Dynamic, e :> es)
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handler.
+  -> EffectHandler_ e handlerEs
+  -- ^ The effect handler.
+  -> Eff es a
+  -> Eff es b
+impose_ runHandlerEs handler = impose runHandlerEs (const handler)
 
 ----------------------------------------
 -- Unlifts

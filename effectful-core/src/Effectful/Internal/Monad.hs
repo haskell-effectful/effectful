@@ -500,7 +500,7 @@ type EffectHandler e es
   -- ^ Capture of the local environment for handling local 'Eff' computations
   -- when @e@ is a higher order effect.
   -> e (Eff localEs) a
-  -- ^ The effect performed in the local environment.
+  -- ^ The operation.
   -> Eff es a
 
 -- | An internal representation of dynamically dispatched effects, i.e. the

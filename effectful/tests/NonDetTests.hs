@@ -84,7 +84,7 @@ outerEmpty :: (HasCallStack, OuterEmpty :> es) => Eff es a
 outerEmpty = send OuterEmpty
 
 runOuterEmpty :: NonDet :> es => Eff (OuterEmpty : es) a -> Eff es a
-runOuterEmpty = interpret $ \_ -> \case
+runOuterEmpty = interpret_ $ \case
   OuterEmpty -> emptyEff
 
 ----

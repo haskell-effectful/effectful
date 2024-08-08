@@ -96,7 +96,7 @@ data TaggedState k s :: Effect where
 type instance DispatchOf (TaggedState k s) = Dynamic
 
 runTaggedState :: s -> Eff (TaggedState k s : es) a -> Eff es (a, s)
-runTaggedState s = reinterpret (runState s) $ \_ -> \case
+runTaggedState s = reinterpret_ (runState s) $ \case
   TaggedGet    -> get
   TaggedPut s' -> put s'
 
@@ -112,5 +112,5 @@ data DBAction whichDb :: Effect where
 type instance DispatchOf (DBAction whichDb) = Dynamic
 
 runDBAction :: Eff (DBAction which : es) a -> Eff es a
-runDBAction = interpret $ \_ -> \case
+runDBAction = interpret_ $ \case
   DoSelect (Select a) -> pure $ Just a

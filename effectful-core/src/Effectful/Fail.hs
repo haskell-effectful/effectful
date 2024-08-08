@@ -15,10 +15,10 @@ import Effectful.Internal.Monad (Fail(..))
 
 -- | Run the 'Fail' effect via 'Error'.
 runFail :: Eff (Fail : es) a -> Eff es (Either String a)
-runFail = reinterpret runErrorNoCallStack $ \_ -> \case
+runFail = reinterpret_ runErrorNoCallStack $ \case
   Fail msg -> throwError msg
 
 -- | Run the 'Fail' effect via the 'MonadFail' instance for 'IO'.
 runFailIO :: IOE :> es => Eff (Fail : es) a -> Eff es a
-runFailIO = interpret $ \_ -> \case
+runFailIO = interpret_ $ \case
   Fail msg -> liftIO $ fail msg

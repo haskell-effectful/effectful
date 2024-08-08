@@ -1,3 +1,7 @@
+# effectful-core-2.4.0.0 (????-??-??)
+* Add utility functions for handling first order effects to
+  `Effectful.Dispatch.Dynamic`.
+
 # effectful-core-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.
 * Remove inaccurate information from the `Show` instance of `ErrorWrapper`.

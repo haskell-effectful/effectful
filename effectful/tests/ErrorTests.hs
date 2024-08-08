@@ -42,5 +42,5 @@ outerThrow :: (HasCallStack, OuterThrow :> es) => Eff es ()
 outerThrow = send OuterThrow
 
 runOuterThrow :: Error String :> es => Eff (OuterThrow : es) a -> Eff es a
-runOuterThrow = interpret $ \_ -> \case
+runOuterThrow = interpret_ $ \case
   OuterThrow -> throwError "outer"

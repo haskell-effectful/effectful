@@ -102,7 +102,7 @@ effectful_tryFileSize :: Effectful_File E.:> es => FilePath -> E.Eff es (Maybe I
 effectful_tryFileSize = E.send . Effectful_tryFileSize
 
 effectful_runFile :: E.IOE E.:> es => E.Eff (Effectful_File : es) a -> E.Eff es a
-effectful_runFile = E.interpret \_ -> \case
+effectful_runFile = E.interpret_ \case
   Effectful_tryFileSize path -> liftIO $ tryGetFileSize path
 
 data Effectful_Logging :: E.Effect where
@@ -116,7 +116,7 @@ effectful_logMsg = E.send . Effectful_logMsg . T.pack
 effectful_runLogging
   :: E.Eff (Effectful_Logging : es) a
   -> E.Eff es (a, [Text])
-effectful_runLogging = E.reinterpret (E.runState []) \_ -> \case
+effectful_runLogging = E.reinterpret_ (E.runState []) \case
   Effectful_logMsg msg -> E.modify (msg :)
 
 ----------

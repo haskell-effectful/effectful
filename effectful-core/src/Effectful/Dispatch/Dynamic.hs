@@ -595,7 +595,7 @@ imposeWith runHandlerEs m handler = impose runHandlerEs handler m
 -- | Type signature of a first order effect handler.
 --
 -- @since 2.4.0.0
-type EffectHandler_ e es
+type EffectHandler_ (e :: Effect) (es :: [Effect])
   = forall a localEs. HasCallStack
   => e (Eff localEs) a
   -- ^ The operation.

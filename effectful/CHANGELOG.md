@@ -1,4 +1,6 @@
 # effectful-2.4.0.0 (????-??-??)
+* Add utility functions for handling effects that take the effect handler as the
+  last parameter to `Effectful.Dispatch.Dynamic`.
 * Add utility functions for handling first order effects to
   `Effectful.Dispatch.Dynamic`.
 

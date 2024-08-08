@@ -23,9 +23,13 @@ module Effectful.Dispatch.Dynamic
     -- * Handling effects
   , EffectHandler
   , interpret
+  , interpretWith
   , reinterpret
+  , reinterpretWith
   , interpose
+  , interposeWith
   , impose
+  , imposeWith
 
     -- ** Handling local 'Eff' computations
   , LocalEnv
@@ -56,9 +60,13 @@ module Effectful.Dispatch.Dynamic
     -- ** Utils for first order effects
   , EffectHandler_
   , interpret_
+  , interpretWith_
   , reinterpret_
+  , reinterpretWith_
   , interpose_
+  , interposeWith_
   , impose_
+  , imposeWith_
 
     -- * Re-exports
   , HasCallStack
@@ -428,6 +436,17 @@ interpret handler m = unsafeEff $ \es -> do
   where
     mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
+-- | 'interpret' with the effect handler as the last argument.
+--
+-- @since 2.4.0.0
+interpretWith
+  :: DispatchOf e ~ Dynamic
+  => Eff (e : es) a
+  -> EffectHandler e es
+  -- ^ The effect handler.
+  -> Eff      es  a
+interpretWith m handler = interpret handler m
+
 -- | Interpret an effect using other, private effects.
 --
 -- @'interpret' ≡ 'reinterpret' 'id'@
@@ -444,6 +463,19 @@ reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
     (`unEff` es) $ runHandler (mkHandler handlerEs) m
   where
     mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
+
+-- | 'reinterpret' with the effect handler as the last argument.
+--
+-- @since 2.4.0.0
+reinterpretWith
+  :: DispatchOf e ~ Dynamic
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handler.
+  -> Eff (e : es) a
+  -> EffectHandler e handlerEs
+  -- ^ The effect handler.
+  -> Eff      es  b
+reinterpretWith runHandlerEs m handler = reinterpret runHandlerEs handler m
 
 -- | Replace the handler of an existing effect with a new one.
 --
@@ -499,6 +531,17 @@ interpose handler m = unsafeEff $ \es -> do
   where
     mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
+-- | 'interpose' with the effect handler as the last argument.
+--
+-- @since 2.4.0.0
+interposeWith
+  :: (DispatchOf e ~ Dynamic, e :> es)
+  => Eff es a
+  -> EffectHandler e es
+  -- ^ The effect handler.
+  -> Eff es a
+interposeWith m handler = interpose handler m
+
 -- | Replace the handler of an existing effect with a new one that uses other,
 -- private effects.
 --
@@ -533,6 +576,19 @@ impose runHandlerEs handler m = unsafeEff $ \es -> do
   where
     mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
+-- | 'impose' with the effect handler as the last argument.
+--
+-- @since 2.4.0.0
+imposeWith
+  :: (DispatchOf e ~ Dynamic, e :> es)
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handler.
+  -> Eff es a
+  -> EffectHandler e handlerEs
+  -- ^ The effect handler.
+  -> Eff es b
+imposeWith runHandlerEs m handler = impose runHandlerEs handler m
+
 ----------------------------------------
 -- First order effects
 
@@ -556,6 +612,17 @@ interpret_
   -> Eff      es  a
 interpret_ handler = interpret (const handler)
 
+-- | 'interpretWith' for first order effects.
+--
+-- @since 2.4.0.0
+interpretWith_
+  :: DispatchOf e ~ Dynamic
+  => Eff (e : es) a
+  -> EffectHandler_ e es
+  -- ^ The effect handler.
+  -> Eff      es  a
+interpretWith_ m handler = interpretWith m (const handler)
+
 -- | 'reinterpret' for first order effects.
 --
 -- @since 2.4.0.0
@@ -569,22 +636,46 @@ reinterpret_
   -> Eff      es  b
 reinterpret_ runHandlerEs handler = reinterpret runHandlerEs (const handler)
 
+-- | 'reinterpretWith' for first order effects.
+--
+-- @since 2.4.0.0
+reinterpretWith_
+  :: DispatchOf e ~ Dynamic
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handler.
+  -> Eff (e : es) a
+  -> EffectHandler_ e handlerEs
+  -- ^ The effect handler.
+  -> Eff      es  b
+reinterpretWith_ runHandlerEs m handler = reinterpretWith runHandlerEs m (const handler)
+
 -- | 'interpose' for first order effects.
 --
 -- @since 2.4.0.0
 interpose_
-  :: forall e es a. (DispatchOf e ~ Dynamic, e :> es)
+  :: (DispatchOf e ~ Dynamic, e :> es)
   => EffectHandler_ e es
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es a
 interpose_ handler = interpose (const handler)
 
+-- | 'interposeWith' for first order effects.
+--
+-- @since 2.4.0.0
+interposeWith_
+  :: (DispatchOf e ~ Dynamic, e :> es)
+  => Eff es a
+  -> EffectHandler_ e es
+  -- ^ The effect handler.
+  -> Eff es a
+interposeWith_ m handler = interposeWith m (const handler)
+
 -- | 'impose' for first order effects.
 --
 -- @since 2.4.0.0
 impose_
-  :: forall e es handlerEs a b. (DispatchOf e ~ Dynamic, e :> es)
+  :: (DispatchOf e ~ Dynamic, e :> es)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> EffectHandler_ e handlerEs
@@ -592,6 +683,19 @@ impose_
   -> Eff es a
   -> Eff es b
 impose_ runHandlerEs handler = impose runHandlerEs (const handler)
+
+-- | 'imposeWith' for first order effects.
+--
+-- @since 2.4.0.0
+imposeWith_
+  :: (DispatchOf e ~ Dynamic, e :> es)
+  => (Eff handlerEs a -> Eff es b)
+  -- ^ Introduction of effects encapsulated within the handler.
+  -> Eff es a
+  -> EffectHandler_ e handlerEs
+  -- ^ The effect handler.
+  -> Eff es b
+imposeWith_ runHandlerEs m handler = imposeWith runHandlerEs m (const handler)
 
 ----------------------------------------
 -- Unlifts

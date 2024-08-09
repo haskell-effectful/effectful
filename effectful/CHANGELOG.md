@@ -6,8 +6,16 @@
 * Improve `Effectful.Labeled`, add `Effectful.Labeled.Error`,
   `Effectful.Labeled.Reader`, `Effectful.Labeled.State` and
   `Effectful.Labeled.Writer`.
-* **Breaking change**: `localSeqLend`, `localLend`, `localSeqBorrow` and
-  `localBorrow` now take a list of effects instead of a single one.
+* Add `throwErrorWith` and `throwError_` to `Effectful.Error.Static` and
+  `Effectful.Error.Dynamic`.
+* **Breaking changes**:
+  - `localSeqLend`, `localLend`, `localSeqBorrow` and `localBorrow` now take a
+    list of effects instead of a single one.
+  - `Effectful.Error.Static.throwError` now requires the error type to have a
+    `Show` constraint. If this is not the case for some of your error types, use
+    `throwError_` for them.
+  - `ThrowError` operation from the dynamic version of the `Error` effect was
+    replaced with `ThrowErrorWith`.
 
 # effectful-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.

@@ -63,7 +63,7 @@ oStrState = put "hello"
 err :: Error e :> es => Eff es Bool
 err =
   catchError
-    (throwError (error ""))
+    (throwError_ (error ""))
     (\_ _ -> pure True)
 
 errState :: (Num s, Error e :> es, State s :> es) => Eff es Bool

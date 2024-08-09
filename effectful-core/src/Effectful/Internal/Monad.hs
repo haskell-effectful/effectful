@@ -494,13 +494,13 @@ type role LocalEnv nominal nominal
 newtype LocalEnv (localEs :: [Effect]) (handlerEs :: [Effect]) = LocalEnv (Env localEs)
 
 -- | Type signature of the effect handler.
-type EffectHandler e es
+type EffectHandler (e :: Effect) (es :: [Effect])
   = forall a localEs. (HasCallStack, e :> localEs)
   => LocalEnv localEs es
   -- ^ Capture of the local environment for handling local 'Eff' computations
   -- when @e@ is a higher order effect.
   -> e (Eff localEs) a
-  -- ^ The effect performed in the local environment.
+  -- ^ The operation.
   -> Eff es a
 
 -- | An internal representation of dynamically dispatched effects, i.e. the

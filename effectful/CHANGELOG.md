@@ -1,3 +1,9 @@
+# effectful-2.4.0.0 (????-??-??)
+* Add utility functions for handling effects that take the effect handler as the
+  last parameter to `Effectful.Dispatch.Dynamic`.
+* Add utility functions for handling first order effects to
+  `Effectful.Dispatch.Dynamic`.
+
 # effectful-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.
 * Remove inaccurate information from the `Show` instance of `ErrorWrapper`.

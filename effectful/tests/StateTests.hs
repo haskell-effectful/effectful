@@ -117,7 +117,7 @@ putInt = send . PutInt
 runHasInt :: Int -> Eff (HasInt : es) a -> Eff es a
 runHasInt n =
   -- reinterpret with redundant local effects
-  reinterpret (evalState () . evalState n . evalState True) $ \_ -> \case
+  reinterpret_ (evalState () . evalState n . evalState True) $ \case
     GetInt   -> get
     PutInt i -> put i
 

@@ -47,6 +47,7 @@ common language
                         LambdaCase
                         MultiParamTypeClasses
                         NoStarIsType
+                        PolyKinds
                         RankNTypes
                         RoleAnnotations
                         ScopedTypeVariables
@@ -88,6 +89,10 @@ library
                      Effectful.Internal.Unlift
                      Effectful.Internal.Utils
                      Effectful.Labeled
+                     Effectful.Labeled.Error
+                     Effectful.Labeled.Reader
+                     Effectful.Labeled.State
+                     Effectful.Labeled.Writer
                      Effectful.NonDet
                      Effectful.Prim
                      Effectful.Provider

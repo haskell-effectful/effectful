@@ -1,14 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE PolyKinds #-}
 -- | Labeled effects.
+--
+-- Any effect can be assigned multiple labels so you have more than one
+-- available simultaneously.
 --
 -- @since 2.3.0.0
 module Effectful.Labeled
-  ( -- * Example
-    -- $example
-
-    -- * Effect
-    Labeled
+  ( -- * Effect
+    Labeled(..)
 
     -- ** Handlers
   , runLabeled
@@ -22,42 +21,30 @@ import Unsafe.Coerce (unsafeCoerce)
 import Effectful
 import Effectful.Dispatch.Static
 
--- $example
---
--- An effect can be assigned multiple labels and you can have all of them
--- available at the same time.
---
--- >>> import Effectful.Reader.Static
---
--- >>> :{
---  action
---    :: ( Labeled "a" (Reader String) :> es
---       , Labeled "b" (Reader String) :> es
---       , Reader String :> es
---       )
---    => Eff es String
---  action = do
---    a <- labeled @"b" @(Reader String) $ do
---      labeled @"a" @(Reader String) $ do
---        ask
---    b <- labeled @"b" @(Reader String) $ do
---      ask
---    pure $ a ++ b
--- :}
---
--- >>> :{
---  runPureEff @String
---    . runLabeled @"a" (runReader "a")
---    . runLabeled @"b" (runReader "b")
---    . runReader "c"
---    $ action
--- :}
--- "ab"
-
 -- | Assign a label to an effect.
-data Labeled (label :: k) (e :: Effect) :: Effect
+--
+-- The constructor is for sending labeled operations of a dynamically dispatched
+-- effect to the handler:
+--
+-- >>> import Effectful.Dispatch.Dynamic
+--
+-- >>> :{
+--   data X :: Effect where
+--     X :: X m Int
+--   type instance DispatchOf X = Dynamic
+-- :}
+--
+-- >>> :{
+--   runPureEff . runLabeled @"x" (interpret_ $ \X -> pure 333) $ do
+--     send $ Labeled @"x" X
+-- :}
+-- 333
+--
+newtype Labeled (label :: k) (e :: Effect) :: Effect where
+  -- | @since 2.4.0.0
+  Labeled :: forall label e m a. e m a -> Labeled label e m a
 
-type instance DispatchOf (Labeled label e) = Static NoSideEffects
+type instance DispatchOf (Labeled label e) = DispatchOf e
 
 data instance StaticRep (Labeled label e)
 
@@ -70,7 +57,9 @@ runLabeled
   -> Eff es b
 runLabeled runE m = runE (fromLabeled m)
 
--- | Bring an effect into scope to be able to run its operations.
+-- | Bring an effect into scope without a label.
+--
+-- Useful for running code written with the non-labeled effect in mind.
 labeled
   :: forall label e es a
    . Labeled label e :> es

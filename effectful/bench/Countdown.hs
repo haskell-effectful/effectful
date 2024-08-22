@@ -286,6 +286,47 @@ countdownEffectfulDoubleDynSharedDeep n = E.runPureEff
     runR = E.runReader ()
 
 ----------------------------------------
+-- effectful (labeled-dynamic-send)
+
+programEffectfulLabeledDynamicSend
+  :: E.Labeled "s" (ED.State Integer) E.:> es
+  => E.Eff es Integer
+programEffectfulLabeledDynamicSend = do
+  n <- E.send . E.Labeled @"s" $ ED.Get @Integer
+  if n <= 0
+    then pure n
+    else do
+      E.send . E.Labeled @"s" $ ED.Put (n - 1)
+      programEffectfulLabeledDynamicSend
+{-# NOINLINE programEffectfulLabeledDynamicSend #-}
+
+countdownEffectfulLabeledDynSendLocal :: Integer -> (Integer, Integer)
+countdownEffectfulLabeledDynSendLocal n =
+  E.runPureEff . E.runLabeled @"s" (ED.runStateLocal n) $ programEffectfulLabeledDynamicSend
+
+countdownEffectfulLabeledDynSendShared :: Integer -> (Integer, Integer)
+countdownEffectfulLabeledDynSendShared n =
+  E.runPureEff . E.runLabeled @"s" (ED.runStateShared n) $ programEffectfulLabeledDynamicSend
+
+countdownEffectfulLabeledDynSendLocalDeep :: Integer -> (Integer, Integer)
+countdownEffectfulLabeledDynSendLocalDeep n = E.runPureEff
+  . runR . runR . runR . runR . runR
+  . E.runLabeled @"s" (ED.runStateLocal n)
+  . runR . runR . runR . runR . runR
+  $ programEffectfulLabeledDynamicSend
+  where
+    runR = E.runReader ()
+
+countdownEffectfulLabeledDynSendSharedDeep :: Integer -> (Integer, Integer)
+countdownEffectfulLabeledDynSendSharedDeep n = E.runPureEff
+  . runR . runR . runR . runR . runR
+  . E.runLabeled @"s" (ED.runStateShared n)
+  . runR . runR . runR . runR . runR
+  $ programEffectfulLabeledDynamicSend
+  where
+    runR = E.runReader ()
+
+----------------------------------------
 -- effectful (labeled-dynamic)
 
 programEffectfulLabeledDynamic

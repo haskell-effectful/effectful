@@ -99,6 +99,7 @@ module Effectful.Error.Static
   ) where
 
 import Control.Exception
+import Data.Kind
 import GHC.Stack
 
 import Effectful
@@ -107,7 +108,7 @@ import Effectful.Dispatch.Static.Primitive
 import Effectful.Internal.Utils
 
 -- | Provide the ability to handle errors of type @e@.
-data Error e :: Effect
+data Error (e :: Type) :: Effect
 
 type instance DispatchOf (Error e) = Static NoSideEffects
 newtype instance StaticRep (Error e) = Error ErrorId

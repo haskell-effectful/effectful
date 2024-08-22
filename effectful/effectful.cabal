@@ -52,6 +52,7 @@ common language
                         LambdaCase
                         MultiParamTypeClasses
                         NoStarIsType
+                        PolyKinds
                         RankNTypes
                         RecordWildCards
                         RoleAnnotations
@@ -110,6 +111,10 @@ library
                          , Effectful.Error.Dynamic
                          , Effectful.Fail
                          , Effectful.Labeled
+                         , Effectful.Labeled.Error
+                         , Effectful.Labeled.Reader
+                         , Effectful.Labeled.State
+                         , Effectful.Labeled.Writer
                          , Effectful.NonDet
                          , Effectful.Prim
                          , Effectful.Provider
@@ -149,6 +154,7 @@ test-suite test
                     EnvTests
                     EnvironmentTests
                     ErrorTests
+                    LabeledTests
                     NonDetTests
                     PrimTests
                     ReaderTests
@@ -174,8 +180,8 @@ benchmark bench
        if impl(ghc < 9.11)
           build-depends: fused-effects >= 1.1.2.2
 
-       if impl(ghc < 9.9)
-          build-depends: polysemy >= 1.9.1.3
+       if impl(ghc < 9.11)
+          build-depends: polysemy >= 1.9.2.0
 
     build-depends:    base
                     , async

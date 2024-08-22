@@ -3,6 +3,9 @@
   last parameter to `Effectful.Dispatch.Dynamic`.
 * Add utility functions for handling first order effects to
   `Effectful.Dispatch.Dynamic`.
+* Improve `Effectful.Labeled`, add `Effectful.Labeled.Error`,
+  `Effectful.Labeled.Reader`, `Effectful.Labeled.State` and
+  `Effectful.Labeled.Writer`.
 
 # effectful-core-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.

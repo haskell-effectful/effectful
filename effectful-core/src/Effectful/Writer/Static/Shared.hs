@@ -28,6 +28,7 @@ module Effectful.Writer.Static.Shared
   ) where
 
 import Control.Exception (onException, uninterruptibleMask)
+import Data.Kind
 
 import Effectful
 import Effectful.Dispatch.Static
@@ -35,7 +36,7 @@ import Effectful.Dispatch.Static.Primitive
 import Effectful.Internal.Utils
 
 -- | Provide access to a strict (WHNF), shared, write only value of type @w@.
-data Writer w :: Effect
+data Writer (w :: Type) :: Effect
 
 type instance DispatchOf (Writer w) = Static NoSideEffects
 newtype instance StaticRep (Writer w) = Writer (MVar' w)

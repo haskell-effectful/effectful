@@ -27,6 +27,7 @@ run_doctest() {
     -XLambdaCase \
     -XMultiParamTypeClasses \
     -XNoStarIsType \
+    -XPolyKinds \
     -XRankNTypes \
     -XRecordWildCards \
     -XRoleAnnotations \

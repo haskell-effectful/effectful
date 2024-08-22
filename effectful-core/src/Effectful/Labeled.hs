@@ -59,7 +59,7 @@ runLabeled runE m = runE (fromLabeled m)
 
 -- | Bring an effect into scope without a label.
 --
--- Useful for running code designed with the non-labeled effect in mind.
+-- Useful for running code written with the non-labeled effect in mind.
 labeled
   :: forall label e es a
    . Labeled label e :> es

@@ -28,6 +28,7 @@ module Effectful.Writer.Static.Local
   ) where
 
 import Control.Exception (onException, mask)
+import Data.Kind
 
 import Effectful
 import Effectful.Dispatch.Static
@@ -35,7 +36,7 @@ import Effectful.Dispatch.Static.Primitive
 
 -- | Provide access to a strict (WHNF), thread local, write only value of type
 -- @w@.
-data Writer w :: Effect
+data Writer (w :: Type) :: Effect
 
 type instance DispatchOf (Writer w) = Static NoSideEffects
 newtype instance StaticRep (Writer w) = Writer w

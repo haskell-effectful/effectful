@@ -46,6 +46,7 @@ module Effectful.State.Static.Shared
   ) where
 
 import Control.Concurrent.MVar
+import Data.Kind
 
 import Effectful
 import Effectful.Dispatch.Static
@@ -53,7 +54,7 @@ import Effectful.Dispatch.Static.Primitive
 import Effectful.Internal.Utils
 
 -- | Provide access to a strict (WHNF), shared, mutable value of type @s@.
-data State s :: Effect
+data State (s :: Type) :: Effect
 
 type instance DispatchOf (State s) = Static NoSideEffects
 newtype instance StaticRep (State s) = State (MVar' s)

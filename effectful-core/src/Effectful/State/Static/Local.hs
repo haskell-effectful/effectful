@@ -41,11 +41,13 @@ module Effectful.State.Static.Local
   , modifyM
   ) where
 
+import Data.Kind
+
 import Effectful
 import Effectful.Dispatch.Static
 
 -- | Provide access to a strict (WHNF), thread local, mutable value of type @s@.
-data State s :: Effect
+data State (s :: Type) :: Effect
 
 type instance DispatchOf (State s) = Static NoSideEffects
 newtype instance StaticRep (State s) = State s

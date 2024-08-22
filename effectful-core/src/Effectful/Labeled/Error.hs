@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE PolyKinds #-}
 -- | Convenience functions for the 'Labeled' 'Error' effect.
 --
 -- @since 2.4.0.0

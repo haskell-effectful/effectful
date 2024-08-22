@@ -5,6 +5,7 @@ import Test.Tasty.HUnit
 
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Labeled
 import Effectful.Reader.Dynamic
 import Utils qualified as U
 

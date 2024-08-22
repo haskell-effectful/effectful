@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE PolyKinds #-}
 -- | Convenience functions for the 'Labeled' 'State' effect.
 --
 -- @since 2.4.0.0

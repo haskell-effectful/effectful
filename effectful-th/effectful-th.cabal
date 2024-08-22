@@ -43,6 +43,7 @@ common language
                         LambdaCase
                         MultiParamTypeClasses
                         NoStarIsType
+                        PolyKinds
                         RankNTypes
                         RecordWildCards
                         RoleAnnotations

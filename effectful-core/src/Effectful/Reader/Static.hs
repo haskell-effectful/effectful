@@ -13,12 +13,14 @@ module Effectful.Reader.Static
   , local
   ) where
 
+import Data.Kind
+
 import Effectful
 import Effectful.Dispatch.Static
 
 -- | Provide access to a strict (WHNF), thread local, read only value of type
 -- @r@.
-data Reader r :: Effect
+data Reader (r :: Type) :: Effect
 
 type instance DispatchOf (Reader r) = Static NoSideEffects
 newtype instance StaticRep (Reader r) = Reader r

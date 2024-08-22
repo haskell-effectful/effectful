@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE PolyKinds #-}
 -- | Labeled effects.
 --
 -- Any effect can be assigned multiple labels so you have more than one
@@ -43,33 +42,6 @@ runLabeled runE m = runE (fromLabeled m)
 -- | Bring an effect into scope without a label.
 --
 -- Useful for running code designed with the non-labeled effect in mind.
---
--- >>> import Effectful.Reader.Static
---
--- >>> :{
---  action
---    :: ( Labeled "a" (Reader String) :> es
---       , Labeled "b" (Reader String) :> es
---       , Reader String :> es
---       )
---    => Eff es String
---  action = do
---    a <- labeled @"b" @(Reader String) $ do
---      labeled @"a" @(Reader String) $ do
---        ask
---    b <- labeled @"b" @(Reader String) $ do
---      ask
---    pure $ a ++ b
--- :}
---
--- >>> :{
---  runPureEff @String
---    . runLabeled @"a" (runReader "a")
---    . runLabeled @"b" (runReader "b")
---    . runReader "c"
---    $ action
--- :}
--- "ab"
 labeled
   :: forall label e es a
    . Labeled label e :> es

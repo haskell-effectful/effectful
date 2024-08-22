@@ -145,7 +145,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache/restore@v4
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-36dffdd0
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-caa01dbf
           path: ~/.haskell-ci-tools
       - name: install cabal-plan
         run: |
@@ -158,13 +158,13 @@ jobs:
           cabal-plan --version
       - name: install doctest
         run: |
-          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.22.0' ; fi
-          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then doctest --version ; fi
+          $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.22.0'
+          doctest --version
       - name: save cache (tools)
         uses: actions/cache/save@v4
         if: always()
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-36dffdd0
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-caa01dbf
           path: ~/.haskell-ci-tools
       - name: checkout
         uses: actions/checkout@v4
@@ -247,12 +247,12 @@ jobs:
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: doctest
         run: |
-          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
-          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XPolyKinds -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
-          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
-          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
-          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 91000)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src ; fi
+          cd ${PKGDIR_effectful_core} || false
+          doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XPolyKinds -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
+          cd ${PKGDIR_effectful_th} || false
+          doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
+          cd ${PKGDIR_effectful} || false
+          doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators src
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful_core} || false

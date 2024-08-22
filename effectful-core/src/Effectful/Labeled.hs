@@ -22,6 +22,24 @@ import Effectful
 import Effectful.Dispatch.Static
 
 -- | Assign a label to an effect.
+--
+-- The constructor is for sending labeled operations of a dynamically dispatched
+-- effect to the handler:
+--
+-- >>> import Effectful.Dispatch.Dynamic
+--
+-- >>> :{
+--   data X :: Effect where
+--     X :: X m Int
+--   type instance DispatchOf X = Dynamic
+-- :}
+--
+-- >>> :{
+--   runPureEff . runLabeled @"x" (interpret_ $ \X -> pure 333) $ do
+--     send $ Labeled @"x" X
+-- :}
+-- 333
+--
 newtype Labeled (label :: k) (e :: Effect) :: Effect where
   -- | @since 2.4.0.0
   Labeled :: forall label e m a. e m a -> Labeled label e m a

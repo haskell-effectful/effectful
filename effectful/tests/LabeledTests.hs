@@ -51,7 +51,7 @@ test_labeledSend = runEff $ do
 
 data X :: Effect where
   X1 :: X m Int
-  X2 :: X m Int
+  X2 :: (X :> es, Labeled "x" X :> es) => X (Eff es) Int
 
 type instance DispatchOf X = Dynamic
 

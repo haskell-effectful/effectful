@@ -15,6 +15,7 @@ main = pure () -- only compilation tests
 data SimpleADT (m :: Type -> Type) (a :: Type)
   = SimpleADTC1 Int
   | SimpleADTC2 String
+  -- ^ This one does the second thing
 
 -- Test generation of fixity information.
 infixl 1 `SimpleADTC1`
@@ -39,6 +40,7 @@ makeEffect ''ADTSyntax3
 
 data GADTSyntax :: Effect where
   GADTSyntaxC1 :: Int -> GADTSyntax m Int
+  -- | I am documented
   GADTSyntaxC2 :: String -> GADTSyntax m String
   GADTSyntaxC3 :: IOE :> es => Bool -> GADTSyntax (Eff es) a
 

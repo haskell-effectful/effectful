@@ -1,5 +1,9 @@
 # effectful-core-2.4.0.0 (????-??-??)
-* Improve `Effectful.Labeled` and add `Effectful.Labeled.Error`,
+* Add utility functions for handling effects that take the effect handler as the
+  last parameter to `Effectful.Dispatch.Dynamic`.
+* Add utility functions for handling first order effects to
+  `Effectful.Dispatch.Dynamic`.
+* Improve `Effectful.Labeled`, add `Effectful.Labeled.Error`,
   `Effectful.Labeled.Reader`, `Effectful.Labeled.State` and
   `Effectful.Labeled.Writer`.
 

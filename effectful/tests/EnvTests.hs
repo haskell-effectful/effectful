@@ -191,11 +191,11 @@ data A :: Effect where
 type instance DispatchOf A = Dynamic
 
 runA :: Int -> Eff (A : es) a -> Eff es a
-runA n = interpret $ \_ -> \case
+runA n = interpret_ $ \case
   A -> pure n
 
 doubleA :: A :> es => Eff es a -> Eff es a
-doubleA = interpose $ \_ -> \case
+doubleA = interpose_ $ \case
   A -> (+) <$> send A <*> send A
 
 data B :: Effect where
@@ -203,9 +203,9 @@ data B :: Effect where
 type instance DispatchOf B = Dynamic
 
 runB :: A :> es => Eff (B : es) a -> Eff es a
-runB = interpret $ \_ -> \case
+runB = interpret_ $ \case
   B -> send A
 
 doubleB :: B :> es => Eff es a -> Eff es a
-doubleB = interpose $ \_ -> \case
+doubleB = interpose_ $ \case
   B -> (+) <$> send B <*> send B

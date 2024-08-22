@@ -53,6 +53,9 @@ import Effectful.Dispatch.Dynamic
 -- lowercase or removes the @:@ symbol in case of operators. Any fixity
 -- annotations defined for the constructors are preserved for the corresponding
 -- definitions.
+--
+-- If the constructor declaration has Haddock, then this is reused for the
+-- sending functions, otherwise a simple placeholder is used.
 makeEffect :: Name -> Q [Dec]
 makeEffect = makeEffectImpl True
 
@@ -246,10 +249,15 @@ makeTyp esVar substM resTy = \case
 
 withHaddock :: Name -> [Dec] -> Q [Dec]
 #if MIN_VERSION_template_haskell(2,18,0)
-withHaddock name dec = withDecsDoc
-  ("Perform the operation '" ++ nameBase name ++ "'.") (pure dec)
+withHaddock name decs = do 
+  existingHaddock <- getDoc (DeclDoc name)
+  let newDoc = 
+        case existingHaddock of
+          Just doc -> doc
+          Nothing -> "Perform the operation '" ++ nameBase name ++ "'."
+  withDecsDoc newDoc (pure decs)
 #else
-withHaddock _ dec = pure dec
+withHaddock _ decs = pure decs
 #endif
 
 checkRequiredExtensions :: Q ()

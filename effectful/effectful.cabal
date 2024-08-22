@@ -180,8 +180,8 @@ benchmark bench
        if impl(ghc < 9.11)
           build-depends: fused-effects >= 1.1.2.2
 
-       if impl(ghc < 9.9)
-          build-depends: polysemy >= 1.9.1.3
+       if impl(ghc < 9.11)
+          build-depends: polysemy >= 1.9.2.0
 
     build-depends:    base
                     , async

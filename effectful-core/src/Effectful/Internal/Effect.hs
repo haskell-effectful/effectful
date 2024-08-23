@@ -10,6 +10,7 @@ module Effectful.Internal.Effect
   , (:>)(..)
   , (:>>)
   , Subset(..)
+  , KnownSubset
   , KnownPrefix(..)
   , IsUnknownSuffixOf
   , type (++)
@@ -99,6 +100,13 @@ instance KnownPrefix es => Subset '[] es where
 instance (e :> es, Subset xs es) => Subset (e : xs) es where
   subsetFullyKnown = subsetFullyKnown @xs @es
   reifyIndices = reifyIndex @e @es : reifyIndices @xs @es
+
+----
+
+-- | Provide evidence that @xs@ is a known subset of @es@.
+class Subset xs es => KnownSubset (xs :: [Effect]) (es :: [Effect])
+instance KnownSubset '[] es
+instance (e :> es, KnownSubset xs es) => KnownSubset (e : xs) es
 
 ----
 

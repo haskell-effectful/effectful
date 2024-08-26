@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ImplicitParams #-}
 {-# LANGUAGE UndecidableInstances #-}
 -- | Dynamically dispatched effects.
@@ -56,6 +57,7 @@ module Effectful.Dispatch.Dynamic
   , localSeqBorrow
   , localBorrow
   , SharedSuffix
+  , KnownSubset
 
     -- ** Utils for first order effects
   , EffectHandler_
@@ -913,7 +915,7 @@ localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
 ----------------------------------------
 -- Misc
 
--- | Lend an effect to the local environment.
+-- | Lend effects to the local environment.
 --
 -- Consider the following effect:
 --
@@ -951,92 +953,107 @@ localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
 --   runD :: IOE :> es => Eff (D : es) a -> Eff es a
 --   runD = interpret $ \env -> \case
 --     D -> localSeqUnlift env $ \unlift -> do
---       localSeqLend @IOE env $ \useIOE -> do
+--       localSeqLend @'[IOE] env $ \useIOE -> do
 --         unlift . useIOE . runE $ pure ()
 -- :}
 --
--- @since 2.3.1.0
+-- @since 2.4.0.0
 localSeqLend
-  :: (e :> es, SharedSuffix es handlerEs)
+  :: forall lentEs es handlerEs localEs a
+   . (KnownSubset lentEs es, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
-  -> ((forall r. Eff (e : localEs) r -> Eff localEs r) -> Eff es a)
+  -> ((forall r. Eff (lentEs ++ localEs) r -> Eff localEs r) -> Eff es a)
   -- ^ Continuation with the lent handler in scope.
   -> Eff es a
 localSeqLend (LocalEnv les) k = unsafeEff $ \es -> do
-  eles <- copyRef es les
+  eles <- copyRefs @lentEs es les
   seqUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+{-# INLINE localSeqLend #-}
 
--- | Lend an effect to the local environment with a given unlifting strategy.
+-- | Lend effects to the local environment with a given unlifting strategy.
 --
 -- Generalizes 'localSeqLend'.
 --
--- @since 2.3.1.0
+-- @since 2.4.0.0
 localLend
-  :: (e :> es, SharedSuffix es handlerEs)
+  :: forall lentEs es handlerEs localEs a
+   . (KnownSubset lentEs es, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -> UnliftStrategy
-  -> ((forall r. Eff (e : localEs) r -> Eff localEs r) -> Eff es a)
+  -> ((forall r. Eff (lentEs ++ localEs) r -> Eff localEs r) -> Eff es a)
   -- ^ Continuation with the lent handler in scope.
   -> Eff es a
 localLend (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
-    eles <- copyRef es les
+    eles <- copyRefs @lentEs es les
     seqUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
   ConcUnlift p l -> unsafeEff $ \es -> do
-    eles <- copyRef es les
+    eles <- copyRefs @lentEs es les
     concUnliftIO eles p l $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localLend #-}
 
--- | Borrow an effect from the local environment.
+-- | Borrow effects from the local environment.
 --
--- @since 2.3.1.0
+-- @since 2.4.0.0
 localSeqBorrow
-  :: (e :> localEs, SharedSuffix es handlerEs)
+  :: forall borrowedEs es handlerEs localEs a
+   . (KnownSubset borrowedEs localEs, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
-  -> ((forall r. Eff (e : es) r -> Eff es r) -> Eff es a)
+  -> ((forall r. Eff (borrowedEs ++ es) r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the borrowed handler in scope.
   -> Eff es a
 localSeqBorrow (LocalEnv les) k = unsafeEff $ \es -> do
-  ees <- copyRef les es
+  ees <- copyRefs @borrowedEs les es
   seqUnliftIO ees $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+{-# INLINE localSeqBorrow #-}
 
--- | Borrow an effect from the local environment with a given unlifting
+-- | Borrow effects from the local environment with a given unlifting
 -- strategy.
 --
 -- Generalizes 'localSeqBorrow'.
 --
--- @since 2.3.1.0
+-- @since 2.4.0.0
 localBorrow
-  :: (e :> localEs, SharedSuffix es handlerEs)
+  :: forall borrowedEs es handlerEs localEs a
+   . (KnownSubset borrowedEs localEs, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -> UnliftStrategy
-  -> ((forall r. Eff (e : es) r -> Eff es r) -> Eff es a)
+  -> ((forall r. Eff (borrowedEs ++ es) r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the borrowed handler in scope.
   -> Eff es a
 localBorrow (LocalEnv les) strategy k = case strategy of
   SeqUnlift -> unsafeEff $ \es -> do
-    ees <- copyRef les es
+    ees <- copyRefs @borrowedEs les es
     seqUnliftIO ees $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
   ConcUnlift p l -> unsafeEff $ \es -> do
-    ees <- copyRef les es
+    ees <- copyRefs @borrowedEs les es
     concUnliftIO ees p l $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localBorrow #-}
 
-copyRef
-  :: forall e srcEs destEs. e :> srcEs
+copyRefs
+  :: forall es srcEs destEs. KnownSubset es srcEs
   => Env srcEs
   -> Env destEs
-  -> IO (Env (e : destEs))
-copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
-  when (hstorage /= storage) $ do
+  -> IO (Env (es ++ destEs))
+copyRefs (Env soffset srefs sstorage) (Env doffset drefs dstorage) = do
+  when (sstorage /= dstorage) $ do
     error "storages do not match"
-  let size = sizeofPrimArray refs0 - offset
-      i = 2 * reifyIndex @e @srcEs
-  mrefs <- newPrimArray (size + 2)
-  copyPrimArray mrefs 0 hrefs (hoffset + i) 2
-  copyPrimArray mrefs 2 refs0 offset size
+  let size = sizeofPrimArray drefs - doffset
+      es = reifyIndices @es @srcEs
+      esSize = length es
+  mrefs <- newPrimArray (esSize + size)
+  copyPrimArray mrefs esSize drefs doffset size
+  let writeRefs i = \case
+        [] -> pure ()
+        (x : xs) -> do
+          let ix = soffset + 2 * x
+          writePrimArray mrefs  i      $ indexPrimArray srefs  ix
+          writePrimArray mrefs (i + 1) $ indexPrimArray srefs (ix + 1)
+          writeRefs (i + 2) xs
+  writeRefs 0 es
   refs <- unsafeFreezePrimArray mrefs
-  pure $ Env 0 refs storage
+  pure $ Env 0 refs dstorage
+{-# NOINLINE copyRefs #-}
 
 -- | Require that both effect stacks share an opaque suffix.
 --

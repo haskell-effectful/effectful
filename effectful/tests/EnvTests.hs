@@ -22,6 +22,7 @@ envTests = testGroup "Env"
   , testCase "unsafeCoerce doesn't work" test_noUnsafeCoerce
   , testCase "interpose works" test_interpose
   , testCase "interpose/provider works" test_interposeProvider
+  , testCase "borrow/lend works" test_borrowLend
   ]
 
 test_tailEnv :: Assertion
@@ -209,3 +210,29 @@ runB = interpret_ $ \case
 doubleB :: B :> es => Eff es a -> Eff es a
 doubleB = interpose_ $ \case
   B -> (+) <$> send B <*> send B
+
+----------------------------------------
+
+test_borrowLend :: Assertion
+test_borrowLend = runEff $ do
+  runX 1 2 . evalState @[Int] [3, 4] . runReader () . runReader @[Int] [5, 6] $ do
+    U.assertEqual "expected result" [1, 2, 3, 4, 5, 6] =<< send X
+
+data X :: Effect where
+  X :: (State [Int] :> es, Reader [Int] :> es) => X (Eff es) [Int]
+type instance DispatchOf X = Dynamic
+
+runX :: Int -> Int -> Eff (X : es) a -> Eff es a
+runX s0 r0 = reinterpret (evalState s0 . evalState () . runReader r0) $ \env -> \case
+  X -> localSeqUnlift env $ \unlift -> do
+    as <- localSeqLend @[State Int, Reader Int] env $ \withHandlerEffs -> do
+      unlift . withHandlerEffs $ do
+        s <- get @Int
+        r <- ask @Int
+        pure [s, r]
+    bs <- localSeqBorrow @[State [Int], Reader [Int]] env $ \withLocalEffs -> do
+      withLocalEffs $ do
+        ss <- get @[Int]
+        rs <- ask @[Int]
+        pure $ ss ++ rs
+    pure $ as ++ bs

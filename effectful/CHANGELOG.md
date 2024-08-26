@@ -6,6 +6,8 @@
 * Improve `Effectful.Labeled`, add `Effectful.Labeled.Error`,
   `Effectful.Labeled.Reader`, `Effectful.Labeled.State` and
   `Effectful.Labeled.Writer`.
+* **Breaking change**: `localSeqLend`, `localLend`, `localSeqBorrow` and
+  `localBorrow` now take a list of effects instead of a single one.
 
 # effectful-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.

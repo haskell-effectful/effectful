@@ -14,7 +14,9 @@ module Effectful.Error.Dynamic
   , runErrorNoCallStackWith
 
     -- ** Operations
+  , throwErrorWith
   , throwError
+  , throwError_
   , catchError
   , handleError
   , tryError
@@ -34,7 +36,8 @@ import Effectful.Error.Static qualified as E
 
 -- | Provide the ability to handle errors of type @e@.
 data Error e :: Effect where
-  ThrowError :: e -> Error e m a
+  -- | @since 2.4.0.0
+  ThrowErrorWith :: (e -> String) -> e -> Error e m a
   CatchError :: m a -> (E.CallStack -> e -> m a) -> Error e m a
 
 type instance DispatchOf (Error e) = Dynamic
@@ -44,7 +47,7 @@ runError
   :: Eff (Error e : es) a
   -> Eff es (Either (E.CallStack, e) a)
 runError = reinterpret E.runError $ \env -> \case
-  ThrowError e   -> E.throwError e
+  ThrowErrorWith display e -> E.throwErrorWith display e
   CatchError m h -> localSeqUnlift env $ \unlift -> do
     E.catchError (unlift m) (\cs -> unlift . h cs)
 
@@ -81,13 +84,36 @@ runErrorNoCallStackWith handler m = runErrorNoCallStack m >>= \case
   Left e -> handler e
   Right a -> pure a
 
--- | Throw an error of type @e@.
+-- | Throw an error of type @e@ and specify a display function in case a
+-- third-party code catches the internal exception and 'show's it.
+--
+-- @since 2.4.0.0
+throwErrorWith
+  :: (HasCallStack, Error e :> es)
+  => (e -> String)
+  -- ^ The display function.
+  -> e
+  -- ^ The error.
+  -> Eff es a
+throwErrorWith display = withFrozenCallStack send . ThrowErrorWith display
+
+-- | Throw an error of type @e@ with 'show' as a display function.
 throwError
+  :: (HasCallStack, Error e :> es, Show e)
+  => e
+  -- ^ The error.
+  -> Eff es a
+throwError = withFrozenCallStack throwErrorWith show
+
+-- | Throw an error of type @e@ with no display function.
+--
+-- @since 2.4.0.0
+throwError_
   :: (HasCallStack, Error e :> es)
   => e
   -- ^ The error.
   -> Eff es a
-throwError e = withFrozenCallStack $ send (ThrowError e)
+throwError_ = withFrozenCallStack throwErrorWith (const "<opaque>")
 
 -- | Handle an error of type @e@.
 catchError

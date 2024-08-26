@@ -86,7 +86,9 @@ module Effectful.Error.Static
   , runErrorNoCallStackWith
 
     -- ** Operations
+  , throwErrorWith
   , throwError
+  , throwError_
   , catchError
   , handleError
   , tryError
@@ -162,15 +164,38 @@ runErrorNoCallStackWith handler m = runErrorNoCallStack m >>= \case
   Left e -> handler e
   Right a -> pure a
 
--- | Throw an error of type @e@.
+-- | Throw an error of type @e@ and specify a display function in case a
+-- third-party code catches the internal exception and 'show's it.
+--
+-- @since 2.4.0.0
+throwErrorWith
+  :: forall e es a. (HasCallStack, Error e :> es)
+  => (e -> String)
+  -- ^ The display function.
+  -> e
+  -- ^ The error.
+  -> Eff es a
+throwErrorWith display e = unsafeEff $ \es -> do
+  Error eid <- getEnv @(Error e) es
+  throwIO $ ErrorWrapper eid callStack (display e) (toAny e)
+
+-- | Throw an error of type @e@ with 'show' as a display function.
 throwError
+  :: forall e es a. (HasCallStack, Error e :> es, Show e)
+  => e
+  -- ^ The error.
+  -> Eff es a
+throwError = withFrozenCallStack throwErrorWith show
+
+-- | Throw an error of type @e@ with no display function.
+--
+-- @since 2.4.0.0
+throwError_
   :: forall e es a. (HasCallStack, Error e :> es)
   => e
   -- ^ The error.
   -> Eff es a
-throwError e = unsafeEff $ \es -> do
-  Error eid <- getEnv @(Error e) es
-  throwIO $ ErrorWrapper eid callStack (toAny e)
+throwError_ = withFrozenCallStack throwErrorWith (const "<opaque>")
 
 -- | Handle an error of type @e@.
 catchError
@@ -223,21 +248,25 @@ tryHandler
   -> IO r
   -> IO r
 tryHandler ex eid0 handler next = case fromException ex of
-  Just (ErrorWrapper eid cs e)
+  Just (ErrorWrapper eid cs _ e)
     | eid0 == eid -> pure $ handler cs (fromAny e)
     | otherwise   -> next
   Nothing -> next
 
-data ErrorWrapper = ErrorWrapper !ErrorId CallStack Any
+data ErrorWrapper = ErrorWrapper !ErrorId CallStack String Any
+
 instance Show ErrorWrapper where
-  showsPrec p (ErrorWrapper _ cs _)
-    = ("Effectful.Error.Static.ErrorWrapper\n\n" ++)
-    . showsPrec p (prettyCallStack cs)
+  showsPrec _ (ErrorWrapper _ cs errRep _)
+    = ("Effectful.Error.Static.ErrorWrapper: " ++)
+    . (errRep ++)
+    . ("\n" ++)
+    . (prettyCallStack cs ++)
+
 instance Exception ErrorWrapper
 
 catchErrorIO :: ErrorId -> IO a -> (CallStack -> e -> IO a) -> IO a
 catchErrorIO eid m handler = do
-  m `catch` \err@(ErrorWrapper etag cs e) -> do
+  m `catch` \err@(ErrorWrapper etag cs _ e) -> do
     if eid == etag
       then handler cs (fromAny e)
       else throwIO err

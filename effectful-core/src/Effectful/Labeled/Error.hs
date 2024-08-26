@@ -13,7 +13,9 @@ module Effectful.Labeled.Error
   , runErrorNoCallStackWith
 
     -- ** Operations
+  , throwErrorWith
   , throwError
+  , throwError_
   , catchError
   , handleError
   , tryError
@@ -68,14 +70,36 @@ runErrorNoCallStackWith
   -> Eff es a
 runErrorNoCallStackWith = runLabeled @label . E.runErrorNoCallStackWith
 
--- | Throw an error of type @e@.
+-- | Throw an error of type @e@ and specify a display function in case a
+-- third-party code catches the internal exception and 'show's it.
+throwErrorWith
+  :: forall label e es a
+   . (HasCallStack, Labeled label (Error e) :> es)
+  => (e -> String)
+  -- ^ The display function.
+  -> e
+  -- ^ The error.
+  -> Eff es a
+throwErrorWith display =
+  withFrozenCallStack send . Labeled @label . ThrowErrorWith display
+
+-- | Throw an error of type @e@ with 'show' as a display function.
 throwError
+  :: forall label e es a
+   . (HasCallStack, Labeled label (Error e) :> es, Show e)
+  => e
+  -- ^ The error.
+  -> Eff es a
+throwError = withFrozenCallStack (throwErrorWith @label) show
+
+-- | Throw an error of type @e@ with no display function.
+throwError_
   :: forall label e es a
    . (HasCallStack, Labeled label (Error e) :> es)
   => e
   -- ^ The error.
   -> Eff es a
-throwError e = withFrozenCallStack $ send (Labeled @label $ ThrowError e)
+throwError_ = withFrozenCallStack (throwErrorWith @label) (const "<opaque>")
 
 -- | Handle an error of type @e@.
 catchError

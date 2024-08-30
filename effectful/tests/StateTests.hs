@@ -3,6 +3,7 @@ module StateTests (stateTests) where
 import Control.Exception.Lifted qualified as LE
 import Control.Monad
 import Control.Monad.Catch qualified as E
+import Data.IORef.Strict
 import Test.Tasty
 import Test.Tasty.HUnit
 import UnliftIO.Exception qualified as UE
@@ -11,7 +12,6 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Dispatch.Static
 import Effectful.Internal.Env
-import Effectful.Internal.Utils
 import Effectful.State.Static.Local
 import Utils qualified as U
 

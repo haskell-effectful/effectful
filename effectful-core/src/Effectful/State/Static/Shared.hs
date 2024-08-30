@@ -45,13 +45,12 @@ module Effectful.State.Static.Shared
   , modifyM
   ) where
 
-import Control.Concurrent.MVar
+import Control.Concurrent.MVar.Strict
 import Data.Kind
 
 import Effectful
 import Effectful.Dispatch.Static
 import Effectful.Dispatch.Static.Primitive
-import Effectful.Internal.Utils
 
 -- | Provide access to a strict (WHNF), shared, mutable value of type @s@.
 data State (s :: Type) :: Effect
@@ -82,28 +81,24 @@ execState s m = do
   _ <- evalStaticRep (State v) m
   unsafeEff_ $ readMVar' v
 
--- | Run the 'State' effect with the given initial state 'MVar' and return the
+-- | Run the 'State' effect with the given initial state 'MVar'' and return the
 -- final value along with the final state.
-runStateMVar :: MVar s -> Eff (State s : es) a -> Eff es (a, s)
+runStateMVar :: MVar' s -> Eff (State s : es) a -> Eff es (a, s)
 runStateMVar v m = do
-  v' <- unsafeEff_ $ toMVar' v
-  a <- evalStaticRep (State v') m
-  (a, ) <$> unsafeEff_ (readMVar v)
+  a <- evalStaticRep (State v) m
+  (a, ) <$> unsafeEff_ (readMVar' v)
 
--- | Run the 'State' effect with the given initial state 'MVar' and return the
+-- | Run the 'State' effect with the given initial state 'MVar'' and return the
 -- final value, discarding the final state.
-evalStateMVar :: MVar s -> Eff (State s : es) a -> Eff es a
-evalStateMVar v m = do
-  v' <- unsafeEff_ $ toMVar' v
-  evalStaticRep (State v') m
+evalStateMVar :: MVar' s -> Eff (State s : es) a -> Eff es a
+evalStateMVar v = evalStaticRep (State v)
 
--- | Run the 'State' effect with the given initial state 'MVar' and return the
+-- | Run the 'State' effect with the given initial state 'MVar'' and return the
 -- final state, discarding the final value.
-execStateMVar :: MVar s -> Eff (State s : es) a -> Eff es s
+execStateMVar :: MVar' s -> Eff (State s : es) a -> Eff es s
 execStateMVar v m = do
-  v' <- unsafeEff_ $ toMVar' v
-  _ <- evalStaticRep (State v') m
-  unsafeEff_ $ readMVar v
+  _ <- evalStaticRep (State v) m
+  unsafeEff_ $ readMVar' v
 
 -- | Fetch the current value of the state.
 get :: State s :> es => Eff es s
@@ -121,7 +116,7 @@ gets f = f <$> get
 put :: State s :> es => s -> Eff es ()
 put s = unsafeEff $ \es -> do
   State v <- getEnv es
-  modifyMVar_' v $ \_ -> pure s
+  modifyMVar'_ v $ \_ -> pure s
 
 -- | Apply the function to the current state and return a value.
 --

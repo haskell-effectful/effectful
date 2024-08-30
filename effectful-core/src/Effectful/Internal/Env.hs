@@ -40,6 +40,7 @@ module Effectful.Internal.Env
 
 import Control.Monad
 import Control.Monad.Primitive
+import Data.IORef.Strict
 import Data.Primitive.PrimArray
 import Data.Primitive.SmallArray
 import GHC.Stack (HasCallStack)

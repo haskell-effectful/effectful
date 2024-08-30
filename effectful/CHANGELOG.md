@@ -8,7 +8,8 @@
   `Effectful.Labeled.Writer`.
 * Add `throwErrorWith` and `throwError_` to `Effectful.Error.Static` and
   `Effectful.Error.Dynamic`.
-* Add `Effectful.Prim.IORef`.
+* Add `Effectful.Concurrent.Chan.Strict`.
+* Add `Effectful.Prim.IORef` and `Effectful.Prim.IORef.Strict`.
 * Fix a bug in `stateM` and `modifyM` of thread local `State` effect that
   might've caused dropped state updates
   ([#237](https://github.com/haskell-effectful/effectful/issues/237)).
@@ -22,6 +23,12 @@
     replaced with `ThrowErrorWith`.
   - `stateEnv` and `modifyEnv` now take pure modification functions. If you rely
     on their old forms, switch to a combination of `getEnv` and `putEnv`.
+  - `runStateMVar`, `evalStateMVar` and `execStateMVar` now take a strict
+    `MVar'` from the `strict-mutable-base` package.
+  - `Effectful.Concurrent.MVar.Strict` is now a lifted version of
+    `Control.Concurrent.MVar.Strict` from `strict-mutable-base`. The original
+    module was renamed to `Effectful.Concurrent.MVar.Strict.Compat` and
+    deprecated.
 
 # effectful-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.

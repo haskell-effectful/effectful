@@ -14,20 +14,6 @@ module Effectful.Internal.Utils
   , toAny
   , fromAny
 
-    -- * Strict 'IORef'
-  , IORef'
-  , newIORef'
-  , readIORef'
-  , writeIORef'
-
-    -- * Strict 'MVar'
-  , MVar'
-  , toMVar'
-  , newMVar'
-  , readMVar'
-  , modifyMVar'
-  , modifyMVar_'
-
     -- * Unique
   , Unique
   , newUnique
@@ -36,9 +22,7 @@ module Effectful.Internal.Utils
   , thawCallStack
   ) where
 
-import Control.Concurrent.MVar
 import Control.Exception
-import Data.IORef
 import Data.Primitive.ByteArray
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (Any, RealWorld)
@@ -125,49 +109,6 @@ toAny = unsafeCoerce
 
 fromAny :: Any -> a
 fromAny = unsafeCoerce
-
-----------------------------------------
-
--- | A strict variant of 'IORef'.
-newtype IORef' a = IORef' (IORef a)
-  deriving Eq
-
-newIORef' :: a -> IO (IORef' a)
-newIORef' a = a `seq` (IORef' <$> newIORef a)
-
-readIORef' :: IORef' a -> IO a
-readIORef' (IORef' var) = readIORef var
-
-writeIORef' :: IORef' a -> a -> IO ()
-writeIORef' (IORef' var) a = a `seq` writeIORef var a
-
-----------------------------------------
-
--- | A strict variant of 'MVar'.
-newtype MVar' a = MVar' (MVar a)
-  deriving Eq
-
-toMVar' :: MVar a -> IO (MVar' a)
-toMVar' var = do
-  let var' = MVar' var
-  modifyMVar_' var' pure
-  pure var'
-
-newMVar' :: a -> IO (MVar' a)
-newMVar' a = a `seq` (MVar' <$> newMVar a)
-
-readMVar' :: MVar' a -> IO a
-readMVar' (MVar' var) = readMVar var
-
-modifyMVar' :: MVar' a -> (a -> IO (a, r)) -> IO r
-modifyMVar' (MVar' var) action = modifyMVar var $ \a0 -> do
-  (a, r) <- action a0
-  a `seq` pure (a, r)
-
-modifyMVar_' :: MVar' a -> (a -> IO a) -> IO ()
-modifyMVar_' (MVar' var) action = modifyMVar_ var $ \a0 -> do
-  a <- action a0
-  a `seq` pure a
 
 ----------------------------------------
 

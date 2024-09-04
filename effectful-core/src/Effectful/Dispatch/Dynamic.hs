@@ -1040,7 +1040,7 @@ copyRefs (Env soffset srefs sstorage) (Env doffset drefs dstorage) = do
     error "storages do not match"
   let size = sizeofPrimArray drefs - doffset
       es = reifyIndices @es @srcEs
-      esSize = length es
+      esSize = 2 * length es
   mrefs <- newPrimArray (esSize + size)
   copyPrimArray mrefs esSize drefs doffset size
   let writeRefs i = \case

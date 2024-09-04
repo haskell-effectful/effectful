@@ -16,6 +16,8 @@
     `throwError_` for them.
   - `ThrowError` operation from the dynamic version of the `Error` effect was
     replaced with `ThrowErrorWith`.
+  - `stateEnv` and `modifyEnv` now take pure modification functions. Use a
+    combination of `getEnv` and `putEnv` for forward compatibility.
 
 # effectful-core-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.

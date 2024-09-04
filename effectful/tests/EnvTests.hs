@@ -215,11 +215,11 @@ doubleB = interpose_ $ \case
 
 test_borrowLend :: Assertion
 test_borrowLend = runEff $ do
-  runX 1 2 . evalState @[Int] [3, 4] . runReader () . runReader @[Int] [5, 6] $ do
-    U.assertEqual "expected result" [1, 2, 3, 4, 5, 6] =<< send X
+  runX 1 2 . evalState @[Int] [3] . runReader () . runReader @[Int] [4] $ do
+    U.assertEqual "expected result" [1,2,3,4,1,2,3,4] =<< send X
 
 data X :: Effect where
-  X :: (State [Int] :> es, Reader [Int] :> es) => X (Eff es) [Int]
+  X :: (State [Int] :> es, Reader [Int] :> es, Reader () :> es) => X (Eff es) [Int]
 type instance DispatchOf X = Dynamic
 
 runX :: Int -> Int -> Eff (X : es) a -> Eff es a
@@ -227,12 +227,18 @@ runX s0 r0 = reinterpret (evalState s0 . evalState () . runReader r0) $ \env -> 
   X -> localSeqUnlift env $ \unlift -> do
     as <- localSeqLend @[State Int, Reader Int] env $ \withHandlerEffs -> do
       unlift . withHandlerEffs $ do
+        () <- ask
         s <- get @Int
         r <- ask @Int
-        pure [s, r]
-    bs <- localSeqBorrow @[State [Int], Reader [Int]] env $ \withLocalEffs -> do
-      withLocalEffs $ do
         ss <- get @[Int]
         rs <- ask @[Int]
-        pure $ ss ++ rs
+        pure $ [s, r] ++ ss ++ rs
+    bs <- localSeqBorrow @[Reader [Int], State [Int], Reader ()] env $ \withEffs -> do
+      withEffs $ do
+        () <- ask
+        s <- get @Int
+        r <- ask @Int
+        ss <- get @[Int]
+        rs <- ask @[Int]
+        pure $ [s, r] ++ ss ++ rs
     pure $ as ++ bs

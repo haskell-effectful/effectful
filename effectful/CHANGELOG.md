@@ -8,6 +8,7 @@
   `Effectful.Labeled.Writer`.
 * Add `throwErrorWith` and `throwError_` to `Effectful.Error.Static` and
   `Effectful.Error.Dynamic`.
+* Add `Effectful.Prim.IORef`.
 * **Breaking changes**:
   - `localSeqLend`, `localLend`, `localSeqBorrow` and `localBorrow` now take a
     list of effects instead of a single one.

@@ -96,6 +96,7 @@ library
                      Effectful.FileSystem.IO.ByteString.Builder
                      Effectful.FileSystem.IO.ByteString.Lazy
                      Effectful.FileSystem.IO.File
+                     Effectful.Prim.IORef
                      Effectful.Process
                      Effectful.Temporary
                      Effectful.Timeout

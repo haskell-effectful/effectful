@@ -9,6 +9,9 @@
 * Add `throwErrorWith` and `throwError_` to `Effectful.Error.Static` and
   `Effectful.Error.Dynamic`.
 * Add `Effectful.Prim.IORef`.
+* Fix a bug in `stateM` and `modifyM` of thread local `State` effect that
+  might've caused dropped state updates
+  ([#237](https://github.com/haskell-effectful/effectful/issues/237)).
 * **Breaking changes**:
   - `localSeqLend`, `localLend`, `localSeqBorrow` and `localBorrow` now take a
     list of effects instead of a single one.
@@ -17,6 +20,8 @@
     `throwError_` for them.
   - `ThrowError` operation from the dynamic version of the `Error` effect was
     replaced with `ThrowErrorWith`.
+  - `stateEnv` and `modifyEnv` now take pure modification functions. If you rely
+    on their old forms, switch to a combination of `getEnv` and `putEnv`.
 
 # effectful-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.

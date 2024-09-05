@@ -27,13 +27,13 @@ module Effectful.Writer.Static.Shared
   , listens
   ) where
 
+import Control.Concurrent.MVar.Strict
 import Control.Exception (onException, uninterruptibleMask)
 import Data.Kind
 
 import Effectful
 import Effectful.Dispatch.Static
 import Effectful.Dispatch.Static.Primitive
-import Effectful.Internal.Utils
 
 -- | Provide access to a strict (WHNF), shared, write only value of type @w@.
 data Writer (w :: Type) :: Effect
@@ -61,7 +61,7 @@ execWriter m = do
 tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
 tell w1 = unsafeEff $ \es -> do
   Writer v <- getEnv es
-  modifyMVar_' v $ \w0 -> let w = w0 <> w1 in pure w
+  modifyMVar'_ v $ \w0 -> let w = w0 <> w1 in pure w
 
 -- | Execute an action and append its output to the overall output of the
 -- 'Writer'.
@@ -97,7 +97,7 @@ listen m = unsafeEff $ \es -> do
     merge es v0 v1 = do
       putEnv es $ Writer v0
       w1 <- readMVar' v1
-      modifyMVar_' v0 $ \w0 -> let w = w0 <> w1 in pure w
+      modifyMVar'_ v0 $ \w0 -> let w = w0 <> w1 in pure w
       pure w1
 
 -- | Execute an action and append its output to the overall output of the

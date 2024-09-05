@@ -1,5 +1,7 @@
--- | Lifted "Control.Concurrent.MVar".
-module Effectful.Concurrent.MVar
+-- | Lifted "Control.Concurrent.MVar" with operations that force values put
+-- inside an 'MVar' to WHNF.
+module Effectful.Concurrent.MVar.Strict.Compat
+  {-# DEPRECATED "Use Effectful.Concurrent.MVar.Strict" #-}
   ( -- * Effect
     Concurrent
 
@@ -28,6 +30,7 @@ module Effectful.Concurrent.MVar
   ) where
 
 import System.Mem.Weak (Weak)
+import Control.Exception (evaluate)
 import Control.Concurrent.MVar (MVar)
 import Control.Concurrent.MVar qualified as M
 
@@ -41,9 +44,9 @@ import Effectful.Dispatch.Static.Unsafe
 newEmptyMVar :: Concurrent :> es => Eff es (MVar a)
 newEmptyMVar = unsafeEff_ M.newEmptyMVar
 
--- | Lifted 'M.newMVar'.
+-- | Lifted 'M.newMVar' that evaluates the value to WHNF.
 newMVar :: Concurrent :> es => a -> Eff es (MVar a)
-newMVar = unsafeEff_ . M.newMVar
+newMVar a = unsafeEff_ $ M.newMVar =<< evaluate a
 
 -- | Lifted 'M.takeMVar'.
 takeMVar :: Concurrent :> es => MVar a -> Eff es a
@@ -51,23 +54,23 @@ takeMVar = unsafeEff_ . M.takeMVar
 
 -- | Lifted 'M.putMVar'.
 putMVar :: Concurrent :> es => MVar a -> a -> Eff es ()
-putMVar var = unsafeEff_ . M.putMVar var
+putMVar var a = unsafeEff_ $ M.putMVar var =<< evaluate a
 
 -- | Lifted 'M.readMVar'.
 readMVar :: Concurrent :> es => MVar a -> Eff es a
 readMVar = unsafeEff_ . M.readMVar
 
--- | Lifted 'M.swapMVar'.
+-- | Lifted 'M.swapMVar' that evaluates the new value to WHNF.
 swapMVar :: Concurrent :> es => MVar a -> a -> Eff es a
-swapMVar var = unsafeEff_ . M.swapMVar var
+swapMVar var a = unsafeEff_ $ M.swapMVar var =<< evaluate a
 
 -- | Lifted 'M.tryTakeMVar'.
 tryTakeMVar :: Concurrent :> es => MVar a -> Eff es (Maybe a)
 tryTakeMVar = unsafeEff_ . M.tryTakeMVar
 
--- | Lifted 'M.tryPutMVar'.
+-- | Lifted 'M.tryPutMVar' that evaluates the new value to WHNF.
 tryPutMVar :: Concurrent :> es => MVar a -> a -> Eff es Bool
-tryPutMVar var = unsafeEff_ . M.tryPutMVar var
+tryPutMVar var a = unsafeEff_ $ M.tryPutMVar var =<< evaluate a
 
 -- | Lifted 'M.isEmptyMVar'.
 isEmptyMVar :: Concurrent :> es => MVar a -> Eff es Bool
@@ -89,28 +92,36 @@ withMVarMasked var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.withMVarMasked var $ unlift . f
 {-# INLINE withMVarMasked #-}
 
--- | Lifted 'M.modifyMVar_'.
+-- | Lifted 'M.modifyMVar_' that evaluates the new value to WHNF.
 modifyMVar_ :: Concurrent :> es => MVar a -> (a -> Eff es a) -> Eff es ()
 modifyMVar_ var f = reallyUnsafeUnliftIO $ \unlift -> do
-  M.modifyMVar_ var $ unlift . f
+  M.modifyMVar_ var $ \a0 -> do
+    a <- unlift $ f a0
+    evaluate a
 {-# INLINE modifyMVar_ #-}
 
--- | Lifted 'M.modifyMVar'.
+-- | Lifted 'M.modifyMVar' that evaluates the new value to WHNF.
 modifyMVar :: Concurrent :> es => MVar a -> (a -> Eff es (a, b)) -> Eff es b
 modifyMVar var f = reallyUnsafeUnliftIO $ \unlift -> do
-  M.modifyMVar var $ unlift . f
+  M.modifyMVar var $ \a0 -> do
+    (a, b) <- unlift $ f a0
+    (, b) <$> evaluate a
 {-# INLINE modifyMVar #-}
 
--- | Lifted 'M.modifyMVarMasked_'.
+-- | Lifted 'M.modifyMVarMasked_' that evaluates the new value to WHNF.
 modifyMVarMasked_ :: Concurrent :> es => MVar a -> (a -> Eff es a) -> Eff es ()
 modifyMVarMasked_ var f = reallyUnsafeUnliftIO $ \unlift -> do
-  M.modifyMVarMasked_ var $ unlift . f
+  M.modifyMVarMasked_ var $ \a0 -> do
+    a <- unlift $ f a0
+    evaluate a
 {-# INLINE modifyMVarMasked_ #-}
 
--- | Lifted 'M.modifyMVarMasked'.
+-- | Lifted 'M.modifyMVarMasked' that evaluates the new value to WHNF.
 modifyMVarMasked :: Concurrent :> es => MVar a -> (a -> Eff es (a, b)) -> Eff es b
 modifyMVarMasked var f = reallyUnsafeUnliftIO $ \unlift -> do
-  M.modifyMVarMasked var $ unlift . f
+  M.modifyMVarMasked var $ \a0 -> do
+    (a, b) <- unlift $ f a0
+    (, b) <$> evaluate a
 {-# INLINE modifyMVarMasked #-}
 
 -- | Lifted 'M.mkWeakMVar'.

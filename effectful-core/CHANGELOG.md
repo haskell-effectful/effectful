@@ -21,6 +21,8 @@
     replaced with `ThrowErrorWith`.
   - `stateEnv` and `modifyEnv` now take pure modification functions. If you rely
     on their old forms, switch to a combination of `getEnv` and `putEnv`.
+  - `runStateMVar`, `evalStateMVar` and `execStateMVar` now take a strict
+    `MVar'` from the `strict-mutable-base` package.
 
 # effectful-core-2.3.1.0 (2024-06-07)
 * Drop support for GHC 8.8.

@@ -17,6 +17,7 @@ module Effectful.Internal.Unlift
   ) where
 
 import Control.Concurrent
+import Control.Concurrent.MVar.Strict
 import Control.Monad
 import Data.IntMap.Strict qualified as IM
 import GHC.Conc.Sync (ThreadId(..))
@@ -295,7 +296,7 @@ consThreadData w (ThreadEntry i td) =
 ----------------------------------------
 
 deleteThreadData :: Int -> EntryId -> MVar' (ThreadEntries es) -> IO ()
-deleteThreadData wkTid i v = modifyMVar_' v $ \te -> do
+deleteThreadData wkTid i v = modifyMVar'_ v $ \te -> do
   pure ThreadEntries
     { teCapacity = case teCapacity te of
         -- If the template copy of the environment hasn't been consumed

@@ -72,7 +72,7 @@ library
                     , directory           >= 1.3.2
                     , effectful-core      >= 2.4.0.0   && < 2.4.1.0
                     , process             >= 1.6.9
-
+                    , strict-mutable-base >= 1.1.0.0
                     , time                >= 1.9.2
                     , stm                 >= 2.5.0.0
                     , unliftio            >= 0.2.20
@@ -82,8 +82,10 @@ library
     exposed-modules: Effectful.Concurrent
                      Effectful.Concurrent.Async
                      Effectful.Concurrent.Chan
+                     Effectful.Concurrent.Chan.Strict
                      Effectful.Concurrent.MVar
                      Effectful.Concurrent.MVar.Strict
+                     Effectful.Concurrent.MVar.Strict.Compat
                      Effectful.Concurrent.STM
                      Effectful.Concurrent.QSem
                      Effectful.Concurrent.QSemN
@@ -97,6 +99,7 @@ library
                      Effectful.FileSystem.IO.ByteString.Lazy
                      Effectful.FileSystem.IO.File
                      Effectful.Prim.IORef
+                     Effectful.Prim.IORef.Strict
                      Effectful.Process
                      Effectful.Temporary
                      Effectful.Timeout
@@ -141,6 +144,7 @@ test-suite test
                     , exceptions
                     , lifted-base
                     , primitive
+                    , strict-mutable-base
                     , tasty
                     , tasty-hunit
                     , unliftio

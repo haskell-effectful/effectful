@@ -116,6 +116,9 @@ registerDelay :: Concurrent :> es => Int -> Eff es (TVar Bool)
 registerDelay = unsafeEff_ . STM.registerDelay
 
 -- | Lifted 'STM.mkWeakTVar'.
+--
+-- /Note:/ the finalizer will run a cloned environment, so any changes it makes
+-- to thread local data will not be visible outside of it.
 mkWeakTVar :: Concurrent :> es => TVar a -> Eff es () -> Eff es (Weak (TVar a))
 mkWeakTVar var f = unsafeEff $ \es -> do
   -- The finalizer can run at any point and in any thread.
@@ -130,6 +133,9 @@ newEmptyTMVarIO :: Concurrent :> es => Eff es (TMVar a)
 newEmptyTMVarIO = unsafeEff_ STM.newEmptyTMVarIO
 
 -- | Lifted 'STM.mkWeakTMVar'.
+--
+-- /Note:/ the finalizer will run a cloned environment, so any changes it makes
+-- to thread local data will not be visible outside of it.
 mkWeakTMVar :: Concurrent :> es => TMVar a -> Eff es () -> Eff es (Weak (TMVar a))
 mkWeakTMVar var f = unsafeEff $ \es -> do
   -- The finalizer can run at any point and in any thread.

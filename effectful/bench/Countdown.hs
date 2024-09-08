@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE PackageImports #-}
 module Countdown where
 
 import Control.Monad.ST
@@ -27,7 +28,7 @@ import Effectful.State.Static.Shared qualified as ES
 
 -- freer-simple
 #ifdef VERSION_freer_simple
-import Control.Monad.Freer qualified as FS
+import "freer-simple" Control.Monad.Freer qualified as FS
 import Control.Monad.Freer.Reader qualified as FS
 import Control.Monad.Freer.State qualified as FS
 #endif
@@ -37,6 +38,17 @@ import Control.Monad.Freer.State qualified as FS
 import Control.Algebra qualified as FE
 import Control.Carrier.Reader qualified as FE
 import Control.Carrier.State.Strict qualified as FE
+#endif
+
+-- heftia
+#ifdef VERSION_heftia_effects
+import Control.Effect qualified as H
+import Control.Effect.ExtensibleChurch qualified as HC
+import Control.Effect.ExtensibleFinal qualified as HF
+import Control.Effect.ExtensibleTree qualified as HT
+import Control.Effect.Interpreter.Heftia.Reader qualified as H
+import Control.Effect.Interpreter.Heftia.State qualified as H
+import Data.Effect.State qualified as H
 #endif
 
 -- mtl
@@ -393,6 +405,53 @@ countdownFusedEffectsDeep n = FE.run
   $ programFusedEffects
   where
     runR = FE.runReader ()
+
+#endif
+
+----------------------------------------
+-- heftia
+
+#ifdef VERSION_heftia_effects
+
+programHeftia :: (H.State Integer H.<: m, Monad m) => m Integer
+programHeftia = do
+  n <- H.get @Integer
+  if n <= 0
+    then pure n
+    else do
+      H.put (n - 1)
+      programHeftia
+{-# NOINLINE programHeftia #-}
+
+countdownHeftiaChurch :: Integer -> (Integer, Integer)
+countdownHeftiaChurch n = runIdentity . HC.runEff . H.runState n $ programHeftia
+
+countdownHeftiaChurchDeep :: Integer -> (Integer, Integer)
+countdownHeftiaChurchDeep n = runIdentity . HC.runEff
+  . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk ()
+  . H.runState n
+  . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk ()
+  $ programHeftia
+
+countdownHeftiaFinal :: Integer -> (Integer, Integer)
+countdownHeftiaFinal n = runIdentity . HF.runEff . H.runState n $ programHeftia
+
+countdownHeftiaFinalDeep :: Integer -> (Integer, Integer)
+countdownHeftiaFinalDeep n = runIdentity . HF.runEff
+  . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk ()
+  . H.runState n
+  . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk ()
+  $ programHeftia
+
+countdownHeftiaTree :: Integer -> (Integer, Integer)
+countdownHeftiaTree n = runIdentity . HT.runEff . H.runState n $ programHeftia
+
+countdownHeftiaTreeDeep :: Integer -> (Integer, Integer)
+countdownHeftiaTreeDeep n = runIdentity . HT.runEff
+  . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk ()
+  . H.runState n
+  . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk () . H.runAsk ()
+  $ programHeftia
 
 #endif
 

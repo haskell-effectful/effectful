@@ -108,6 +108,20 @@ countdown n = bgroup (show n)
     , bench "deep"    $ nf countdownMtlDeep n
     ]
 #endif
+#ifdef VERSION_heftia_effects
+  , bgroup "heftia-effects (church)"
+    [ bench "shallow" $ nf countdownHeftiaChurch n
+    , bench "deep"    $ nf countdownHeftiaChurchDeep n
+    ]
+  , bgroup "heftia-effects (final)"
+    [ bench "shallow" $ nf countdownHeftiaFinal n
+    , bench "deep"    $ nf countdownHeftiaFinalDeep n
+    ]
+  , bgroup "heftia-effects (tree)"
+    [ bench "shallow" $ nf countdownHeftiaTree n
+    , bench "deep"    $ nf countdownHeftiaTreeDeep n
+    ]
+#endif
 #ifdef VERSION_fused_effects
   , bgroup "fused-effects"
     [ bench "shallow" $ nf countdownFusedEffects n

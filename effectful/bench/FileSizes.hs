@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE UndecidableInstances #-}
 module FileSizes where
 
@@ -30,7 +31,7 @@ import Cleff.State qualified as C
 
 -- freer-simple
 #ifdef VERSION_freer_simple
-import Control.Monad.Freer qualified as FS
+import "freer-simple" Control.Monad.Freer qualified as FS
 import Control.Monad.Freer.Reader qualified as FS
 import Control.Monad.Freer.State qualified as FS
 #endif

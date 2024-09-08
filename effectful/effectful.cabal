@@ -188,6 +188,12 @@ benchmark bench
        if impl(ghc < 9.11)
           build-depends: polysemy >= 1.9.2.0
 
+       if impl(ghc < 9.11)
+          build-depends: data-effects >= 0.1.2.0
+                       , data-effects-core >= 0.1.0.0
+                       , heftia >= 0.3.1.0
+                       , heftia-effects >= 0.3.1.0
+
     build-depends:    base
                     , async
                     , effectful

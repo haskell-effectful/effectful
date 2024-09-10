@@ -27,7 +27,8 @@ newtype instance StaticRep (Reader r) = Reader r
 
 -- | Run a 'Reader' effect with the given initial environment.
 runReader
-  :: r -- ^ The initial environment.
+  :: HasCallStack
+  => r -- ^ The initial environment.
   -> Eff (Reader r : es) a
   -> Eff es a
 runReader r = evalStaticRep (Reader r)
@@ -36,7 +37,8 @@ runReader r = evalStaticRep (Reader r)
 --
 -- @since 1.1.0.0
 withReader
-  :: (r1 -> r2)
+  :: HasCallStack
+  => (r1 -> r2)
   -- ^ The function to modify the environment.
   -> Eff (Reader r2 : es) a
   -- ^ Computation to run in the modified environment.
@@ -46,7 +48,7 @@ withReader f m = do
   raise $ runReader (f r) m
 
 -- | Fetch the value of the environment.
-ask :: Reader r :> es => Eff es r
+ask :: (HasCallStack, Reader r :> es) => Eff es r
 ask = do
   Reader r <- getStaticRep
   pure r
@@ -55,7 +57,7 @@ ask = do
 --
 -- @'asks' f ≡ f '<$>' 'ask'@
 asks
-  :: Reader r :> es
+  :: (HasCallStack, Reader r :> es)
   => (r -> a) -- ^ The function to apply to the environment.
   -> Eff es a
 asks f = f <$> ask
@@ -65,7 +67,7 @@ asks f = f <$> ask
 -- @'runReader' r ('local' f m) ≡ 'runReader' (f r) m@
 --
 local
-  :: Reader r :> es
+  :: (HasCallStack, Reader r :> es)
   => (r -> r) -- ^ The function to modify the environment.
   -> Eff es a
   -> Eff es a

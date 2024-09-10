@@ -118,7 +118,8 @@ newtype instance StaticRep (Error e) = Error ErrorId
 -- | Handle errors of type @e@.
 runError
   :: forall e es a
-  .  Eff (Error e : es) a
+   . HasCallStack
+  => Eff (Error e : es) a
   -> Eff es (Either (CallStack, e) a)
 runError m = unsafeEff $ \es0 -> mask $ \unmask -> do
   eid <- newErrorId
@@ -136,7 +137,8 @@ runError m = unsafeEff $ \es0 -> mask $ \unmask -> do
 --
 -- @since 2.3.0.0
 runErrorWith
-  :: (CallStack -> e -> Eff es a)
+  :: HasCallStack
+  => (CallStack -> e -> Eff es a)
   -- ^ The error handler.
   -> Eff (Error e : es) a
   -> Eff es a
@@ -149,14 +151,16 @@ runErrorWith handler m = runError m >>= \case
 -- @since 2.3.0.0
 runErrorNoCallStack
   :: forall e es a
-  .  Eff (Error e : es) a
+   . HasCallStack
+  => Eff (Error e : es) a
   -> Eff es (Either e a)
 runErrorNoCallStack = fmap (either (Left . snd) Right) . runError
 
 -- | Handle errors of type @e@ with a specific error handler. In case of an
 -- error discard the 'CallStack'.
 runErrorNoCallStackWith
-  :: (e -> Eff es a)
+  :: HasCallStack
+  => (e -> Eff es a)
   -- ^ The error handler.
   -> Eff (Error e : es) a
   -> Eff es a
@@ -199,7 +203,7 @@ throwError_ = withFrozenCallStack throwErrorWith (const "<opaque>")
 
 -- | Handle an error of type @e@.
 catchError
-  :: forall e es a. Error e :> es
+  :: forall e es a. (HasCallStack, Error e :> es)
   => Eff es a
   -- ^ The inner computation.
   -> (CallStack -> e -> Eff es a)
@@ -213,7 +217,7 @@ catchError m handler = unsafeEff $ \es -> do
 -- | The same as @'flip' 'catchError'@, which is useful in situations where the
 -- code for the handler is shorter.
 handleError
-  :: forall e es a. Error e :> es
+  :: forall e es a. (HasCallStack, Error e :> es)
   => (CallStack -> e -> Eff es a)
   -- ^ A handler for errors in the inner computation.
   -> Eff es a
@@ -224,7 +228,7 @@ handleError = flip catchError
 -- | Similar to 'catchError', but returns an 'Either' result which is a 'Right'
 -- if no error was thrown and a 'Left' otherwise.
 tryError
-  :: forall e es a. Error e :> es
+  :: forall e es a. (HasCallStack, Error e :> es)
   => Eff es a
   -- ^ The inner computation.
   -> Eff es (Either (CallStack, e) a)

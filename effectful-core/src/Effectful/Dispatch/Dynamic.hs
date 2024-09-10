@@ -428,7 +428,7 @@ import Effectful.Internal.Utils
 -- /Note:/ 'interpret' can be turned into a 'reinterpret' with the use of
 -- 'inject'.
 interpret
-  :: DispatchOf e ~ Dynamic
+  :: (HasCallStack, DispatchOf e ~ Dynamic)
   => EffectHandler e es
   -- ^ The effect handler.
   -> Eff (e : es) a
@@ -442,7 +442,7 @@ interpret handler m = unsafeEff $ \es -> do
 --
 -- @since 2.4.0.0
 interpretWith
-  :: DispatchOf e ~ Dynamic
+  :: (HasCallStack, DispatchOf e ~ Dynamic)
   => Eff (e : es) a
   -> EffectHandler e es
   -- ^ The effect handler.
@@ -453,7 +453,7 @@ interpretWith m handler = interpret handler m
 --
 -- @'interpret' ≡ 'reinterpret' 'id'@
 reinterpret
-  :: DispatchOf e ~ Dynamic
+  :: (HasCallStack, DispatchOf e ~ Dynamic)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> EffectHandler e handlerEs
@@ -470,7 +470,7 @@ reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
 --
 -- @since 2.4.0.0
 reinterpretWith
-  :: DispatchOf e ~ Dynamic
+  :: (HasCallStack, DispatchOf e ~ Dynamic)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> Eff (e : es) a
@@ -508,7 +508,7 @@ reinterpretWith runHandlerEs m handler = reinterpret runHandlerEs handler m
 -- op
 --
 interpose
-  :: forall e es a. (DispatchOf e ~ Dynamic, e :> es)
+  :: forall e es a. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => EffectHandler e es
   -- ^ The effect handler.
   -> Eff es a
@@ -537,7 +537,7 @@ interpose handler m = unsafeEff $ \es -> do
 --
 -- @since 2.4.0.0
 interposeWith
-  :: (DispatchOf e ~ Dynamic, e :> es)
+  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => Eff es a
   -> EffectHandler e es
   -- ^ The effect handler.
@@ -549,7 +549,7 @@ interposeWith m handler = interpose handler m
 --
 -- @'interpose' ≡ 'impose' 'id'@
 impose
-  :: forall e es handlerEs a b. (DispatchOf e ~ Dynamic, e :> es)
+  :: forall e es handlerEs a b. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> EffectHandler e handlerEs
@@ -582,7 +582,7 @@ impose runHandlerEs handler m = unsafeEff $ \es -> do
 --
 -- @since 2.4.0.0
 imposeWith
-  :: (DispatchOf e ~ Dynamic, e :> es)
+  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> Eff es a
@@ -607,7 +607,7 @@ type EffectHandler_ (e :: Effect) (es :: [Effect])
 --
 -- @since 2.4.0.0
 interpret_
-  :: DispatchOf e ~ Dynamic
+  :: (HasCallStack, DispatchOf e ~ Dynamic)
   => EffectHandler_ e es
   -- ^ The effect handler.
   -> Eff (e : es) a
@@ -618,7 +618,7 @@ interpret_ handler = interpret (const handler)
 --
 -- @since 2.4.0.0
 interpretWith_
-  :: DispatchOf e ~ Dynamic
+  :: (HasCallStack, DispatchOf e ~ Dynamic)
   => Eff (e : es) a
   -> EffectHandler_ e es
   -- ^ The effect handler.
@@ -629,7 +629,7 @@ interpretWith_ m handler = interpretWith m (const handler)
 --
 -- @since 2.4.0.0
 reinterpret_
-  :: DispatchOf e ~ Dynamic
+  :: (HasCallStack, DispatchOf e ~ Dynamic)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> EffectHandler_ e handlerEs
@@ -642,7 +642,7 @@ reinterpret_ runHandlerEs handler = reinterpret runHandlerEs (const handler)
 --
 -- @since 2.4.0.0
 reinterpretWith_
-  :: DispatchOf e ~ Dynamic
+  :: (HasCallStack, DispatchOf e ~ Dynamic)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> Eff (e : es) a
@@ -655,7 +655,7 @@ reinterpretWith_ runHandlerEs m handler = reinterpretWith runHandlerEs m (const 
 --
 -- @since 2.4.0.0
 interpose_
-  :: (DispatchOf e ~ Dynamic, e :> es)
+  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => EffectHandler_ e es
   -- ^ The effect handler.
   -> Eff es a
@@ -666,7 +666,7 @@ interpose_ handler = interpose (const handler)
 --
 -- @since 2.4.0.0
 interposeWith_
-  :: (DispatchOf e ~ Dynamic, e :> es)
+  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => Eff es a
   -> EffectHandler_ e es
   -- ^ The effect handler.
@@ -677,7 +677,7 @@ interposeWith_ m handler = interposeWith m (const handler)
 --
 -- @since 2.4.0.0
 impose_
-  :: (DispatchOf e ~ Dynamic, e :> es)
+  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> EffectHandler_ e handlerEs
@@ -690,7 +690,7 @@ impose_ runHandlerEs handler = impose runHandlerEs (const handler)
 --
 -- @since 2.4.0.0
 imposeWith_
-  :: (DispatchOf e ~ Dynamic, e :> es)
+  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => (Eff handlerEs a -> Eff es b)
   -- ^ Introduction of effects encapsulated within the handler.
   -> Eff es a
@@ -960,7 +960,7 @@ localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
 -- @since 2.4.0.0
 localSeqLend
   :: forall lentEs es handlerEs localEs a
-   . (KnownSubset lentEs es, SharedSuffix es handlerEs)
+   . (HasCallStack, KnownSubset lentEs es, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -> ((forall r. Eff (lentEs ++ localEs) r -> Eff localEs r) -> Eff es a)
   -- ^ Continuation with the lent handler in scope.
@@ -977,7 +977,7 @@ localSeqLend (LocalEnv les) k = unsafeEff $ \es -> do
 -- @since 2.4.0.0
 localLend
   :: forall lentEs es handlerEs localEs a
-   . (KnownSubset lentEs es, SharedSuffix es handlerEs)
+   . (HasCallStack, KnownSubset lentEs es, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -> UnliftStrategy
   -> ((forall r. Eff (lentEs ++ localEs) r -> Eff localEs r) -> Eff es a)
@@ -997,7 +997,7 @@ localLend (LocalEnv les) strategy k = case strategy of
 -- @since 2.4.0.0
 localSeqBorrow
   :: forall borrowedEs es handlerEs localEs a
-   . (KnownSubset borrowedEs localEs, SharedSuffix es handlerEs)
+   . (HasCallStack, KnownSubset borrowedEs localEs, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -> ((forall r. Eff (borrowedEs ++ es) r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the borrowed handler in scope.
@@ -1015,7 +1015,7 @@ localSeqBorrow (LocalEnv les) k = unsafeEff $ \es -> do
 -- @since 2.4.0.0
 localBorrow
   :: forall borrowedEs es handlerEs localEs a
-   . (KnownSubset borrowedEs localEs, SharedSuffix es handlerEs)
+   . (HasCallStack, KnownSubset borrowedEs localEs, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
   -> UnliftStrategy
   -> ((forall r. Eff (borrowedEs ++ es) r -> Eff es r) -> Eff es a)

@@ -25,7 +25,8 @@ import Effectful.Reader.Dynamic qualified as R
 -- "Effectful.Reader.Static").
 runReader
   :: forall label r es a
-   . r
+   . HasCallStack
+  => r
   -- ^ The initial environment.
   -> Eff (Labeled label (Reader r) : es) a
   -> Eff es a

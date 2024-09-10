@@ -43,20 +43,20 @@ newtype instance StaticRep (Writer w) = Writer w
 
 -- | Run a 'Writer' effect and return the final value along with the final
 -- output.
-runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
+runWriter :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
   (a, Writer w) <- runStaticRep (Writer mempty) m
   pure (a, w)
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
 -- value.
-execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
+execWriter :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
   Writer w <- execStaticRep (Writer mempty) m
   pure w
 
 -- | Append the given output to the overall output of the 'Writer'.
-tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
+tell :: (HasCallStack, Writer w :> es, Monoid w) => w -> Eff es ()
 tell w = stateStaticRep $ \(Writer w0) -> ((), Writer (w0 <> w))
 
 -- | Execute an action and append its output to the overall output of the
@@ -76,7 +76,7 @@ tell w = stateStaticRep $ \(Writer w0) -> ((), Writer (w0 <> w))
 --         error "oops"
 -- :}
 -- "Hi there!"
-listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
+listen :: (HasCallStack, Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
 listen m = unsafeEff $ \es -> mask $ \unmask -> do
   w0 <- stateEnv es $ \(Writer w) -> (w, Writer mempty)
   a <- unmask (unEff m es) `onException` merge es w0
@@ -91,7 +91,11 @@ listen m = unsafeEff $ \es -> mask $ \unmask -> do
 -- output.
 --
 -- @'listens' f m ≡ 'Data.Bifunctor.second' f '<$>' 'listen' m@
-listens :: (Writer w :> es, Monoid w) => (w -> b) -> Eff es a -> Eff es (a, b)
+listens
+  :: (HasCallStack, Writer w :> es, Monoid w)
+  => (w -> b)
+  -> Eff es a
+  -> Eff es (a, b)
 listens f m = do
   (a, w) <- listen m
   pure (a, f w)

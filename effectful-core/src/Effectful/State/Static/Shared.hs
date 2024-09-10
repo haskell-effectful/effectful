@@ -60,7 +60,7 @@ newtype instance StaticRep (State s) = State (MVar' s)
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value along with the final state.
-runState :: s -> Eff (State s : es) a -> Eff es (a, s)
+runState :: HasCallStack => s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = do
   v <- unsafeEff_ $ newMVar' s
   a <- evalStaticRep (State v) m
@@ -68,14 +68,14 @@ runState s m = do
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value, discarding the final state.
-evalState :: s -> Eff (State s : es) a -> Eff es a
+evalState :: HasCallStack => s -> Eff (State s : es) a -> Eff es a
 evalState s m = do
   v <- unsafeEff_ $ newMVar' s
   evalStaticRep (State v) m
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- state, discarding the final value.
-execState :: s -> Eff (State s : es) a -> Eff es s
+execState :: HasCallStack => s -> Eff (State s : es) a -> Eff es s
 execState s m = do
   v <- unsafeEff_ $ newMVar' s
   _ <- evalStaticRep (State v) m
@@ -83,25 +83,25 @@ execState s m = do
 
 -- | Run the 'State' effect with the given initial state 'MVar'' and return the
 -- final value along with the final state.
-runStateMVar :: MVar' s -> Eff (State s : es) a -> Eff es (a, s)
+runStateMVar :: HasCallStack => MVar' s -> Eff (State s : es) a -> Eff es (a, s)
 runStateMVar v m = do
   a <- evalStaticRep (State v) m
   (a, ) <$> unsafeEff_ (readMVar' v)
 
 -- | Run the 'State' effect with the given initial state 'MVar'' and return the
 -- final value, discarding the final state.
-evalStateMVar :: MVar' s -> Eff (State s : es) a -> Eff es a
+evalStateMVar :: HasCallStack => MVar' s -> Eff (State s : es) a -> Eff es a
 evalStateMVar v = evalStaticRep (State v)
 
 -- | Run the 'State' effect with the given initial state 'MVar'' and return the
 -- final state, discarding the final value.
-execStateMVar :: MVar' s -> Eff (State s : es) a -> Eff es s
+execStateMVar :: HasCallStack => MVar' s -> Eff (State s : es) a -> Eff es s
 execStateMVar v m = do
   _ <- evalStaticRep (State v) m
   unsafeEff_ $ readMVar' v
 
 -- | Fetch the current value of the state.
-get :: State s :> es => Eff es s
+get :: (HasCallStack, State s :> es) => Eff es s
 get = unsafeEff $ \es -> do
   State v <- getEnv es
   readMVar' v
@@ -109,11 +109,11 @@ get = unsafeEff $ \es -> do
 -- | Get a function of the current state.
 --
 -- @'gets' f ≡ f '<$>' 'get'@
-gets :: State s :> es => (s -> a) -> Eff es a
+gets :: (HasCallStack, State s :> es) => (s -> a) -> Eff es a
 gets f = f <$> get
 
 -- | Set the current state to the given value.
-put :: State s :> es => s -> Eff es ()
+put :: (HasCallStack, State s :> es) => s -> Eff es ()
 put s = unsafeEff $ \es -> do
   State v <- getEnv es
   modifyMVar'_ v $ \_ -> pure s
@@ -121,7 +121,7 @@ put s = unsafeEff $ \es -> do
 -- | Apply the function to the current state and return a value.
 --
 -- /Note:/ this function gets an exclusive access to the state for its duration.
-state :: State s :> es => (s -> (a, s)) -> Eff es a
+state :: (HasCallStack, State s :> es) => (s -> (a, s)) -> Eff es a
 state f = unsafeEff $ \es -> do
   State v <- getEnv es
   modifyMVar' v $ \s0 -> let (a, s) = f s0 in pure (s, a)
@@ -131,13 +131,13 @@ state f = unsafeEff $ \es -> do
 -- @'modify' f ≡ 'state' (\\s -> ((), f s))@
 --
 -- /Note:/ this function gets an exclusive access to the state for its duration.
-modify :: State s :> es => (s -> s) -> Eff es ()
+modify :: (HasCallStack, State s :> es) => (s -> s) -> Eff es ()
 modify f = state (\s -> ((), f s))
 
 -- | Apply the monadic function to the current state and return a value.
 --
 -- /Note:/ this function gets an exclusive access to the state for its duration.
-stateM :: State s :> es => (s -> Eff es (a, s)) -> Eff es a
+stateM :: (HasCallStack, State s :> es) => (s -> Eff es (a, s)) -> Eff es a
 stateM f = unsafeEff $ \es -> do
   State v <- getEnv es
   modifyMVar' v $ \s0 -> do
@@ -149,7 +149,7 @@ stateM f = unsafeEff $ \es -> do
 -- @'modifyM' f ≡ 'stateM' (\\s -> ((), ) '<$>' f s)@
 --
 -- /Note:/ this function gets an exclusive access to the state for its duration.
-modifyM :: State s :> es => (s -> Eff es s) -> Eff es ()
+modifyM :: (HasCallStack, State s :> es) => (s -> Eff es s) -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)
 
 -- $setup

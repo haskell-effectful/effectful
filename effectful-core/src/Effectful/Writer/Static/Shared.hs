@@ -43,7 +43,7 @@ newtype instance StaticRep (Writer w) = Writer (MVar' w)
 
 -- | Run a 'Writer' effect and return the final value along with the final
 -- output.
-runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
+runWriter :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
   v <- unsafeEff_ $ newMVar' mempty
   a <- evalStaticRep (Writer v) m
@@ -51,14 +51,14 @@ runWriter m = do
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
 -- value.
-execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
+execWriter :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
   v <- unsafeEff_ $ newMVar' mempty
   _ <- evalStaticRep (Writer v) m
   unsafeEff_ $ readMVar' v
 
 -- | Append the given output to the overall output of the 'Writer'.
-tell :: (Writer w :> es, Monoid w) => w -> Eff es ()
+tell :: (HasCallStack, Writer w :> es, Monoid w) => w -> Eff es ()
 tell w1 = unsafeEff $ \es -> do
   Writer v <- getEnv es
   modifyMVar'_ v $ \w0 -> let w = w0 <> w1 in pure w
@@ -80,7 +80,7 @@ tell w1 = unsafeEff $ \es -> do
 --         error "oops"
 -- :}
 -- "Hi there!"
-listen :: (Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
+listen :: (HasCallStack, Writer w :> es, Monoid w) => Eff es a -> Eff es (a, w)
 listen m = unsafeEff $ \es -> do
   -- The mask is uninterruptible because modifyMVar_ v0 in the merge function
   -- might block and if an async exception is received while waiting, w1 will be
@@ -105,7 +105,11 @@ listen m = unsafeEff $ \es -> do
 -- output.
 --
 -- @'listens' f m ≡ 'Data.Bifunctor.second' f '<$>' 'listen' m@
-listens :: (Writer w :> es, Monoid w) => (w -> b) -> Eff es a -> Eff es (a, b)
+listens
+  :: (HasCallStack, Writer w :> es, Monoid w)
+  => (w -> b)
+  -> Eff es a
+  -> Eff es (a, b)
 listens f m = do
   (a, w) <- listen m
   pure (a, f w)

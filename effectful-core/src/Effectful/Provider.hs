@@ -128,7 +128,8 @@ data instance StaticRep (Provider e input f) where
 
 -- | Run the 'Provider' effect with a given effect handler.
 runProvider
-  :: (forall r. input -> Eff (e : es) r -> Eff es (f r))
+  :: HasCallStack
+  => (forall r. input -> Eff (e : es) r -> Eff es (f r))
   -- ^ The effect handler.
   -> Eff (Provider e input f : es) a
   -> Eff es a
@@ -141,23 +142,24 @@ runProvider run m = unsafeEff $ \es0 -> do
 -- | Run the 'Provider' effect with a given effect handler that doesn't change
 -- its return type.
 runProvider_
-  :: (forall r. input -> Eff (e : es) r -> Eff es r)
+  :: HasCallStack
+  => (forall r. input -> Eff (e : es) r -> Eff es r)
   -- ^ The effect handler.
   -> Eff (Provider_ e input : es) a
   -> Eff es a
 runProvider_ run = runProvider $ \input -> coerce . run input
 
 -- | Run the effect handler.
-provide :: Provider e () f :> es => Eff (e : es) a -> Eff es (f a)
+provide :: (HasCallStack, Provider e () f :> es) => Eff (e : es) a -> Eff es (f a)
 provide = provideWith ()
 
 -- | Run the effect handler with unchanged return type.
-provide_ :: Provider_ e () :> es => Eff (e : es) a -> Eff es a
+provide_ :: (HasCallStack, Provider_ e () :> es) => Eff (e : es) a -> Eff es a
 provide_ = provideWith_ ()
 
 -- | Run the effect handler with a given input.
 provideWith
-  :: Provider e input f :> es
+  :: (HasCallStack, Provider e input f :> es)
   => input
   -- ^ The input to the effect handler.
   -> Eff (e : es) a
@@ -170,7 +172,7 @@ provideWith input action = unsafeEff $ \es -> do
 -- | Run the effect handler that doesn't change its return type with a given
 -- input.
 provideWith_
-  :: Provider_ e input :> es
+  :: (HasCallStack, Provider_ e input :> es)
   => input
   -- ^ The input to the effect handler.
   -> Eff (e : es) a
@@ -188,7 +190,7 @@ relinkProvider = Relinker $ \relink (Provider handlerEs run) -> do
   newHandlerEs <- relink handlerEs
   pure $ Provider newHandlerEs run
 
-copyRef :: Env (e : handlerEs) -> Env es -> IO (Env (e : es))
+copyRef :: HasCallStack => Env (e : handlerEs) -> Env es -> IO (Env (e : es))
 copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
   when (hstorage /= storage) $ do
     error "storages do not match"

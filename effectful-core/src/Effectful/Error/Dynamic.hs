@@ -44,7 +44,8 @@ type instance DispatchOf (Error e) = Dynamic
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static").
 runError
-  :: Eff (Error e : es) a
+  :: HasCallStack
+  => Eff (Error e : es) a
   -> Eff es (Either (E.CallStack, e) a)
 runError = reinterpret E.runError $ \env -> \case
   ThrowErrorWith display e -> E.throwErrorWith display e
@@ -56,7 +57,8 @@ runError = reinterpret E.runError $ \env -> \case
 --
 -- @since 2.3.0.0
 runErrorWith
-  :: (E.CallStack -> e -> Eff es a)
+  :: HasCallStack
+  => (E.CallStack -> e -> Eff es a)
   -- ^ The error handler.
   -> Eff (Error e : es) a
   -> Eff es a
@@ -69,14 +71,16 @@ runErrorWith handler m = runError m >>= \case
 --
 -- @since 2.3.0.0
 runErrorNoCallStack
-  :: Eff (Error e : es) a
+  :: HasCallStack
+  => Eff (Error e : es) a
   -> Eff es (Either e a)
 runErrorNoCallStack = fmap (either (Left . snd) Right) . runError
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static") with a specific
 -- error handler. In case of an error discard the 'CallStack'.
 runErrorNoCallStackWith
-  :: (e -> Eff es a)
+  :: HasCallStack
+  => (e -> Eff es a)
   -- ^ The error handler.
   -> Eff (Error e : es) a
   -> Eff es a

@@ -57,7 +57,7 @@ data instance StaticRep (ProviderList effs input f) where
 
 -- | Run the 'ProviderList' effect with a given handler.
 runProviderList
-  :: KnownEffects effs
+  :: (HasCallStack, KnownEffects effs)
   => (forall r. input -> Eff (effs ++ es) r -> Eff es (f r))
   -- ^ The handler.
   -> Eff (ProviderList effs input f : es) a
@@ -71,7 +71,7 @@ runProviderList run m = unsafeEff $ \es0 -> do
 -- | Run the 'Provider' effect with a given handler that doesn't change its
 -- return type.
 runProviderList_
-  :: KnownEffects effs
+  :: (HasCallStack, KnownEffects effs)
   => (forall r. input -> Eff (effs ++ es) r -> Eff es r)
   -- ^ The handler.
   -> Eff (ProviderList_ effs input : es) a
@@ -81,7 +81,7 @@ runProviderList_ run = runProviderList $ \input -> coerce . run input
 -- | Run the handler.
 provideList
   :: forall effs f es a
-   . ProviderList effs () f :> es
+   . (HasCallStack, ProviderList effs () f :> es)
   => Eff (effs ++ es) a
   -> Eff es (f a)
 provideList = provideListWith @effs ()
@@ -89,7 +89,7 @@ provideList = provideListWith @effs ()
 -- | Run the handler with unchanged return type.
 provideList_
   :: forall effs es a
-   . ProviderList_ effs () :> es
+   . (HasCallStack, ProviderList_ effs () :> es)
   => Eff (effs ++ es) a
   -> Eff es a
 provideList_ = provideListWith_ @effs ()
@@ -97,7 +97,7 @@ provideList_ = provideListWith_ @effs ()
 -- | Run the handler with a given input.
 provideListWith
   :: forall effs input f es a
-   . ProviderList effs input f :> es
+   . (HasCallStack, ProviderList effs input f :> es)
   => input
   -- ^ The input to the handler.
   -> Eff (effs ++ es) a
@@ -110,7 +110,7 @@ provideListWith input action = unsafeEff $ \es -> do
 -- | Run the handler that doesn't change its return type with a given input.
 provideListWith_
   :: forall effs input es a
-   . ProviderList_ effs input :> es
+   . (HasCallStack, ProviderList_ effs input :> es)
   => input
   -- ^ The input to the handler.
   -> Eff (effs ++ es) a
@@ -130,7 +130,7 @@ relinkProviderList = Relinker $ \relink (ProviderList handlerEs run) -> do
 
 copyRefs
   :: forall effs handlerEs es
-   . KnownEffects effs
+   . (HasCallStack, KnownEffects effs)
   => Env (effs ++ handlerEs)
   -> Env es
   -> IO (Env (effs ++ es))

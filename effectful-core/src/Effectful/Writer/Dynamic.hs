@@ -40,19 +40,15 @@ type instance DispatchOf (Writer w) = Dynamic
 
 -- | Run the 'Writer' effect and return the final value along with the final
 -- output (via "Effectful.Writer.Static.Local").
-runWriterLocal :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
+runWriterLocal :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es (a, w)
 runWriterLocal = reinterpret L.runWriter localWriter
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
 -- value (via "Effectful.Writer.Static.Local").
-execWriterLocal :: Monoid w => Eff (Writer w : es) a -> Eff es w
+execWriterLocal :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es w
 execWriterLocal = reinterpret L.execWriter localWriter
 
-localWriter
-  :: (L.Writer w :> es, Monoid w)
-  => LocalEnv localEs es
-  -> Writer w (Eff localEs) a
-  -> Eff es a
+localWriter :: (L.Writer w :> es, Monoid w) => EffectHandler (Writer w) es
 localWriter env = \case
   Tell w   -> L.tell w
   Listen m -> localSeqUnlift env $ \unlift -> L.listen (unlift m)
@@ -62,19 +58,15 @@ localWriter env = \case
 
 -- | Run the 'Writer' effect and return the final value along with the final
 -- output (via "Effectful.Writer.Static.Shared").
-runWriterShared :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
+runWriterShared :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es (a, w)
 runWriterShared = reinterpret S.runWriter sharedWriter
 
 -- | Run the 'Writer' effect and return the final output, discarding the final
 -- value (via "Effectful.Writer.Static.Shared").
-execWriterShared :: Monoid w => Eff (Writer w : es) a -> Eff es w
+execWriterShared :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es w
 execWriterShared = reinterpret S.execWriter sharedWriter
 
-sharedWriter
-  :: (S.Writer w :> es, Monoid w)
-  => LocalEnv localEs es
-  -> Writer w (Eff localEs) a
-  -> Eff es a
+sharedWriter :: (S.Writer w :> es, Monoid w) => EffectHandler (Writer w) es
 sharedWriter env = \case
   Tell w    -> S.tell w
   Listen m  -> localSeqUnlift env $ \unlift -> S.listen (unlift m)

@@ -13,6 +13,7 @@ import GHC.TcPluginM.Extra (lookupModule, lookupName)
 #if __GLASGOW_HASKELL__ >= 900
 import GHC.Core.Class (Class)
 import GHC.Core.InstEnv (InstEnvs, lookupInstEnv)
+import GHC.Core.Predicate (isIPClass)
 import GHC.Core.Unify (tcUnifyTy)
 import GHC.Plugins
   ( Outputable (ppr), Plugin (pluginRecompile, tcPlugin), PredType
@@ -46,6 +47,7 @@ import GhcPlugins
   , tyConClass_maybe
   )
 import InstEnv (InstEnvs, lookupInstEnv)
+import Predicate (isIPClass)
 import TcEnv (tcGetInstEnvs)
 import TcPluginM (tcLookupClass, tcPluginIO)
 import TcRnTypes
@@ -145,7 +147,7 @@ solveFakedep (elemCls, visitedRef) allGivens allWanteds = do
     -- We store a list of the types of all given constraints, which will be useful later.
     allGivenTypes = ctPred <$> allGivens
     -- We also store a list of wanted constraints that are /not/ 'Elem e es' for later use.
-    extraWanteds = ctPred <$> filter irrelevant allWanteds
+    extraWanteds = ctPred <$> filter (\w -> irrelevant w && not (isIP w)) allWanteds
 
   -- traceM $ "Givens: " <> show (showSDocUnsafe . ppr <$> allGivens)
   -- traceM $ "Wanteds: " <> show (showSDocUnsafe . ppr <$> allWanteds)
@@ -224,9 +226,15 @@ solveFakedep (elemCls, visitedRef) allGivens allWanteds = do
       | cls == elemCls = Just $ FakedepWanted (FakedepGiven (fst $ splitAppTys eff) eff es) loc
     relevantWanted _ = Nothing
 
+    -- Check if a constraint in an implicit parameter.
+    isIP :: Ct -> Bool
+    isIP = \case
+      CDictCan _ cls _ _ -> isIPClass cls
+      _ -> False
+
     -- Determine whether a constraint is /not/ of form 'Elem e es'.
     irrelevant :: Ct -> Bool
-    irrelevant = isNothing . relevantGiven
+    irrelevant = isNothing . relevantWanted
 
     -- Given a wanted constraint and a given constraint, unify them and give back a substitution that can be applied
     -- to the wanted to make it equal to the given.

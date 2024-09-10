@@ -11,6 +11,7 @@ import Data.Traversable
 
 import GHC.Core.Class (Class)
 import GHC.Core.InstEnv (InstEnvs, lookupInstEnv)
+import GHC.Core.Predicate (isIPClass)
 import GHC.Core.TyCo.Rep (PredType, Type)
 import GHC.Core.TyCo.Subst
 import GHC.Core.TyCon (tyConClass_maybe)
@@ -167,7 +168,11 @@ solveFakedep (elemCls, visitedRef) _ allGivens allWanteds = do
     -- constraints. Therefore, we extract these constraints out of the
     -- 'allGivens' and 'allWanted's.
     effGivens = mapMaybe maybeEffGiven allGivens
-    (otherWantedTys, effWanteds) = partitionEithers $ map splitWanteds allWanteds
+    (otherWantedTys, effWanteds) = partitionEithers
+      . map splitWanteds
+      -- Get rid of implicit parameters, they're weird.
+      . filter (not . isIP)
+      $ allWanteds
 
     -- We store a list of the types of all given constraints, which will be
     -- useful later.
@@ -240,6 +245,16 @@ solveFakedep (elemCls, visitedRef) _ allGivens allWanteds = do
                            }
         else Nothing
       _ -> Nothing
+
+    -- Check if a constraint in an implicit parameter.
+    isIP :: Ct -> Bool
+    isIP = \case
+#if __GLASGOW_HASKELL__ < 908
+      CDictCan { cc_class = cls } -> isIPClass cls
+#else
+      CDictCan DictCt { di_cls = cls } -> isIPClass cls
+#endif
+      _ -> False
 
     -- Determine whether a wanted constraint is of form 'e :> es'.
     splitWanteds :: Ct -> Either PredType EffWanted

@@ -38,7 +38,8 @@ import Effectful.Error.Dynamic qualified as E
 -- | Handle errors of type @e@ (via "Effectful.Error.Static").
 runError
   :: forall label e es a
-   . Eff (Labeled label (Error e) : es) a
+   . HasCallStack
+  => Eff (Labeled label (Error e) : es) a
   -> Eff es (Either (E.CallStack, e) a)
 runError = runLabeled @label E.runError
 
@@ -46,7 +47,8 @@ runError = runLabeled @label E.runError
 -- error handler.
 runErrorWith
   :: forall label e es a
-  . (E.CallStack -> e -> Eff es a)
+   . HasCallStack
+  => (E.CallStack -> e -> Eff es a)
   -- ^ The error handler.
   -> Eff (Labeled label (Error e) : es) a
   -> Eff es a
@@ -56,7 +58,8 @@ runErrorWith = runLabeled @label . E.runErrorWith
 -- error discard the 'E.CallStack'.
 runErrorNoCallStack
   :: forall label e es a
-   . Eff (Labeled label (Error e) : es) a
+   . HasCallStack
+  => Eff (Labeled label (Error e) : es) a
   -> Eff es (Either e a)
 runErrorNoCallStack = runLabeled @label E.runErrorNoCallStack
 
@@ -64,7 +67,8 @@ runErrorNoCallStack = runLabeled @label E.runErrorNoCallStack
 -- error handler. In case of an error discard the 'CallStack'.
 runErrorNoCallStackWith
   :: forall label e es a
-   . (e -> Eff es a)
+   . HasCallStack
+  => (e -> Eff es a)
   -- ^ The error handler.
   -> Eff (Labeled label (Error e) : es) a
   -> Eff es a

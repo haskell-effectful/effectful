@@ -30,7 +30,8 @@ type instance DispatchOf (Reader r) = Dynamic
 -- | Run the 'Reader' effect with the given initial environment (via
 -- "Effectful.Reader.Static").
 runReader
-  :: r -- ^ The initial environment.
+  :: HasCallStack
+  => r -- ^ The initial environment.
   -> Eff (Reader r : es) a
   -> Eff es a
 runReader r = reinterpret (R.runReader r) $ \env -> \case

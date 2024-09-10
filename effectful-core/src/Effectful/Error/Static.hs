@@ -118,7 +118,8 @@ newtype instance StaticRep (Error e) = Error ErrorId
 -- | Handle errors of type @e@.
 runError
   :: forall e es a
-  .  Eff (Error e : es) a
+   . HasCallStack
+  => Eff (Error e : es) a
   -> Eff es (Either (CallStack, e) a)
 runError m = unsafeEff $ \es0 -> mask $ \unmask -> do
   eid <- newErrorId
@@ -136,7 +137,8 @@ runError m = unsafeEff $ \es0 -> mask $ \unmask -> do
 --
 -- @since 2.3.0.0
 runErrorWith
-  :: (CallStack -> e -> Eff es a)
+  :: HasCallStack
+  => (CallStack -> e -> Eff es a)
   -- ^ The error handler.
   -> Eff (Error e : es) a
   -> Eff es a
@@ -149,14 +151,16 @@ runErrorWith handler m = runError m >>= \case
 -- @since 2.3.0.0
 runErrorNoCallStack
   :: forall e es a
-  .  Eff (Error e : es) a
+   . HasCallStack
+  => Eff (Error e : es) a
   -> Eff es (Either e a)
 runErrorNoCallStack = fmap (either (Left . snd) Right) . runError
 
 -- | Handle errors of type @e@ with a specific error handler. In case of an
 -- error discard the 'CallStack'.
 runErrorNoCallStackWith
-  :: (e -> Eff es a)
+  :: HasCallStack
+  => (e -> Eff es a)
   -- ^ The error handler.
   -> Eff (Error e : es) a
   -> Eff es a

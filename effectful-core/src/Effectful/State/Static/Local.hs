@@ -55,7 +55,8 @@ newtype instance StaticRep (State s) = State s
 -- | Run the 'State' effect with the given initial state and return the final
 -- value along with the final state.
 runState
-  :: s -- ^ The initial state.
+  :: HasCallStack
+  => s -- ^ The initial state.
   -> Eff (State s : es) a
   -> Eff es (a, s)
 runState s0 m = do
@@ -65,7 +66,8 @@ runState s0 m = do
 -- | Run the 'State' effect with the given initial state and return the final
 -- value, discarding the final state.
 evalState
-  :: s -- ^ The initial state.
+  :: HasCallStack
+  => s -- ^ The initial state.
   -> Eff (State s : es) a
   -> Eff es a
 evalState s = evalStaticRep (State s)
@@ -73,7 +75,8 @@ evalState s = evalStaticRep (State s)
 -- | Run the 'State' effect with the given initial state and return the final
 -- state, discarding the final value.
 execState
-  :: s -- ^ The initial state.
+  :: HasCallStack
+  => s -- ^ The initial state.
   -> Eff (State s : es) a
   -> Eff es s
 execState s0 m = do

@@ -35,7 +35,7 @@ import Effectful.Writer.Dynamic qualified as W
 -- output (via "Effectful.Writer.Static.Local").
 runWriterLocal
   :: forall label w es a
-   . Monoid w
+   . (HasCallStack, Monoid w)
   => Eff (Labeled label (Writer w) : es)
   a -> Eff es (a, w)
 runWriterLocal = runLabeled @label W.runWriterLocal
@@ -44,7 +44,7 @@ runWriterLocal = runLabeled @label W.runWriterLocal
 -- value (via "Effectful.Writer.Static.Local").
 execWriterLocal
   :: forall label w es a
-   . Monoid w
+   . (HasCallStack, Monoid w)
   => Eff (Labeled label (Writer w) : es) a
   -> Eff es w
 execWriterLocal = runLabeled @label W.execWriterLocal
@@ -56,7 +56,7 @@ execWriterLocal = runLabeled @label W.execWriterLocal
 -- output (via "Effectful.Writer.Static.Shared").
 runWriterShared
   :: forall label w es a
-   . Monoid w
+   . (HasCallStack, Monoid w)
   => Eff (Labeled label (Writer w) : es) a
   -> Eff es (a, w)
 runWriterShared = runLabeled @label W.runWriterShared
@@ -65,7 +65,7 @@ runWriterShared = runLabeled @label W.runWriterShared
 -- value (via "Effectful.Writer.Static.Shared").
 execWriterShared
   :: forall label w es a
-   . Monoid w
+   . (HasCallStack, Monoid w)
   => Eff (Labeled label (Writer w) : es) a
   -> Eff es w
 execWriterShared = runLabeled @label W.execWriterShared

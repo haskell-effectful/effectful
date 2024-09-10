@@ -57,7 +57,7 @@ data instance StaticRep (ProviderList effs input f) where
 
 -- | Run the 'ProviderList' effect with a given handler.
 runProviderList
-  :: KnownEffects effs
+  :: (HasCallStack, KnownEffects effs)
   => (forall r. input -> Eff (effs ++ es) r -> Eff es (f r))
   -- ^ The handler.
   -> Eff (ProviderList effs input f : es) a
@@ -71,7 +71,7 @@ runProviderList run m = unsafeEff $ \es0 -> do
 -- | Run the 'Provider' effect with a given handler that doesn't change its
 -- return type.
 runProviderList_
-  :: KnownEffects effs
+  :: (HasCallStack, KnownEffects effs)
   => (forall r. input -> Eff (effs ++ es) r -> Eff es r)
   -- ^ The handler.
   -> Eff (ProviderList_ effs input : es) a

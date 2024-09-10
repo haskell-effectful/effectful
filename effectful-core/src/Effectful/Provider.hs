@@ -128,7 +128,8 @@ data instance StaticRep (Provider e input f) where
 
 -- | Run the 'Provider' effect with a given effect handler.
 runProvider
-  :: (forall r. input -> Eff (e : es) r -> Eff es (f r))
+  :: HasCallStack
+  => (forall r. input -> Eff (e : es) r -> Eff es (f r))
   -- ^ The effect handler.
   -> Eff (Provider e input f : es) a
   -> Eff es a
@@ -141,7 +142,8 @@ runProvider run m = unsafeEff $ \es0 -> do
 -- | Run the 'Provider' effect with a given effect handler that doesn't change
 -- its return type.
 runProvider_
-  :: (forall r. input -> Eff (e : es) r -> Eff es r)
+  :: HasCallStack
+  => (forall r. input -> Eff (e : es) r -> Eff es r)
   -- ^ The effect handler.
   -> Eff (Provider_ e input : es) a
   -> Eff es a

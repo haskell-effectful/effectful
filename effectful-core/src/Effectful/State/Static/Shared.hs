@@ -60,7 +60,7 @@ newtype instance StaticRep (State s) = State (MVar' s)
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value along with the final state.
-runState :: s -> Eff (State s : es) a -> Eff es (a, s)
+runState :: HasCallStack => s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = do
   v <- unsafeEff_ $ newMVar' s
   a <- evalStaticRep (State v) m
@@ -68,14 +68,14 @@ runState s m = do
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value, discarding the final state.
-evalState :: s -> Eff (State s : es) a -> Eff es a
+evalState :: HasCallStack => s -> Eff (State s : es) a -> Eff es a
 evalState s m = do
   v <- unsafeEff_ $ newMVar' s
   evalStaticRep (State v) m
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- state, discarding the final value.
-execState :: s -> Eff (State s : es) a -> Eff es s
+execState :: HasCallStack => s -> Eff (State s : es) a -> Eff es s
 execState s m = do
   v <- unsafeEff_ $ newMVar' s
   _ <- evalStaticRep (State v) m
@@ -83,19 +83,19 @@ execState s m = do
 
 -- | Run the 'State' effect with the given initial state 'MVar'' and return the
 -- final value along with the final state.
-runStateMVar :: MVar' s -> Eff (State s : es) a -> Eff es (a, s)
+runStateMVar :: HasCallStack => MVar' s -> Eff (State s : es) a -> Eff es (a, s)
 runStateMVar v m = do
   a <- evalStaticRep (State v) m
   (a, ) <$> unsafeEff_ (readMVar' v)
 
 -- | Run the 'State' effect with the given initial state 'MVar'' and return the
 -- final value, discarding the final state.
-evalStateMVar :: MVar' s -> Eff (State s : es) a -> Eff es a
+evalStateMVar :: HasCallStack => MVar' s -> Eff (State s : es) a -> Eff es a
 evalStateMVar v = evalStaticRep (State v)
 
 -- | Run the 'State' effect with the given initial state 'MVar'' and return the
 -- final state, discarding the final value.
-execStateMVar :: MVar' s -> Eff (State s : es) a -> Eff es s
+execStateMVar :: HasCallStack => MVar' s -> Eff (State s : es) a -> Eff es s
 execStateMVar v m = do
   _ <- evalStaticRep (State v) m
   unsafeEff_ $ readMVar' v

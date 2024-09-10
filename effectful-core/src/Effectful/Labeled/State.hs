@@ -41,7 +41,8 @@ import Effectful.State.Dynamic qualified as S
 -- value along with the final state (via "Effectful.State.Static.Local").
 runStateLocal
   :: forall label s es a
-   . s
+   . HasCallStack
+  => s
    -- ^ The initial state.
   -> Eff (Labeled label (State s) : es) a
   -> Eff es (a, s)
@@ -51,7 +52,8 @@ runStateLocal = runLabeled @label . S.runStateLocal
 -- value, discarding the final state (via "Effectful.State.Static.Local").
 evalStateLocal
   :: forall label s es a
-   . s
+   . HasCallStack
+  => s
    -- ^ The initial state.
   -> Eff (Labeled label (State s) : es) a
   -> Eff es a
@@ -61,7 +63,8 @@ evalStateLocal = runLabeled @label . S.evalStateLocal
 -- state, discarding the final value (via "Effectful.State.Static.Local").
 execStateLocal
   :: forall label s es a
-   . s
+   . HasCallStack
+  => s
    -- ^ The initial state.
   -> Eff (Labeled label (State s) : es) a
   -> Eff es s
@@ -74,7 +77,8 @@ execStateLocal = runLabeled @label . S.execStateLocal
 -- value along with the final state (via "Effectful.State.Static.Shared").
 runStateShared
   :: forall label s es a
-   . s
+   . HasCallStack
+  => s
    -- ^ The initial state.
   -> Eff (Labeled label (State s) : es) a
   -> Eff es (a, s)
@@ -84,7 +88,8 @@ runStateShared = runLabeled @label . S.runStateShared
 -- value, discarding the final state (via "Effectful.State.Static.Shared").
 evalStateShared
   :: forall label s es a
-   . s
+   . HasCallStack
+  => s
    -- ^ The initial state.
   -> Eff (Labeled label (State s) : es) a
   -> Eff es a
@@ -94,7 +99,8 @@ evalStateShared = runLabeled @label . S.evalStateShared
 -- state, discarding the final value (via "Effectful.State.Static.Shared").
 execStateShared
   :: forall label s es a
-   . s
+   . HasCallStack
+  => s
    -- ^ The initial state.
   -> Eff (Labeled label (State s) : es) a
   -> Eff es s

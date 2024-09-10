@@ -50,12 +50,19 @@ data OnEmptyPolicy
 -- computation calls 'Empty'.
 --
 -- @since 2.2.0.0
-runNonDet :: OnEmptyPolicy -> Eff (NonDet : es) a -> Eff es (Either CallStack a)
+runNonDet
+  :: HasCallStack
+  => OnEmptyPolicy
+  -> Eff (NonDet : es) a
+  -> Eff es (Either CallStack a)
 runNonDet = \case
   OnEmptyKeep     -> runNonDetKeep
   OnEmptyRollback -> runNonDetRollback
 
-runNonDetKeep :: Eff (NonDet : es) a -> Eff es (Either CallStack a)
+runNonDetKeep
+  :: HasCallStack
+  => Eff (NonDet : es) a
+  -> Eff es (Either CallStack a)
 runNonDetKeep = reinterpret (fmap noError . runError @()) $ \env -> \case
   Empty       -> throwError ()
   m1 :<|>: m2 -> localSeqUnlift env $ \unlift -> do
@@ -64,7 +71,10 @@ runNonDetKeep = reinterpret (fmap noError . runError @()) $ \env -> \case
       Just r  -> pure r
       Nothing -> unlift m2
 
-runNonDetRollback :: Eff (NonDet : es) a -> Eff es (Either CallStack a)
+runNonDetRollback
+  :: HasCallStack
+  => Eff (NonDet : es) a
+  -> Eff es (Either CallStack a)
 runNonDetRollback = reinterpret (fmap noError . runError @()) $ \env -> \case
   Empty       -> throwError ()
   m1 :<|>: m2 -> do

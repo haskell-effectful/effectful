@@ -51,7 +51,8 @@ data instance StaticRep (Labeled label e)
 -- | Run a 'Labeled' effect with a given effect handler.
 runLabeled
   :: forall label e es a b
-   . (Eff (e : es) a -> Eff es b)
+   . HasCallStack
+  => (Eff (e : es) a -> Eff es b)
   -- ^ The effect handler.
   -> Eff (Labeled label e : es) a
   -> Eff es b

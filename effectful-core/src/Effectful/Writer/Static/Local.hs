@@ -43,14 +43,14 @@ newtype instance StaticRep (Writer w) = Writer w
 
 -- | Run a 'Writer' effect and return the final value along with the final
 -- output.
-runWriter :: Monoid w => Eff (Writer w : es) a -> Eff es (a, w)
+runWriter :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
   (a, Writer w) <- runStaticRep (Writer mempty) m
   pure (a, w)
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
 -- value.
-execWriter :: Monoid w => Eff (Writer w : es) a -> Eff es w
+execWriter :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
   Writer w <- execStaticRep (Writer mempty) m
   pure w

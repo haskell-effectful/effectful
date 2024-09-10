@@ -126,7 +126,7 @@ type family EffectRep (d :: Dispatch) :: Effect -> Type
 -- Operations
 
 -- | Create an empty environment.
-emptyEnv :: IO (Env '[])
+emptyEnv :: HasCallStack => IO (Env '[])
 emptyEnv = Env 0
   <$> (unsafeFreezePrimArray =<< newPrimArray 0)
   <*> (newIORef' =<< emptyStorage)
@@ -196,7 +196,8 @@ tailEnv (Env offset refs storage) = do
 
 -- | Extend the environment with a new data type.
 consEnv
-  :: EffectRep (DispatchOf e) e
+  :: HasCallStack
+  => EffectRep (DispatchOf e) e
   -- ^ The representation of the effect.
   -> Relinker (EffectRep (DispatchOf e)) e
   -> Env es
@@ -216,7 +217,7 @@ consEnv e f (Env offset refs0 storage) = do
 --
 -- /Note:/ after calling this function @e@ from the input environment is no
 -- longer usable.
-unconsEnv :: Env (e : es) -> IO ()
+unconsEnv :: HasCallStack => Env (e : es) -> IO ()
 unconsEnv (Env _ refs storage) = do
   deleteEffect storage (indexPrimArray refs 0)
 {-# NOINLINE unconsEnv #-}
@@ -228,7 +229,7 @@ unconsEnv (Env _ refs storage) = do
 -- /Note:/ unlike in 'putEnv' the value in not changed in place, so only the new
 -- environment will see it.
 replaceEnv
-  :: forall e es. e :> es
+  :: forall e es. (HasCallStack, e :> es)
   => EffectRep (DispatchOf e) e
   -- ^ The representation of the effect.
   -> Relinker (EffectRep (DispatchOf e)) e
@@ -250,7 +251,7 @@ replaceEnv e f (Env offset refs0 storage) = do
 --
 -- /Note:/ after calling this function the input environment is no longer
 -- usable.
-unreplaceEnv :: forall e es. e :> es => Env es -> IO ()
+unreplaceEnv :: forall e es. (HasCallStack, e :> es) => Env es -> IO ()
 unreplaceEnv (Env offset refs storage) = do
   deleteEffect storage $ indexPrimArray refs (offset + 2 * reifyIndex @e @es)
 {-# NOINLINE unreplaceEnv #-}
@@ -364,7 +365,7 @@ getLocation (Env offset refs storage) = do
 -- Internal helpers
 
 -- | Create an empty storage.
-emptyStorage :: IO Storage
+emptyStorage :: HasCallStack => IO Storage
 emptyStorage = Storage 0 (noVersion + 1)
   <$> newPrimArray 0
   <*> newSmallArray 0 undefinedData
@@ -372,7 +373,8 @@ emptyStorage = Storage 0 (noVersion + 1)
 
 -- | Insert an effect into the storage and return its reference.
 insertEffect
-  :: IORef' Storage
+  :: HasCallStack
+  => IORef' Storage
   -> EffectRep (DispatchOf e) e
   -- ^ The representation of the effect.
   -> Relinker (EffectRep (DispatchOf e)) e
@@ -404,7 +406,7 @@ insertEffect storage e f = do
 
 -- | Given a reference to an effect from the top of the stack, delete it from
 -- the storage.
-deleteEffect :: IORef' Storage -> Int -> IO ()
+deleteEffect :: HasCallStack => IORef' Storage -> Int -> IO ()
 deleteEffect storage ref = do
   Storage size version vs es fs <- readIORef' storage
   when (ref /= size - 1) $ do

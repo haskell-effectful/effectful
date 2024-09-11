@@ -13,6 +13,8 @@
 * Fix a bug in `stateM` and `modifyM` of thread local `State` effect that
   might've caused dropped state updates
   ([#237](https://github.com/haskell-effectful/effectful/issues/237)).
+* Add `HasCallStack` constraints where appropriate for better debugging
+  experience.
 * **Breaking changes**:
   - `localSeqLend`, `localLend`, `localSeqBorrow` and `localBorrow` now take a
     list of effects instead of a single one.

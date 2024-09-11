@@ -119,7 +119,11 @@ registerDelay = unsafeEff_ . STM.registerDelay
 --
 -- /Note:/ the finalizer will run a cloned environment, so any changes it makes
 -- to thread local data will not be visible outside of it.
-mkWeakTVar :: Concurrent :> es => TVar a -> Eff es () -> Eff es (Weak (TVar a))
+mkWeakTVar
+  :: (HasCallStack, Concurrent :> es)
+  => TVar a
+  -> Eff es ()
+  -> Eff es (Weak (TVar a))
 mkWeakTVar var f = unsafeEff $ \es -> do
   -- The finalizer can run at any point and in any thread.
   STM.mkWeakTVar var . unEff f =<< cloneEnv es
@@ -136,7 +140,11 @@ newEmptyTMVarIO = unsafeEff_ STM.newEmptyTMVarIO
 --
 -- /Note:/ the finalizer will run a cloned environment, so any changes it makes
 -- to thread local data will not be visible outside of it.
-mkWeakTMVar :: Concurrent :> es => TMVar a -> Eff es () -> Eff es (Weak (TMVar a))
+mkWeakTMVar
+  :: (HasCallStack, Concurrent :> es)
+  => TMVar a
+  -> Eff es ()
+  -> Eff es (Weak (TMVar a))
 mkWeakTMVar var f = unsafeEff $ \es -> do
   -- The finalizer can run at any point and in any thread.
   STM.mkWeakTMVar var . unEff f =<< cloneEnv es

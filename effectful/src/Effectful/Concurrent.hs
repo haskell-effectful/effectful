@@ -81,14 +81,14 @@ myThreadId :: Concurrent :> es => Eff es C.ThreadId
 myThreadId = unsafeEff_ C.myThreadId
 
 -- | Lifted 'C.forkIO'.
-forkIO :: Concurrent :> es => Eff es () -> Eff es C.ThreadId
+forkIO :: (HasCallStack, Concurrent :> es) => Eff es () -> Eff es C.ThreadId
 forkIO k = unsafeEff $ \es -> do
   esF <- cloneEnv es
   C.forkIO $ unEff k esF
 
 -- | Lifted 'C.forkFinally'.
 forkFinally
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => Eff es a
   -> (Either SomeException a -> Eff es ())
   -> Eff es C.ThreadId
@@ -98,7 +98,7 @@ forkFinally k cleanup = unsafeEff $ \es -> do
 
 -- | Lifted 'C.forkIOWithUnmask'.
 forkIOWithUnmask
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
 forkIOWithUnmask = liftForkWithUnmask C.forkIOWithUnmask
@@ -115,14 +115,14 @@ throwTo tid = unsafeEff_ . C.throwTo tid
 -- Threads with affinity
 
 -- | Lifted 'C.forkOn'.
-forkOn :: Concurrent :> es => Int -> Eff es () -> Eff es C.ThreadId
+forkOn :: (HasCallStack, Concurrent :> es) => Int -> Eff es () -> Eff es C.ThreadId
 forkOn n k = unsafeEff $ \es -> do
   esF <- cloneEnv es
   C.forkOn n (unEff k esF)
 
 -- | Lifted 'C.forkOnWithUnmask'.
 forkOnWithUnmask
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => Int
   -> ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
@@ -180,14 +180,14 @@ threadWaitWriteSTM fd = unsafeEff_ $ do
 -- Bound threads
 
 -- | Lifted 'C.forkOS'.
-forkOS :: Concurrent :> es => Eff es () -> Eff es C.ThreadId
+forkOS :: (HasCallStack, Concurrent :> es) => Eff es () -> Eff es C.ThreadId
 forkOS k = unsafeEff $ \es -> do
   esF <- cloneEnv es
   C.forkOS $ unEff k esF
 
 -- | Lifted 'E.forkOSWithUnmask'.
 forkOSWithUnmask
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
 forkOSWithUnmask = liftForkWithUnmask C.forkOSWithUnmask
@@ -197,13 +197,13 @@ isCurrentThreadBound :: Concurrent :> es => Eff es Bool
 isCurrentThreadBound = unsafeEff_ C.isCurrentThreadBound
 
 -- | Lifted 'C.runInBoundThread'.
-runInBoundThread :: Concurrent :> es => Eff es a -> Eff es a
+runInBoundThread :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es a
 runInBoundThread k = unsafeEff $ \es -> do
   esF <- cloneEnv es
   C.runInBoundThread $ unEff k esF
 
 -- | Lifted 'C.runInUnboundThread'.
-runInUnboundThread :: Concurrent :> es => Eff es a -> Eff es a
+runInUnboundThread :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es a
 runInUnboundThread k = unsafeEff $ \es -> do
   esF <- cloneEnv es
   C.runInUnboundThread $ unEff k esF
@@ -219,7 +219,8 @@ mkWeakThreadId = unsafeEff_ . C.mkWeakThreadId
 -- Helpers
 
 liftForkWithUnmask
-  :: (((forall c. IO c -> IO c) -> IO a) -> IO C.ThreadId)
+  :: HasCallStack
+  => (((forall c. IO c -> IO c) -> IO a) -> IO C.ThreadId)
   -> ((forall c. Eff es c -> Eff es c) -> Eff es a)
   -> Eff es C.ThreadId
 liftForkWithUnmask fork action = unsafeEff $ \es -> do

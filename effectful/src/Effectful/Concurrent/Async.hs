@@ -91,27 +91,27 @@ import Effectful.Dispatch.Static.Primitive
 import Effectful.Dispatch.Static.Unsafe
 
 -- | Lifted 'A.async'.
-async :: Concurrent :> es => Eff es a -> Eff es (Async a)
+async :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es (Async a)
 async = liftAsync A.async
 
 -- | Lifted 'A.asyncBound'.
-asyncBound :: Concurrent :> es => Eff es a -> Eff es (Async a)
+asyncBound :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es (Async a)
 asyncBound = liftAsync A.asyncBound
 
 -- | Lifted 'A.asyncOn'.
-asyncOn :: Concurrent :> es => Int -> Eff es a -> Eff es (Async a)
+asyncOn :: (HasCallStack, Concurrent :> es) => Int -> Eff es a -> Eff es (Async a)
 asyncOn cpu = liftAsync (A.asyncOn cpu)
 
 -- | Lifted 'A.asyncWithUnmask'.
 asyncWithUnmask
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => ((forall b. Eff es b -> Eff es b) -> Eff es a)
   -> Eff es (Async a)
 asyncWithUnmask = liftAsyncWithUnmask A.asyncWithUnmask
 
 -- | Lifted 'A.asyncOnWithUnmask'.
 asyncOnWithUnmask
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => Int
   -> ((forall b. Eff es b -> Eff es b) -> Eff es a)
   -> Eff es (Async a)
@@ -119,7 +119,7 @@ asyncOnWithUnmask cpu = liftAsyncWithUnmask (A.asyncOnWithUnmask cpu)
 
 -- | Lifted 'A.withAsync'.
 withAsync
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => Eff es a
   -> (Async a -> Eff es b)
   -> Eff es b
@@ -127,7 +127,7 @@ withAsync = liftWithAsync A.withAsync
 
 -- | Lifted 'A.withAsyncBound'.
 withAsyncBound
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => Eff es a
   -> (Async a -> Eff es b)
   -> Eff es b
@@ -135,7 +135,7 @@ withAsyncBound = liftWithAsync A.withAsyncBound
 
 -- | Lifted 'A.withAsyncOn'.
 withAsyncOn
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => Int
   -> Eff es a
   -> (Async a -> Eff es b)
@@ -144,7 +144,7 @@ withAsyncOn cpu = liftWithAsync (A.withAsyncOn cpu)
 
 -- | Lifted 'A.withAsyncWithUnmask'.
 withAsyncWithUnmask
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => ((forall c. Eff es c -> Eff es c) -> Eff es a)
   -> (Async a -> Eff es b)
   -> Eff es b
@@ -152,7 +152,7 @@ withAsyncWithUnmask = liftWithAsyncWithUnmask A.withAsyncWithUnmask
 
 -- | Lifted 'A.withAsyncOnWithUnmask'.
 withAsyncOnWithUnmask
-  :: Concurrent :> es
+  :: (HasCallStack, Concurrent :> es)
   => Int
   -> ((forall c. Eff es c -> Eff es c) -> Eff es a)
   -> (Async a -> Eff es b)
@@ -268,22 +268,22 @@ link2Only :: Concurrent :> es => (SomeException -> Bool) -> Async a -> Async b -
 link2Only f a b = unsafeEff_ $ A.link2Only f a b
 
 -- | Lifted 'A.race'.
-race :: Concurrent :> es => Eff es a -> Eff es b -> Eff es (Either a b)
+race :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es b -> Eff es (Either a b)
 race ma mb = unsafeEff $ \es -> do
   A.race (unEff ma =<< cloneEnv es) (unEff mb =<< cloneEnv es)
 
 -- | Lifted 'A.race_'.
-race_ ::  Concurrent :> es => Eff es a -> Eff es b -> Eff es ()
+race_ :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es b -> Eff es ()
 race_ ma mb = unsafeEff $ \es -> do
   A.race_ (unEff ma =<< cloneEnv es) (unEff mb =<< cloneEnv es)
 
 -- | Lifted 'A.concurrently'.
-concurrently :: Concurrent :> es => Eff es a -> Eff es b -> Eff es (a, b)
+concurrently :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es b -> Eff es (a, b)
 concurrently ma mb = unsafeEff $ \es -> do
   A.concurrently (unEff ma =<< cloneEnv es) (unEff mb =<< cloneEnv es)
 
 -- | Lifted 'A.concurrently_'.
-concurrently_ :: Concurrent :> es => Eff es a -> Eff es b -> Eff es ()
+concurrently_ :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es b -> Eff es ()
 concurrently_ ma mb = unsafeEff $ \es -> do
   A.concurrently_ (unEff ma =<< cloneEnv es) (unEff mb =<< cloneEnv es)
 
@@ -293,7 +293,7 @@ concurrently_ ma mb = unsafeEff $ \es -> do
 
 -- | Lifted 'A.mapConcurrently'.
 mapConcurrently
-  :: (Traversable f, Concurrent :> es)
+  :: (HasCallStack, Traversable f, Concurrent :> es)
   => (a -> Eff es b)
   -> f a
   -> Eff es (f b)
@@ -302,7 +302,7 @@ mapConcurrently f t = unsafeEff $ \es -> do
 
 -- | Lifted 'A.mapConcurrently_'.
 mapConcurrently_
-  :: (Foldable f, Concurrent :> es)
+  :: (HasCallStack, Foldable f, Concurrent :> es)
   => (a -> Eff es b)
   -> f a
   -> Eff es ()
@@ -311,7 +311,7 @@ mapConcurrently_ f t = unsafeEff $ \es -> do
 
 -- | Lifted 'A.forConcurrently'.
 forConcurrently
-  :: (Traversable f, Concurrent :> es)
+  :: (HasCallStack, Traversable f, Concurrent :> es)
   => f a
   -> (a -> Eff es b)
   -> Eff es (f b)
@@ -320,7 +320,7 @@ forConcurrently t f = unsafeEff $ \es -> do
 
 -- | Lifted 'A.forConcurrently_'.
 forConcurrently_
-  :: (Foldable f, Concurrent :> es)
+  :: (HasCallStack, Foldable f, Concurrent :> es)
   => f a
   -> (a -> Eff es b)
   -> Eff es ()
@@ -328,12 +328,20 @@ forConcurrently_ t f = unsafeEff $ \es -> do
   U.forConcurrently_ t (\a -> unEff (f a) =<< cloneEnv es)
 
 -- | Lifted 'A.replicateConcurrently'.
-replicateConcurrently :: Concurrent :> es => Int -> Eff es a -> Eff es [a]
+replicateConcurrently
+  :: (HasCallStack, Concurrent :> es)
+  => Int
+  -> Eff es a
+  -> Eff es [a]
 replicateConcurrently n f = unsafeEff $ \es -> do
   U.replicateConcurrently n (unEff f =<< cloneEnv es)
 
 -- | Lifted 'A.replicateConcurrently_'.
-replicateConcurrently_ :: Concurrent :> es => Int -> Eff es a -> Eff es ()
+replicateConcurrently_
+  :: (HasCallStack, Concurrent :> es)
+  => Int
+  -> Eff es a
+  -> Eff es ()
 replicateConcurrently_ n f = unsafeEff $ \es -> do
   U.replicateConcurrently_ n (unEff f =<< cloneEnv es)
 
@@ -342,7 +350,7 @@ replicateConcurrently_ n f = unsafeEff $ \es -> do
 
 -- | Lifted 'U.pooledMapConcurrentlyN'.
 pooledMapConcurrentlyN
-  :: (Concurrent :> es, Traversable t)
+  :: (HasCallStack, Concurrent :> es, Traversable t)
   => Int
   -> (a -> Eff es b)
   -> t a
@@ -352,7 +360,7 @@ pooledMapConcurrentlyN  threads f t = unsafeEff $ \es -> do
 
 -- | Lifted 'U.pooledMapConcurrently'.
 pooledMapConcurrently
-  :: (Concurrent :> es, Traversable t)
+  :: (HasCallStack, Concurrent :> es, Traversable t)
   => (a -> Eff es b)
   -> t a
   -> Eff es (t b)
@@ -361,7 +369,7 @@ pooledMapConcurrently f t = unsafeEff $ \es -> do
 
 -- | Lifted 'U.pooledMapConcurrentlyN'.
 pooledMapConcurrentlyN_
-  :: (Concurrent :> es, Foldable f)
+  :: (HasCallStack, Concurrent :> es, Foldable f)
   => Int
   -> (a -> Eff es b)
   -> f a
@@ -371,7 +379,7 @@ pooledMapConcurrentlyN_  threads f t = unsafeEff $ \es -> do
 
 -- | Lifted 'U.pooledMapConcurrently_'.
 pooledMapConcurrently_
-  :: (Concurrent :> es, Foldable f)
+  :: (HasCallStack, Concurrent :> es, Foldable f)
   => (a -> Eff es b)
   -> f a
   -> Eff es ()
@@ -380,7 +388,7 @@ pooledMapConcurrently_ f t = unsafeEff $ \es -> do
 
 -- | Lifted 'U.pooledForConcurrentlyN'.
 pooledForConcurrentlyN
-  :: (Concurrent :> es, Traversable t)
+  :: (HasCallStack, Concurrent :> es, Traversable t)
   => Int
   -> t a
   -> (a -> Eff es b)
@@ -390,7 +398,7 @@ pooledForConcurrentlyN  threads t f = unsafeEff $ \es -> do
 
 -- | Lifted 'U.pooledForConcurrently'.
 pooledForConcurrently
-  :: (Concurrent :> es, Traversable t)
+  :: (HasCallStack, Concurrent :> es, Traversable t)
   => t a
   -> (a -> Eff es b)
   -> Eff es (t b)
@@ -399,7 +407,7 @@ pooledForConcurrently t f = unsafeEff $ \es -> do
 
 -- | Lifted 'U.pooledForConcurrentlyN'.
 pooledForConcurrentlyN_
-  :: (Concurrent :> es, Foldable f)
+  :: (HasCallStack, Concurrent :> es, Foldable f)
   => Int
   -> f a
   -> (a -> Eff es b)
@@ -409,7 +417,7 @@ pooledForConcurrentlyN_  threads t f = unsafeEff $ \es -> do
 
 -- | Lifted 'U.pooledForConcurrently_'.
 pooledForConcurrently_
-  :: (Concurrent :> es, Foldable f)
+  :: (HasCallStack, Concurrent :> es, Foldable f)
   => f a
   -> (a -> Eff es b)
   -> Eff es ()
@@ -417,22 +425,40 @@ pooledForConcurrently_ t f = unsafeEff $ \es -> do
   U.pooledForConcurrently_ t (\a -> unEff (f a) =<< cloneEnv es)
 
 -- | Lifted 'U.pooledReplicateConcurrentlyN'.
-pooledReplicateConcurrentlyN :: Concurrent :> es => Int -> Int -> Eff es a -> Eff es [a]
+pooledReplicateConcurrentlyN
+  :: (HasCallStack, Concurrent :> es)
+  => Int
+  -> Int
+  -> Eff es a
+  -> Eff es [a]
 pooledReplicateConcurrentlyN threads n f = unsafeEff $ \es -> do
   U.pooledReplicateConcurrentlyN threads n (unEff f =<< cloneEnv es)
 
 -- | Lifted 'U.pooledReplicateConcurrently'.
-pooledReplicateConcurrently :: Concurrent :> es => Int -> Eff es a -> Eff es [a]
+pooledReplicateConcurrently
+  :: (HasCallStack, Concurrent :> es)
+  => Int
+  -> Eff es a
+  -> Eff es [a]
 pooledReplicateConcurrently n f = unsafeEff $ \es -> do
   U.pooledReplicateConcurrently n (unEff f =<< cloneEnv es)
 
 -- | Lifted 'U.pooledReplicateConcurrentlyN_'.
-pooledReplicateConcurrentlyN_ :: Concurrent :> es => Int -> Int -> Eff es a -> Eff es ()
+pooledReplicateConcurrentlyN_
+  :: (HasCallStack, Concurrent :> es)
+  => Int
+  -> Int
+  -> Eff es a
+  -> Eff es ()
 pooledReplicateConcurrentlyN_ threads n f = unsafeEff $ \es -> do
   U.pooledReplicateConcurrentlyN_ threads n (unEff f =<< cloneEnv es)
 
 -- | Lifted 'U.pooledReplicateConcurrently_'.
-pooledReplicateConcurrently_ :: Concurrent :> es => Int -> Eff es a -> Eff es ()
+pooledReplicateConcurrently_
+  :: (HasCallStack, Concurrent :> es)
+  => Int
+  -> Eff es a
+  -> Eff es ()
 pooledReplicateConcurrently_ n f = unsafeEff $ \es -> do
   U.pooledReplicateConcurrently_ n (unEff f =<< cloneEnv es)
 
@@ -472,7 +498,7 @@ conc :: Eff es a -> Conc es a
 conc = Action
 
 -- | Lifted 'U.runConc'.
-runConc :: Concurrent :> es => Conc es a -> Eff es a
+runConc :: (HasCallStack, Concurrent :> es) => Conc es a -> Eff es a
 runConc m = unsafeEff $ \es -> U.runConc (unliftConc es m)
   where
     unliftConc :: Env es -> Conc es a -> U.Conc IO a
@@ -513,7 +539,8 @@ instance (Concurrent :> es, Monoid a) => Monoid (Concurrently es a) where
 -- Helpers
 
 liftAsync
-  :: (IO a -> IO (Async a))
+  :: HasCallStack
+  => (IO a -> IO (Async a))
   -> Eff es a
   -> Eff es (Async a)
 liftAsync fork action = unsafeEff $ \es -> do
@@ -521,7 +548,8 @@ liftAsync fork action = unsafeEff $ \es -> do
   fork $ unEff action esA
 
 liftAsyncWithUnmask
-  :: (((forall b. IO b -> IO b) -> IO a) -> IO (Async a))
+  :: HasCallStack
+  => (((forall b. IO b -> IO b) -> IO a) -> IO (Async a))
   -> ((forall b. Eff es b -> Eff es b) -> Eff es a)
   -> Eff es (Async a)
 liftAsyncWithUnmask fork action = unsafeEff $ \es -> do
@@ -530,7 +558,8 @@ liftAsyncWithUnmask fork action = unsafeEff $ \es -> do
   fork $ \unmask -> unEff (action $ reallyUnsafeLiftMapIO unmask) esA
 
 liftWithAsync
-  :: (IO a -> (Async a -> IO b) -> IO b)
+  :: HasCallStack
+  => (IO a -> (Async a -> IO b) -> IO b)
   -> Eff es a
   -> (Async a -> Eff es b)
   -> Eff es b
@@ -540,7 +569,8 @@ liftWithAsync withA action k = unsafeEff $ \es -> do
         (\a -> unEff (k a) es)
 
 liftWithAsyncWithUnmask
-  :: (((forall c. IO c -> IO c) -> IO a) -> (Async a -> IO b) -> IO b)
+  :: HasCallStack
+  => (((forall c. IO c -> IO c) -> IO a) -> (Async a -> IO b) -> IO b)
   -> ((forall c. Eff es c -> Eff es c) -> Eff es a)
   -> (Async a -> Eff es b)
   -> Eff es b

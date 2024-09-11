@@ -16,5 +16,5 @@ type instance DispatchOf FileSystem = Static WithSideEffects
 data instance StaticRep FileSystem = FileSystem
 
 -- | Run the 'FileSystem' effect.
-runFileSystem :: IOE :> es => Eff (FileSystem : es) a -> Eff es a
+runFileSystem :: (HasCallStack, IOE :> es) => Eff (FileSystem : es) a -> Eff es a
 runFileSystem = evalStaticRep FileSystem

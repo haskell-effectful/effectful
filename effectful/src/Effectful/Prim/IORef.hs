@@ -69,7 +69,11 @@ atomicWriteIORef var = unsafeEff_ . Ref.atomicWriteIORef var
 --
 -- /Note:/ the finalizer will run a cloned environment, so any changes it makes
 -- to thread local data will not be visible outside of it.
-mkWeakIORef :: Prim :> es => IORef a -> Eff es () -> Eff es (Weak (IORef a))
+mkWeakIORef
+  :: (HasCallStack, Prim :> es)
+  => IORef a
+  -> Eff es ()
+  -> Eff es (Weak (IORef a))
 mkWeakIORef var f = unsafeEff $ \es -> do
   -- The finalizer can run at any point and in any thread.
   Ref.mkWeakIORef var . unEff f =<< cloneEnv es

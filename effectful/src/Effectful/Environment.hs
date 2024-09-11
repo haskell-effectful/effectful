@@ -32,7 +32,7 @@ type instance DispatchOf Environment = Static WithSideEffects
 data instance StaticRep Environment = Environment
 
 -- | Run the 'Environment' effect.
-runEnvironment :: IOE :> es => Eff (Environment : es) a -> Eff es a
+runEnvironment :: (HasCallStack, IOE :> es) => Eff (Environment : es) a -> Eff es a
 runEnvironment = evalStaticRep Environment
 
 -- | Lifted 'E.getArgs'.

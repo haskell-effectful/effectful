@@ -21,7 +21,7 @@ type instance DispatchOf Timeout = Static WithSideEffects
 data instance StaticRep Timeout = Timeout
 
 -- | Run the 'Timeout' effect.
-runTimeout :: IOE :> es => Eff (Timeout : es) a -> Eff es a
+runTimeout :: (HasCallStack, IOE :> es) => Eff (Timeout : es) a -> Eff es a
 runTimeout = evalStaticRep Timeout
 
 -- | Lifted 'T.timeout'.

@@ -62,7 +62,7 @@ data Process :: Effect
 type instance DispatchOf Process = Static WithSideEffects
 data instance StaticRep Process = Process
 
-runProcess :: IOE :> es => Eff (Process : es) a -> Eff es a
+runProcess :: (HasCallStack, IOE :> es) => Eff (Process : es) a -> Eff es a
 runProcess = evalStaticRep Process
 
 ----------------------------------------

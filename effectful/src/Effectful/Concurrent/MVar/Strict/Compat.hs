@@ -128,7 +128,11 @@ modifyMVarMasked var f = reallyUnsafeUnliftIO $ \unlift -> do
 --
 -- /Note:/ the finalizer will run a cloned environment, so any changes it makes
 -- to thread local data will not be visible outside of it.
-mkWeakMVar :: Concurrent :> es => MVar a -> Eff es () -> Eff es (Weak (MVar a))
+mkWeakMVar
+  :: (HasCallStack, Concurrent :> es)
+  => MVar a
+  -> Eff es ()
+  -> Eff es (Weak (MVar a))
 mkWeakMVar var f = unsafeEff $ \es -> do
   -- The finalizer can run at any point and in any thread.
   M.mkWeakMVar var . unEff f =<< cloneEnv es

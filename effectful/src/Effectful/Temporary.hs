@@ -25,7 +25,7 @@ type instance DispatchOf Temporary = Static WithSideEffects
 data instance StaticRep Temporary = Temporary
 
 -- | Run the 'Temporary' effect.
-runTemporary :: IOE :> es => Eff (Temporary : es) a -> Eff es a
+runTemporary :: (HasCallStack, IOE :> es) => Eff (Temporary : es) a -> Eff es a
 runTemporary = evalStaticRep Temporary
 
 -- | Lifted 'T.withSystemTempFile'.

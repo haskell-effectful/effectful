@@ -78,7 +78,7 @@ type instance DispatchOf Concurrent = Static WithSideEffects
 data instance StaticRep Concurrent = Concurrent
 
 -- | Run the 'Concurrent' effect.
-runConcurrent :: IOE :> es => Eff (Concurrent : es) a -> Eff es a
+runConcurrent :: (HasCallStack, IOE :> es) => Eff (Concurrent : es) a -> Eff es a
 runConcurrent = evalStaticRep Concurrent
 
 -- $setup

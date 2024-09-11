@@ -17,5 +17,5 @@ type instance DispatchOf Console = Static WithSideEffects
 data instance StaticRep Console = Console
 
 -- | Run the 'Console' effect.
-runConsole :: IOE :> es => Eff (Console : es) a -> Eff es a
+runConsole :: (HasCallStack, IOE :> es) => Eff (Console : es) a -> Eff es a
 runConsole = evalStaticRep Console

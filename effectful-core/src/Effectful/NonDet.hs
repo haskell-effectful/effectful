@@ -111,12 +111,14 @@ noError :: Either (cs, e) a -> Either cs a
 noError = either (Left . fst) Right
 
 cloneLocalEnv
-  :: LocalEnv localEs handlerEs
+  :: HasCallStack
+  => LocalEnv localEs handlerEs
   -> Eff es (LocalEnv localEs handlerEs)
 cloneLocalEnv = coerce . unsafeEff_ . cloneEnv . coerce
 
 restoreLocalEnv
-  :: LocalEnv localEs handlerEs
+  :: HasCallStack
+  => LocalEnv localEs handlerEs
   -> LocalEnv localEs handlerEs
   -> Eff es ()
 restoreLocalEnv dest src = unsafeEff_ $ restoreEnv (coerce dest) (coerce src)

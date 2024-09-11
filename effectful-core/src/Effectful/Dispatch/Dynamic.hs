@@ -1031,7 +1031,8 @@ localBorrow (LocalEnv les) strategy k = case strategy of
 {-# INLINE localBorrow #-}
 
 copyRefs
-  :: forall es srcEs destEs. KnownSubset es srcEs
+  :: forall es srcEs destEs
+   . (HasCallStack, KnownSubset es srcEs)
   => Env srcEs
   -> Env destEs
   -> IO (Env (es ++ destEs))

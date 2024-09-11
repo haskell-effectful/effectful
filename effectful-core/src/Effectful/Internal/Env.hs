@@ -5,6 +5,12 @@ module Effectful.Internal.Env
   ( -- * The environment
     Env(..)
   , Storage(..)
+  , AnyEffect
+  , toAnyEffect
+  , fromAnyEffect
+  , AnyRelinker
+  , toAnyRelinker
+  , fromAnyRelinker
 
     -- ** Relinker
   , Relinker(..)
@@ -84,9 +90,27 @@ data Storage = Storage
   { stSize      :: !Int
   , stVersion   :: !Int
   , stVersions  :: !(MutablePrimArray RealWorld Int)
-  , stEffects   :: !(SmallMutableArray RealWorld Any)
-  , stRelinkers :: !(SmallMutableArray RealWorld Any)
+  , stEffects   :: !(SmallMutableArray RealWorld AnyEffect)
+  , stRelinkers :: !(SmallMutableArray RealWorld AnyRelinker)
   }
+
+-- | Effect in 'Storage'.
+newtype AnyEffect = AnyEffect Any
+
+toAnyEffect :: EffectRep (DispatchOf e) e -> AnyEffect
+toAnyEffect = AnyEffect . toAny
+
+fromAnyEffect :: AnyEffect -> EffectRep (DispatchOf e) e
+fromAnyEffect (AnyEffect e) = fromAny e
+
+-- | Relinker in 'Storage'.
+newtype AnyRelinker = AnyRelinker Any
+
+toAnyRelinker :: Relinker (EffectRep (DispatchOf e)) e -> AnyRelinker
+toAnyRelinker = AnyRelinker . toAny
+
+fromAnyRelinker :: AnyRelinker -> Relinker (EffectRep (DispatchOf e)) e
+fromAnyRelinker (AnyRelinker f) = fromAny f
 
 ----------------------------------------
 -- Relinker
@@ -95,7 +119,7 @@ data Storage = Storage
 -- a deep copy of the representation of the effect when cloning the environment.
 newtype Relinker :: (Effect -> Type) -> Effect -> Type where
   Relinker
-    :: ((forall es. Env es -> IO (Env es)) -> rep e -> IO (rep e))
+    :: (HasCallStack => (forall es. Env es -> IO (Env es)) -> rep e -> IO (rep e))
     -> Relinker rep e
 
 -- | A dummy 'Relinker'.
@@ -132,7 +156,7 @@ emptyEnv = Env 0
   <*> (newIORef' =<< emptyStorage)
 
 -- | Clone the environment to use it in a different thread.
-cloneEnv :: Env es -> IO (Env es)
+cloneEnv :: HasCallStack => Env es -> IO (Env es)
 cloneEnv (Env offset refs storage0) = do
   Storage storageSize version vs0 es0 fs0 <- readIORef' storage0
   vsSize <- getSizeofMutablePrimArray  vs0
@@ -150,10 +174,10 @@ cloneEnv (Env offset refs storage0) = do
         0 -> pure ()
         k -> do
           let i = k - 1
-          Relinker f <- fromAny <$> readSmallArray fs i
+          Relinker relinker <- fromAnyRelinker <$> readSmallArray fs i
           readSmallArray es i
-            >>= f (relinkEnv storage) . fromAny
-            >>= writeSmallArray' es i . toAny
+            >>= relinker (relinkEnv storage) . fromAnyEffect
+            >>= writeSmallArray' es i . toAnyEffect
           relinkEffects i
   relinkEffects storageSize
   pure $ Env offset refs storage
@@ -163,7 +187,8 @@ cloneEnv (Env offset refs storage0) = do
 --
 -- @since 2.2.0.0
 restoreEnv
-  :: Env es -- ^ Destination.
+  :: HasCallStack
+  => Env es -- ^ Destination.
   -> Env es -- ^ Source.
   -> IO ()
 restoreEnv dest src = do
@@ -307,7 +332,7 @@ getEnv
   -> IO (EffectRep (DispatchOf e) e)
 getEnv env = do
   (i, es) <- getLocation @e env
-  fromAny <$> readSmallArray es i
+  fromAnyEffect <$> readSmallArray es i
 
 -- | Replace the data type in the environment with a new value (in place).
 putEnv
@@ -317,7 +342,7 @@ putEnv
   -> IO ()
 putEnv env e = do
   (i, es) <- getLocation @e env
-  writeSmallArray' es i (toAny e)
+  writeSmallArray' es i (toAnyEffect e)
 
 -- | Modify the data type in the environment and return a value (in place).
 stateEnv
@@ -327,8 +352,8 @@ stateEnv
   -> IO a
 stateEnv env f = do
   (i, es) <- getLocation @e env
-  (a, e) <- f . fromAny <$> readSmallArray es i
-  writeSmallArray' es i (toAny e)
+  (a, e) <- f . fromAnyEffect <$> readSmallArray es i
+  writeSmallArray' es i (toAnyEffect e)
   pure a
 
 -- | Modify the data type in the environment (in place).
@@ -339,14 +364,14 @@ modifyEnv
   -> IO ()
 modifyEnv env f = do
   (i, es) <- getLocation @e env
-  e <- f . fromAny <$> readSmallArray es i
-  writeSmallArray' es i (toAny e)
+  e <- f . fromAnyEffect <$> readSmallArray es i
+  writeSmallArray' es i (toAnyEffect e)
 
 -- | Determine location of the effect in the environment.
 getLocation
   :: forall e es. (HasCallStack, e :> es)
   => Env es
-  -> IO (Int, SmallMutableArray RealWorld Any)
+  -> IO (Int, SmallMutableArray RealWorld AnyEffect)
 getLocation (Env offset refs storage) = do
   let i       = offset + 2 * reifyIndex @e @es
       ref     = indexPrimArray refs  i
@@ -368,8 +393,8 @@ getLocation (Env offset refs storage) = do
 emptyStorage :: HasCallStack => IO Storage
 emptyStorage = Storage 0 (noVersion + 1)
   <$> newPrimArray 0
-  <*> newSmallArray 0 undefinedData
-  <*> newSmallArray 0 undefinedData
+  <*> newSmallArray 0 undefinedEffect
+  <*> newSmallArray 0 undefinedRelinker
 
 -- | Insert an effect into the storage and return its reference.
 insertEffect
@@ -386,21 +411,21 @@ insertEffect storage e f = do
     GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
     LT -> do
       writePrimArray   vs0 size version
-      writeSmallArray' es0 size (toAny e)
-      writeSmallArray' fs0 size (toAny f)
+      writeSmallArray' es0 size (toAnyEffect e)
+      writeSmallArray' fs0 size (toAnyRelinker f)
       writeIORef' storage $ Storage (size + 1) (version + 1) vs0 es0 fs0
       pure (size, version)
     EQ -> do
       let len = doubleCapacity len0
       vs <- newPrimArray len
-      es <- newSmallArray len undefinedData
-      fs <- newSmallArray len undefinedData
+      es <- newSmallArray len undefinedEffect
+      fs <- newSmallArray len undefinedRelinker
       copyMutablePrimArray  vs 0 vs0 0 size
       copySmallMutableArray es 0 es0 0 size
       copySmallMutableArray fs 0 fs0 0 size
       writePrimArray   vs size version
-      writeSmallArray' es size (toAny e)
-      writeSmallArray' fs size (toAny f)
+      writeSmallArray' es size (toAnyEffect e)
+      writeSmallArray' fs size (toAnyRelinker f)
       writeIORef' storage $ Storage (size + 1) (version + 1) vs es fs
       pure (size, version)
 
@@ -412,8 +437,8 @@ deleteEffect storage ref = do
   when (ref /= size - 1) $ do
     error $ "ref (" ++ show ref ++ ") /= size - 1 (" ++ show (size - 1) ++ ")"
   writePrimArray  vs ref noVersion
-  writeSmallArray es ref undefinedData
-  writeSmallArray fs ref undefinedData
+  writeSmallArray es ref undefinedEffect
+  writeSmallArray fs ref undefinedRelinker
   writeIORef' storage $ Storage (size - 1) version vs es fs
 
 -- | Relink the environment to use the new storage.
@@ -427,8 +452,11 @@ doubleCapacity n = max 1 n * 2
 noVersion :: Int
 noVersion = 0
 
-undefinedData :: HasCallStack => a
-undefinedData = error "undefined data"
+undefinedEffect :: HasCallStack => AnyEffect
+undefinedEffect = toAnyEffect $ error "undefined effect"
+
+undefinedRelinker :: AnyRelinker
+undefinedRelinker = toAnyRelinker $ Relinker $ \_ _ -> error "undefined relinker"
 
 -- | A strict version of 'writeSmallArray'.
 writeSmallArray' :: SmallMutableArray RealWorld a -> Int -> a -> IO ()

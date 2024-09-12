@@ -49,7 +49,7 @@ import Control.Monad.Primitive
 import Data.IORef.Strict
 import Data.Primitive.PrimArray
 import Data.Primitive.SmallArray
-import GHC.Stack (HasCallStack)
+import GHC.Stack
 
 import Effectful.Internal.Effect
 import Effectful.Internal.Utils
@@ -453,10 +453,20 @@ noVersion :: Int
 noVersion = 0
 
 undefinedEffect :: HasCallStack => AnyEffect
-undefinedEffect = toAnyEffect $ error "undefined effect"
+undefinedEffect = toAnyEffect . errorWithoutStackTrace $ unlines
+  [ "Undefined effect"
+  , "Created at: " ++ prettyCallStack callStack
+  ]
 
-undefinedRelinker :: AnyRelinker
-undefinedRelinker = toAnyRelinker $ Relinker $ \_ _ -> error "undefined relinker"
+undefinedRelinker :: HasCallStack => AnyRelinker
+undefinedRelinker = toAnyRelinker $ Relinker $ \_ _ -> do
+  errorWithoutStackTrace $ unlines
+    [ "Undefined relinker"
+    , "Created at: " ++ prettyCallStack creationCallStack
+    , "Called at: " ++ prettyCallStack callStack
+    ]
+  where
+    creationCallStack = callStack
 
 -- | A strict version of 'writeSmallArray'.
 writeSmallArray' :: SmallMutableArray RealWorld a -> Int -> a -> IO ()

@@ -75,7 +75,7 @@ runNonDetRollback
   :: HasCallStack
   => Eff (NonDet : es) a
   -> Eff es (Either CallStack a)
-runNonDetRollback = reinterpret (fmap noError . runError @()) $ \env -> \case
+runNonDetRollback = reinterpret setup $ \env -> \case
   Empty       -> throwError ()
   m1 :<|>: m2 -> do
     backupEnv <- cloneLocalEnv env
@@ -87,6 +87,15 @@ runNonDetRollback = reinterpret (fmap noError . runError @()) $ \env -> \case
       case mr of
         Just r  -> pure r
         Nothing -> unlift m2
+  where
+    setup action = do
+      backupEs <- unsafeEff cloneEnv
+      runError @() action >>= \case
+        Right r -> pure $ Right r
+        Left (cs, _) -> do
+          -- If the whole action failed, roll back the environment.
+          unsafeEff $ \es -> restoreEnv es backupEs
+          pure $ Left cs
 
 ----------------------------------------
 

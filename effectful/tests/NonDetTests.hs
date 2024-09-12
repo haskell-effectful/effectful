@@ -30,11 +30,11 @@ nonDetTests = testGroup "NonDet"
 
     expectedLocalState :: OnEmptyPolicy -> Int
     expectedLocalState = \case
-      OnEmptyKeep     -> 3
-      OnEmptyRollback -> 2
+      OnEmptyKeep     -> 7
+      OnEmptyRollback -> 0
 
     expectedSharedState :: OnEmptyPolicy -> Int
-    expectedSharedState _ = 3
+    expectedSharedState _ = 7
 
 test_empty
   :: Eff [NonDet, IOE] Bool
@@ -53,12 +53,15 @@ test_state
 test_state evalState expectedState step = runEff $ do
   evalState 0 . runNonDetBoth test $ \policy result -> do
     liftIO . step $ show policy
-    U.assertEqual "result" (Just ()) (dropLeft result)
+    U.assertEqual "result" Nothing (dropLeft result)
     s <- state @Int $ \s -> (s, 0)
     U.assertEqual "state" (expectedState policy) s
   where
     test :: (NonDet :> es, State Int :> es) => Eff es ()
-    test = (modify @Int (+1) >> empty) <|> modify @Int (+2)
+    test = do
+      modify @Int (+1)
+      _<- (modify @Int (+2) >> empty) <|> (modify @Int (+4) >> empty)
+      modify @Int (+8)
 
 test_independentHandlers :: (String -> IO ()) -> Assertion
 test_independentHandlers step = runEff $ do

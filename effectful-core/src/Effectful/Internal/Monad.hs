@@ -83,6 +83,7 @@ module Effectful.Internal.Monad
   ) where
 
 import Control.Applicative
+import Control.Concurrent (myThreadId)
 import Control.Exception qualified as E
 import Control.Monad
 import Control.Monad.Base
@@ -227,7 +228,15 @@ seqUnliftIO
   -> ((forall r. Eff es r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> IO a
-seqUnliftIO es k = seqUnlift k es unEff
+seqUnliftIO es k = do
+  tid0 <- myThreadId
+  k $ \m -> do
+    tid <- myThreadId
+    if tid `eqThreadId` tid0
+      then unEff m es
+      else error
+         $ "If you want to use the unlifting function to run Eff computations "
+        ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
 
 -- | Create an unlifting function with the 'ConcUnlift' strategy.
 concUnliftIO
@@ -239,7 +248,10 @@ concUnliftIO
   -> ((forall r. Eff es r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> IO a
-concUnliftIO es persistence limit k = concUnlift persistence limit k es unEff
+concUnliftIO es Ephemeral (Limited uses) = ephemeralConcUnlift es uses
+concUnliftIO es Ephemeral Unlimited = ephemeralConcUnlift es maxBound
+concUnliftIO es Persistent (Limited threads) = persistentConcUnlift es False threads
+concUnliftIO es Persistent Unlimited = persistentConcUnlift es True maxBound
 
 ----------------------------------------
 -- Base

@@ -1,4 +1,5 @@
 {-# LANGUAGE MagicHash #-}
+{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE UnboxedTuples #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- | Implementation of sequential and concurrent unlifts.
@@ -12,13 +13,14 @@ module Effectful.Internal.Unlift
   , Limit(..)
 
     -- * Unlifting functions
-  , seqUnlift
-  , concUnlift
+  , ephemeralConcUnlift
+  , persistentConcUnlift
   ) where
 
 import Control.Concurrent
 import Control.Concurrent.MVar.Strict
 import Control.Monad
+import Data.Coerce
 import Data.IntMap.Strict qualified as IM
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
@@ -90,55 +92,16 @@ data Limit
 ----------------------------------------
 -- Unlift functions
 
--- | Sequential unlift.
-seqUnlift
-  :: HasCallStack
-  => ((forall r. m r -> IO r) -> IO a)
-  -> Env es
-  -> (forall r. m r -> Env es -> IO r)
-  -> IO a
-seqUnlift k es unEff = do
-  tid0 <- myThreadId
-  k $ \m -> do
-    tid <- myThreadId
-    if tid `eqThreadId` tid0
-      then unEff m es
-      else error
-         $ "If you want to use the unlifting function to run Eff computations "
-        ++ "in multiple threads, have a look at UnliftStrategy (ConcUnlift)."
-
--- | Concurrent unlift.
-concUnlift
-  :: HasCallStack
-  => Persistence
-  -> Limit
-  -> ((forall r. m r -> IO r) -> IO a)
-  -> Env es
-  -> (forall r. m r -> Env es -> IO r)
-  -> IO a
-concUnlift Ephemeral (Limited uses) k =
-  ephemeralConcUnlift uses k
-concUnlift Ephemeral Unlimited k =
-  ephemeralConcUnlift maxBound k
-concUnlift Persistent (Limited threads) k =
-  persistentConcUnlift False threads k
-concUnlift Persistent Unlimited k =
-  persistentConcUnlift True maxBound k
-
-----------------------------------------
--- Internal
-
 -- | Concurrent unlift that doesn't preserve the environment between calls to
 -- the unlifting function in threads other than its creator.
 ephemeralConcUnlift
-  :: HasCallStack
-  => Int
+  :: (HasCallStack, forall r. Coercible (m r) (Env es -> IO r))
+  => Env es
+  -> Int
   -- ^ Number of permitted uses of the unlift function.
   -> ((forall r. m r -> IO r) -> IO a)
-  -> Env es
-  -> (forall r. m r -> Env es -> IO r)
   -> IO a
-ephemeralConcUnlift uses k es0 unEff = do
+ephemeralConcUnlift es0 uses k = do
   unless (uses > 0) $ do
     error $ "Invalid number of uses: " ++ show uses
   tid0 <- myThreadId
@@ -159,21 +122,20 @@ ephemeralConcUnlift uses k es0 unEff = do
         n -> do
           es <- cloneEnv esTemplate
           pure (n - 1, es)
-    unEff m es
+    coerce m es
 {-# NOINLINE ephemeralConcUnlift #-}
 
 -- | Concurrent unlift that preserves the environment between calls to the
 -- unlifting function within a particular thread.
 persistentConcUnlift
-  :: HasCallStack
-  => Bool
+  :: (HasCallStack, forall r. Coercible (m r) (Env es -> IO r))
+  => Env es
+  -> Bool
   -> Int
   -- ^ Number of threads that are allowed to use the unlift function.
   -> ((forall r. m r -> IO r) -> IO a)
-  -> Env es
-  -> (forall r. m r -> Env es -> IO r)
   -> IO a
-persistentConcUnlift cleanUp threads k es0 unEff = do
+persistentConcUnlift es0 cleanUp threads k = do
   unless (threads > 0) $ do
     error $ "Invalid number of threads: " ++ show threads
   tid0 <- myThreadId
@@ -212,7 +174,7 @@ persistentConcUnlift cleanUp threads k es0 unEff = do
                     , teEntries  = addThreadData wkTid i wkTidEs $ teEntries te
                     }
               pure (newEntries, es)
-    unEff m es
+    coerce m es
 {-# NOINLINE persistentConcUnlift #-}
 
 ----------------------------------------

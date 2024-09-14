@@ -1,3 +1,4 @@
+{-# LANGUAGE ImplicitParams #-}
 -- | Turn an effect handler into an effectful operation.
 --
 -- @since 2.3.0.0
@@ -25,6 +26,7 @@ import Data.Coerce
 import Data.Functor.Identity
 import Data.Kind (Type)
 import Data.Primitive.PrimArray
+import GHC.Stack
 
 import Effectful
 import Effectful.Dispatch.Static
@@ -122,32 +124,36 @@ type Provider_ e input = Provider e input Identity
 type instance DispatchOf (Provider e input f) = Static NoSideEffects
 
 data instance StaticRep (Provider e input f) where
-  Provider :: !(Env handlerEs)
-           -> !(forall r. input -> Eff (e : handlerEs) r -> Eff handlerEs (f r))
-           -> StaticRep (Provider e input f)
+  Provider
+    :: !(Env providerEs)
+    -> !(forall r. HasCallStack => input -> Eff (e : providerEs) r -> Eff providerEs (f r))
+    -> StaticRep (Provider e input f)
 
 -- | Run the 'Provider' effect with a given effect handler.
 runProvider
   :: HasCallStack
-  => (forall r. input -> Eff (e : es) r -> Eff es (f r))
+  => (forall r. HasCallStack => input -> Eff (e : es) r -> Eff es (f r))
   -- ^ The effect handler.
   -> Eff (Provider e input f : es) a
   -> Eff es a
-runProvider run m = unsafeEff $ \es0 -> do
+runProvider provider m = unsafeEff $ \es0 -> do
   inlineBracket
-    (consEnv (Provider es0 run) relinkProvider es0)
+    (consEnv (mkProvider es0) relinkProvider es0)
     unconsEnv
     (\es -> unEff m es)
+  where
+    -- Corresponds to withFrozenCallStack in provideWith.
+    mkProvider es = Provider es (let ?callStack = thawCallStack ?callStack in provider)
 
 -- | Run the 'Provider' effect with a given effect handler that doesn't change
 -- its return type.
 runProvider_
   :: HasCallStack
-  => (forall r. input -> Eff (e : es) r -> Eff es r)
+  => (forall r. HasCallStack => input -> Eff (e : es) r -> Eff es r)
   -- ^ The effect handler.
   -> Eff (Provider_ e input : es) a
   -> Eff es a
-runProvider_ run = runProvider $ \input -> coerce . run input
+runProvider_ provider = runProvider $ \input -> coerce . provider input
 
 -- | Run the effect handler.
 provide :: (HasCallStack, Provider e () f :> es) => Eff (e : es) a -> Eff es (f a)
@@ -165,9 +171,12 @@ provideWith
   -> Eff (e : es) a
   -> Eff es (f a)
 provideWith input action = unsafeEff $ \es -> do
-  Provider handlerEs run <- getEnv es
-  (`unEff` handlerEs) . run input . unsafeEff $ \eHandlerEs -> do
-    unEff action =<< copyRef eHandlerEs es
+  Provider providerEs handler <- getEnv es
+  (`unEff` providerEs)
+    -- Corresponds to thawCallStack in runProvider.
+    . withFrozenCallStack handler input
+    . unsafeEff $ \eProviderEs -> do
+    unEff action =<< copyRef eProviderEs es
 
 -- | Run the effect handler that doesn't change its return type with a given
 -- input.
@@ -186,11 +195,11 @@ provideWith_ input = adapt . provideWith input
 -- Helpers
 
 relinkProvider :: Relinker StaticRep (Provider e input f)
-relinkProvider = Relinker $ \relink (Provider handlerEs run) -> do
-  newHandlerEs <- relink handlerEs
+relinkProvider = Relinker $ \relink (Provider providerEs run) -> do
+  newHandlerEs <- relink providerEs
   pure $ Provider newHandlerEs run
 
-copyRef :: HasCallStack => Env (e : handlerEs) -> Env es -> IO (Env (e : es))
+copyRef :: HasCallStack => Env (e : providerEs) -> Env es -> IO (Env (e : es))
 copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
   when (hstorage /= storage) $ do
     error "storages do not match"

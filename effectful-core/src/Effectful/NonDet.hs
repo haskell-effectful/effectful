@@ -68,10 +68,10 @@ runNonDetKeep
   :: HasCallStack
   => Eff (NonDet : es) a
   -> Eff es (Either CallStack a)
-runNonDetKeep = reinterpret (fmap noError . runError @()) $ \env -> \case
-  Empty       -> throwError ()
+runNonDetKeep = reinterpret (fmap noError . runError @ErrorEmpty) $ \env -> \case
+  Empty       -> throwError ErrorEmpty
   m1 :<|>: m2 -> localSeqUnlift env $ \unlift -> do
-    mr <- (Just <$> unlift m1) `catchError` \_ () -> pure Nothing
+    mr <- (Just <$> unlift m1) `catchError` \_ ErrorEmpty -> pure Nothing
     case mr of
       Just r  -> pure r
       Nothing -> unlift m2
@@ -81,11 +81,11 @@ runNonDetRollback
   => Eff (NonDet : es) a
   -> Eff es (Either CallStack a)
 runNonDetRollback = reinterpret setup $ \env -> \case
-  Empty       -> throwError ()
+  Empty       -> throwError ErrorEmpty
   m1 :<|>: m2 -> do
     backupEnv <- cloneLocalEnv env
     localSeqUnlift env $ \unlift -> do
-      mr <- (Just <$> unlift m1) `catchError` \_ () -> do
+      mr <- (Just <$> unlift m1) `catchError` \_ ErrorEmpty -> do
         -- If m1 failed, roll back the environment.
         restoreLocalEnv env backupEnv
         pure Nothing
@@ -95,7 +95,7 @@ runNonDetRollback = reinterpret setup $ \env -> \case
   where
     setup action = do
       backupEs <- unsafeEff cloneEnv
-      runError @() action >>= \case
+      runError @ErrorEmpty action >>= \case
         Right r -> pure $ Right r
         Left (cs, _) -> do
           -- If the whole action failed, roll back the environment.
@@ -120,6 +120,12 @@ sumEff = foldr (<|>) emptyEff
 
 ----------------------------------------
 -- Internal helpers
+
+-- | Internal error type for the Empty action. Better than '()' in case it
+-- escapes the scope of 'runNonDet' and shows up in error messages.
+data ErrorEmpty = ErrorEmpty
+instance Show ErrorEmpty where
+  show ErrorEmpty = "Effectful.NonDet.ErrorEmpty"
 
 noError :: Either (cs, e) a -> Either cs a
 noError = either (Left . fst) Right

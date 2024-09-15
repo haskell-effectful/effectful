@@ -40,8 +40,13 @@ import Effectful.Internal.Monad (LocalEnv(..), NonDet(..))
 --
 -- @since 2.2.0.0
 data OnEmptyPolicy
-  = OnEmptyKeep     -- ^ Keep modifications on 'Empty'.
-  | OnEmptyRollback -- ^ Rollback modifications on 'Empty'.
+  = OnEmptyKeep
+  -- ^ Keep modifications on 'Empty'.
+  | OnEmptyRollback
+  -- ^ Rollback modifications on 'Empty'.
+  --
+  -- /Note:/ state modifications are rolled back on 'Empty' only. In particular,
+  -- they are __not__ rolled back on exceptions.
   deriving (Eq, Generic, Ord, Show)
 
 -- | Run the 'NonDet' effect with a given 'OnEmptyPolicy'.

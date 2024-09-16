@@ -190,7 +190,8 @@ withSeqEffToIO
   => ((forall r. Eff es r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-withSeqEffToIO f = unsafeEff $ \es -> seqUnliftIO es f
+withSeqEffToIO k = unsafeEff $ \es -> seqUnliftIO es k
+{-# INLINE withSeqEffToIO #-}
 
 -- | Create an unlifting function with the given strategy.
 --
@@ -218,8 +219,8 @@ withConcEffToIO
   -> ((forall r. Eff es r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-withConcEffToIO persistence limit f = unsafeEff $ \es ->
-  concUnliftIO es persistence limit f
+withConcEffToIO persistence limit k = unsafeEff $ \es ->
+  concUnliftIO es persistence limit k
 {-# DEPRECATED withConcEffToIO "Use withEffToIO with the appropriate strategy." #-}
 
 -- | Create an unlifting function with the 'SeqUnlift' strategy.
@@ -249,6 +250,7 @@ seqForkUnliftIO
   -- ^ Continuation with the unlifting function in scope.
   -> IO a
 seqForkUnliftIO es0 k = cloneEnv es0 >>= \es -> seqUnliftIO es k
+{-# INLINE seqForkUnliftIO #-}
 
 -- | Create an unlifting function with the 'ConcUnlift' strategy.
 concUnliftIO

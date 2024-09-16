@@ -714,6 +714,7 @@ localSeqUnlift
 localSeqUnlift (LocalEnv les) k = unsafeEff $ \es -> do
   seqUnliftIO les $ \unlift -> do
     (`unEff` es) $ k $ unsafeEff_ . unlift
+{-# INLINE localSeqUnlift #-}
 
 -- | Create a local unlifting function with the 'SeqUnlift' strategy. For the
 -- general version see 'localUnliftIO'.
@@ -725,6 +726,7 @@ localSeqUnliftIO
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 localSeqUnliftIO (LocalEnv les) k = liftIO $ seqUnliftIO les k
+{-# INLINE localSeqUnliftIO #-}
 
 -- | Create a local unlifting function with the given strategy.
 localUnlift
@@ -781,6 +783,7 @@ localSeqLift !_ k = unsafeEff $ \es -> do
   -- localEs type variable. It's also strict so that callers don't cheat.
   seqUnliftIO es $ \unlift -> do
     (`unEff` es) $ k $ unsafeEff_ . unlift
+{-# INLINE localSeqLift #-}
 
 -- | Create a local lifting function with the given strategy.
 --
@@ -830,6 +833,7 @@ withLiftMap !_ k = unsafeEff $ \es -> do
   (`unEff` es) $ k $ \mapEff m -> unsafeEff $ \localEs -> do
     seqUnliftIO localEs $ \unlift -> do
       (`unEff` es) . mapEff . unsafeEff_ $ unlift m
+{-# INLINE withLiftMap #-}
 
 -- | Utility for lifting 'IO' computations of type
 --
@@ -868,6 +872,7 @@ withLiftMapIO !_ k = k $ \mapIO m -> unsafeEff $ \es -> do
   -- The LocalEnv parameter is not used, but we need it to constraint the
   -- localEs type variable. It's also strict so that callers don't cheat.
   seqUnliftIO es $ \unlift -> mapIO $ unlift m
+{-# INLINE withLiftMapIO #-}
 
 ----------------------------------------
 -- Bidirectional lifts

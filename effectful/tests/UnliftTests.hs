@@ -1,6 +1,5 @@
 module UnliftTests (unliftTests) where
 
-import Control.Exception
 import Test.Tasty
 import Test.Tasty.HUnit
 import UnliftIO.Async qualified as A
@@ -34,32 +33,32 @@ test_threadStrategy = runEff $ do
 
 test_seqUnliftInNewThread :: Assertion
 test_seqUnliftInNewThread = runEff $ do
-  assertThrowsUnliftError "InvalidUseOfSeqUnlift error" $ do
+  U.assertThrowsErrorCall "InvalidUseOfSeqUnlift error" $ do
     withEffToIO SeqUnlift $ \runInIO -> do
       inThread $ runInIO $ return ()
 
 test_ephemeralInvalid :: Assertion
 test_ephemeralInvalid = runEff $ do
-  assertThrowsUnliftError "InvalidNumberOfUses error" $ do
+  U.assertThrowsErrorCall "InvalidNumberOfUses error" $ do
     withEffToIO (ConcUnlift Ephemeral $ Limited 0) $ \_ -> return ()
 
 test_ephemeralSameThread :: Assertion
 test_ephemeralSameThread = runEff $ do
-  assertThrowsUnliftError "ExceededNumberOfUses error" $ do
+  U.assertThrowsErrorCall "ExceededNumberOfUses error" $ do
     withEffToIO (ConcUnlift Ephemeral $ Limited 1) $ \runInIO -> inThread $ do
       runInIO $ return ()
       runInIO $ return ()
 
 test_ephemeralMultipleThreads :: Assertion
 test_ephemeralMultipleThreads = runEff $ do
-  assertThrowsUnliftError "ExceededNumberOfUses error" $ do
+  U.assertThrowsErrorCall "ExceededNumberOfUses error" $ do
     withEffToIO (ConcUnlift Ephemeral $ Limited 1) $ \runInIO -> do
       inThread $ runInIO $ return ()
       inThread $ runInIO $ return ()
 
 test_persistentInvalid :: Assertion
 test_persistentInvalid = runEff $ do
-  assertThrowsUnliftError "InvalidNumberOfThreads error" $ do
+  U.assertThrowsErrorCall "InvalidNumberOfThreads error" $ do
     withEffToIO (ConcUnlift Persistent $ Limited 0) $ \_ -> return ()
 
 test_persistentSameThread :: Assertion
@@ -70,18 +69,13 @@ test_persistentSameThread = runEff $ do
 
 test_persistentMultipleThreads :: Assertion
 test_persistentMultipleThreads = runEff $ do
-  assertThrowsUnliftError "ExceededNumberOfThreads error" $ do
+  U.assertThrowsErrorCall "ExceededNumberOfThreads error" $ do
     withEffToIO (ConcUnlift Persistent $ Limited 1) $ \runInIO -> do
       inThread $ runInIO $ return ()
       inThread $ runInIO $ return ()
 
 ----------------------------------------
 -- Helpers
-
-assertThrowsUnliftError
-  :: IOE :> es
-  => String -> Eff es a -> Eff es ()
-assertThrowsUnliftError err = U.assertThrows err (\ErrorCall{} -> True)
 
 inThread :: IO a -> IO a
 inThread k = A.async k >>= A.wait

@@ -19,6 +19,7 @@
   policy for the `NonDet` effect is selected.
 * Add a `SeqForkUnlift` strategy to support running unlifting functions outside
   of the scope of effects they capture.
+* Ensure that a `LocalEnv` is only used in a thread it belongs to.
 * **Breaking changes**:
   - `localSeqLend`, `localLend`, `localSeqBorrow` and `localBorrow` now take a
     list of effects instead of a single one.

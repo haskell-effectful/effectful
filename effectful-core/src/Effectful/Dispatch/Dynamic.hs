@@ -74,8 +74,6 @@ module Effectful.Dispatch.Dynamic
   , HasCallStack
   ) where
 
-import Control.Monad
-import Control.Monad.IO.Unlift
 import Data.Primitive.PrimArray
 import GHC.Stack (HasCallStack)
 import GHC.TypeLits
@@ -157,6 +155,7 @@ import Effectful.Internal.Utils
 --
 -- >>> import Control.Exception (IOException)
 -- >>> import Control.Monad.Catch (catch)
+-- >>> import Control.Monad.IO.Class
 -- >>> import qualified System.IO as IO
 --
 -- >>> import Effectful.Error.Static
@@ -250,6 +249,7 @@ import Effectful.Internal.Utils
 --
 -- If we naively try to interpret it, we will run into trouble:
 --
+-- >>> import Control.Monad.IO.Class
 -- >>> import GHC.Clock (getMonotonicTime)
 --
 -- >>> :{
@@ -490,6 +490,7 @@ reinterpretWith runHandlerEs m handler = reinterpret runHandlerEs handler m
 --   type instance DispatchOf E = Dynamic
 -- :}
 --
+-- >>> import Control.Monad.IO.Class
 -- >>> :{
 --   runE :: IOE :> es => Eff (E : es) a -> Eff es a
 --   runE = interpret_ $ \Op -> liftIO (putStrLn "op")
@@ -712,6 +713,7 @@ localSeqUnlift
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
 localSeqUnlift (LocalEnv les) k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
   seqUnliftIO les $ \unlift -> do
     (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localSeqUnlift #-}
@@ -725,7 +727,9 @@ localSeqUnliftIO
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-localSeqUnliftIO (LocalEnv les) k = liftIO $ seqUnliftIO les k
+localSeqUnliftIO (LocalEnv les) k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
+  seqUnliftIO les k
 {-# INLINE localSeqUnliftIO #-}
 
 -- | Create a local unlifting function with the given strategy.
@@ -737,15 +741,14 @@ localUnlift
   -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-localUnlift (LocalEnv les) strategy k = case strategy of
-  SeqUnlift -> unsafeEff $ \es -> do
-    seqUnliftIO les $ \unlift -> do
+localUnlift (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
+  case strategy of
+    SeqUnlift -> seqUnliftIO les $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
-  SeqForkUnlift -> unsafeEff $ \es -> do
-    seqForkUnliftIO les $ \unlift -> do
+    SeqForkUnlift -> seqForkUnliftIO les $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
-  ConcUnlift p l -> unsafeEff $ \es -> do
-    concUnliftIO les p l $ \unlift -> do
+    ConcUnlift p l -> concUnliftIO les p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localUnlift #-}
 
@@ -758,10 +761,12 @@ localUnliftIO
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff es a
-localUnliftIO (LocalEnv les) strategy k = case strategy of
-  SeqUnlift      -> liftIO $ seqUnliftIO les k
-  SeqForkUnlift  -> liftIO $ seqForkUnliftIO les k
-  ConcUnlift p l -> liftIO $ concUnliftIO les p l k
+localUnliftIO (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
+  case strategy of
+    SeqUnlift -> seqUnliftIO les k
+    SeqForkUnlift -> seqForkUnliftIO les k
+    ConcUnlift p l -> concUnliftIO les p l k
 {-# INLINE localUnliftIO #-}
 
 ----------------------------------------
@@ -778,9 +783,8 @@ localSeqLift
   -> ((forall r. Eff es r -> Eff localEs r) -> Eff es a)
   -- ^ Continuation with the lifting function in scope.
   -> Eff es a
-localSeqLift !_ k = unsafeEff $ \es -> do
-  -- The LocalEnv parameter is not used, but we need it to constraint the
-  -- localEs type variable. It's also strict so that callers don't cheat.
+localSeqLift (LocalEnv les) k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
   seqUnliftIO es $ \unlift -> do
     (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localSeqLift #-}
@@ -796,17 +800,14 @@ localLift
   -> ((forall r. Eff es r -> Eff localEs r) -> Eff es a)
   -- ^ Continuation with the lifting function in scope.
   -> Eff es a
-localLift !_ strategy k = case strategy of
-  -- The LocalEnv parameter is not used, but we need it to constraint the
-  -- localEs type variable. It's also strict so that callers don't cheat.
-  SeqUnlift -> unsafeEff $ \es -> do
-    seqUnliftIO es $ \unlift -> do
+localLift (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
+  case strategy of
+    SeqUnlift -> seqUnliftIO es $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
-  SeqForkUnlift -> unsafeEff $ \es -> do
-    seqForkUnliftIO es $ \unlift -> do
+    SeqForkUnlift -> seqForkUnliftIO es $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
-  ConcUnlift p l -> unsafeEff $ \es -> do
-    concUnliftIO es p l $ \unlift -> do
+    ConcUnlift p l -> concUnliftIO es p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localLift #-}
 
@@ -827,9 +828,8 @@ withLiftMap
   -> ((forall a b. (Eff es a -> Eff es b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -- ^ Continuation with the lifting function in scope.
   -> Eff es r
-withLiftMap !_ k = unsafeEff $ \es -> do
-  -- The LocalEnv parameter is not used, but we need it to constraint the
-  -- localEs type variable. It's also strict so that callers don't cheat.
+withLiftMap (LocalEnv les) k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
   (`unEff` es) $ k $ \mapEff m -> unsafeEff $ \localEs -> do
     seqUnliftIO localEs $ \unlift -> do
       (`unEff` es) . mapEff . unsafeEff_ $ unlift m
@@ -868,9 +868,8 @@ withLiftMapIO
   -> ((forall a b. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -- ^ Continuation with the lifting function in scope.
   -> Eff es r
-withLiftMapIO !_ k = k $ \mapIO m -> unsafeEff $ \es -> do
-  -- The LocalEnv parameter is not used, but we need it to constraint the
-  -- localEs type variable. It's also strict so that callers don't cheat.
+withLiftMapIO (LocalEnv les) k = k $ \mapIO m -> unsafeEff $ \es -> do
+  requireMatchingStorages es les
   seqUnliftIO es $ \unlift -> mapIO $ unlift m
 {-# INLINE withLiftMapIO #-}
 
@@ -892,17 +891,16 @@ localLiftUnlift
   -> ((forall r. Eff es r -> Eff localEs r) -> (forall r. Eff localEs r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the lifting and unlifting function in scope.
   -> Eff es a
-localLiftUnlift (LocalEnv les) strategy k = case strategy of
-  SeqUnlift -> unsafeEff $ \es -> do
-    seqUnliftIO es $ \unliftEs -> do
+localLiftUnlift (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
+  case strategy of
+    SeqUnlift -> seqUnliftIO es $ \unliftEs -> do
       seqUnliftIO les $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
-  SeqForkUnlift -> unsafeEff $ \es -> do
-    seqForkUnliftIO es $ \unliftEs -> do
+    SeqForkUnlift -> seqForkUnliftIO es $ \unliftEs -> do
       seqForkUnliftIO les $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
-  ConcUnlift p l -> unsafeEff $ \es -> do
-    concUnliftIO es p l $ \unliftEs -> do
+    ConcUnlift p l -> concUnliftIO es p l $ \unliftEs -> do
       concUnliftIO les p l $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
 {-# INLINE localLiftUnlift #-}
@@ -923,10 +921,12 @@ localLiftUnliftIO
   -> ((forall r. IO r -> Eff localEs r) -> (forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the lifting and unlifting function in scope.
   -> Eff es a
-localLiftUnliftIO (LocalEnv les) strategy k = case strategy of
-  SeqUnlift      -> liftIO $ seqUnliftIO les $ k unsafeEff_
-  SeqForkUnlift  -> liftIO $ seqForkUnliftIO les $ k unsafeEff_
-  ConcUnlift p l -> liftIO $ concUnliftIO les p l $ k unsafeEff_
+localLiftUnliftIO (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
+  case strategy of
+    SeqUnlift      -> seqUnliftIO les $ k unsafeEff_
+    SeqForkUnlift  -> seqForkUnliftIO les $ k unsafeEff_
+    ConcUnlift p l -> concUnliftIO les p l $ k unsafeEff_
 {-# INLINE localLiftUnliftIO #-}
 
 ----------------------------------------
@@ -1000,16 +1000,15 @@ localLend
   -> ((forall r. Eff (lentEs ++ localEs) r -> Eff localEs r) -> Eff es a)
   -- ^ Continuation with the lent handler in scope.
   -> Eff es a
-localLend (LocalEnv les) strategy k = case strategy of
-  SeqUnlift -> unsafeEff $ \es -> do
-    eles <- copyRefs @lentEs es les
-    seqUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
-  SeqForkUnlift -> unsafeEff $ \es -> do
-    eles <- copyRefs @lentEs es les
-    seqForkUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
-  ConcUnlift p l -> unsafeEff $ \es -> do
-    eles <- copyRefs @lentEs es les
-    concUnliftIO eles p l $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+localLend (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  eles <- copyRefs @lentEs es les
+  case strategy of
+    SeqUnlift -> seqUnliftIO eles $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
+    SeqForkUnlift -> seqForkUnliftIO eles $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
+    ConcUnlift p l -> concUnliftIO eles p l $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localLend #-}
 
 -- | Borrow effects from the local environment.
@@ -1041,16 +1040,15 @@ localBorrow
   -> ((forall r. Eff (borrowedEs ++ es) r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the borrowed handler in scope.
   -> Eff es a
-localBorrow (LocalEnv les) strategy k = case strategy of
-  SeqUnlift -> unsafeEff $ \es -> do
-    ees <- copyRefs @borrowedEs les es
-    seqUnliftIO ees $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
-  SeqForkUnlift -> unsafeEff $ \es -> do
-    ees <- copyRefs @borrowedEs les es
-    seqForkUnliftIO ees $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
-  ConcUnlift p l -> unsafeEff $ \es -> do
-    ees <- copyRefs @borrowedEs les es
-    concUnliftIO ees p l $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
+localBorrow (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  ees <- copyRefs @borrowedEs les es
+  case strategy of
+    SeqUnlift -> seqUnliftIO ees $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
+    SeqForkUnlift -> seqForkUnliftIO ees $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
+    ConcUnlift p l -> concUnliftIO ees p l $ \unlift -> do
+      (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localBorrow #-}
 
 copyRefs
@@ -1059,9 +1057,8 @@ copyRefs
   => Env srcEs
   -> Env destEs
   -> IO (Env (es ++ destEs))
-copyRefs (Env soffset srefs sstorage) (Env doffset drefs dstorage) = do
-  when (sstorage /= dstorage) $ do
-    error "storages do not match"
+copyRefs src@(Env soffset srefs _) dest@(Env doffset drefs storage) = do
+  requireMatchingStorages src dest
   let size = sizeofPrimArray drefs - doffset
       es = reifyIndices @es @srcEs
       esSize = 2 * length es
@@ -1076,8 +1073,17 @@ copyRefs (Env soffset srefs sstorage) (Env doffset drefs dstorage) = do
           writeRefs (i + 2) xs
   writeRefs 0 es
   refs <- unsafeFreezePrimArray mrefs
-  pure $ Env 0 refs dstorage
+  pure $ Env 0 refs storage
 {-# NOINLINE copyRefs #-}
+
+requireMatchingStorages :: HasCallStack => Env es1 -> Env es2 -> IO ()
+requireMatchingStorages es1 es2
+  | envStorage es1 /= envStorage es2 = error
+    $ "Env and LocalEnv point to different Storages.\n"
+    ++ "If you passed LocalEnv to a different thread and tried to create an "
+    ++ "unlifting function there, it's not allowed. You need to create it in "
+    ++ "the thread of the effect handler."
+  | otherwise = pure ()
 
 -- | Require that both effect stacks share an opaque suffix.
 --

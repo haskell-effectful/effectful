@@ -3,9 +3,11 @@ module Utils
   , assertEqual
   , assertFailure
   , assertThrows
+  , assertThrowsErrorCall
   , Ex(..)
   ) where
 
+import Control.Exception (ErrorCall(..))
 import Control.Monad.Catch
 import GHC.Stack
 import Test.Tasty.HUnit qualified as T
@@ -36,6 +38,11 @@ assertThrows msg p k = catchJust
   (\e -> if p e then Just () else Nothing)
   (k >> liftIO (T.assertFailure msg))
   pure
+
+assertThrowsErrorCall
+  :: IOE :> es
+  => String -> Eff es a -> Eff es ()
+assertThrowsErrorCall err = assertThrows err (\ErrorCall{} -> True)
 
 data Ex = Ex deriving (Eq, Show)
 instance Exception Ex

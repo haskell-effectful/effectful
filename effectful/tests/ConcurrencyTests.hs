@@ -8,6 +8,8 @@ import Test.Tasty.HUnit
 import UnliftIO
 
 import Effectful
+import Effectful.Concurrent.Async qualified as E
+import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.State.Dynamic
 import Utils qualified as U
@@ -20,6 +22,8 @@ concurrencyTests = testGroup "Concurrency"
   , testCase "unlifting several times" test_unliftMany
   , testCase "async with unmask" test_asyncWithUnmask
   , testCase "pooled workers" test_pooledWorkers
+  , testCase "using local unlift correctly works" test_correctLocalUnlift
+  , testCase "using local unlift incorrectly doesn't work" test_wrongLocalUnlift
   ]
 
 test_localState :: Assertion
@@ -119,3 +123,34 @@ test_pooledWorkers = runEff . evalStateLocal (0::Int) $ do
   where
     n = 10
     threads = 4
+
+test_correctLocalUnlift :: Assertion
+test_correctLocalUnlift = runEff . E.runConcurrent $ do
+  x <- runFork . send . RunAsyncCorrect $ pure ()
+  E.wait x
+
+test_wrongLocalUnlift :: Assertion
+test_wrongLocalUnlift = runEff . E.runConcurrent $ do
+  U.assertThrowsErrorCall "invalid LocalEnv use" $ do
+    x <- runFork . send . RunAsyncWrong $ pure ()
+    E.wait x
+
+data Fork :: Effect where
+  RunAsyncCorrect :: m a -> Fork m (E.Async a)
+  RunAsyncWrong :: m a -> Fork m (E.Async a)
+type instance DispatchOf Fork = Dynamic
+
+runFork :: (IOE :> es, E.Concurrent :> es) => Eff (Fork : es) a -> Eff es a
+runFork = interpret $ \env -> \case
+  RunAsyncCorrect action -> do
+    -- LocalEnv is correctly used in the thread in belongs to, so creation of
+    -- the unlifting function should succeed.
+    localUnlift env strategy $ \unlift -> do
+      E.async $ unlift action
+  RunAsyncWrong action -> E.async $ do
+    -- LocalEnv is incorrectly passed to a different thread, so creation of the
+    -- unlifting function should fail.
+    localUnlift env strategy $ \unlift -> do
+      unlift action
+  where
+    strategy = ConcUnlift Ephemeral $ Limited 1

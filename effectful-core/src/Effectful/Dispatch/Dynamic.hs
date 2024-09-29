@@ -486,27 +486,68 @@ reinterpretWith runHandlerEs m handler = reinterpret runHandlerEs handler m
 --
 -- >>> :{
 --   data E :: Effect where
---     Op :: E m ()
+--     Op1 :: E m ()
+--     Op2 :: E m ()
 --   type instance DispatchOf E = Dynamic
 -- :}
 --
 -- >>> import Control.Monad.IO.Class
 -- >>> :{
 --   runE :: IOE :> es => Eff (E : es) a -> Eff es a
---   runE = interpret_ $ \Op -> liftIO (putStrLn "op")
+--   runE = interpret_ $ \case
+--     Op1 -> liftIO (putStrLn "op1")
+--     Op2 -> liftIO (putStrLn "op2")
 -- :}
 --
--- >>> runEff . runE $ send Op
--- op
+-- >>> runEff . runE $ send Op1 >> send Op2
+-- op1
+-- op2
 --
 -- >>> :{
---   augmentE :: (E :> es, IOE :> es) => Eff es a -> Eff es a
---   augmentE = interpose_ $ \Op -> liftIO (putStrLn "augmented op") >> send Op
+--   augmentOp2 :: (E :> es, IOE :> es) => Eff es a -> Eff es a
+--   augmentOp2 = interpose_ $ \case
+--     Op1 -> send Op1
+--     Op2 -> liftIO (putStrLn "augmented op2") >> send Op2
 -- :}
 --
--- >>> runEff . runE . augmentE $ send Op
--- augmented op
--- op
+-- >>> runEff . runE . augmentOp2 $ send Op1 >> send Op2
+-- op1
+-- augmented op2
+-- op2
+--
+-- /Note:/ when using 'interpose' to modify only specific operations of the
+-- effect, your first instinct might be to match on them, then handle the rest
+-- with a generic match. Unfortunately, this doesn't work out of the box:
+--
+-- >>> :{
+--   genericAugmentOp2 :: (E :> es, IOE :> es) => Eff es a -> Eff es a
+--   genericAugmentOp2 = interpose_ $ \case
+--     Op2 -> liftIO (putStrLn "augmented op2") >> send Op2
+--     op  -> send op
+-- :}
+-- ...
+-- ...Couldn't match type ‘localEs’ with ‘es’
+-- ...
+--
+-- This is because within the generic match, 'send' expects @Op (Eff es) a@, but
+-- @op@ has a type @Op (Eff localEs) a@. If the effect in question is first
+-- order (i.e. its @m@ type parameter is phantom), you can use 'coerce':
+--
+-- >>> import Data.Coerce
+-- >>> :{
+--   genericAugmentOp2 :: (E :> es, IOE :> es) => Eff es a -> Eff es a
+--   genericAugmentOp2 = interpose_ $ \case
+--     Op2 -> liftIO (putStrLn "augmented op2") >> send Op2
+--     op  -> send @E (coerce op)
+-- :}
+--
+-- >>> runEff . runE . genericAugmentOp2 $ send Op1 >> send Op2
+-- op1
+-- augmented op2
+-- op2
+--
+-- On the other hand, when dealing with higher order effects you need to pattern
+-- match on each operation and unlift where necessary.
 --
 interpose
   :: forall e es a. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)

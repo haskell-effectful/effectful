@@ -109,7 +109,7 @@ runNonDetRollback = reinterpret setup $ \env -> \case
 --
 -- @since 2.2.0.0
 emptyEff :: (HasCallStack, NonDet :> es) => Eff es a
-emptyEff = withFrozenCallStack $ send Empty
+emptyEff = withFrozenCallStack send Empty
 
 -- | Specialized version of 'asum' with the 'HasCallStack' constraint for
 -- tracking purposes.

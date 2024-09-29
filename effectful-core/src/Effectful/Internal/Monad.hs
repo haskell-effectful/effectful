@@ -347,7 +347,7 @@ data Fail :: Effect where
 type instance DispatchOf Fail = Dynamic
 
 instance Fail :> es => MonadFail (Eff es) where
-  fail msg = withFrozenCallStack $ send (Fail msg)
+  fail msg = send (Fail msg)
 
 ----------------------------------------
 -- IO

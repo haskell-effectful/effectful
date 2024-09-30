@@ -153,12 +153,10 @@ import Effectful.Internal.Utils
 -- The following defines an 'EffectHandler' that reads and writes files from the
 -- drive:
 --
--- >>> import Control.Exception (IOException)
--- >>> import Control.Monad.Catch (catch)
--- >>> import Control.Monad.IO.Class
 -- >>> import qualified System.IO as IO
 --
 -- >>> import Effectful.Error.Static
+-- >>> import Effectful.Exception
 --
 -- >>> newtype FsError = FsError String deriving Show
 --
@@ -249,7 +247,6 @@ import Effectful.Internal.Utils
 --
 -- If we naively try to interpret it, we will run into trouble:
 --
--- >>> import Control.Monad.IO.Class
 -- >>> import GHC.Clock (getMonotonicTime)
 --
 -- >>> :{
@@ -491,7 +488,6 @@ reinterpretWith runHandlerEs m handler = reinterpret runHandlerEs handler m
 --   type instance DispatchOf E = Dynamic
 -- :}
 --
--- >>> import Control.Monad.IO.Class
 -- >>> :{
 --   runE :: IOE :> es => Eff (E : es) a -> Eff es a
 --   runE = interpret_ $ \case
@@ -1199,4 +1195,5 @@ instance
 
 -- $setup
 -- >>> import Control.Concurrent (ThreadId, forkIOWithUnmask)
+-- >>> import Control.Monad.IO.Class
 -- >>> import Effectful.Reader.Static

@@ -1,8 +1,9 @@
 module StateTests (stateTests) where
 
 import Control.Exception.Lifted qualified as LE
+import Control.Exception.Safe qualified as Safe
 import Control.Monad
-import Control.Monad.Catch qualified as E
+import Control.Monad.Catch qualified as C
 import Data.IORef.Strict
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -66,12 +67,14 @@ test_deepStack = runEff $ do
 
 test_exceptions :: Assertion
 test_exceptions = runEff $ do
-  testTry   "exceptions"  E.try
-  testCatch "exceptions"  E.catch
-  testTry   "lifted-base" LE.try
-  testCatch "lifted-base" LE.catch
-  testTry   "unliftio"    UE.try
-  testCatch "unliftio"    UE.catch
+  testTry   "exceptions"      C.try
+  testCatch "exceptions"      C.catch
+  testTry   "safe-exceptions" Safe.try
+  testCatch "safe-exceptions" Safe.catch
+  testTry   "lifted-base"     LE.try
+  testCatch "lifted-base"     LE.catch
+  testTry   "unliftio"        UE.try
+  testCatch "unliftio"        UE.catch
   where
     testTry
       :: String
@@ -96,7 +99,7 @@ test_exceptions = runEff $ do
     action :: State Int :> es => Eff es ()
     action = do
       modify @Int (+1)
-      _ <- E.throwM U.Ex
+      _ <- C.throwM U.Ex
       modify @Int (+2)
 
 test_localEffects :: Assertion

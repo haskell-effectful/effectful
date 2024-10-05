@@ -396,9 +396,8 @@ import Effectful.Internal.Utils
 -- ...    for functional dependency: ‘m -> i’...
 -- ...
 --
--- However, there exists a [dirty
--- trick](https://www.youtube.com/watch?v=ZXtdd8e7CQQ) for bypassing the
--- coverage condition, i.e. including the instance head in the context:
+-- However, there exists a trick for bypassing the coverage condition,
+-- i.e. including the instance head in its context:
 --
 -- >>> :{
 --   instance (MonadInput i (Eff es), Reader i :> es) => MonadInput i (Eff es) where

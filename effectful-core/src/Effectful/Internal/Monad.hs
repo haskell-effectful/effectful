@@ -146,7 +146,7 @@ runPureEff (Eff m) =
 
 -- | Peel off the constructor of 'Eff'.
 unEff :: Eff es a -> Env es -> IO a
-unEff = \(Eff m) -> m
+unEff (Eff m) = m
 
 -- | Access the underlying 'IO' monad along with the environment.
 --

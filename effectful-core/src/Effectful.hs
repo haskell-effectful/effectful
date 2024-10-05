@@ -148,7 +148,7 @@ import Effectful.Internal.Monad
 --
 -- These libraries can trivially be used with the 'Eff' monad since it provides
 -- typical instances that these libraries require the underlying monad to have,
--- such as t'Control.Monad.Catch.MonadMask' or 'MonadUnliftIO'.
+-- such as t'Effectful.Exception.MonadMask' or 'MonadUnliftIO'.
 --
 -- In case the 'Eff' monad doesn't provide a specific instance out of the box,
 -- it can be supplied via an effect. As an example see how the instance of

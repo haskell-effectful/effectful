@@ -137,5 +137,4 @@ modifyM
 modifyM f = stateM (\s -> ((), ) <$> f s)
 
 -- $setup
--- >>> import Control.Exception (ErrorCall)
--- >>> import Control.Monad.Catch
+-- >>> import Effectful.Exception

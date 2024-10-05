@@ -113,6 +113,7 @@ library
                          , Effectful.Dispatch.Static
                          , Effectful.Error.Static
                          , Effectful.Error.Dynamic
+                         , Effectful.Exception
                          , Effectful.Fail
                          , Effectful.Labeled
                          , Effectful.Labeled.Error
@@ -144,6 +145,7 @@ test-suite test
                     , exceptions
                     , lifted-base
                     , primitive
+                    , safe-exceptions
                     , strict-mutable-base
                     , tasty
                     , tasty-hunit

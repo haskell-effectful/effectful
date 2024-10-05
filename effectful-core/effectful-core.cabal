@@ -64,9 +64,11 @@ library
 
     build-depends:    base                >= 4.14      && < 5
                     , containers          >= 0.6
+                    , deepseq             >= 1.2
                     , exceptions          >= 0.10.4
                     , monad-control       >= 1.0.3
                     , primitive           >= 0.7.3.0
+                    , safe-exceptions     >= 0.1.7.2
                     , strict-mutable-base >= 1.1.0.0
                     , transformers-base   >= 0.4.6
                     , unliftio-core       >= 0.2.0.1
@@ -83,6 +85,7 @@ library
                      Effectful.Dispatch.Static.Unsafe
                      Effectful.Error.Dynamic
                      Effectful.Error.Static
+                     Effectful.Exception
                      Effectful.Fail
                      Effectful.Internal.Effect
                      Effectful.Internal.Env

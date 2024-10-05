@@ -116,4 +116,4 @@ listens f m = do
 
 -- $setup
 -- >>> import Control.Exception (ErrorCall)
--- >>> import Control.Monad.Catch
+-- >>> import Effectful.Exception

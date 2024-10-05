@@ -7,12 +7,11 @@ module Utils
   , Ex(..)
   ) where
 
-import Control.Exception (ErrorCall(..))
-import Control.Monad.Catch
 import GHC.Stack
 import Test.Tasty.HUnit qualified as T
 
 import Effectful
+import Effectful.Exception
 
 assertBool :: (HasCallStack, IOE :> es) => String -> Bool -> Eff es ()
 assertBool msg p = liftIO $ T.assertBool msg p

@@ -1,13 +1,13 @@
 -- | Support for handling errors of a particular type, i.e. checked exceptions.
 --
 -- The 'Error' effect is __not__ a general mechanism for handling regular
--- exceptions, that's what functions from the @exceptions@ library are for (see
--- "Control.Monad.Catch" for more information).
+-- exceptions, that's what functions from the "Effectful.Exception" module are
+-- for.
 --
 -- In particular, regular exceptions of type @e@ are distinct from errors of
 -- type @e@ and will __not__ be caught by functions from this module:
 --
--- >>> import qualified Control.Monad.Catch as E
+-- >>> import qualified Effectful.Exception as E
 --
 -- >>> boom = error "BOOM!"
 --
@@ -16,14 +16,14 @@
 -- ...
 --
 -- If you want to catch regular exceptions, you should use
--- 'Control.Monad.Catch.catch' (or a similar function):
+-- 'Effectful.Exception.catch' (or a similar function):
 --
 -- >>> runEff $ boom `E.catch` \(_::ErrorCall) -> pure "caught"
 -- "caught"
 --
 -- On the other hand, functions for safe finalization and management of
--- resources such as 'Control.Monad.Catch.finally' and
--- 'Control.Monad.Catch.bracket' work as expected:
+-- resources such as 'Effectful.Exception.finally' and
+-- 'Effectful.Exception.bracket' work as expected:
 --
 -- >>> msg = liftIO . putStrLn
 --
@@ -74,7 +74,7 @@
 --
 -- /Hint:/ if you'd like to reproduce the transactional behavior with the
 -- t'Effectful.State.Static.Local.State' effect, appropriate usage of
--- 'Control.Monad.Catch.bracketOnError' will do the trick.
+-- 'Effectful.Exception.bracketOnError' will do the trick.
 module Effectful.Error.Static
   ( -- * Effect
     Error

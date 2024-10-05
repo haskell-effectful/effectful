@@ -1,3 +1,6 @@
+# effectful-plugin-1.1.0.4 (2024-??-??)
+* Fix inference in presence of implicit parameters.
+
 # effectful-plugin-1.1.0.3 (2024-06-07)
 * Drop support for GHC 8.8.
 

@@ -153,10 +153,9 @@ import Effectful.Internal.Utils
 -- The following defines an 'EffectHandler' that reads and writes files from the
 -- drive:
 --
--- >>> import qualified System.IO as IO
---
 -- >>> import Effectful.Error.Static
 -- >>> import Effectful.Exception
+-- >>> import System.IO qualified as IO
 --
 -- >>> newtype FsError = FsError String deriving Show
 --
@@ -178,8 +177,7 @@ import Effectful.Internal.Utils
 -- On the other hand, maybe there is a situation in which instead of interacting
 -- with the outside world, a pure, in-memory storage is preferred:
 --
--- >>> import qualified Data.Map.Strict as M
---
+-- >>> import Data.Map.Strict qualified as M
 -- >>> import Effectful.State.Static.Local
 --
 -- >>> :{

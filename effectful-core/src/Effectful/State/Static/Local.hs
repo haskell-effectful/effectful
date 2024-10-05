@@ -7,7 +7,7 @@
 -- the @transformers@ library, the 'State' effect doesn't discard state updates
 -- when an exception is received:
 --
--- >>> import qualified Control.Monad.Trans.State.Strict as S
+-- >>> import Control.Monad.Trans.State.Strict qualified as S
 --
 -- >>> :{
 --   (`S.execStateT` "Hi") . handle (\(_::ErrorCall) -> pure ()) $ do

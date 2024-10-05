@@ -7,7 +7,7 @@
 -- In particular, regular exceptions of type @e@ are distinct from errors of
 -- type @e@ and will __not__ be caught by functions from this module:
 --
--- >>> import qualified Effectful.Exception as E
+-- >>> import Effectful.Exception qualified as E
 --
 -- >>> boom = error "BOOM!"
 --
@@ -43,8 +43,8 @@
 -- effect with regard to other stateful effects does not matter. Consider the
 -- following:
 --
--- >>> import qualified Control.Monad.State.Strict as T
--- >>> import qualified Control.Monad.Except as T
+-- >>> import Control.Monad.State.Strict qualified as T
+-- >>> import Control.Monad.Except qualified as T
 --
 -- >>> m1 = (T.modify (++ " there!") >> T.throwError "oops") `T.catchError` \_ -> pure ()
 --

@@ -199,8 +199,8 @@ import Effectful.Internal.Monad
 --
 -- As an example, consider the following monad:
 --
--- >>> import qualified Control.Monad.State as T
--- >>> import qualified Control.Monad.Except as T
+-- >>> import Control.Monad.State qualified as T
+-- >>> import Control.Monad.Except qualified as T
 --
 -- >>> data HandlerState
 -- >>> data HandlerError

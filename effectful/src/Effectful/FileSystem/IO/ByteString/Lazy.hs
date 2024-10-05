@@ -3,8 +3,8 @@
 -- to avoid name clashes with the functions provided by "Prelude", e.g.:
 --
 -- > import Data.ByteString.Lazy (ByteString)
--- > import qualified Data.ByteString.Lazy.Char8 as LBS8
--- > import qualified Effectful.FileSystem.IO.ByteString.Lazy as ELBS
+-- > import Data.ByteString.Lazy.Char8 qualified as LBS8
+-- > import Effectful.FileSystem.IO.ByteString.Lazy qualified as ELBS
 --
 module Effectful.FileSystem.IO.ByteString.Lazy
   ( -- * Files

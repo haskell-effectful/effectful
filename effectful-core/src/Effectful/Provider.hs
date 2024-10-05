@@ -37,9 +37,9 @@ import Effectful.Internal.Utils
 -- $example
 --
 -- >>> import Control.Monad.IO.Class
+-- >>> import Data.Map.Strict qualified as M
 -- >>> import Effectful.Dispatch.Dynamic
 -- >>> import Effectful.State.Static.Local
--- >>> import qualified Data.Map.Strict as M
 --
 -- Given an effect:
 --

@@ -5,8 +5,8 @@
 -- to avoid name clashes with the functions provided by "Prelude", e.g.:
 --
 -- > import Data.ByteString (ByteString)
--- > import qualified Data.ByteString as BS
--- > import qualified Effectful.FileSystem.IO.ByteString as EBS
+-- > import Data.ByteString qualified as BS
+-- > import Effectful.FileSystem.IO.ByteString qualified as EBS
 --
 module Effectful.FileSystem.IO.ByteString
 #if MIN_VERSION_bytestring(0,11,2)

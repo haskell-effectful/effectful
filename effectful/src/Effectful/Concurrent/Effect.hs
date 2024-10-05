@@ -17,7 +17,7 @@ import Effectful.Dispatch.Static
 -- it possible to escape the scope of any scoped effect operation. Consider the
 -- following:
 --
--- >>> import qualified Effectful.Reader.Static as R
+-- >>> import Effectful.Reader.Static qualified as R
 --
 -- >>> printAsk msg = liftIO . putStrLn . (msg ++) . (": " ++) =<< R.ask
 --
@@ -54,14 +54,14 @@ import Effectful.Dispatch.Static
 -- a mutable state. That's why statically dispatched @State@ and @Writer@
 -- effects come in two flavors, local and shared:
 --
--- >>> import qualified Effectful.State.Static.Local as SL
+-- >>> import Effectful.State.Static.Local qualified as SL
 -- >>> :{
 --   runEff . SL.execState "Hi" . runConcurrent $ do
 --     replicateConcurrently_ 3 $ SL.modify (++ "!")
 -- :}
 -- "Hi"
 --
--- >>> import qualified Effectful.State.Static.Shared as SS
+-- >>> import Effectful.State.Static.Shared qualified as SS
 -- >>> :{
 --   runEff . SS.execState "Hi" . runConcurrent $ do
 --     replicateConcurrently_ 3 $ SS.modify (++ "!")

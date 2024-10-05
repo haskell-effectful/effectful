@@ -4,9 +4,9 @@
 -- to avoid name clashes with the functions provided by "Prelude", e.g.:
 --
 -- > import Data.ByteString (ByteString)
--- > import qualified Data.ByteString.Char8 as BS8
+-- > import Data.ByteString.Char8 qualified as BS8
 -- > import Effectful.Console.ByteString (Console)
--- > import qualified Effectful.Console.ByteString as Console
+-- > import Effectful.Console.ByteString qualified as Console
 --
 module Effectful.Console.ByteString
   ( -- * Effect

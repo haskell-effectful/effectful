@@ -5,8 +5,8 @@
 -- to avoid name clashes with the functions provided by "Prelude", e.g.:
 --
 -- > import Data.ByteString.Builder (Builder)
--- > import qualified Data.ByteString.Builder as BSB
--- > import qualified Effectful.FileSystem.IO.ByteString.Builder as EBSB
+-- > import Data.ByteString.Builder qualified as BSB
+-- > import Effectful.FileSystem.IO.ByteString.Builder qualified as EBSB
 --
 module Effectful.FileSystem.IO.ByteString.Builder
   ( -- * Executing Builders

@@ -658,7 +658,7 @@ interpretWith_
   -> EffectHandler_ e es
   -- ^ The effect handler.
   -> Eff      es  a
-interpretWith_ m handler = interpretWith m (const handler)
+interpretWith_ m handler = interpret (const handler) m
 
 -- | 'reinterpret' for first order effects.
 --
@@ -684,7 +684,7 @@ reinterpretWith_
   -> EffectHandler_ e handlerEs
   -- ^ The effect handler.
   -> Eff      es  b
-reinterpretWith_ runHandlerEs m handler = reinterpretWith runHandlerEs m (const handler)
+reinterpretWith_ runHandlerEs m handler = reinterpret runHandlerEs (const handler) m
 
 -- | 'interpose' for first order effects.
 --
@@ -706,7 +706,7 @@ interposeWith_
   -> EffectHandler_ e es
   -- ^ The effect handler.
   -> Eff es a
-interposeWith_ m handler = interposeWith m (const handler)
+interposeWith_ m handler = interpose (const handler) m
 
 -- | 'impose' for first order effects.
 --
@@ -732,7 +732,7 @@ imposeWith_
   -> EffectHandler_ e handlerEs
   -- ^ The effect handler.
   -> Eff es b
-imposeWith_ runHandlerEs m handler = imposeWith runHandlerEs m (const handler)
+imposeWith_ runHandlerEs m handler = impose runHandlerEs (const handler) m
 
 ----------------------------------------
 -- Unlifts

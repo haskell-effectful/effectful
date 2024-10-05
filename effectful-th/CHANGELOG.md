@@ -1,3 +1,7 @@
+# effectful-th-1.0.0.3 (2024-??-??)
+* Make `makeEffect` reuse Haddock descriptions of effect operations for
+  corresponding functions it generates (GHC >= 9.2).
+
 # effectful-th-1.0.0.2 (2024-06-07)
 * Add support for GHC 9.10.
 * Drop support for GHC 8.8.

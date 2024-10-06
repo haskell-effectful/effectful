@@ -12,7 +12,7 @@
   experience.
 * Add a `SeqForkUnlift` strategy to support running unlifting functions outside
   of the scope of effects they capture.
-* Add the `Effectful.Exception` module with appropriate re-exports from the
+* Add `Effectful.Exception` with appropriate re-exports from the
   `safe-exceptions` library.
 * Add `Effectful.Concurrent.Chan.Strict`.
 * Add `Effectful.Prim.IORef` and `Effectful.Prim.IORef.Strict`.

@@ -12,7 +12,7 @@
   experience.
 * Add a `SeqForkUnlift` strategy to support running unlifting functions outside
   of the scope of effects they capture.
-* Add the `Effectful.Exception` module with appropriate re-exports from the
+* Add `Effectful.Exception` with appropriate re-exports from the
   `safe-exceptions` library.
 * **Bugfixes**:
   - Ensure that a `LocalEnv` is only used in a thread it belongs to.

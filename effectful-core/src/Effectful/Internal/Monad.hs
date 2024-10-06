@@ -430,18 +430,14 @@ raiseWith
   -> ((forall r. Eff (e : es) r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the unlifting function in scope.
   -> Eff (e : es) a
-raiseWith strategy k = case strategy of
-  SeqUnlift -> unsafeEff $ \ees -> do
-    es <- tailEnv ees
-    seqUnliftIO ees $ \unlift -> do
+raiseWith strategy k = unsafeEff $ \ees -> do
+  es <- tailEnv ees
+  case strategy of
+    SeqUnlift -> seqUnliftIO ees $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
-  SeqForkUnlift -> unsafeEff $ \ees -> do
-    es <- tailEnv ees
-    seqForkUnliftIO ees $ \unlift -> do
+    SeqForkUnlift -> seqForkUnliftIO ees $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
-  ConcUnlift p l -> unsafeEff $ \ees -> do
-    es <- tailEnv ees
-    concUnliftIO ees p l $ \unlift -> do
+    ConcUnlift p l -> concUnliftIO ees p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE raiseWith #-}
 

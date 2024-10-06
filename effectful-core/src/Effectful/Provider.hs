@@ -125,8 +125,8 @@ type instance DispatchOf (Provider e input f) = Static NoSideEffects
 
 data instance StaticRep (Provider e input f) where
   Provider
-    :: !(Env providerEs)
-    -> !(forall r. HasCallStack => input -> Eff (e : providerEs) r -> Eff providerEs (f r))
+    :: !(Env handlerEs)
+    -> !(forall r. HasCallStack => input -> Eff (e : handlerEs) r -> Eff handlerEs (f r))
     -> StaticRep (Provider e input f)
 
 -- | Run the 'Provider' effect with a given effect handler.
@@ -171,8 +171,8 @@ provideWith
   -> Eff (e : es) a
   -> Eff es (f a)
 provideWith input action = unsafeEff $ \es -> do
-  Provider providerEs handler <- getEnv es
-  (`unEff` providerEs)
+  Provider handlerEs handler <- getEnv es
+  (`unEff` handlerEs)
     -- Corresponds to thawCallStack in runProvider.
     . withFrozenCallStack handler input
     . unsafeEff $ \eProviderEs -> do
@@ -195,17 +195,21 @@ provideWith_ input = adapt . provideWith input
 -- Helpers
 
 relinkProvider :: Relinker StaticRep (Provider e input f)
-relinkProvider = Relinker $ \relink (Provider providerEs run) -> do
-  newHandlerEs <- relink providerEs
+relinkProvider = Relinker $ \relink (Provider handlerEs run) -> do
+  newHandlerEs <- relink handlerEs
   pure $ Provider newHandlerEs run
 
-copyRef :: HasCallStack => Env (e : providerEs) -> Env es -> IO (Env (e : es))
+copyRef
+  :: HasCallStack
+  => Env (e : handlerEs)
+  -> Env es
+  -> IO (Env (e : es))
 copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
   when (hstorage /= storage) $ do
     error "storages do not match"
   let size = sizeofPrimArray refs0 - offset
   mrefs <- newPrimArray (size + 1)
-  copyPrimArray mrefs 0 hrefs hoffset 1
+  writePrimArray mrefs 0 $ indexPrimArray hrefs hoffset
   copyPrimArray mrefs 1 refs0 offset size
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage

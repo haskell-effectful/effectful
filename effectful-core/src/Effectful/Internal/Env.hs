@@ -98,29 +98,35 @@ instance Prim Ref where
   sizeOf# _ = 2# *# sizeOf# (undefined :: Int)
   alignment# _ = alignment# (undefined :: Int)
   indexByteArray# arr# i# =
-    let ref = indexByteArray# arr# (2# *# i#)
-        version = indexByteArray# arr# (2# *# i# +# 1#)
+    let n# = 2# *# i#
+        ref = indexByteArray# arr# n#
+        version = indexByteArray# arr# (n# +# 1#)
     in Ref ref version
-  readByteArray# arr# i# =
-    \s0 -> case readByteArray# arr# (2# *# i#) s0 of
-       (# s1#, ref #) -> case readByteArray# arr# (2# *# i# +# 1#) s1# of
-          (# s2#, version #) -> (# s2#, Ref ref version #)
-  writeByteArray# arr# i# (Ref ref version) =
-    \s0 -> case writeByteArray# arr# (2# *# i#) ref s0 of
-       s1 -> case writeByteArray# arr# (2# *# i# +# 1#) version s1 of
-         s2 -> s2
+  readByteArray# arr# i# s0 =
+    let n# = 2# *# i#
+        !(# s1#, ref #) = readByteArray# arr# n# s0
+        !(# s2#, version #) = readByteArray# arr# (n# +# 1#) s1#
+    in (# s2#, Ref ref version #)
+  writeByteArray# arr# i# (Ref ref version) s0 =
+    let n# = 2# *# i#
+        s1 = writeByteArray# arr# n# ref s0
+        s2 = writeByteArray# arr# (n# +# 1#) version s1
+    in s2
   indexOffAddr# addr# i# =
-    let ref = indexOffAddr# addr# (2# *# i#)
-        version = indexOffAddr# addr# (2# *# i# +# 1#)
+    let n# = 2# *# i#
+        ref = indexOffAddr# addr# n#
+        version = indexOffAddr# addr# (n# +# 1#)
     in Ref ref version
-  readOffAddr# addr# i# =
-    \s0 -> case readOffAddr# addr# (2# *# i#) s0 of
-       (# s1, ref #) -> case readOffAddr# addr# (2# *# i# +# 1#) s1 of
-         (# s2, version #) -> (# s2, Ref ref version #)
-  writeOffAddr# addr# i# (Ref ref version) =
-    \s0 -> case writeOffAddr# addr# (2# *# i#) ref s0 of
-       s1 -> case writeOffAddr# addr# (2# *# i# +# 1#) version s1 of
-         s2 -> s2
+  readOffAddr# addr# i# s0 =
+    let n# = 2# *# i#
+        !(# s1, ref #) = readOffAddr# addr# n# s0
+        !(# s2, version #) = readOffAddr# addr# (n# +# 1#) s1
+    in (# s2, Ref ref version #)
+  writeOffAddr# addr# i# (Ref ref version) s0 =
+    let n# = 2# *# i#
+        s1 = writeOffAddr# addr# n# ref s0
+        s2 = writeOffAddr# addr# (n# +# 1#) version s1
+    in s2
 
 -- | Version of the effect.
 newtype Version = Version Int

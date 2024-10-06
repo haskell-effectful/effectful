@@ -336,22 +336,22 @@ subsumeEnv (Env offset refs0 storage) = do
 
 -- | Construct an environment containing a permutation (with possible
 -- duplicates) of a subset of effects from the input environment.
-injectEnv :: forall xs es. Subset xs es => Env es -> IO (Env xs)
+injectEnv :: forall subEs es. Subset subEs es => Env es -> IO (Env subEs)
 injectEnv (Env offset refs0 storage) = do
-  let xs         = reifyIndices @xs @es
-      permSize   = length xs
+  let subEs      = reifyIndices @subEs @es
+      subEsSize  = length subEs
       prefixSize = prefixLength @es
-      suffixSize = if subsetFullyKnown @xs @es
+      suffixSize = if subsetFullyKnown @subEs @es
                    then 0
                    else sizeofPrimArray refs0 - offset - prefixSize
-  mrefs <- newPrimArray (permSize + suffixSize)
-  copyPrimArray mrefs permSize refs0 (offset + prefixSize) suffixSize
-  let writePermRefs i = \case
+  mrefs <- newPrimArray (subEsSize + suffixSize)
+  copyPrimArray mrefs subEsSize refs0 (offset + prefixSize) suffixSize
+  let writeRefs i = \case
         []       -> pure ()
-        (e : es) -> do
-          writePrimArray mrefs i $ indexPrimArray refs0 (offset + e)
-          writePermRefs (i + 1) es
-  writePermRefs 0 xs
+        (x : xs) -> do
+          writePrimArray mrefs i $ indexPrimArray refs0 (offset + x)
+          writeRefs (i + 1) xs
+  writeRefs 0 subEs
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage
 {-# NOINLINE injectEnv #-}

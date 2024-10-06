@@ -71,8 +71,8 @@ type family xs :>> es :: Constraint where
 
 ----------------------------------------
 
--- | Provide evidence that @xs@ is a subset of @es@.
-class KnownPrefix es => Subset (xs :: [Effect]) (es :: [Effect]) where
+-- | Provide evidence that @subEs@ is a subset of @es@.
+class KnownPrefix es => Subset (subEs :: [Effect]) (es :: [Effect]) where
   subsetFullyKnown :: Bool
   subsetFullyKnown =
     -- Don't show "minimal complete definition" in haddock.
@@ -87,8 +87,8 @@ class KnownPrefix es => Subset (xs :: [Effect]) (es :: [Effect]) where
 -- have the same unknown suffix.
 instance {-# INCOHERENT #-}
   ( KnownPrefix es
-  , xs `IsUnknownSuffixOf` es
-  ) => Subset xs es where
+  , subEs `IsUnknownSuffixOf` es
+  ) => Subset subEs es where
   subsetFullyKnown = False
   reifyIndices = []
 
@@ -97,16 +97,16 @@ instance KnownPrefix es => Subset '[] es where
   subsetFullyKnown = True
   reifyIndices = []
 
-instance (e :> es, Subset xs es) => Subset (e : xs) es where
-  subsetFullyKnown = subsetFullyKnown @xs @es
-  reifyIndices = reifyIndex @e @es : reifyIndices @xs @es
+instance (e :> es, Subset subEs es) => Subset (e : subEs) es where
+  subsetFullyKnown = subsetFullyKnown @subEs @es
+  reifyIndices = reifyIndex @e @es : reifyIndices @subEs @es
 
 ----
 
--- | Provide evidence that @xs@ is a known subset of @es@.
-class Subset xs es => KnownSubset (xs :: [Effect]) (es :: [Effect])
+-- | Provide evidence that @subEs@ is a known subset of @es@.
+class Subset subEs es => KnownSubset (subEs :: [Effect]) (es :: [Effect])
 instance KnownSubset '[] es
-instance (e :> es, KnownSubset xs es) => KnownSubset (e : xs) es
+instance (e :> es, KnownSubset subEs es) => KnownSubset (e : subEs) es
 
 ----
 
@@ -122,10 +122,10 @@ instance {-# INCOHERENT #-} KnownPrefix es where
 
 ----
 
--- | Require that @xs@ is the unknown suffix of @es@.
-class (xs :: [Effect]) `IsUnknownSuffixOf` (es :: [Effect])
-instance {-# INCOHERENT #-} xs ~ es => xs `IsUnknownSuffixOf` es
-instance xs `IsUnknownSuffixOf` es => xs `IsUnknownSuffixOf` (e : es)
+-- | Require that @subEs@ is the unknown suffix of @es@.
+class (subEs :: [Effect]) `IsUnknownSuffixOf` (es :: [Effect])
+instance {-# INCOHERENT #-} subEs ~ es => subEs `IsUnknownSuffixOf` es
+instance subEs `IsUnknownSuffixOf` es => subEs `IsUnknownSuffixOf` (e : es)
 
 ----
 

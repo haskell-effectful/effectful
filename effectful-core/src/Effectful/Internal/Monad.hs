@@ -449,8 +449,8 @@ raiseWith strategy k = case strategy of
 subsume :: e :> es => Eff (e : es) a -> Eff es a
 subsume m = unsafeEff $ \es -> unEff m =<< subsumeEnv es
 
--- | Allow for running an effect stack @xs@ within @es@ as long as @xs@ is a
--- permutation (with possible duplicates) of a subset of @es@.
+-- | Allow for running an effect stack @subEs@ within @es@ as long as @subEs@ is
+-- a permutation (with possible duplicates) of a subset of @es@.
 --
 -- Generalizes 'raise' and 'subsume'.
 --
@@ -499,7 +499,7 @@ subsume m = unsafeEff $ \es -> unEff m =<< subsumeEnv es
 -- ...
 -- ...Couldn't match type ‘es1’ with ‘es2’
 -- ...
-inject :: Subset xs es => Eff xs a -> Eff es a
+inject :: Subset subEs es => Eff subEs a -> Eff es a
 inject m = unsafeEff $ \es -> unEff m =<< injectEnv es
 
 ----------------------------------------

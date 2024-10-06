@@ -1094,11 +1094,11 @@ copyRefs
   -> IO (Env (es ++ destEs))
 copyRefs src@(Env soffset srefs _) dest@(Env doffset drefs storage) = do
   requireMatchingStorages src dest
-  let size = sizeofPrimArray drefs - doffset
-      es = reifyIndices @es @srcEs
+  let es = reifyIndices @es @srcEs
       esSize = length es
-  mrefs <- newPrimArray (esSize + size)
-  copyPrimArray mrefs esSize drefs doffset size
+      destSize = sizeofPrimArray drefs - doffset
+  mrefs <- newPrimArray (esSize + destSize)
+  copyPrimArray mrefs esSize drefs doffset destSize
   let writeRefs i = \case
         [] -> pure ()
         (x : xs) -> do

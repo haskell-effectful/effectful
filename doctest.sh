@@ -19,6 +19,7 @@ run_doctest() {
     -XDataKinds \
     -XDeriveFunctor \
     -XDeriveGeneric \
+    -XDerivingStrategies \
     -XFlexibleContexts \
     -XFlexibleInstances \
     -XGADTs \

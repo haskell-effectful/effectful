@@ -35,6 +35,7 @@ common language
                         DataKinds
                         DeriveFunctor
                         DeriveGeneric
+                        DerivingStrategies
                         FlexibleContexts
                         FlexibleInstances
                         GADTs

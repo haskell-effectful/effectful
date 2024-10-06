@@ -204,8 +204,8 @@ copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
   when (hstorage /= storage) $ do
     error "storages do not match"
   let size = sizeofPrimArray refs0 - offset
-  mrefs <- newPrimArray (size + 2)
-  copyPrimArray mrefs 0 hrefs hoffset 2
-  copyPrimArray mrefs 2 refs0 offset size
+  mrefs <- newPrimArray (size + 1)
+  copyPrimArray mrefs 0 hrefs hoffset 1
+  copyPrimArray mrefs 1 refs0 offset size
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage

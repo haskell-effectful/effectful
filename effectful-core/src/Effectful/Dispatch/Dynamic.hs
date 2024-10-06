@@ -1096,16 +1096,14 @@ copyRefs src@(Env soffset srefs _) dest@(Env doffset drefs storage) = do
   requireMatchingStorages src dest
   let size = sizeofPrimArray drefs - doffset
       es = reifyIndices @es @srcEs
-      esSize = 2 * length es
+      esSize = length es
   mrefs <- newPrimArray (esSize + size)
   copyPrimArray mrefs esSize drefs doffset size
   let writeRefs i = \case
         [] -> pure ()
         (x : xs) -> do
-          let ix = soffset + 2 * x
-          writePrimArray mrefs  i      $ indexPrimArray srefs  ix
-          writePrimArray mrefs (i + 1) $ indexPrimArray srefs (ix + 1)
-          writeRefs (i + 2) xs
+          writePrimArray mrefs i $ indexPrimArray srefs (soffset + x)
+          writeRefs (i + 1) xs
   writeRefs 0 es
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage

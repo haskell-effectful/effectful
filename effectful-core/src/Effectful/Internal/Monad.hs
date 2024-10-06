@@ -74,13 +74,6 @@ module Effectful.Internal.Monad
   , stateStaticRep
   , stateStaticRepM
   , localStaticRep
-
-  -- *** Primitive operations
-  , consEnv
-  , getEnv
-  , putEnv
-  , stateEnv
-  , modifyEnv
   ) where
 
 import Control.Applicative

@@ -32,13 +32,18 @@ import GHC.Tc.Types
 import GHC.Tc.Types.Constraint
   ( Ct (..)
   , CtEvidence (..)
+#if __GLASGOW_HASKELL__ < 912
   , CtLoc
+#endif
 #if __GLASGOW_HASKELL__ >= 908
   , DictCt (..)
 #endif
   , ctPred
   , emptyRewriterSet
   )
+#if __GLASGOW_HASKELL__ >= 912
+import GHC.Tc.Types.CtLoc (CtLoc)
+#endif
 import GHC.Tc.Types.Evidence (EvBindsVar, Role (..))
 import GHC.Tc.Utils.Env (tcGetInstEnvs)
 import GHC.Tc.Utils.TcType (tcSplitTyConApp, eqType, nonDetCmpType)

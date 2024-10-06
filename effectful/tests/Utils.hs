@@ -43,5 +43,6 @@ assertThrowsErrorCall
   => String -> Eff es a -> Eff es ()
 assertThrowsErrorCall err = assertThrows err (\ErrorCall{} -> True)
 
-data Ex = Ex deriving (Eq, Show)
+data Ex = Ex
+  deriving stock (Eq, Show)
 instance Exception Ex

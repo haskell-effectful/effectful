@@ -34,7 +34,10 @@ flag benchmark-foreign-libraries
     default: False
 
 common language
-    ghc-options:        -Wall -Wcompat -Wno-unticked-promoted-constructors
+    ghc-options:        -Wall
+                        -Wcompat
+                        -Wno-unticked-promoted-constructors
+                        -Wmissing-deriving-strategies
                         -Werror=prepositive-qualified-module
 
     default-language:   Haskell2010

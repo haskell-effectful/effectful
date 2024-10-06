@@ -72,7 +72,7 @@ errState = do
   err
 
 newtype MyString = MyString String
-  deriving (IsString, Eq, Show)
+  deriving newtype (IsString, Eq, Show)
 
 data Janky = forall s. Janky (forall _i. Eff '[State s] ())
 

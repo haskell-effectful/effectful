@@ -474,7 +474,7 @@ data Conc :: [Effect] -> Type -> Type where
   Alt    :: Conc es a -> Conc es a -> Conc es a
   Empty  :: Conc es a
 
-deriving instance Functor (Conc es)
+deriving stock instance Functor (Conc es)
 
 instance Applicative (Conc es) where
   pure   = Pure

@@ -238,7 +238,7 @@ tryError m = (Right <$> m) `catchError` \es e -> pure $ Left (es, e)
 -- Helpers
 
 newtype ErrorId = ErrorId Unique
-  deriving Eq
+  deriving newtype Eq
 
 -- | A unique is picked so that distinct 'Error' handlers for the same type
 -- don't catch each other's exceptions.

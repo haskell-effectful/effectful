@@ -47,7 +47,7 @@ data OnEmptyPolicy
   --
   -- /Note:/ state modifications are rolled back on 'Empty' only. In particular,
   -- they are __not__ rolled back on exceptions.
-  deriving (Eq, Generic, Ord, Show)
+  deriving stock (Eq, Generic, Ord, Show)
 
 -- | Run the 'NonDet' effect with a given 'OnEmptyPolicy'.
 --

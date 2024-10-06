@@ -363,7 +363,7 @@ fe_tryFileSize :: FE.Has FE_File sig m => FilePath -> m (Maybe Int)
 fe_tryFileSize = FE.send . FE_tryFileSize
 
 newtype FE_FileC m a = FE_FileC { fe_runFileC :: m a }
-  deriving (Applicative, Functor, Monad, MonadIO)
+  deriving newtype (Applicative, Functor, Monad, MonadIO)
 
 instance
   ( MonadIO m
@@ -380,7 +380,7 @@ fe_logMsg :: FE.Has FE_Logging sig m => String -> m ()
 fe_logMsg = FE.send . FE_logMsg . T.pack
 
 newtype FE_LoggingC m a = FE_LoggingC { fe_runLoggingC :: FE.StateC [Text] m a }
-  deriving (Applicative, Functor, Monad)
+  deriving newtype (Applicative, Functor, Monad)
 
 instance
   ( FE.Algebra sig m
@@ -440,7 +440,7 @@ class Monad m => MonadFile m where
   mtl_tryFileSize :: FilePath -> m (Maybe Int)
 
 newtype FileT m a = FileT { runFileT :: m a }
-  deriving (Functor, Applicative, Monad, MonadIO)
+  deriving newtype (Functor, Applicative, Monad, MonadIO)
 
 instance M.MonadTrans FileT where
   lift = FileT
@@ -459,7 +459,7 @@ class Monad m => MonadLog m where
   mtl_logMsg :: String -> m ()
 
 newtype LoggingT m a = LoggingT (M.StateT [Text] m a)
-  deriving (Functor, Applicative, Monad, MonadIO, M.MonadTrans)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, M.MonadTrans)
 
 instance {-# OVERLAPPABLE #-}
   ( MonadLog m

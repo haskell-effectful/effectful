@@ -96,7 +96,7 @@ data UnliftStrategy
   -- ^ The concurrent strategy makes it possible for the unlifting function to
   -- be called in threads distinct from its creator. See 'Persistence' and
   -- 'Limit' settings for more information.
-  deriving (Eq, Generic, Ord, Show)
+  deriving stock (Eq, Generic, Ord, Show)
 
 -- | Persistence setting for the 'ConcUnlift' strategy.
 --
@@ -116,7 +116,7 @@ data Persistence
   | Persistent
   -- ^ Persist the environment between calls to the unlifting function within a
   -- particular thread.
-  deriving (Eq, Generic, Ord, Show)
+  deriving stock (Eq, Generic, Ord, Show)
 
 -- | Limit setting for the 'ConcUnlift' strategy.
 data Limit
@@ -135,7 +135,7 @@ data Limit
   -- when called in @N@ threads and @K+1@ copies when called in @K < N@ threads.
   | Unlimited
   -- ^ Unlimited use of the unlifting function.
-  deriving (Eq, Generic, Ord, Show)
+  deriving stock (Eq, Generic, Ord, Show)
 
 ----------------------------------------
 -- Unlift functions
@@ -229,7 +229,7 @@ persistentConcUnlift es0 cleanUp threads k = do
 -- Data types
 
 newtype EntryId = EntryId Int
-  deriving Eq
+  deriving newtype Eq
 
 newEntryId :: EntryId
 newEntryId = EntryId 0

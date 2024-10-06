@@ -119,7 +119,7 @@ type role Eff nominal representational
 --
 -- - Allows the effects to be handled in any order.
 newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
-  deriving (Monoid, Semigroup)
+  deriving newtype (Monoid, Semigroup)
 
 -- | Run a pure 'Eff' computation.
 --

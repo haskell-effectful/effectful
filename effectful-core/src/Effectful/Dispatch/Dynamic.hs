@@ -902,9 +902,10 @@ withLiftMapIO
   -> ((forall a b. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -- ^ Continuation with the lifting function in scope.
   -> Eff es r
-withLiftMapIO (LocalEnv les) k = k $ \mapIO m -> unsafeEff $ \es -> do
+withLiftMapIO (LocalEnv les) k = unsafeEff $ \es -> do
   requireMatchingStorages es les
-  seqUnliftIO es $ \unlift -> mapIO $ unlift m
+  (`unEff` es) $ k $ \mapIO m -> unsafeEff $ \localEs -> do
+    seqUnliftIO localEs $ \unlift -> mapIO $ unlift m
 {-# INLINE withLiftMapIO #-}
 
 ----------------------------------------

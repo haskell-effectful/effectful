@@ -168,7 +168,7 @@ import Effectful.Internal.Utils
 --    ReadFile path           -> adapt $ IO.readFile path
 --    WriteFile path contents -> adapt $ IO.writeFile path contents
 --    where
---      adapt m = liftIO m `catch` \(e::IOException) -> throwError . FsError $ show e
+--      adapt m = liftIO m `catchIO` \e -> throwError . FsError $ show e
 -- :}
 --
 -- Here, we use 'interpret' and simply execute corresponding 'IO' actions for

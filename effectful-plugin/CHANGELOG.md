@@ -1,4 +1,4 @@
-# effectful-plugin-1.1.0.4 (2024-??-??)
+# effectful-plugin-1.1.0.4 (2024-10-08)
 * Fix inference in presence of implicit parameters.
 
 # effectful-plugin-1.1.0.3 (2024-06-07)

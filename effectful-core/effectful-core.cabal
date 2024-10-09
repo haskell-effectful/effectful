@@ -1,7 +1,7 @@
 cabal-version:      3.0
 build-type:         Simple
 name:               effectful-core
-version:            2.4.0.0
+version:            2.5.0.0
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control

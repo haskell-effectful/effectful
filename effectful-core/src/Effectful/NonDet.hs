@@ -8,8 +8,9 @@ module Effectful.NonDet
     -- ** Handlers
   , runNonDet
 
-  -- * Utils
+  -- * Operations
   , emptyEff
+  , plusEff
   , sumEff
 
     -- * Re-exports
@@ -109,14 +110,22 @@ runNonDetRollback = reinterpret setup $ \env -> \case
 --
 -- @since 2.2.0.0
 emptyEff :: (HasCallStack, NonDet :> es) => Eff es a
-emptyEff = withFrozenCallStack send Empty
+emptyEff = send Empty
+
+-- | Specialized version of '<|>' with the `HasCallStack` constraint for
+-- tracking purposes.
+--
+-- @since 2.5.0.0
+plusEff :: (HasCallStack, NonDet :> es) => Eff es a -> Eff es a -> Eff es a
+plusEff m1 m2 = send (m1 :<|>: m2)
+infixl 3 `plusEff` -- same as <|>
 
 -- | Specialized version of 'asum' with the 'HasCallStack' constraint for
 -- tracking purposes.
 --
 -- @since 2.2.0.0
 sumEff :: (HasCallStack, Foldable t, NonDet :> es) => t (Eff es a) -> Eff es a
-sumEff = foldr (<|>) emptyEff
+sumEff = foldr plusEff emptyEff
 
 ----------------------------------------
 -- Internal helpers

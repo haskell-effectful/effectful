@@ -9,12 +9,19 @@ module Effectful.Internal.Env
   , Ref(..)
   , Version
   , Storage(..)
-  , AnyEffect
-  , toAnyEffect
-  , fromAnyEffect
+
+    -- ** StorageData
+  , StorageData(..)
+  , copyStorageData
+  , restoreStorageData
+
+    -- *** Utils
   , AnyRelinker
   , toAnyRelinker
   , fromAnyRelinker
+  , AnyEffect
+  , toAnyEffect
+  , fromAnyEffect
 
     -- ** Relinker
   , Relinker(..)
@@ -29,7 +36,6 @@ module Effectful.Internal.Env
     -- * Operations
   , emptyEnv
   , cloneEnv
-  , restoreEnv
   , sizeEnv
   , tailEnv
 
@@ -134,12 +140,12 @@ newtype Version = Version Int
 
 -- | A storage of effects.
 data Storage = Storage
-  { stSize      :: !Int
-  , stVersion   :: !Version
-  , stVersions  :: !(MutablePrimArray RealWorld Version)
-  , stEffects   :: !(SmallMutableArray RealWorld AnyEffect)
-  , stRelinkers :: !(SmallMutableArray RealWorld AnyRelinker)
+  { stVersion :: !Version
+  , stData    :: {-# UNPACK #-} !StorageData
   }
+
+----------------------------------------
+-- StorageData
 
 -- | Effect in 'Storage'.
 newtype AnyEffect = AnyEffect Any
@@ -158,6 +164,46 @@ toAnyRelinker = AnyRelinker . toAny
 
 fromAnyRelinker :: AnyRelinker -> Relinker (EffectRep (DispatchOf e)) e
 fromAnyRelinker (AnyRelinker f) = fromAny f
+
+----------------------------------------
+
+data StorageData = StorageData
+  { sdSize      :: !Int
+  , sdVersions  :: !(MutablePrimArray RealWorld Version)
+  , sdEffects   :: !(SmallMutableArray RealWorld AnyEffect)
+  , sdRelinkers :: !(SmallMutableArray RealWorld AnyRelinker)
+  }
+
+-- | Make a shallow copy of the 'StorageData'.
+--
+-- @since 2.5.0.0
+copyStorageData :: HasCallStack => StorageData -> IO StorageData
+copyStorageData (StorageData storageSize vs0 es0 fs0) = do
+  vsSize <- getSizeofMutablePrimArray  vs0
+  esSize <- getSizeofSmallMutableArray es0
+  fsSize <- getSizeofSmallMutableArray fs0
+  when (vsSize /= esSize) $ do
+    error $ "vsSize (" ++ show vsSize ++ ") /= esSize (" ++ show esSize ++ ")"
+  when (esSize /= fsSize) $ do
+    error $ "esSize (" ++ show esSize ++ ") /= fsSize (" ++ show fsSize ++ ")"
+  vs <- cloneMutablePrimArray  vs0 0 vsSize
+  es <- cloneSmallMutableArray es0 0 esSize
+  fs <- cloneSmallMutableArray fs0 0 fsSize
+  pure $ StorageData storageSize vs es fs
+
+-- | Restore a shallow copy of the 'StorageData'.
+--
+-- The copy needs to be from the same 'Env' as the target.
+--
+-- @since 2.5.0.0
+restoreStorageData :: HasCallStack => StorageData -> Env es -> IO ()
+restoreStorageData newStorageData env = do
+  modifyIORef' (envStorage env) $ \(Storage version oldStorageData) ->
+    let oldSize = sdSize oldStorageData
+        newSize = sdSize newStorageData
+    in if newSize /= oldSize
+    then error $ "newSize (" ++ show newSize ++ ") /= oldSize (" ++ show oldSize ++ ")"
+    else Storage version newStorageData
 
 ----------------------------------------
 -- Relinker
@@ -205,18 +251,9 @@ emptyEnv = Env 0
 -- | Clone the environment to use it in a different thread.
 cloneEnv :: HasCallStack => Env es -> IO (Env es)
 cloneEnv (Env offset refs storage0) = do
-  Storage storageSize version vs0 es0 fs0 <- readIORef' storage0
-  vsSize <- getSizeofMutablePrimArray  vs0
-  esSize <- getSizeofSmallMutableArray es0
-  fsSize <- getSizeofSmallMutableArray fs0
-  when (vsSize /= esSize) $ do
-    error $ "vsSize (" ++ show vsSize ++ ") /= esSize (" ++ show esSize ++ ")"
-  when (esSize /= fsSize) $ do
-    error $ "esSize (" ++ show esSize ++ ") /= fsSize (" ++ show fsSize ++ ")"
-  vs <- cloneMutablePrimArray  vs0 0 vsSize
-  es <- cloneSmallMutableArray es0 0 esSize
-  fs <- cloneSmallMutableArray fs0 0 fsSize
-  storage <- newIORef' $ Storage storageSize version vs es fs
+  Storage version storageData0 <- readIORef' storage0
+  storageData@(StorageData storageSize _ es fs) <- copyStorageData storageData0
+  storage <- newIORef' $ Storage version storageData
   let relinkEffects = \case
         0 -> pure ()
         k -> do
@@ -229,29 +266,6 @@ cloneEnv (Env offset refs storage0) = do
   relinkEffects storageSize
   pure $ Env offset refs storage
 {-# NOINLINE cloneEnv #-}
-
--- | Restore the environment from its clone.
---
--- @since 2.2.0.0
-restoreEnv
-  :: HasCallStack
-  => Env es -- ^ Destination.
-  -> Env es -- ^ Source.
-  -> IO ()
-restoreEnv dest src = do
-  destStorage <- readIORef' (envStorage dest)
-  srcStorage  <- readIORef' (envStorage src)
-  let destStorageSize = stSize destStorage
-      srcStorageSize  = stSize srcStorage
-  when (destStorageSize /= srcStorageSize) $ do
-    error $ "destStorageSize (" ++ show destStorageSize
-         ++ ") /= srcStorageSize (" ++ show srcStorageSize ++ ")"
-  writeIORef' (envStorage dest) $ srcStorage
-    -- Decreasing the counter allows leakage of unsafeCoerce (see unsafeCoerce2
-    -- in the EnvTests module).
-    { stVersion = max (stVersion destStorage) (stVersion srcStorage)
-    }
-{-# NOINLINE restoreEnv #-}
 
 -- | Get the current size of the environment.
 sizeEnv :: Env es -> IO Int
@@ -413,7 +427,7 @@ getLocation
   => Env es
   -> IO (Int, SmallMutableArray RealWorld AnyEffect)
 getLocation (Env offset refs storage) = do
-  Storage _ _ vs es _ <- readIORef' storage
+  Storage _ (StorageData _ vs es _) <- readIORef' storage
   storageVersion <- readPrimArray vs ref
   -- If version of the reference is different than version in the storage, it
   -- means that the effect in the storage is not the one that was initially
@@ -433,10 +447,12 @@ getLocation (Env offset refs storage) = do
 
 -- | Create an empty storage.
 emptyStorage :: HasCallStack => IO Storage
-emptyStorage = Storage 0 initialVersion
-  <$> newPrimArray 0
-  <*> newSmallArray 0 undefinedEffect
-  <*> newSmallArray 0 undefinedRelinker
+emptyStorage = Storage initialVersion <$> storageData
+  where
+    storageData = StorageData 0
+      <$> newPrimArray 0
+      <*> newSmallArray 0 undefinedEffect
+      <*> newSmallArray 0 undefinedRelinker
 
 -- | Insert an effect into the storage and return its reference.
 insertEffect
@@ -447,7 +463,7 @@ insertEffect
   -> Relinker (EffectRep (DispatchOf e)) e
   -> IO Ref
 insertEffect storage e f = do
-  Storage size version vs0 es0 fs0 <- readIORef' storage
+  Storage version (StorageData size vs0 es0 fs0) <- readIORef' storage
   len0 <- getSizeofSmallMutableArray es0
   case size `compare` len0 of
     GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
@@ -455,7 +471,8 @@ insertEffect storage e f = do
       writePrimArray   vs0 size version
       writeSmallArray' es0 size (toAnyEffect e)
       writeSmallArray' fs0 size (toAnyRelinker f)
-      writeIORef' storage $ Storage (size + 1) (bumpVersion version) vs0 es0 fs0
+      writeIORef' storage $
+        Storage (bumpVersion version) (StorageData (size + 1) vs0 es0 fs0)
       pure $ Ref size version
     EQ -> do
       let len = doubleCapacity len0
@@ -468,14 +485,15 @@ insertEffect storage e f = do
       writePrimArray   vs size version
       writeSmallArray' es size (toAnyEffect e)
       writeSmallArray' fs size (toAnyRelinker f)
-      writeIORef' storage $ Storage (size + 1) (bumpVersion version) vs es fs
+      writeIORef' storage $
+        Storage (bumpVersion version) (StorageData (size + 1) vs es fs)
       pure $ Ref size version
 
 -- | Given a reference to an effect from the top of the stack, delete it from
 -- the storage.
 deleteEffect :: HasCallStack => IORef' Storage -> Ref -> IO ()
 deleteEffect storage (Ref ref version) = do
-  Storage size currentVersion vs es fs <- readIORef' storage
+  Storage currentVersion (StorageData size vs es fs) <- readIORef' storage
   when (ref /= size - 1) $ do
     error $ "ref (" ++ show ref ++ ") /= size - 1 (" ++ show (size - 1) ++ ")"
   storageVersion <- readPrimArray vs ref
@@ -485,7 +503,7 @@ deleteEffect storage (Ref ref version) = do
   writePrimArray  vs ref undefinedVersion
   writeSmallArray es ref undefinedEffect
   writeSmallArray fs ref undefinedRelinker
-  writeIORef' storage $ Storage (size - 1) currentVersion vs es fs
+  writeIORef' storage $ Storage currentVersion (StorageData (size - 1) vs es fs)
 
 -- | Relink the environment to use the new storage.
 relinkEnv :: IORef' Storage -> Env es -> IO (Env es)

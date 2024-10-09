@@ -553,6 +553,8 @@ send
   -> Eff es a
 send op = unsafeEff $ \es -> do
   Handler handlerEs handler <- getEnv es
+  when (envStorage es /= envStorage handlerEs) $ do
+    error "es and handlerEs point to different Storages"
   -- Prevent internal functions that rebind the effect handler from polluting
   -- its call stack by freezing it. Note that functions 'interpret',
   -- 'reinterpret', 'interpose' and 'impose' need to thaw it so that useful

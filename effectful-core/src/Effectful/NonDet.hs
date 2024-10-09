@@ -22,7 +22,7 @@ module Effectful.NonDet
   ) where
 
 import Control.Applicative
-import Data.Coerce
+import Data.IORef.Strict
 import GHC.Generics
 import GHC.Stack
 
@@ -31,13 +31,14 @@ import Effectful.Dispatch.Dynamic
 import Effectful.Dispatch.Static
 import Effectful.Dispatch.Static.Primitive
 import Effectful.Error.Static
-import Effectful.Internal.Monad (LocalEnv(..), NonDet(..))
+import Effectful.Internal.Env qualified as I
+import Effectful.Internal.Monad (NonDet(..))
 
 -- | Policy of dealing with modifications to __thread local__ state in the
 -- environment in branches that end up calling the 'Empty' operation.
 --
--- /Note:/ 'OnEmptyKeep' is significantly faster as there is no need to back up
--- the environment on each call to ':<|>:'.
+-- /Note:/ 'OnEmptyKeep' is faster as there is no need to back up the
+-- environment on each call to ':<|>:'.
 --
 -- @since 2.2.0.0
 data OnEmptyPolicy
@@ -84,23 +85,23 @@ runNonDetRollback
 runNonDetRollback = reinterpret setup $ \env -> \case
   Empty       -> throwError ErrorEmpty
   m1 :<|>: m2 -> do
-    backupEnv <- cloneLocalEnv env
+    backupData <- unsafeEff backupStorageData
     localSeqUnlift env $ \unlift -> do
       mr <- (Just <$> unlift m1) `catchError` \_ ErrorEmpty -> do
-        -- If m1 failed, roll back the environment.
-        restoreLocalEnv env backupEnv
+        -- If m1 failed, restore the data.
+        unsafeEff $ I.restoreStorageData backupData
         pure Nothing
       case mr of
         Just r  -> pure r
         Nothing -> unlift m2
   where
     setup action = do
-      backupEs <- unsafeEff cloneEnv
+      backupData <- unsafeEff backupStorageData
       runError @ErrorEmpty action >>= \case
         Right r -> pure $ Right r
         Left (cs, _) -> do
-          -- If the whole action failed, roll back the environment.
-          unsafeEff $ \es -> restoreEnv es backupEs
+          -- If the whole action failed, restore the data.
+          unsafeEff $ I.restoreStorageData backupData
           pure $ Left cs
 
 ----------------------------------------
@@ -139,15 +140,5 @@ instance Show ErrorEmpty where
 noError :: Either (cs, e) a -> Either cs a
 noError = either (Left . fst) Right
 
-cloneLocalEnv
-  :: HasCallStack
-  => LocalEnv localEs handlerEs
-  -> Eff es (LocalEnv localEs handlerEs)
-cloneLocalEnv = coerce . unsafeEff_ . cloneEnv . coerce
-
-restoreLocalEnv
-  :: HasCallStack
-  => LocalEnv localEs handlerEs
-  -> LocalEnv localEs handlerEs
-  -> Eff es ()
-restoreLocalEnv dest src = unsafeEff_ $ restoreEnv (coerce dest) (coerce src)
+backupStorageData :: HasCallStack => Env es -> IO I.StorageData
+backupStorageData env = I.copyStorageData . I.stData =<< readIORef' (I.envStorage env)

@@ -1,6 +1,11 @@
 # effectful-core-2.5.0.0 (????-??-??)
 * Add `plusEff` (specialized version of `<|>`) to `Effectful.NonDet` and make
   `emptyEff` and `sumEff` generate better call stacks.
+* **Bugfixes**:
+  - `OnEmptyRollback` strategy of the `NonDet` effect is no longer broken.
+* **Breaking changes**:
+  - Removed `restoreEnv` function from `Effectful.Dispatch.Static.Primitive`
+    since it was broken.
 
 # effectful-core-2.4.0.0 (2024-10-08)
 * Add utility functions for handling effects that take the effect handler as the

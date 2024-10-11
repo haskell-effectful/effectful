@@ -7,6 +7,8 @@
 -- the @transformers@ library, the 'State' effect doesn't discard state updates
 -- when an exception is received:
 --
+-- >>> import Control.Exception (ErrorCall)
+-- >>> import Control.Monad.Catch
 -- >>> import Control.Monad.Trans.State.Strict qualified as S
 --
 -- >>> :{
@@ -135,6 +137,3 @@ modifyM
   => (s -> Eff es s) -- ^ The monadic function to modify the state.
   -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)
-
--- $setup
--- >>> import Effectful.Exception

@@ -1,79 +1,85 @@
--- | The 'Eff' monad comes with instances of 'MonadThrow', 'MonadCatch' and
--- 'MonadMask' from the
--- [@exceptions@](https://hackage.haskell.org/package/exceptions) library, so
--- this module simply re-exports the interface of the
--- [@safe-exceptions@](https://hackage.haskell.org/package/safe-exceptions)
--- library.
+{-# LANGUAGE CPP #-}
+-- | Support for runtime exceptions.
 --
--- Why @safe-exceptions@ and not @exceptions@? Because the former makes it much
--- easier to correctly deal with asynchronous exceptions (for more information
--- see its [README](https://github.com/fpco/safe-exceptions#readme)) and
--- provides more convenience functions.
+-- The 'Eff' monad provides instances of 'C.MonadThrow', 'C.MonadCatch' and
+-- 'C.MonadMask', so any function that works with them can be used
+-- seamlessly. This includes API of the following libraries:
+--
+-- - [@exceptions@](https://hackage.haskell.org/package/exceptions)
+--
+-- - [@safe-exceptions@](https://hackage.haskell.org/package/safe-exceptions)
+--
+-- - [@annotated-exception@](https://hackage.haskell.org/package/annotated-exception)
+--
+-- In addition, this module provides thin wrappers over functions from
+-- "Control.Exception" as well as several utility functions for convenience.
 module Effectful.Exception
   ( -- * Throwing
-    C.MonadThrow(..)
-  , Safe.throwString
-  , Safe.StringException(..)
+    throwIO
 
     -- * Catching (with recovery)
-  , C.MonadCatch(..)
-  , Safe.catchIO
-  , Safe.catchIOError
-  , Safe.catchAny
-  , Safe.catchDeep
-  , Safe.catchAnyDeep
-  , Safe.catchAsync
-  , Safe.catchJust
+    -- $catchAll
+  , catch
+  , catchDeep
+  , catchJust
+  , catchIO
+  , catchSync
+  , catchSyncDeep
 
-  , Safe.handle
-  , Safe.handleIO
-  , Safe.handleIOError
-  , Safe.handleAny
-  , Safe.handleDeep
-  , Safe.handleAnyDeep
-  , Safe.handleAsync
-  , Safe.handleJust
+  , handle
+  , handleDeep
+  , handleJust
+  , handleIO
+  , handleSync
+  , handleSyncDeep
 
-  , Safe.try
-  , Safe.tryIO
-  , Safe.tryAny
-  , Safe.tryDeep
-  , Safe.tryAnyDeep
-  , Safe.tryAsync
-  , Safe.tryJust
+  , try
+  , tryDeep
+  , tryJust
+  , tryIO
+  , trySync
+  , trySyncDeep
 
-  , Safe.Handler(..)
-  , Safe.catches
-  , Safe.catchesDeep
-  , Safe.catchesAsync
+  , C.Handler(..)
+  , catches
+  , catchesDeep
+
+    -- | #cleanup#
 
     -- * Cleanup (no recovery)
-  , C.MonadMask(..)
+  , bracket
+  , bracket_
+  , bracketOnError
+  , generalBracket
   , C.ExitCase(..)
-  , Safe.onException
-  , Safe.bracket
-  , Safe.bracket_
-  , Safe.finally
-  , Safe.withException
-  , Safe.bracketOnError
-  , Safe.bracketOnError_
-  , Safe.bracketWithError
+  , finally
+  , onException
 
-    -- * Utilities
-
-    -- ** Coercion to sync and async
-  , Safe.SyncExceptionWrapper(..)
-  , Safe.toSyncException
-  , Safe.AsyncExceptionWrapper(..)
-  , Safe.toAsyncException
-
-    -- ** Check exception type
-  , Safe.isSyncException
-  , Safe.isAsyncException
+    -- * Utils
 
     -- ** Evaluation
   , evaluate
   , evaluateDeep
+
+#if MIN_VERSION_base(4,20,0)
+    -- ** Annotations
+  , annotateIO
+#endif
+
+    -- ** Check exception type
+    -- $syncVsAsync
+  , isSyncException
+  , isAsyncException
+
+    -- * Low-level API
+  , mask
+  , mask_
+  , uninterruptibleMask
+  , uninterruptibleMask_
+  , E.MaskingState(..)
+  , getMaskingState
+  , interruptible
+  , allowInterrupt
 
     -- * Re-exports from "Control.Exception"
 
@@ -82,6 +88,22 @@ module Effectful.Exception
 
     -- ** The 'Exception' class
   , E.Exception(..)
+  , E.mapException
+
+#if MIN_VERSION_base(4,20,0)
+    -- ** Exception context and annotation
+  , E.addExceptionContext
+  , E.someExceptionContext
+  , E.ExceptionWithContext(..)
+  , E.ExceptionContext(..)
+  , E.emptyExceptionContext
+  , E.addExceptionAnnotation
+  , E.getExceptionAnnotations
+  , E.getAllExceptionAnnotations
+  , E.displayExceptionContext
+  , E.SomeExceptionAnnotation(..)
+  , E.ExceptionAnnotation(..)
+#endif
 
     -- ** Concrete exception types
   , E.IOException
@@ -113,18 +135,405 @@ module Effectful.Exception
   , E.assert
   ) where
 
+#if MIN_VERSION_base(4,20,0)
+import Control.Exception.Annotation qualified as E
+import Control.Exception.Context qualified as E
+#endif
+
 import Control.DeepSeq
 import Control.Exception qualified as E
-import Control.Exception.Safe qualified as Safe
 import Control.Monad.Catch qualified as C
+import GHC.Stack (withFrozenCallStack)
 
 import Effectful
 import Effectful.Dispatch.Static
+import Effectful.Dispatch.Static.Unsafe
 
--- | Lifted version of 'E.evaluate'.
+----------------------------------------
+-- Throwing
+
+-- | Lifted 'E.throwIO'.
+throwIO
+  :: (HasCallStack, E.Exception e)
+  => e
+  -- ^ The error.
+  -> Eff es a
+throwIO = unsafeEff_ . withFrozenCallStack E.throwIO
+
+----------------------------------------
+-- Catching
+
+-- $catchAll
+--
+-- /Note:/ __do not use 'catch', 'handle' or 'try' to catch 'E.SomeException'__
+-- unless you're really sure you want to catch __all__ exceptions (including
+-- asynchronous ones). Instead:
+--
+-- - If you want to catch all exceptions, run a cleanup action and rethrow, use
+--   one of the functions from the [cleanup](#cleanup) section.
+--
+-- - If you want to catch all synchronous exceptions, use 'catchSync',
+--   'handleSync' or 'trySync'.
+
+-- | Lifted 'E.catch'.
+catch
+  :: E.Exception e
+  => Eff es a
+  -> (e -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+catch action handler = reallyUnsafeUnliftIO $ \unlift -> do
+  E.catch (unlift action) (unlift . handler)
+
+-- | A variant of 'catch' that fully forces evaluation of the result value to
+-- find all impure exceptions.
+catchDeep
+  :: (E.Exception e, NFData a)
+  => Eff es a
+  -> (e -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+catchDeep action = catch (evaluateDeep =<< action)
+
+-- | Lifted 'E.catchJust'.
+catchJust
+  :: E.Exception e
+  => (e -> Maybe b)
+  -- ^ The predicate.
+  -> Eff es a
+  -> (b -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+catchJust f action handler = reallyUnsafeUnliftIO $ \unlift -> do
+  E.catchJust f (unlift action) (unlift . handler)
+
+-- | 'catch' specialized to catch 'IOException'.
+catchIO
+  :: Eff es a
+  -> (E.IOException -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+catchIO = catch
+
+-- | 'catch' specialized to catch all exceptions considered to be synchronous.
+--
+-- @'catchSync' ≡ 'catchJust' \@'E.SomeException' 'isSyncException'@
+--
+-- See 'isSyncException' for more information.
+catchSync
+  :: Eff es a
+  -> (E.SomeException -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+catchSync = catchJust @E.SomeException isSyncException
+
+-- | A variant of 'catchSync' that fully forces evaluation of the result value
+-- to find all impure exceptions.
+catchSyncDeep
+  :: NFData a
+  => Eff es a
+  -> (E.SomeException -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+catchSyncDeep action = catchSync (evaluateDeep =<< action)
+
+-- | Flipped version of 'catch'.
+handle
+  :: E.Exception e
+  => (e -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+  -> Eff es a
+handle = flip catch
+
+-- | Flipped version of 'catchDeep'.
+handleDeep
+  :: (E.Exception e, NFData a)
+  => (e -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+  -> Eff es a
+handleDeep = flip catchDeep
+
+-- | Flipped version of 'catchJust'.
+handleJust
+  :: (HasCallStack, E.Exception e)
+  => (e -> Maybe b)
+  -- ^ The predicate.
+  -> (b -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+  -> Eff es a
+handleJust f = flip (catchJust f)
+
+-- | Flipped version of 'catchIO'.
+handleIO
+  :: (E.IOException -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+  -> Eff es a
+handleIO = flip catchIO
+
+-- | Flipped version of 'catchSync'.
+handleSync
+  :: (E.SomeException -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+  -> Eff es a
+handleSync = flip catchSync
+
+-- | Flipped version of 'catchSyncDeep'.
+handleSyncDeep
+  :: NFData a
+  => (E.SomeException -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+  -> Eff es a
+handleSyncDeep = flip catchSyncDeep
+
+-- | Lifted 'E.try'.
+try
+  :: E.Exception e
+  => Eff es a
+  -- ^ The action.
+  -> Eff es (Either e a)
+try action = reallyUnsafeUnliftIO $ \unlift -> do
+  E.try (unlift action)
+
+-- | A variant of 'try' that fully forces evaluation of the result value to find
+-- all impure exceptions.
+tryDeep
+  :: (E.Exception e, NFData a)
+  => Eff es a
+  -- ^ The action.
+  -> Eff es (Either e a)
+tryDeep action = try (evaluateDeep =<< action)
+
+-- | Lifted 'E.tryJust'.
+tryJust
+  :: E.Exception e
+  => (e -> Maybe b)
+  -- ^ The predicate.
+  -> Eff es a
+  -> Eff es (Either b a)
+tryJust f action = reallyUnsafeUnliftIO $ \unlift -> do
+  E.tryJust f (unlift action)
+
+-- | 'try' specialized to catch 'IOException'.
+tryIO
+  :: Eff es a
+  -- ^ The action.
+  -> Eff es (Either E.IOException a)
+tryIO = try
+
+-- | 'try' specialized to catch all exceptions considered to be synchronous.
+--
+-- @'trySync' ≡ 'tryJust' \@'E.SomeException' 'isSyncException'@
+--
+-- See 'isSyncException' for more information.
+trySync
+  :: Eff es a
+  -- ^ The action.
+  -> Eff es (Either E.SomeException a)
+trySync = tryJust @E.SomeException isSyncException
+
+-- | A variant of 'trySync' that fully forces evaluation of the result value to
+-- find all impure exceptions.
+trySyncDeep
+  :: NFData a
+  => Eff es a
+  -- ^ The action.
+  -> Eff es (Either E.SomeException a)
+trySyncDeep action = trySync (evaluateDeep =<< action)
+
+-- | Lifted 'E.catches'.
+catches
+  :: Eff es a
+  -> [C.Handler (Eff es) a]
+  -- ^ The exception handlers.
+  -> Eff es a
+catches action handlers = reallyUnsafeUnliftIO $ \unlift -> do
+  let unliftHandler (C.Handler handler) = E.Handler (unlift . handler)
+  E.catches (unlift action) (map unliftHandler handlers)
+
+-- | A variant of 'catches' that fully forces evaluation of the result value to
+-- find all impure exceptions.
+catchesDeep
+  :: NFData a
+  => Eff es a
+  -> [C.Handler (Eff es) a]
+  -- ^ The exception handlers.
+  -> Eff es a
+catchesDeep action = catches (evaluateDeep =<< action)
+
+----------------------------------------
+-- Cleanup
+
+-- | Lifted 'E.bracket'.
+bracket
+  :: Eff es a
+  -- ^ Computation to run first.
+  -> (a -> Eff es b)
+  -- ^ Computation to run last.
+  -> (a -> Eff es c)
+  -- ^ Computation to run in-between.
+  -> Eff es c
+bracket before after action = reallyUnsafeUnliftIO $ \unlift -> do
+  E.bracket (unlift before) (unlift . after) (unlift . action)
+
+-- | Lifted 'E.bracket_'.
+bracket_
+  :: Eff es a
+  -- ^ Computation to run first.
+  -> Eff es b
+  -- ^ Computation to run last.
+  -> Eff es c
+  -- ^ Computation to run in-between.
+  -> Eff es c
+bracket_ before after action = reallyUnsafeUnliftIO $ \unlift -> do
+  E.bracket_ (unlift before) (unlift after) (unlift action)
+
+-- | Lifted 'E.bracketOnError'.
+bracketOnError
+  :: Eff es a
+  -- ^ Computation to run first.
+  -> (a -> Eff es b)
+  -- ^ Computation to run last when an exception or
+  -- t'Effectful.Error.Static.Error' was thrown.
+  -> (a -> Eff es c)
+  -- ^ Computation to run in-between.
+  -> Eff es c
+bracketOnError before after action = reallyUnsafeUnliftIO $ \unlift -> do
+  E.bracketOnError (unlift before) (unlift . after) (unlift . action)
+
+-- | Generalization of 'bracket'.
+--
+-- See 'C.generalBracket' for more information.
+generalBracket
+  :: Eff es a
+  -- ^ Computation to run first.
+  -> (a -> C.ExitCase c -> Eff es b)
+  -- ^ Computation to run last.
+  -> (a -> Eff es c)
+  -- ^ Computation to run in-between.
+  -> Eff es (c, b)
+generalBracket = C.generalBracket
+
+-- | Lifted 'E.finally'.
+finally
+  :: Eff es a
+  -> Eff es b
+  -- ^ Computation to run last.
+  -> Eff es a
+finally action handler = reallyUnsafeUnliftIO $ \unlift -> do
+  E.finally (unlift action) (unlift handler)
+
+-- | Lifted 'E.onException'.
+onException
+  :: Eff es a
+  -> Eff es b
+  -- ^ Computation to run last when an exception or
+  -- t'Effectful.Error.Static.Error' was thrown.
+  -> Eff es a
+onException action handler = reallyUnsafeUnliftIO $ \unlift -> do
+  E.onException (unlift action) (unlift handler)
+
+----------------------------------------
+-- Utils
+
+-- | Lifted 'E.evaluate'.
 evaluate :: a -> Eff es a
 evaluate = unsafeEff_ . E.evaluate
 
 -- | Deeply evaluate a value using 'evaluate' and 'NFData'.
 evaluateDeep :: NFData a => a -> Eff es a
 evaluateDeep = unsafeEff_ . E.evaluate . force
+
+#if MIN_VERSION_base(4,20,0)
+-- | Lifted 'E.annotateIO'.
+annotateIO :: E.ExceptionAnnotation e => e -> Eff es a -> Eff es a
+annotateIO e action = reallyUnsafeUnliftIO $ \unlift -> do
+  E.annotateIO e (unlift action)
+#endif
+
+----------------------------------------
+-- Check exception type
+
+-- $syncVsAsync
+--
+-- /Note:/ there's no way to determine whether an exception was thrown
+-- synchronously or asynchronously, so these functions rely on a
+-- heuristic. Namely, an exception type is determined by its 'E.Exception'
+-- instance.
+--
+-- >>> import Control.Exception qualified as E
+--
+-- >>> data SyncEx = SyncEx deriving (Show)
+-- >>> instance E.Exception SyncEx
+--
+-- >>> isSyncException SyncEx
+-- Just SyncEx
+--
+-- >>> isAsyncException SyncEx
+-- Nothing
+--
+-- >>> data AsyncEx = AsyncEx deriving (Show)
+-- >>> :{
+--   instance E.Exception AsyncEx where
+--     toException = E.asyncExceptionToException
+--     fromException = E.asyncExceptionFromException
+-- :}
+--
+-- >>> isSyncException AsyncEx
+-- Nothing
+--
+-- >>> isAsyncException AsyncEx
+-- Just AsyncEx
+
+-- | Return 'Just' if the given exception is considered synchronous.
+isSyncException :: E.Exception e => e -> Maybe e
+isSyncException e = case E.fromException (E.toException e) of
+  Just E.SomeAsyncException{} -> Nothing
+  Nothing -> Just e
+
+-- | Return 'Just' if the given exception is considered asynchronous.
+isAsyncException :: E.Exception e => e -> Maybe e
+isAsyncException e = case E.fromException (E.toException e) of
+  Just E.SomeAsyncException{} -> Just e
+  Nothing -> Nothing
+
+----------------------------------------
+-- Low-level API
+
+-- | Lifted 'E.mask'.
+mask :: ((forall r. Eff es r -> Eff es r) -> Eff es a) -> Eff es a
+mask k = reallyUnsafeUnliftIO $ \unlift -> do
+  E.mask $ \release -> unlift $ k (reallyUnsafeLiftMapIO release)
+
+-- | Lifted 'E.mask_'.
+mask_ :: Eff es a -> Eff es a
+mask_ action = reallyUnsafeUnliftIO $ \unlift -> do
+  E.mask_ (unlift action)
+
+-- | Lifted 'E.uninterruptibleMask'.
+uninterruptibleMask :: ((forall r. Eff es r -> Eff es r) -> Eff es a) -> Eff es a
+uninterruptibleMask k = reallyUnsafeUnliftIO $ \unlift -> do
+  E.uninterruptibleMask $ \release -> unlift $ k (reallyUnsafeLiftMapIO release)
+
+-- | Lifted 'E.uninterruptibleMask_'.
+uninterruptibleMask_ :: Eff es a -> Eff es a
+uninterruptibleMask_ action = reallyUnsafeUnliftIO $ \unlift -> do
+  E.uninterruptibleMask_ (unlift action)
+
+-- | Lifted 'E.getMaskingState'.
+getMaskingState :: Eff es E.MaskingState
+getMaskingState = unsafeEff_ E.getMaskingState
+
+-- | Lifted 'E.interruptible'.
+interruptible :: Eff es a -> Eff es a
+interruptible action = reallyUnsafeUnliftIO $ \unlift -> do
+  E.interruptible (unlift action)
+
+-- | Lifted 'E.allowInterrupt'.
+allowInterrupt :: Eff es ()
+allowInterrupt = unsafeEff_ E.allowInterrupt

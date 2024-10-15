@@ -22,6 +22,7 @@ module Effectful.Exception
   , catch
   , catchDeep
   , catchJust
+  , catchIf
   , catchIO
   , catchSync
   , catchSyncDeep
@@ -29,6 +30,7 @@ module Effectful.Exception
   , handle
   , handleDeep
   , handleJust
+  , handleIf
   , handleIO
   , handleSync
   , handleSyncDeep
@@ -36,6 +38,7 @@ module Effectful.Exception
   , try
   , tryDeep
   , tryJust
+  , tryIf
   , tryIO
   , trySync
   , trySyncDeep
@@ -207,6 +210,17 @@ catchJust
 catchJust f action handler = reallyUnsafeUnliftIO $ \unlift -> do
   E.catchJust f (unlift action) (unlift . handler)
 
+-- | Catch an exception only if it passes a specific predicate.
+catchIf
+  :: E.Exception e
+  => (e -> Bool)
+  -- ^ The predicate.
+  -> Eff es a
+  -> (e -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+catchIf p = catchJust (\e -> if p e then Just e else Nothing)
+
 -- | 'catch' specialized to catch 'IOException'.
 catchIO
   :: Eff es a
@@ -266,6 +280,17 @@ handleJust
   -> Eff es a
 handleJust f = flip (catchJust f)
 
+-- | Flipped version of 'catchIf'.
+handleIf
+  :: E.Exception e
+  => (e -> Bool)
+  -- ^ The predicate.
+  -> (e -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+  -> Eff es a
+handleIf p = flip (catchIf p)
+
 -- | Flipped version of 'catchIO'.
 handleIO
   :: (E.IOException -> Eff es a)
@@ -318,6 +343,15 @@ tryJust
   -> Eff es (Either b a)
 tryJust f action = reallyUnsafeUnliftIO $ \unlift -> do
   E.tryJust f (unlift action)
+
+-- | Catch an exception only if it passes a specific predicate.
+tryIf
+  :: E.Exception e
+  => (e -> Bool)
+  -- ^ The predicate.
+  -> Eff es a
+  -> Eff es (Either e a)
+tryIf p = tryJust (\e -> if p e then Just e else Nothing)
 
 -- | 'try' specialized to catch 'IOException'.
 tryIO

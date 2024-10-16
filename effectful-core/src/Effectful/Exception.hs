@@ -4,15 +4,8 @@
 -- This module provides thin wrappers over functions from "Control.Exception" as
 -- well as several utility functions for convenience.
 --
--- However, the 'Eff' monad provides instances for 'C.MonadThrow',
--- 'C.MonadCatch' and 'C.MonadMask', so you can also use the following
--- libraries:
---
--- - [@exceptions@](https://hackage.haskell.org/package/exceptions)
---
--- - [@safe-exceptions@](https://hackage.haskell.org/package/safe-exceptions)
---
--- - [@annotated-exception@](https://hackage.haskell.org/package/annotated-exception)
+-- /Note:/ the 'Eff' monad provides instances for 'C.MonadThrow', 'C.MonadCatch'
+-- and 'C.MonadMask', so any code that uses them will also work.
 module Effectful.Exception
   ( -- * Throwing
     throwIO

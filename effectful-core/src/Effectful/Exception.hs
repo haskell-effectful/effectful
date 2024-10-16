@@ -5,7 +5,7 @@
 -- well as several utility functions for convenience.
 --
 -- /Note:/ the 'Eff' monad provides instances for 'C.MonadThrow', 'C.MonadCatch'
--- and 'C.MonadMask', so any code that uses them will also work.
+-- and 'C.MonadMask', so any existing code that uses them remains compatible.
 module Effectful.Exception
   ( -- * Throwing
     throwIO

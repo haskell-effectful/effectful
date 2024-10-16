@@ -1,18 +1,18 @@
 {-# LANGUAGE CPP #-}
 -- | Support for runtime exceptions.
 --
--- The 'Eff' monad provides instances of 'C.MonadThrow', 'C.MonadCatch' and
--- 'C.MonadMask', so any function that works with them can be used
--- seamlessly. This includes API of the following libraries:
+-- This module provides thin wrappers over functions from "Control.Exception" as
+-- well as several utility functions for convenience.
+--
+-- However, the 'Eff' monad provides instances for 'C.MonadThrow',
+-- 'C.MonadCatch' and 'C.MonadMask', so you can also use the following
+-- libraries:
 --
 -- - [@exceptions@](https://hackage.haskell.org/package/exceptions)
 --
 -- - [@safe-exceptions@](https://hackage.haskell.org/package/safe-exceptions)
 --
 -- - [@annotated-exception@](https://hackage.haskell.org/package/annotated-exception)
---
--- In addition, this module provides thin wrappers over functions from
--- "Control.Exception" as well as several utility functions for convenience.
 module Effectful.Exception
   ( -- * Throwing
     throwIO
@@ -231,7 +231,7 @@ catchIO = catch
 
 -- | 'catch' specialized to catch all exceptions considered to be synchronous.
 --
--- @'catchSync' ≡ 'catchJust' \@'E.SomeException' 'isSyncException'@
+-- @'catchSync' ≡ 'catchIf' \@'E.SomeException' 'isSyncException'@
 --
 -- See 'isSyncException' for more information.
 catchSync
@@ -239,7 +239,7 @@ catchSync
   -> (E.SomeException -> Eff es a)
   -- ^ The exception handler.
   -> Eff es a
-catchSync = catchJust @E.SomeException isSyncException
+catchSync = catchIf @E.SomeException isSyncException
 
 -- | A variant of 'catchSync' that fully forces evaluation of the result value
 -- to find all impure exceptions.
@@ -362,14 +362,14 @@ tryIO = try
 
 -- | 'try' specialized to catch all exceptions considered to be synchronous.
 --
--- @'trySync' ≡ 'tryJust' \@'E.SomeException' 'isSyncException'@
+-- @'trySync' ≡ 'tryIf' \@'E.SomeException' 'isSyncException'@
 --
 -- See 'isSyncException' for more information.
 trySync
   :: Eff es a
   -- ^ The action.
   -> Eff es (Either E.SomeException a)
-trySync = tryJust @E.SomeException isSyncException
+trySync = tryIf @E.SomeException isSyncException
 
 -- | A variant of 'trySync' that fully forces evaluation of the result value to
 -- find all impure exceptions.
@@ -500,16 +500,22 @@ annotateIO e action = reallyUnsafeUnliftIO $ \unlift -> do
 -- heuristic. Namely, an exception type is determined by its 'E.Exception'
 -- instance.
 --
+-- Exception types with the default 'E.Exception' instance are considered
+-- synchronous:
+--
 -- >>> import Control.Exception qualified as E
 --
 -- >>> data SyncEx = SyncEx deriving (Show)
 -- >>> instance E.Exception SyncEx
 --
 -- >>> isSyncException SyncEx
--- Just SyncEx
+-- True
 --
 -- >>> isAsyncException SyncEx
--- Nothing
+-- False
+--
+-- Whereas for asynchronous exceptions you need to define their 'E.Exception'
+-- instance as follows:
 --
 -- >>> data AsyncEx = AsyncEx deriving (Show)
 -- >>> :{
@@ -519,22 +525,22 @@ annotateIO e action = reallyUnsafeUnliftIO $ \unlift -> do
 -- :}
 --
 -- >>> isSyncException AsyncEx
--- Nothing
+-- False
 --
 -- >>> isAsyncException AsyncEx
--- Just AsyncEx
+-- True
 
--- | Return 'Just' if the given exception is considered synchronous.
-isSyncException :: E.Exception e => e -> Maybe e
+-- | Check if the given exception is considered synchronous.
+isSyncException :: E.Exception e => e -> Bool
 isSyncException e = case E.fromException (E.toException e) of
-  Just E.SomeAsyncException{} -> Nothing
-  Nothing -> Just e
+  Just E.SomeAsyncException{} -> False
+  Nothing -> True
 
--- | Return 'Just' if the given exception is considered asynchronous.
-isAsyncException :: E.Exception e => e -> Maybe e
+-- | Check if the given exception is considered asynchronous.
+isAsyncException :: E.Exception e => e -> Bool
 isAsyncException e = case E.fromException (E.toException e) of
-  Just E.SomeAsyncException{} -> Just e
-  Nothing -> Nothing
+  Just E.SomeAsyncException{} -> True
+  Nothing -> False
 
 ----------------------------------------
 -- Low-level API

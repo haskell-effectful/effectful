@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 -- | Support for runtime exceptions.
 --
--- This module provides thin wrappers over functions from "Control.Exception" as
+-- This module supplies thin wrappers over functions from "Control.Exception" as
 -- well as several utility functions for convenience.
 --
 -- /Note:/ the 'Eff' monad provides instances for 'C.MonadThrow', 'C.MonadCatch'
@@ -61,6 +61,8 @@ module Effectful.Exception
     -- ** Annotations
   , annotateIO
 #endif
+
+    -- | #checkExceptionType#
 
     -- ** Check exception type
     -- $syncVsAsync
@@ -203,7 +205,7 @@ catchJust
 catchJust f action handler = reallyUnsafeUnliftIO $ \unlift -> do
   E.catchJust f (unlift action) (unlift . handler)
 
--- | Catch an exception only if it passes a specific predicate.
+-- | Catch an exception only if it satisfies a specific predicate.
 catchIf
   :: E.Exception e
   => (e -> Bool)
@@ -226,7 +228,8 @@ catchIO = catch
 --
 -- @'catchSync' ≡ 'catchIf' \@'E.SomeException' 'isSyncException'@
 --
--- See 'isSyncException' for more information.
+-- See the [check exception type](#checkExceptionType) section for more
+-- information.
 catchSync
   :: Eff es a
   -> (E.SomeException -> Eff es a)
@@ -337,7 +340,7 @@ tryJust
 tryJust f action = reallyUnsafeUnliftIO $ \unlift -> do
   E.tryJust f (unlift action)
 
--- | Catch an exception only if it passes a specific predicate.
+-- | Catch an exception only if it satisfies a specific predicate.
 tryIf
   :: E.Exception e
   => (e -> Bool)
@@ -357,7 +360,8 @@ tryIO = try
 --
 -- @'trySync' ≡ 'tryIf' \@'E.SomeException' 'isSyncException'@
 --
--- See 'isSyncException' for more information.
+-- See the [check exception type](#checkExceptionType) section for more
+-- information.
 trySync
   :: Eff es a
   -- ^ The action.
@@ -496,10 +500,8 @@ annotateIO e action = reallyUnsafeUnliftIO $ \unlift -> do
 -- Exception types with the default 'E.Exception' instance are considered
 -- synchronous:
 --
--- >>> import Control.Exception qualified as E
---
 -- >>> data SyncEx = SyncEx deriving (Show)
--- >>> instance E.Exception SyncEx
+-- >>> instance Exception SyncEx
 --
 -- >>> isSyncException SyncEx
 -- True
@@ -512,9 +514,9 @@ annotateIO e action = reallyUnsafeUnliftIO $ \unlift -> do
 --
 -- >>> data AsyncEx = AsyncEx deriving (Show)
 -- >>> :{
---   instance E.Exception AsyncEx where
---     toException = E.asyncExceptionToException
---     fromException = E.asyncExceptionFromException
+--   instance Exception AsyncEx where
+--     toException = asyncExceptionToException
+--     fromException = asyncExceptionFromException
 -- :}
 --
 -- >>> isSyncException AsyncEx
@@ -570,3 +572,8 @@ interruptible action = reallyUnsafeUnliftIO $ \unlift -> do
 -- | Lifted 'E.allowInterrupt'.
 allowInterrupt :: Eff es ()
 allowInterrupt = unsafeEff_ E.allowInterrupt
+
+-- $setup
+-- >>> import Control.Exception (Exception)
+-- >>> import Control.Exception (asyncExceptionFromException)
+-- >>> import Control.Exception (asyncExceptionToException)

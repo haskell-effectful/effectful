@@ -4,8 +4,11 @@
 * **Bugfixes**:
   - `OnEmptyRollback` strategy of the `NonDet` effect is no longer broken.
 * **Breaking changes**:
-  - Removed `restoreEnv` function from `Effectful.Dispatch.Static.Primitive`
+  - Remove `restoreEnv` function from `Effectful.Dispatch.Static.Primitive`
     since it was broken.
+  - Base `Effectful.Exception` on `Control.Exception` instead of the
+    `safe-exceptions` library for consistency with provided `MonadThrow` and
+    `MonadCatch` instances.
 
 # effectful-2.4.0.0 (2024-10-08)
 * Add utility functions for handling effects that take the effect handler as the

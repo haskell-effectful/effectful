@@ -9,10 +9,16 @@
 module Effectful.Exception
   ( -- * Throwing
     throwIO
+#if MIN_VERSION_base(4,21,0)
+  , rethrowIO
+#endif
 
     -- * Catching (with recovery)
     -- $catchAll
   , catch
+#if MIN_VERSION_base(4,21,0)
+  , catchNoPropagate
+#endif
   , catchDeep
   , catchJust
   , catchIf
@@ -29,6 +35,9 @@ module Effectful.Exception
   , handleSyncDeep
 
   , try
+#if MIN_VERSION_base(4,21,0)
+  , tryWithContext
+#endif
   , tryDeep
   , tryJust
   , tryIf
@@ -93,6 +102,9 @@ module Effectful.Exception
   , E.addExceptionContext
   , E.someExceptionContext
   , E.ExceptionWithContext(..)
+#if MIN_VERSION_base(4,21,0)
+  , E.WhileHandling(..)
+#endif
   , E.ExceptionContext(..)
   , E.emptyExceptionContext
   , E.addExceptionAnnotation
@@ -158,6 +170,15 @@ throwIO
   -> Eff es a
 throwIO = unsafeEff_ . withFrozenCallStack E.throwIO
 
+#if MIN_VERSION_base(4,21,0)
+-- | Lifted 'E.rethrowIO'.
+rethrowIO
+  :: E.Exception e
+  => E.ExceptionWithContext e
+  -> Eff es a
+rethrowIO = unsafeEff_ . E.rethrowIO
+#endif
+
 ----------------------------------------
 -- Catching
 
@@ -192,6 +213,18 @@ catchDeep
   -- ^ The exception handler.
   -> Eff es a
 catchDeep action = catch (evaluateDeep =<< action)
+
+#if MIN_VERSION_base(4,21,0)
+-- | Lifted 'E.catchNoPropagate'.
+catchNoPropagate
+  :: E.Exception e
+  => Eff es a
+  -> (E.ExceptionWithContext e -> Eff es a)
+  -- ^ The exception handler.
+  -> Eff es a
+catchNoPropagate action handler = reallyUnsafeUnliftIO $ \unlift -> do
+  E.catchNoPropagate (unlift action) (unlift . handler)
+#endif
 
 -- | Lifted 'E.catchJust'.
 catchJust
@@ -320,6 +353,16 @@ try
   -> Eff es (Either e a)
 try action = reallyUnsafeUnliftIO $ \unlift -> do
   E.try (unlift action)
+
+#if MIN_VERSION_base(4,21,0)
+-- | Lifted 'E.tryWithContext'.
+tryWithContext
+  :: E.Exception e
+  => Eff es a
+  -> Eff es (Either (E.ExceptionWithContext e) a)
+tryWithContext action = reallyUnsafeUnliftIO $ \unlift -> do
+  E.tryWithContext (unlift action)
+#endif
 
 -- | A variant of 'try' that fully forces evaluation of the result value to find
 -- all impure exceptions.

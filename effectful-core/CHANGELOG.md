@@ -1,6 +1,8 @@
 # effectful-core-2.5.0.0 (????-??-??)
 * Add `plusEff` (specialized version of `<|>`) to `Effectful.NonDet` and make
   `emptyEff` and `sumEff` generate better call stacks.
+* Explicitly define `setByteArray#` and `setOffAddr#` in the `Prim` instance of
+  `Ref` for `primitive` < 0.9.0.0.
 * **Bugfixes**:
   - `OnEmptyRollback` strategy of the `NonDet` effect is no longer broken.
 * **Breaking changes**:

@@ -118,6 +118,7 @@ instance Prim Ref where
         s1 = writeByteArray# arr n ref s0
         s2 = writeByteArray# arr (n +# 1#) version s1
     in s2
+  setByteArray# = defaultSetByteArray#
   indexOffAddr# addr i =
     let n = 2# *# i
         ref = indexOffAddr# addr n
@@ -133,6 +134,7 @@ instance Prim Ref where
         s1 = writeOffAddr# addr n ref s0
         s2 = writeOffAddr# addr (n +# 1#) version s1
     in s2
+  setOffAddr# = defaultSetOffAddr#
 
 -- | Version of the effect.
 newtype Version = Version Int

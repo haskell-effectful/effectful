@@ -100,13 +100,12 @@ module Effectful.Error.Static
   , prettyCallStack
   ) where
 
-import Control.Exception
 import Data.Kind
 import GHC.Stack
 
 import Effectful
 import Effectful.Dispatch.Static
-import Effectful.Dispatch.Static.Primitive
+import Effectful.Exception
 import Effectful.Internal.Utils
 
 -- | Provide the ability to handle errors of type @e@.
@@ -121,17 +120,10 @@ runError
    . HasCallStack
   => Eff (Error e : es) a
   -> Eff es (Either (CallStack, e) a)
-runError m = unsafeEff $ \es0 -> mask $ \unmask -> do
-  eid <- newErrorId
-  es <- consEnv (Error @e eid) dummyRelinker es0
-  r <- tryErrorIO unmask eid es `onException` unconsEnv es
-  unconsEnv es
-  pure r
-  where
-    tryErrorIO unmask eid es = try (unmask $ unEff m es) >>= \case
-      Right a -> pure $ Right a
-      Left ex -> tryHandler ex eid (\cs e -> Left (cs, e))
-               $ throwIO ex
+runError action = do
+  eid <- unsafeEff_ newErrorId
+  evalStaticRep (Error @e eid) $ do
+    tryJust (matchError eid) action
 
 -- | Handle errors of type @e@ with a specific error handler.
 --
@@ -142,7 +134,7 @@ runErrorWith
   -- ^ The error handler.
   -> Eff (Error e : es) a
   -> Eff es a
-runErrorWith handler m = runError m >>= \case
+runErrorWith handler action = runError action >>= \case
   Left (cs, e) -> handler cs e
   Right a -> pure a
 
@@ -164,7 +156,7 @@ runErrorNoCallStackWith
   -- ^ The error handler.
   -> Eff (Error e : es) a
   -> Eff es a
-runErrorNoCallStackWith handler m = runErrorNoCallStack m >>= \case
+runErrorNoCallStackWith handler action = runErrorNoCallStack action >>= \case
   Left e -> handler e
   Right a -> pure a
 
@@ -179,9 +171,9 @@ throwErrorWith
   -> e
   -- ^ The error.
   -> Eff es a
-throwErrorWith display e = unsafeEff $ \es -> do
-  Error eid <- getEnv @(Error e) es
-  throwIO $ ErrorWrapper eid callStack (display e) (toAny e)
+throwErrorWith display e = do
+  Error eid <- getStaticRep @(Error e)
+  withFrozenCallStack throwIO $ ErrorWrapper eid callStack (display e) (toAny e)
 
 -- | Throw an error of type @e@ with 'show' as a display function.
 throwError
@@ -209,10 +201,9 @@ catchError
   -> (CallStack -> e -> Eff es a)
   -- ^ A handler for errors in the inner computation.
   -> Eff es a
-catchError m handler = unsafeEff $ \es -> do
-  Error eid <- getEnv @(Error e) es
-  catchErrorIO eid (unEff m es) $ \cs e -> do
-    unEff (handler cs e) es
+catchError action handler = do
+  Error eid <- getStaticRep @(Error e)
+  catchJust (matchError eid) action $ \(cs, e) -> handler cs e
 
 -- | The same as @'flip' 'catchError'@, which is useful in situations where the
 -- code for the handler is shorter.
@@ -232,7 +223,9 @@ tryError
   => Eff es a
   -- ^ The inner computation.
   -> Eff es (Either (CallStack, e) a)
-tryError m = (Right <$> m) `catchError` \es e -> pure $ Left (es, e)
+tryError action = do
+  Error eid <- getStaticRep @(Error e)
+  tryJust (matchError eid) action
 
 ----------------------------------------
 -- Helpers
@@ -245,18 +238,6 @@ newtype ErrorId = ErrorId Unique
 newErrorId :: IO ErrorId
 newErrorId = ErrorId <$> newUnique
 
-tryHandler
-  :: SomeException
-  -> ErrorId
-  -> (CallStack -> e -> r)
-  -> IO r
-  -> IO r
-tryHandler ex eid0 handler next = case fromException ex of
-  Just (ErrorWrapper eid cs _ e)
-    | eid0 == eid -> pure $ handler cs (fromAny e)
-    | otherwise   -> next
-  Nothing -> next
-
 data ErrorWrapper = ErrorWrapper !ErrorId CallStack String Any
 
 instance Show ErrorWrapper where
@@ -268,9 +249,7 @@ instance Show ErrorWrapper where
 
 instance Exception ErrorWrapper
 
-catchErrorIO :: ErrorId -> IO a -> (CallStack -> e -> IO a) -> IO a
-catchErrorIO eid m handler = do
-  m `catch` \err@(ErrorWrapper etag cs _ e) -> do
-    if eid == etag
-      then handler cs (fromAny e)
-      else throwIO err
+matchError :: ErrorId -> ErrorWrapper -> Maybe (CallStack, e)
+matchError eid (ErrorWrapper etag cs _ e)
+  | eid == etag = Just (cs, fromAny e)
+  | otherwise = Nothing

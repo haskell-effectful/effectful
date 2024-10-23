@@ -1,4 +1,4 @@
-# effectful-2.5.0.0 (????-??-??)
+# effectful-2.5.0.0 (2024-10-23)
 * Add `plusEff` (specialized version of `<|>`) to `Effectful.NonDet` and make
   `emptyEff` and `sumEff` generate better call stacks.
 * Explicitly define `setByteArray#` and `setOffAddr#` in the `Prim` instance of

@@ -4,9 +4,9 @@
 -- effects via Template Haskell.
 module Effectful.TH
   ( makeEffect
-  , makeTheEffect
   , makeEffect_
-  , makeTheEffect_
+  , makeUniqueEffect
+  , makeUniqueEffect_
   ) where
 
 import Control.Monad
@@ -61,9 +61,6 @@ import Effectful.Dispatch.Dynamic
 makeEffect :: Name -> Q [Dec]
 makeEffect = makeEffectImpl ''(:>) True
 
-makeTheEffect :: Name -> Q [Dec]
-makeTheEffect = makeEffectImpl ''(<:>) True
-
 -- | Like 'makeEffect', but doesn't generate type signatures. This is useful
 -- when you want to attach Haddock documentation to function signatures:
 --
@@ -79,8 +76,11 @@ makeTheEffect = makeEffectImpl ''(<:>) True
 makeEffect_ :: Name -> Q [Dec]
 makeEffect_ = makeEffectImpl ''(:>) False
 
-makeTheEffect_ :: Name -> Q [Dec]
-makeTheEffect_ = makeEffectImpl ''(<:>) False
+makeUniqueEffect :: Name -> Q [Dec]
+makeUniqueEffect = makeEffectImpl ''(<:>) True
+
+makeUniqueEffect_ :: Name -> Q [Dec]
+makeUniqueEffect_ = makeEffectImpl ''(<:>) False
 
 makeEffectImpl :: Name -> Bool -> Name -> Q [Dec]
 makeEffectImpl memberOp makeSig effName = do

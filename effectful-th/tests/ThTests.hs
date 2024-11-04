@@ -15,12 +15,12 @@ main = pure () -- only compilation tests
 
 data Test1 a :: Effect where
   Test1 :: Test1 a m a
-makeTheEffect ''Test1
+makeUniqueEffect ''Test1
 
 data Test2 a b :: Effect where
   Test2 :: Test2 a b m (a, b)
   AmbTest :: Test2 a b m ()
-makeTheEffect ''Test2
+makeUniqueEffect ''Test2
 
 test :: (Num n, IsString s, Test1 n <:> es, Test2 s Char <:> es) => Eff es ()
 test = do

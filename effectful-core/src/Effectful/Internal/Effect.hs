@@ -17,13 +17,8 @@ module Effectful.Internal.Effect
   , type (++)
   , KnownEffects(..)
 
-    -- * The effects
+    -- * Unique parametrized effects
   , type (<:>)
-  , The1
-  , The2
-  , The3
-  , The4
-  , The5
 
     -- * Re-exports
   , Type
@@ -161,26 +156,26 @@ instance KnownEffects '[] where
 ----------------------------------------
 
 type family (e :: Effect) <:> (es :: [Effect]) :: Constraint where
-  e a1 a2 a3 a4 a5 <:> es = The5 e a1 a2 a3 a4 a5 es
-  e a1 a2 a3 a4 <:> es = The4 e a1 a2 a3 a4 es
-  e a1 a2 a3 <:> es = The3 e a1 a2 a3 es
-  e a1 a2 <:> es = The2 e a1 a2 es
-  e a1 <:> es = The1 e a1 es
+  e a1 a2 a3 a4 a5 <:> es = Has5UniqueParams e a1 a2 a3 a4 a5 es
+  e a1 a2 a3 a4 <:> es = Has4UniqueParams e a1 a2 a3 a4 es
+  e a1 a2 a3 <:> es = Has3UniqueParams e a1 a2 a3 es
+  e a1 a2 <:> es = Has2UniqueParams e a1 a2 es
+  e a1 <:> es = HasUniqueParam e a1 es
 
-class e a1 :> es => The1
+class e a1 :> es => HasUniqueParam
   (e :: k1 -> Effect)
   (a1 :: k1)
   (es :: [Effect])
   | e es -> a1
 
-class e a1 a2 :> es => The2
+class e a1 a2 :> es => Has2UniqueParams
   (e :: k1 -> k2 -> Effect)
   (a1 :: k1)
   (a2 :: k2)
   (es :: [Effect])
   | e es -> a1 a2
 
-class e a1 a2 a3 :> es => The3
+class e a1 a2 a3 :> es => Has3UniqueParams
   (e :: k1 -> k2 -> k3 -> Effect)
   (a1 :: k1)
   (a2 :: k2)
@@ -188,7 +183,7 @@ class e a1 a2 a3 :> es => The3
   (es :: [Effect])
   | e es -> a1 a2 a3
 
-class e a1 a2 a3 a4 :> es => The4
+class e a1 a2 a3 a4 :> es => Has4UniqueParams
   (e :: k1 -> k2 -> k3 -> k4 -> Effect)
   (a1 :: k1)
   (a2 :: k2)
@@ -197,7 +192,7 @@ class e a1 a2 a3 a4 :> es => The4
   (es :: [Effect])
   | e es -> a1 a2 a3 a4
 
-class e a1 a2 a3 a4 a5 :> es => The5
+class e a1 a2 a3 a4 a5 :> es => Has5UniqueParams
   (e :: k1 -> k2 -> k3 -> k4 -> k5 -> Effect)
   (a1 :: k1)
   (a2 :: k2)

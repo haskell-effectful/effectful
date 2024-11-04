@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- | Type-safe indexing for 'Effectful.Internal.Monad.Env'.
@@ -16,7 +17,15 @@ module Effectful.Internal.Effect
   , type (++)
   , KnownEffects(..)
 
-  -- * Re-exports
+    -- * The effects
+  , type (<:>)
+  , The1
+  , The2
+  , The3
+  , The4
+  , The5
+
+    -- * Re-exports
   , Type
   ) where
 
@@ -148,3 +157,52 @@ instance KnownEffects es => KnownEffects (e : es) where
 
 instance KnownEffects '[] where
   knownEffectsLength = 0
+
+----------------------------------------
+
+type family (e :: Effect) <:> (es :: [Effect]) :: Constraint where
+  e a1 a2 a3 a4 a5 <:> es = The5 e a1 a2 a3 a4 a5 es
+  e a1 a2 a3 a4 <:> es = The4 e a1 a2 a3 a4 es
+  e a1 a2 a3 <:> es = The3 e a1 a2 a3 es
+  e a1 a2 <:> es = The2 e a1 a2 es
+  e a1 <:> es = The1 e a1 es
+
+class e a1 :> es => The1
+  (e :: k1 -> Effect)
+  (a1 :: k1)
+  (es :: [Effect])
+  | e es -> a1
+
+class e a1 a2 :> es => The2
+  (e :: k1 -> k2 -> Effect)
+  (a1 :: k1)
+  (a2 :: k2)
+  (es :: [Effect])
+  | e es -> a1 a2
+
+class e a1 a2 a3 :> es => The3
+  (e :: k1 -> k2 -> k3 -> Effect)
+  (a1 :: k1)
+  (a2 :: k2)
+  (a3 :: k3)
+  (es :: [Effect])
+  | e es -> a1 a2 a3
+
+class e a1 a2 a3 a4 :> es => The4
+  (e :: k1 -> k2 -> k3 -> k4 -> Effect)
+  (a1 :: k1)
+  (a2 :: k2)
+  (a3 :: k3)
+  (a4 :: k4)
+  (es :: [Effect])
+  | e es -> a1 a2 a3 a4
+
+class e a1 a2 a3 a4 a5 :> es => The5
+  (e :: k1 -> k2 -> k3 -> k4 -> k5 -> Effect)
+  (a1 :: k1)
+  (a2 :: k2)
+  (a3 :: k3)
+  (a4 :: k4)
+  (a5 :: k5)
+  (es :: [Effect])
+  | e es -> a1 a2 a3 a4 a5

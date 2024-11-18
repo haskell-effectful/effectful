@@ -20,6 +20,7 @@ module Effectful.Dispatch.Dynamic
 
     -- * Sending operations to the handler
     send
+  , passthrough
 
     -- * Handling effects
   , EffectHandler
@@ -74,8 +75,9 @@ module Effectful.Dispatch.Dynamic
   , HasCallStack
   ) where
 
+import Control.Monad
 import Data.Primitive.PrimArray
-import GHC.Stack (HasCallStack)
+import GHC.Stack
 import GHC.TypeLits
 
 import Effectful.Internal.Effect
@@ -414,6 +416,25 @@ import Effectful.Internal.Utils
 -- >>> runPureEff . runReader @Int 3 $ double
 -- 6
 
+-- | A variant of 'send' for passing operations to the upstream handler within
+-- 'interpose' and 'impose' without having to fully pattern match on them.
+passthrough
+  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es, e :> localEs, SharedSuffix es handlerEs)
+  => LocalEnv localEs handlerEs
+  -> e (Eff localEs) a
+  -- ^ The operation.
+  -> Eff es a
+passthrough (LocalEnv les) op = unsafeEff $ \es -> do
+  Handler handlerEs handler <- getEnv es
+  when (envStorage les /= envStorage handlerEs) $ do
+    error "les and handlerEs point to different Storages"
+  -- Prevent internal functions that rebind the effect handler from polluting
+  -- its call stack by freezing it. Note that functions 'interpret',
+  -- 'reinterpret', 'interpose' and 'impose' need to thaw it so that useful
+  -- stack frames from inside the effect handler continue to be added.
+  unEff (withFrozenCallStack handler (LocalEnv les) op) handlerEs
+{-# NOINLINE passthrough #-}
+
 ----------------------------------------
 -- Handling effects
 
@@ -482,6 +503,7 @@ reinterpretWith runHandlerEs m handler = reinterpret runHandlerEs handler m
 --   data E :: Effect where
 --     Op1 :: E m ()
 --     Op2 :: E m ()
+--     Op3 :: E m ()
 --   type instance DispatchOf E = Dynamic
 -- :}
 --
@@ -490,58 +512,31 @@ reinterpretWith runHandlerEs m handler = reinterpret runHandlerEs handler m
 --   runE = interpret_ $ \case
 --     Op1 -> liftIO (putStrLn "op1")
 --     Op2 -> liftIO (putStrLn "op2")
+--     Op3 -> liftIO (putStrLn "op3")
 -- :}
 --
--- >>> runEff . runE $ send Op1 >> send Op2
+-- >>> let action = send Op1 >> send Op2 >> send Op3
+--
+-- >>> runEff . runE $ action
 -- op1
 -- op2
+-- op3
+--
+-- You can modify only specific operations and send the rest to the upstream
+-- handler with 'passthrough':
 --
 -- >>> :{
 --   augmentOp2 :: (E :> es, IOE :> es) => Eff es a -> Eff es a
---   augmentOp2 = interpose_ $ \case
---     Op1 -> send Op1
+--   augmentOp2 = interpose $ \env -> \case
 --     Op2 -> liftIO (putStrLn "augmented op2") >> send Op2
+--     op  -> passthrough env op
 -- :}
 --
--- >>> runEff . runE . augmentOp2 $ send Op1 >> send Op2
+-- >>> runEff . runE . augmentOp2 $ action
 -- op1
 -- augmented op2
 -- op2
---
--- /Note:/ when using 'interpose' to modify only specific operations of the
--- effect, your first instinct might be to match on them, then handle the rest
--- with a generic match. Unfortunately, this doesn't work out of the box:
---
--- >>> :{
---   genericAugmentOp2 :: (E :> es, IOE :> es) => Eff es a -> Eff es a
---   genericAugmentOp2 = interpose_ $ \case
---     Op2 -> liftIO (putStrLn "augmented op2") >> send Op2
---     op  -> send op
--- :}
--- ...
--- ...Couldn't match type ‘localEs’ with ‘es’
--- ...
---
--- This is because within the generic match, 'send' expects @Op (Eff es) a@, but
--- @op@ has a type @Op (Eff localEs) a@. If the effect in question is first
--- order (i.e. its @m@ type parameter is phantom), you can use 'coerce':
---
--- >>> import Data.Coerce
--- >>> :{
---   genericAugmentOp2 :: (E :> es, IOE :> es) => Eff es a -> Eff es a
---   genericAugmentOp2 = interpose_ $ \case
---     Op2 -> liftIO (putStrLn "augmented op2") >> send Op2
---     op  -> send @E (coerce op)
--- :}
---
--- >>> runEff . runE . genericAugmentOp2 $ send Op1 >> send Op2
--- op1
--- augmented op2
--- op2
---
--- On the other hand, when dealing with higher order effects you need to pattern
--- match on each operation and unlift where necessary.
---
+-- op3
 interpose
   :: forall e es a. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => EffectHandler e es

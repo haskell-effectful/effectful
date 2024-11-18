@@ -1,3 +1,8 @@
+# effectful-core-2.5.1.0 (????-??-??)
+* Add `passthrough` to `Effectful.Dispatch.Dynamic` for passing operations to
+  the upstream handler within `interpose` and `impose` without having to fully
+  pattern match on them.
+
 # effectful-core-2.5.0.0 (2024-10-23)
 * Add `plusEff` (specialized version of `<|>`) to `Effectful.NonDet` and make
   `emptyEff` and `sumEff` generate better call stacks.

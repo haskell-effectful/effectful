@@ -265,8 +265,8 @@ import Effectful.Internal.Utils
 --
 -- The problem is that @action@ has a type @Eff localEs a@, while the monad of
 -- the effect handler is @Eff es@. @localEs@ represents the /local environment/
--- in which the @Profile@ operation was called, which is opaque as the effect
--- handler cannot possibly know how it looks like.
+-- in which the @Profile@ operation was called, which is more or less opaque to
+-- the effect handler.
 --
 -- The solution is to use the 'LocalEnv' that an 'EffectHandler' is given to run
 -- the action using one of the functions from the 'localUnlift' family:
@@ -440,18 +440,16 @@ passthrough (LocalEnv les) op = unsafeEff $ \es -> do
 
 -- | Interpret an effect.
 --
--- /Note:/ 'interpret' can be turned into a 'reinterpret' with the use of
--- 'inject'.
+-- /Note:/ if you want to use intermediate effects in multiple handlers, then
+-- hide them from downstream, have a look at 'inject'.
 interpret
   :: (HasCallStack, DispatchOf e ~ Dynamic)
   => EffectHandler e es
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
-interpret handler m = unsafeEff $ \es -> do
-  (`unEff` es) $ runHandler (mkHandler es) m
-  where
-    mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
+interpret handler action = interpretImpl action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | 'interpret' with the effect handler as the last argument.
 --
@@ -462,7 +460,8 @@ interpretWith
   -> EffectHandler e es
   -- ^ The effect handler.
   -> Eff      es  a
-interpretWith m handler = interpret handler m
+interpretWith action handler = interpretImpl action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | Interpret an effect using other, private effects.
 --
@@ -470,16 +469,13 @@ interpretWith m handler = interpret handler m
 reinterpret
   :: (HasCallStack, DispatchOf e ~ Dynamic)
   => (Eff handlerEs a -> Eff es b)
-  -- ^ Introduction of effects encapsulated within the handler.
+  -- ^ Setup of effects encapsulated in the handler.
   -> EffectHandler e handlerEs
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b
-reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
-  (`unEff` es) . runHandlerEs . unsafeEff $ \handlerEs -> do
-    (`unEff` es) $ runHandler (mkHandler handlerEs) m
-  where
-    mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
+reinterpret runSetup handler action = reinterpretImpl runSetup action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | 'reinterpret' with the effect handler as the last argument.
 --
@@ -487,12 +483,13 @@ reinterpret runHandlerEs handler m = unsafeEff $ \es -> do
 reinterpretWith
   :: (HasCallStack, DispatchOf e ~ Dynamic)
   => (Eff handlerEs a -> Eff es b)
-  -- ^ Introduction of effects encapsulated within the handler.
+  -- ^ Setup of effects encapsulated in the handler.
   -> Eff (e : es) a
   -> EffectHandler e handlerEs
   -- ^ The effect handler.
   -> Eff      es  b
-reinterpretWith runHandlerEs m handler = reinterpret runHandlerEs handler m
+reinterpretWith runSetup action handler = reinterpretImpl runSetup action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | Replace the handler of an existing effect with a new one.
 --
@@ -512,15 +509,14 @@ reinterpretWith runHandlerEs m handler = reinterpret runHandlerEs handler m
 --   runE = interpret_ $ \case
 --     Op1 -> liftIO (putStrLn "op1")
 --     Op2 -> liftIO (putStrLn "op2")
---     Op3 -> liftIO (putStrLn "op3")
+--     Op3 -> error "Op3 not implemented"
 -- :}
 --
--- >>> let action = send Op1 >> send Op2 >> send Op3
+-- >>> let action = send Op1 >> send Op2
 --
 -- >>> runEff . runE $ action
 -- op1
 -- op2
--- op3
 --
 -- You can modify only specific operations and send the rest to the upstream
 -- handler with 'passthrough':
@@ -536,32 +532,27 @@ reinterpretWith runHandlerEs m handler = reinterpret runHandlerEs handler m
 -- op1
 -- augmented op2
 -- op2
--- op3
+--
+-- /Note:/ when an exception is raised while handling an operation, good
+-- debugging experience is ensured by strategically placed 'HasCallStack'
+-- constraints:
+--
+-- >>> runEff . runE . augmentOp2 $ send Op3
+-- *** Exception: Op3 not implemented
+-- CallStack (from HasCallStack):
+--   error, called at <interactive>:...
+--   handler, called at src/Effectful/Dispatch/Dynamic.hs...
+--   passthrough, called at <interactive>:...
+--   handler, called at src/Effectful/Dispatch/Dynamic.hs:...
+--   send, called at <interactive>:...
 interpose
-  :: forall e es a. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
+  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => EffectHandler e es
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es a
-interpose handler m = unsafeEff $ \es -> do
-  inlineBracket
-    (do
-        origHandler <- getEnv @e es
-        replaceEnv origHandler relinkHandler es
-    )
-    (\newEs -> do
-        -- Restore the original handler.
-        putEnv es =<< getEnv @e newEs
-        unreplaceEnv @e newEs
-    )
-    (\newEs -> do
-        -- Replace the original handler with a new one. Note that 'newEs'
-        -- will still see the original handler.
-        putEnv es $ mkHandler newEs
-        unEff m es
-    )
-  where
-    mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
+interpose handler action = interposeImpl action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | 'interpose' with the effect handler as the last argument.
 --
@@ -572,41 +563,23 @@ interposeWith
   -> EffectHandler e es
   -- ^ The effect handler.
   -> Eff es a
-interposeWith m handler = interpose handler m
+interposeWith action handler = interposeImpl action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | Replace the handler of an existing effect with a new one that uses other,
 -- private effects.
 --
 -- @'interpose' ≡ 'impose' 'id'@
 impose
-  :: forall e es handlerEs a b. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
+  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => (Eff handlerEs a -> Eff es b)
-  -- ^ Introduction of effects encapsulated within the handler.
+  -- ^ Setup of effects encapsulated in the handler.
   -> EffectHandler e handlerEs
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es b
-impose runHandlerEs handler m = unsafeEff $ \es -> do
-  inlineBracket
-    (do
-        origHandler <- getEnv @e es
-        replaceEnv origHandler relinkHandler es
-    )
-    (\newEs -> do
-        -- Restore the original handler.
-        putEnv es =<< getEnv @e newEs
-        unreplaceEnv @e newEs
-    )
-    (\newEs -> do
-        (`unEff` newEs) . runHandlerEs . unsafeEff $ \handlerEs -> do
-          -- Replace the original handler with a new one. Note that
-          -- 'newEs' (and thus 'handlerEs') wil still see the original
-          -- handler.
-          putEnv es $ mkHandler handlerEs
-          unEff m es
-    )
-  where
-    mkHandler es = Handler es (let ?callStack = thawCallStack ?callStack in handler)
+impose runSetup handler action = imposeImpl runSetup action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | 'impose' with the effect handler as the last argument.
 --
@@ -614,12 +587,13 @@ impose runHandlerEs handler m = unsafeEff $ \es -> do
 imposeWith
   :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => (Eff handlerEs a -> Eff es b)
-  -- ^ Introduction of effects encapsulated within the handler.
+  -- ^ Setup of effects encapsulated in the handler.
   -> Eff es a
   -> EffectHandler e handlerEs
   -- ^ The effect handler.
   -> Eff es b
-imposeWith runHandlerEs m handler = impose runHandlerEs handler m
+imposeWith runSetup action handler = imposeImpl runSetup action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in handler)
 
 ----------------------------------------
 -- First order effects
@@ -642,7 +616,8 @@ interpret_
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
-interpret_ handler = interpret (const handler)
+interpret_ handler action = interpretImpl action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'interpretWith' for first order effects.
 --
@@ -653,7 +628,8 @@ interpretWith_
   -> EffectHandler_ e es
   -- ^ The effect handler.
   -> Eff      es  a
-interpretWith_ m handler = interpret (const handler) m
+interpretWith_ action handler = interpretImpl action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'reinterpret' for first order effects.
 --
@@ -661,12 +637,13 @@ interpretWith_ m handler = interpret (const handler) m
 reinterpret_
   :: (HasCallStack, DispatchOf e ~ Dynamic)
   => (Eff handlerEs a -> Eff es b)
-  -- ^ Introduction of effects encapsulated within the handler.
+  -- ^ Setup of effects encapsulated in the handler.
   -> EffectHandler_ e handlerEs
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b
-reinterpret_ runHandlerEs handler = reinterpret runHandlerEs (const handler)
+reinterpret_ runSetup handler action = reinterpretImpl runSetup action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'reinterpretWith' for first order effects.
 --
@@ -674,12 +651,13 @@ reinterpret_ runHandlerEs handler = reinterpret runHandlerEs (const handler)
 reinterpretWith_
   :: (HasCallStack, DispatchOf e ~ Dynamic)
   => (Eff handlerEs a -> Eff es b)
-  -- ^ Introduction of effects encapsulated within the handler.
+  -- ^ Setup of effects encapsulated in the handler.
   -> Eff (e : es) a
   -> EffectHandler_ e handlerEs
   -- ^ The effect handler.
   -> Eff      es  b
-reinterpretWith_ runHandlerEs m handler = reinterpret runHandlerEs (const handler) m
+reinterpretWith_ runSetup action handler = reinterpretImpl runSetup action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'interpose' for first order effects.
 --
@@ -690,7 +668,8 @@ interpose_
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es a
-interpose_ handler = interpose (const handler)
+interpose_ handler action = interposeImpl action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'interposeWith' for first order effects.
 --
@@ -701,7 +680,8 @@ interposeWith_
   -> EffectHandler_ e es
   -- ^ The effect handler.
   -> Eff es a
-interposeWith_ m handler = interpose (const handler) m
+interposeWith_ action handler = interposeImpl action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'impose' for first order effects.
 --
@@ -709,12 +689,13 @@ interposeWith_ m handler = interpose (const handler) m
 impose_
   :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => (Eff handlerEs a -> Eff es b)
-  -- ^ Introduction of effects encapsulated within the handler.
+  -- ^ Setup of effects encapsulated in the handler.
   -> EffectHandler_ e handlerEs
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es b
-impose_ runHandlerEs handler = impose runHandlerEs (const handler)
+impose_ runSetup handler action = imposeImpl runSetup action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'imposeWith' for first order effects.
 --
@@ -722,12 +703,13 @@ impose_ runHandlerEs handler = impose runHandlerEs (const handler)
 imposeWith_
   :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => (Eff handlerEs a -> Eff es b)
-  -- ^ Introduction of effects encapsulated within the handler.
+  -- ^ Setup of effects encapsulated in the handler.
   -> Eff es a
   -> EffectHandler_ e handlerEs
   -- ^ The effect handler.
   -> Eff es b
-imposeWith_ runHandlerEs m handler = impose runHandlerEs (const handler) m
+imposeWith_ runSetup action handler = imposeImpl runSetup action $ \es ->
+  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
 
 ----------------------------------------
 -- Unlifts
@@ -1081,38 +1063,6 @@ localBorrow (LocalEnv les) strategy k = unsafeEff $ \es -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localBorrow #-}
 
-copyRefs
-  :: forall es srcEs destEs
-   . (HasCallStack, KnownSubset es srcEs)
-  => Env srcEs
-  -> Env destEs
-  -> IO (Env (es ++ destEs))
-copyRefs src@(Env soffset srefs _) dest@(Env doffset drefs storage) = do
-  requireMatchingStorages src dest
-  let es = reifyIndices @es @srcEs
-      esSize = length es
-      destSize = sizeofPrimArray drefs - doffset
-  mrefs <- newPrimArray (esSize + destSize)
-  copyPrimArray mrefs esSize drefs doffset destSize
-  let writeRefs i = \case
-        [] -> pure ()
-        (x : xs) -> do
-          writePrimArray mrefs i $ indexPrimArray srefs (soffset + x)
-          writeRefs (i + 1) xs
-  writeRefs 0 es
-  refs <- unsafeFreezePrimArray mrefs
-  pure $ Env 0 refs storage
-{-# NOINLINE copyRefs #-}
-
-requireMatchingStorages :: HasCallStack => Env es1 -> Env es2 -> IO ()
-requireMatchingStorages es1 es2
-  | envStorage es1 /= envStorage es2 = error
-    $ "Env and LocalEnv point to different Storages.\n"
-    ++ "If you passed LocalEnv to a different thread and tried to create an "
-    ++ "unlifting function there, it's not allowed. You need to create it in "
-    ++ "the thread of the effect handler."
-  | otherwise = pure ()
-
 -- | Require that both effect stacks share an opaque suffix.
 --
 -- Functions from the 'localUnlift' family utilize this constraint to guarantee
@@ -1183,6 +1133,112 @@ instance
   ( Text "Running local actions in monomorphic effect stacks is not supported." :$$:
     Text "As a solution simply change the stack to have a polymorphic suffix."
   ) => SharedSuffix '[] '[]
+
+----------------------------------------
+-- Helpers
+
+interpretImpl
+  :: (HasCallStack, DispatchOf e ~ Dynamic)
+  => Eff (e : es) a
+  -> (Env es -> Handler e)
+  -> Eff      es  a
+interpretImpl action mkHandler = unsafeEff $ \es -> do
+  (`unEff` es) $ runHandler (mkHandler es) action
+{-# INLINE interpretImpl #-}
+
+reinterpretImpl
+  :: (HasCallStack, DispatchOf e ~ Dynamic)
+  => (Eff handlerEs a -> Eff es b)
+  -> Eff (e : es) a
+  -> (Env handlerEs -> Handler e)
+  -> Eff      es  b
+reinterpretImpl runSetup action mkHandler = unsafeEff $ \es -> do
+  (`unEff` es) . runSetup . unsafeEff $ \handlerEs -> do
+    (`unEff` es) $ runHandler (mkHandler handlerEs) action
+{-# INLINE reinterpretImpl #-}
+
+interposeImpl
+  :: forall e es a. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
+  => Eff es a
+  -> (Env es -> Handler e)
+  -> Eff es a
+interposeImpl action mkHandler = unsafeEff $ \es -> do
+  inlineBracket
+    (do
+        origHandler <- getEnv @e es
+        replaceEnv origHandler relinkHandler es
+    )
+    (\newEs -> do
+        -- Restore the original handler.
+        putEnv es =<< getEnv @e newEs
+        unreplaceEnv @e newEs
+    )
+    (\newEs -> do
+        -- Replace the original handler with a new one. Note that 'newEs'
+        -- will still see the original handler.
+        putEnv es $ mkHandler newEs
+        unEff action es
+    )
+{-# INLINE interposeImpl #-}
+
+imposeImpl
+  :: forall e es handlerEs a b. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
+  => (Eff handlerEs a -> Eff es b)
+  -> Eff es a
+  -> (Env handlerEs -> Handler e)
+  -> Eff es b
+imposeImpl runSetup action mkHandler = unsafeEff $ \es -> do
+  inlineBracket
+    (do
+        origHandler <- getEnv @e es
+        replaceEnv origHandler relinkHandler es
+    )
+    (\newEs -> do
+        -- Restore the original handler.
+        putEnv es =<< getEnv @e newEs
+        unreplaceEnv @e newEs
+    )
+    (\newEs -> do
+        (`unEff` newEs) . runSetup . unsafeEff $ \handlerEs -> do
+          -- Replace the original handler with a new one. Note that
+          -- 'newEs' (and thus 'handlerEs') wil still see the original
+          -- handler.
+          putEnv es $ mkHandler handlerEs
+          unEff action es
+    )
+{-# INLINE imposeImpl #-}
+
+copyRefs
+  :: forall es srcEs destEs
+   . (HasCallStack, KnownSubset es srcEs)
+  => Env srcEs
+  -> Env destEs
+  -> IO (Env (es ++ destEs))
+copyRefs src@(Env soffset srefs _) dest@(Env doffset drefs storage) = do
+  requireMatchingStorages src dest
+  let es = reifyIndices @es @srcEs
+      esSize = length es
+      destSize = sizeofPrimArray drefs - doffset
+  mrefs <- newPrimArray (esSize + destSize)
+  copyPrimArray mrefs esSize drefs doffset destSize
+  let writeRefs i = \case
+        [] -> pure ()
+        (x : xs) -> do
+          writePrimArray mrefs i $ indexPrimArray srefs (soffset + x)
+          writeRefs (i + 1) xs
+  writeRefs 0 es
+  refs <- unsafeFreezePrimArray mrefs
+  pure $ Env 0 refs storage
+{-# NOINLINE copyRefs #-}
+
+requireMatchingStorages :: HasCallStack => Env es1 -> Env es2 -> IO ()
+requireMatchingStorages es1 es2
+  | envStorage es1 /= envStorage es2 = error
+    $ "Env and LocalEnv point to different Storages.\n"
+    ++ "If you passed LocalEnv to a different thread and tried to create an "
+    ++ "unlifting function there, it's not allowed. You need to create it in "
+    ++ "the thread of the effect handler."
+  | otherwise = pure ()
 
 -- $setup
 -- >>> import Control.Concurrent (ThreadId, forkIOWithUnmask)

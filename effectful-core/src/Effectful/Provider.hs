@@ -123,10 +123,17 @@ type Provider_ e input = Provider e input Identity
 
 type instance DispatchOf (Provider e input f) = Static NoSideEffects
 
+-- | Wrapper to prevent a space leak on reconstruction of 'Provider' in
+-- 'relinkProvider' (see https://gitlab.haskell.org/ghc/ghc/-/issues/25520).
+newtype ProviderImpl input f e es where
+  ProviderImpl
+    :: (forall r. HasCallStack => input -> Eff (e : es) r -> Eff es (f r))
+    -> ProviderImpl input f e es
+
 data instance StaticRep (Provider e input f) where
   Provider
     :: !(Env handlerEs)
-    -> !(forall r. HasCallStack => input -> Eff (e : handlerEs) r -> Eff handlerEs (f r))
+    -> !(ProviderImpl input f e handlerEs)
     -> StaticRep (Provider e input f)
 
 -- | Run the 'Provider' effect with a given effect handler.
@@ -136,14 +143,8 @@ runProvider
   -- ^ The effect handler.
   -> Eff (Provider e input f : es) a
   -> Eff es a
-runProvider provider m = unsafeEff $ \es0 -> do
-  inlineBracket
-    (consEnv (mkProvider es0) relinkProvider es0)
-    unconsEnv
-    (\es -> unEff m es)
-  where
-    -- Corresponds to withFrozenCallStack in provideWith.
-    mkProvider es = Provider es (let ?callStack = thawCallStack ?callStack in provider)
+runProvider provider action = runProviderImpl action $
+  ProviderImpl (let ?callStack = thawCallStack ?callStack in provider)
 
 -- | Run the 'Provider' effect with a given effect handler that doesn't change
 -- its return type.
@@ -153,7 +154,9 @@ runProvider_
   -- ^ The effect handler.
   -> Eff (Provider_ e input : es) a
   -> Eff es a
-runProvider_ provider = runProvider $ \input -> coerce . provider input
+runProvider_ provider action = runProviderImpl action $
+  ProviderImpl $ let ?callStack = thawCallStack ?callStack
+                 in \input -> coerce . provider input
 
 -- | Run the effect handler.
 provide :: (HasCallStack, Provider e () f :> es) => Eff (e : es) a -> Eff es (f a)
@@ -171,7 +174,7 @@ provideWith
   -> Eff (e : es) a
   -> Eff es (f a)
 provideWith input action = unsafeEff $ \es -> do
-  Provider handlerEs handler <- getEnv es
+  Provider handlerEs (ProviderImpl handler) <- getEnv es
   (`unEff` handlerEs)
     -- Corresponds to thawCallStack in runProvider.
     . withFrozenCallStack handler input
@@ -193,6 +196,18 @@ provideWith_ input = adapt . provideWith input
 
 ----------------------------------------
 -- Helpers
+
+runProviderImpl
+  :: HasCallStack
+  => Eff (Provider e input f : es) a
+  -> ProviderImpl input f e es
+  -> Eff es a
+runProviderImpl action providerImpl = unsafeEff $ \es -> do
+  inlineBracket
+    (consEnv (Provider es providerImpl) relinkProvider es)
+    unconsEnv
+    (unEff action)
+{-# INLINE runProviderImpl #-}
 
 relinkProvider :: Relinker StaticRep (Provider e input f)
 relinkProvider = Relinker $ \relink (Provider handlerEs run) -> do

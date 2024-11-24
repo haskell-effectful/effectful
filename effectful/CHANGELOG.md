@@ -2,6 +2,9 @@
 * Add `passthrough` to `Effectful.Dispatch.Dynamic` for passing operations to
   the upstream handler within `interpose` and `impose` without having to fully
   pattern match on them.
+* **Bugfixes**:
+  - Fix a potential space leak related to `HasCallStack` quirks
+    (https://gitlab.haskell.org/ghc/ghc/-/issues/25520).
 
 # effectful-2.5.0.0 (2024-10-23)
 * Add `plusEff` (specialized version of `<|>`) to `Effectful.NonDet` and make

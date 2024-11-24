@@ -51,11 +51,18 @@ type ProviderList_ providedEs input = ProviderList providedEs input Identity
 
 type instance DispatchOf (ProviderList providedEs input f) = Static NoSideEffects
 
+-- | Wrapper to prevent a space leak on reconstruction of 'ProviderList' in
+-- 'relinkProviderList' (see https://gitlab.haskell.org/ghc/ghc/-/issues/25520).
+newtype ProviderListImpl input f providedEs es where
+  ProviderListImpl
+    :: (forall r. HasCallStack => input -> Eff (providedEs ++ es) r -> Eff es (f r))
+    -> ProviderListImpl input f providedEs es
+
 data instance StaticRep (ProviderList providedEs input f) where
   ProviderList
     :: KnownEffects providedEs
     => !(Env handlerEs)
-    -> !(forall r. HasCallStack => input -> Eff (providedEs ++ handlerEs) r -> Eff handlerEs (f r))
+    -> !(ProviderListImpl input f providedEs handlerEs)
     -> StaticRep (ProviderList providedEs input f)
 
 -- | Run the 'ProviderList' effect with a given handler.
@@ -65,15 +72,8 @@ runProviderList
   -- ^ The handler.
   -> Eff (ProviderList providedEs input f : es) a
   -> Eff es a
-runProviderList providerList m = unsafeEff $ \es0 -> do
-  inlineBracket
-    (consEnv (mkProviderList es0) relinkProviderList es0)
-    unconsEnv
-    (\es -> unEff m es)
-  where
-    -- Corresponds to withFrozenCallStack in provideListWith.
-    mkProviderList es =
-      ProviderList es (let ?callStack = thawCallStack ?callStack in providerList)
+runProviderList providerList action = runProviderListImpl action $
+  ProviderListImpl (let ?callStack = thawCallStack ?callStack in providerList)
 
 -- | Run the 'Provider' effect with a given handler that doesn't change its
 -- return type.
@@ -83,7 +83,9 @@ runProviderList_
   -- ^ The handler.
   -> Eff (ProviderList_ providedEs input : es) a
   -> Eff es a
-runProviderList_ providerList = runProviderList $ \input -> coerce . providerList input
+runProviderList_ providerList action = runProviderListImpl action $
+  ProviderListImpl $ let ?callStack = thawCallStack ?callStack
+                     in \input -> coerce . providerList input
 
 -- | Run the handler.
 provideList
@@ -110,7 +112,7 @@ provideListWith
   -> Eff (providedEs ++ es) a
   -> Eff es (f a)
 provideListWith input action = unsafeEff $ \es -> do
-  ProviderList (handlerEs :: Env handlerEs) providerList <- do
+  ProviderList (handlerEs :: Env handlerEs) (ProviderListImpl providerList) <- do
     getEnv @(ProviderList providedEs input f) es
   (`unEff` handlerEs)
     -- Corresponds to a thawCallStack in runProviderList.
@@ -133,6 +135,18 @@ provideListWith_ input = adapt . provideListWith @providedEs input
 
 ----------------------------------------
 -- Helpers
+
+runProviderListImpl
+  :: (HasCallStack, KnownEffects providedEs)
+  => Eff (ProviderList providedEs input f : es) a
+  -> ProviderListImpl input f providedEs es
+  -> Eff es a
+runProviderListImpl action providerListImpl = unsafeEff $ \es -> do
+  inlineBracket
+    (consEnv (ProviderList es providerListImpl) relinkProviderList es)
+    unconsEnv
+    (unEff action)
+{-# INLINE runProviderListImpl #-}
 
 relinkProviderList :: Relinker StaticRep (ProviderList e input f)
 relinkProviderList = Relinker $ \relink (ProviderList handlerEs run) -> do

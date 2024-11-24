@@ -425,13 +425,13 @@ passthrough
   -- ^ The operation.
   -> Eff es a
 passthrough (LocalEnv les) op = unsafeEff $ \es -> do
-  Handler handlerEs handler <- getEnv es
+  Handler handlerEs (HandlerImpl handler) <- getEnv es
   when (envStorage les /= envStorage handlerEs) $ do
     error "les and handlerEs point to different Storages"
-  -- Prevent internal functions that rebind the effect handler from polluting
-  -- its call stack by freezing it. Note that functions 'interpret',
-  -- 'reinterpret', 'interpose' and 'impose' need to thaw it so that useful
-  -- stack frames from inside the effect handler continue to be added.
+  -- Prevent the addition of unnecessary 'handler' stack frame to the call
+  -- stack. Note that functions 'interpret', 'reinterpret', 'interpose' and
+  -- 'impose' need to thaw the call stack so that useful stack frames from
+  -- inside the effect handler continue to be added.
   unEff (withFrozenCallStack handler (LocalEnv les) op) handlerEs
 {-# NOINLINE passthrough #-}
 
@@ -448,8 +448,8 @@ interpret
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
-interpret handler action = interpretImpl action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in handler)
+interpret handler action = interpretImpl action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | 'interpret' with the effect handler as the last argument.
 --
@@ -460,8 +460,8 @@ interpretWith
   -> EffectHandler e es
   -- ^ The effect handler.
   -> Eff      es  a
-interpretWith action handler = interpretImpl action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in handler)
+interpretWith action handler = interpretImpl action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | Interpret an effect using other, private effects.
 --
@@ -474,8 +474,8 @@ reinterpret
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b
-reinterpret runSetup handler action = reinterpretImpl runSetup action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in handler)
+reinterpret runSetup handler action = reinterpretImpl runSetup action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | 'reinterpret' with the effect handler as the last argument.
 --
@@ -488,8 +488,8 @@ reinterpretWith
   -> EffectHandler e handlerEs
   -- ^ The effect handler.
   -> Eff      es  b
-reinterpretWith runSetup action handler = reinterpretImpl runSetup action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in handler)
+reinterpretWith runSetup action handler = reinterpretImpl runSetup action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | Replace the handler of an existing effect with a new one.
 --
@@ -541,7 +541,7 @@ reinterpretWith runSetup action handler = reinterpretImpl runSetup action $ \es 
 -- *** Exception: Op3 not implemented
 -- CallStack (from HasCallStack):
 --   error, called at <interactive>:...
---   handler, called at src/Effectful/Dispatch/Dynamic.hs...
+--   handler, called at src/Effectful/Dispatch/Dynamic.hs:...
 --   passthrough, called at <interactive>:...
 --   handler, called at src/Effectful/Dispatch/Dynamic.hs:...
 --   send, called at <interactive>:...
@@ -551,8 +551,8 @@ interpose
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es a
-interpose handler action = interposeImpl action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in handler)
+interpose handler action = interposeImpl action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | 'interpose' with the effect handler as the last argument.
 --
@@ -563,8 +563,8 @@ interposeWith
   -> EffectHandler e es
   -- ^ The effect handler.
   -> Eff es a
-interposeWith action handler = interposeImpl action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in handler)
+interposeWith action handler = interposeImpl action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | Replace the handler of an existing effect with a new one that uses other,
 -- private effects.
@@ -578,8 +578,8 @@ impose
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es b
-impose runSetup handler action = imposeImpl runSetup action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in handler)
+impose runSetup handler action = imposeImpl runSetup action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in handler)
 
 -- | 'impose' with the effect handler as the last argument.
 --
@@ -592,8 +592,8 @@ imposeWith
   -> EffectHandler e handlerEs
   -- ^ The effect handler.
   -> Eff es b
-imposeWith runSetup action handler = imposeImpl runSetup action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in handler)
+imposeWith runSetup action handler = imposeImpl runSetup action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in handler)
 
 ----------------------------------------
 -- First order effects
@@ -616,8 +616,8 @@ interpret_
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  a
-interpret_ handler action = interpretImpl action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
+interpret_ handler action = interpretImpl action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'interpretWith' for first order effects.
 --
@@ -628,8 +628,8 @@ interpretWith_
   -> EffectHandler_ e es
   -- ^ The effect handler.
   -> Eff      es  a
-interpretWith_ action handler = interpretImpl action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
+interpretWith_ action handler = interpretImpl action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'reinterpret' for first order effects.
 --
@@ -642,8 +642,8 @@ reinterpret_
   -- ^ The effect handler.
   -> Eff (e : es) a
   -> Eff      es  b
-reinterpret_ runSetup handler action = reinterpretImpl runSetup action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
+reinterpret_ runSetup handler action = reinterpretImpl runSetup action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'reinterpretWith' for first order effects.
 --
@@ -656,8 +656,8 @@ reinterpretWith_
   -> EffectHandler_ e handlerEs
   -- ^ The effect handler.
   -> Eff      es  b
-reinterpretWith_ runSetup action handler = reinterpretImpl runSetup action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
+reinterpretWith_ runSetup action handler = reinterpretImpl runSetup action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'interpose' for first order effects.
 --
@@ -668,8 +668,8 @@ interpose_
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es a
-interpose_ handler action = interposeImpl action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
+interpose_ handler action = interposeImpl action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'interposeWith' for first order effects.
 --
@@ -680,8 +680,8 @@ interposeWith_
   -> EffectHandler_ e es
   -- ^ The effect handler.
   -> Eff es a
-interposeWith_ action handler = interposeImpl action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
+interposeWith_ action handler = interposeImpl action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'impose' for first order effects.
 --
@@ -694,8 +694,8 @@ impose_
   -- ^ The effect handler.
   -> Eff es a
   -> Eff es b
-impose_ runSetup handler action = imposeImpl runSetup action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
+impose_ runSetup handler action = imposeImpl runSetup action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in const handler)
 
 -- | 'imposeWith' for first order effects.
 --
@@ -708,8 +708,8 @@ imposeWith_
   -> EffectHandler_ e handlerEs
   -- ^ The effect handler.
   -> Eff es b
-imposeWith_ runSetup action handler = imposeImpl runSetup action $ \es ->
-  Handler es (let ?callStack = thawCallStack ?callStack in const handler)
+imposeWith_ runSetup action handler = imposeImpl runSetup action $
+  HandlerImpl (let ?callStack = thawCallStack ?callStack in const handler)
 
 ----------------------------------------
 -- Unlifts
@@ -1140,29 +1140,29 @@ instance
 interpretImpl
   :: (HasCallStack, DispatchOf e ~ Dynamic)
   => Eff (e : es) a
-  -> (Env es -> Handler e)
+  -> HandlerImpl e es
   -> Eff      es  a
-interpretImpl action mkHandler = unsafeEff $ \es -> do
-  (`unEff` es) $ runHandler (mkHandler es) action
+interpretImpl action handlerImpl = unsafeEff $ \es -> do
+  (`unEff` es) $ runHandler (Handler es handlerImpl) action
 {-# INLINE interpretImpl #-}
 
 reinterpretImpl
   :: (HasCallStack, DispatchOf e ~ Dynamic)
   => (Eff handlerEs a -> Eff es b)
   -> Eff (e : es) a
-  -> (Env handlerEs -> Handler e)
+  -> HandlerImpl e handlerEs
   -> Eff      es  b
-reinterpretImpl runSetup action mkHandler = unsafeEff $ \es -> do
+reinterpretImpl runSetup action handlerImpl = unsafeEff $ \es -> do
   (`unEff` es) . runSetup . unsafeEff $ \handlerEs -> do
-    (`unEff` es) $ runHandler (mkHandler handlerEs) action
+    (`unEff` es) $ runHandler (Handler handlerEs handlerImpl) action
 {-# INLINE reinterpretImpl #-}
 
 interposeImpl
   :: forall e es a. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => Eff es a
-  -> (Env es -> Handler e)
+  -> HandlerImpl e es
   -> Eff es a
-interposeImpl action mkHandler = unsafeEff $ \es -> do
+interposeImpl action handlerImpl = unsafeEff $ \es -> do
   inlineBracket
     (do
         origHandler <- getEnv @e es
@@ -1176,7 +1176,7 @@ interposeImpl action mkHandler = unsafeEff $ \es -> do
     (\newEs -> do
         -- Replace the original handler with a new one. Note that 'newEs'
         -- will still see the original handler.
-        putEnv es $ mkHandler newEs
+        putEnv es $ Handler newEs handlerImpl
         unEff action es
     )
 {-# INLINE interposeImpl #-}
@@ -1185,9 +1185,9 @@ imposeImpl
   :: forall e es handlerEs a b. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
   => (Eff handlerEs a -> Eff es b)
   -> Eff es a
-  -> (Env handlerEs -> Handler e)
+  -> HandlerImpl e handlerEs
   -> Eff es b
-imposeImpl runSetup action mkHandler = unsafeEff $ \es -> do
+imposeImpl runSetup action handlerImpl = unsafeEff $ \es -> do
   inlineBracket
     (do
         origHandler <- getEnv @e es
@@ -1203,7 +1203,7 @@ imposeImpl runSetup action mkHandler = unsafeEff $ \es -> do
           -- Replace the original handler with a new one. Note that
           -- 'newEs' (and thus 'handlerEs') wil still see the original
           -- handler.
-          putEnv es $ mkHandler handlerEs
+          putEnv es $ Handler handlerEs handlerImpl
           unEff action es
     )
 {-# INLINE imposeImpl #-}

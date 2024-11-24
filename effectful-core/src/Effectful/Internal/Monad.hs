@@ -59,6 +59,7 @@ module Effectful.Internal.Monad
   , EffectHandler
   , LocalEnv(..)
   , Handler(..)
+  , HandlerImpl(..)
   , relinkHandler
   , runHandler
   , send
@@ -522,10 +523,14 @@ type EffectHandler (e :: Effect) (es :: [Effect])
   -- ^ The operation.
   -> Eff es a
 
+-- | Wrapper to prevent a space leak on reconstruction of 'Handler' in
+-- 'relinkHandler' (see https://gitlab.haskell.org/ghc/ghc/-/issues/25520).
+newtype HandlerImpl e es = HandlerImpl (EffectHandler e es)
+
 -- | An internal representation of dynamically dispatched effects, i.e. the
 -- effect handler bundled with its environment.
 data Handler :: Effect -> Type where
-  Handler :: !(Env handlerEs) -> !(EffectHandler e handlerEs) -> Handler e
+  Handler :: !(Env handlerEs) -> !(HandlerImpl e handlerEs) -> Handler e
 type instance EffectRep Dynamic = Handler
 
 relinkHandler :: Relinker Handler e
@@ -552,13 +557,13 @@ send
   -- ^ The operation.
   -> Eff es a
 send op = unsafeEff $ \es -> do
-  Handler handlerEs handler <- getEnv es
+  Handler handlerEs (HandlerImpl handler) <- getEnv es
   when (envStorage es /= envStorage handlerEs) $ do
     error "es and handlerEs point to different Storages"
-  -- Prevent internal functions that rebind the effect handler from polluting
-  -- its call stack by freezing it. Note that functions 'interpret',
-  -- 'reinterpret', 'interpose' and 'impose' need to thaw it so that useful
-  -- stack frames from inside the effect handler continue to be added.
+  -- Prevent the addition of unnecessary 'handler' stack frame to the call
+  -- stack. Note that functions 'interpret', 'reinterpret', 'interpose' and
+  -- 'impose' need to thaw the call stack so that useful stack frames from
+  -- inside the effect handler continue to be added.
   unEff (withFrozenCallStack handler (LocalEnv es) op) handlerEs
 {-# NOINLINE send #-}
 

@@ -1,3 +1,7 @@
+# effectful-core-2.6.0.0 (????-??-??)
+* **Breaking changes**:
+  - Change the order of type parameters in `raise` for better usability.
+
 # effectful-core-2.5.1.0 (2024-11-27)
 * Add `passthrough` to `Effectful.Dispatch.Dynamic` for passing operations to
   the upstream handler within `interpose` and `impose` without having to fully

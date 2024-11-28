@@ -418,7 +418,7 @@ instance Prim :> es => PrimMonad (Eff es) where
 -- Lifting
 
 -- | Lift an 'Eff' computation into an effect stack with one more effect.
-raise :: Eff es a -> Eff (e : es) a
+raise :: forall e es a. Eff es a -> Eff (e : es) a
 raise m = unsafeEff $ \es -> unEff m =<< tailEnv es
 
 -- | Lift an 'Eff' computation into an effect stack with one more effect and

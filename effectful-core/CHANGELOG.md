@@ -1,6 +1,7 @@
 # effectful-core-2.6.0.0 (????-??-??)
 * **Breaking changes**:
   - Change the order of type parameters in `raise` for better usability.
+  - `Effectful.Error.Static.ErrorWrapper` is no longer caught by `catchSync`.
 
 # effectful-core-2.5.1.0 (2024-11-27)
 * Add `passthrough` to `Effectful.Dispatch.Dynamic` for passing operations to

@@ -247,7 +247,10 @@ instance Show ErrorWrapper where
     . ("\n" ++)
     . (prettyCallStack cs ++)
 
-instance Exception ErrorWrapper
+instance Exception ErrorWrapper where
+  -- See discussion in https://github.com/haskell-effectful/effectful/pull/232.
+  toException = asyncExceptionToException
+  fromException = asyncExceptionFromException
 
 matchError :: ErrorId -> ErrorWrapper -> Maybe (CallStack, e)
 matchError eid (ErrorWrapper etag cs _ e)

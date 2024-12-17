@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.19.20241121
+# version: 0.19.20241202
 #
-# REGENDATA ("0.19.20241121",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.19.20241202",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -32,20 +32,20 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.12.0.20241114
+          - compiler: ghc-9.12.1
             compilerKind: ghc
-            compilerVersion: 9.12.0.20241114
-            setup-method: ghcup-prerelease
+            compilerVersion: 9.12.1
+            setup-method: ghcup-vanilla
             allow-failure: false
           - compiler: ghc-9.10.1
             compilerKind: ghc
             compilerVersion: 9.10.1
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.8.3
+          - compiler: ghc-9.8.4
             compilerKind: ghc
-            compilerVersion: 9.8.3
-            setup-method: ghcup-vanilla
+            compilerVersion: 9.8.4
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.6.5
             compilerKind: ghc
@@ -105,21 +105,6 @@ jobs:
         if: matrix.setup-method == 'ghcup-vanilla'
         run: |
           "$HOME/.ghcup/bin/ghcup" -s https://raw.githubusercontent.com/haskell/ghcup-metadata/master/ghcup-vanilla-0.0.8.yaml install ghc "$HCVER" || (cat "$HOME"/.ghcup/logs/*.* && false)
-          HC=$("$HOME/.ghcup/bin/ghcup" whereis ghc "$HCVER")
-          HCPKG=$(echo "$HC" | sed 's#ghc$#ghc-pkg#')
-          HADDOCK=$(echo "$HC" | sed 's#ghc$#haddock#')
-          echo "HC=$HC" >> "$GITHUB_ENV"
-          echo "HCPKG=$HCPKG" >> "$GITHUB_ENV"
-          echo "HADDOCK=$HADDOCK" >> "$GITHUB_ENV"
-        env:
-          HCKIND: ${{ matrix.compilerKind }}
-          HCNAME: ${{ matrix.compiler }}
-          HCVER: ${{ matrix.compilerVersion }}
-      - name: Install GHC (GHCup prerelease)
-        if: matrix.setup-method == 'ghcup-prerelease'
-        run: |
-          "$HOME/.ghcup/bin/ghcup" config add-release-channel https://raw.githubusercontent.com/haskell/ghcup-metadata/master/ghcup-prereleases-0.0.8.yaml;
-          "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER" || (cat "$HOME"/.ghcup/logs/*.* && false)
           HC=$("$HOME/.ghcup/bin/ghcup" whereis ghc "$HCVER")
           HCPKG=$(echo "$HC" | sed 's#ghc$#ghc-pkg#')
           HADDOCK=$(echo "$HC" | sed 's#ghc$#haddock#')
@@ -196,7 +181,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache/restore@v4
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-f1965066
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-11815553
           path: ~/.haskell-ci-tools
       - name: install cabal-plan
         run: |
@@ -215,7 +200,7 @@ jobs:
         if: always()
         uses: actions/cache/save@v4
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-f1965066
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-11815553
           path: ~/.haskell-ci-tools
       - name: checkout
         uses: actions/checkout@v4
@@ -267,6 +252,8 @@ jobs:
           allow-newer: freer-simple:*
           allow-newer: fused-effects:*
           allow-newer: polysemy:*
+          allow-newer: async:base
+          allow-newer: hashable:base
 
           package effectful
             flags: +benchmark-foreign-libraries

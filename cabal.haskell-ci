@@ -10,8 +10,6 @@ jobs-selection: any
 
 installed:      -all
 
-ghc-version-mapping: 9.12.1:9.12.0.20241114
-
 raw-project
   package effectful
     flags: +benchmark-foreign-libraries

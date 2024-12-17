@@ -64,7 +64,7 @@ library
     build-depends:    base                >= 4.14      && < 5
                     , effectful-core      >= 1.0.0.0   && < 3.0.0.0
                     , containers          >= 0.5
-                    , ghc                 >= 8.10      && < 9.11
+                    , ghc                 >= 8.10      && < 9.13
 
     if impl(ghc < 9.4)
       build-depends:  ghc-tcplugins-extra >= 0.3       && < 0.5

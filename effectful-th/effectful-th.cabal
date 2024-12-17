@@ -65,7 +65,7 @@ library
                     , containers          >= 0.6
                     , effectful-core      >= 1.0.0.0   && < 3.0.0.0
                     , exceptions          >= 0.10.4
-                    , template-haskell    >= 2.16      && < 2.23
+                    , template-haskell    >= 2.16      && < 2.24
                     , th-abstraction      >= 0.6       && < 0.8
 
     hs-source-dirs:  src

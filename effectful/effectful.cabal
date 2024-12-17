@@ -22,7 +22,7 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
-tested-with: GHC == { 8.10.7, 9.0.2, 9.2.8, 9.4.8, 9.6.5, 9.8.3, 9.10.1, 9.12.1 }
+tested-with: GHC == { 8.10.7, 9.0.2, 9.2.8, 9.4.8, 9.6.5, 9.8.4, 9.10.1, 9.12.1 }
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head
@@ -188,8 +188,8 @@ benchmark bench
        if impl(ghc < 9.9)
           build-depends: freer-simple >= 1.2.1.2
 
-       if impl(ghc < 9.11)
-          build-depends: fused-effects >= 1.1.2.2
+       if impl(ghc < 9.13)
+          build-depends: fused-effects >= 1.1.2.3
 
        if impl(ghc < 9.11)
           build-depends: polysemy >= 1.9.2.0

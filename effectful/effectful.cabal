@@ -113,18 +113,21 @@ library
                      Effectful.FileSystem.Effect
 
     reexported-modules:    Effectful
+                         , Effectful.Coroutine
                          , Effectful.Dispatch.Dynamic
                          , Effectful.Dispatch.Static
-                         , Effectful.Error.Static
                          , Effectful.Error.Dynamic
+                         , Effectful.Error.Static
                          , Effectful.Exception
                          , Effectful.Fail
+                         , Effectful.Input.Const
                          , Effectful.Labeled
                          , Effectful.Labeled.Error
                          , Effectful.Labeled.Reader
                          , Effectful.Labeled.State
                          , Effectful.Labeled.Writer
                          , Effectful.NonDet
+                         , Effectful.Output.Array
                          , Effectful.Prim
                          , Effectful.Provider
                          , Effectful.Provider.List

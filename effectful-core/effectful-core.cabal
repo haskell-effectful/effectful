@@ -82,6 +82,7 @@ library
       c-sources:     cbits/utils.c
 
     exposed-modules: Effectful
+                     Effectful.Coroutine
                      Effectful.Dispatch.Dynamic
                      Effectful.Dispatch.Static
                      Effectful.Dispatch.Static.Primitive
@@ -90,6 +91,7 @@ library
                      Effectful.Error.Static
                      Effectful.Exception
                      Effectful.Fail
+                     Effectful.Input.Const
                      Effectful.Internal.Effect
                      Effectful.Internal.Env
                      Effectful.Internal.Monad
@@ -101,6 +103,7 @@ library
                      Effectful.Labeled.State
                      Effectful.Labeled.Writer
                      Effectful.NonDet
+                     Effectful.Output.Array
                      Effectful.Prim
                      Effectful.Provider
                      Effectful.Provider.List

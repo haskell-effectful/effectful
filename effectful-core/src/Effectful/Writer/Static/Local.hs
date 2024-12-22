@@ -8,6 +8,8 @@
 -- is inefficient. __This applies, in particular, to the standard list type__,
 -- which makes the 'Writer' effect pretty niche.
 --
+-- __If you just want to accumulate values, use "Effectful.Output.Static.Local.Array" or "Effectful.Output.Static.Local.List".__
+--
 -- /Note:/ while the 'Control.Monad.Trans.Writer.Strict.Writer' from the
 -- @transformers@ package includes additional operations
 -- 'Control.Monad.Trans.Writer.Strict.pass' and

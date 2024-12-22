@@ -90,6 +90,9 @@ library
                      Effectful.Error.Static
                      Effectful.Exception
                      Effectful.Fail
+                     Effectful.Input.Dynamic
+                     Effectful.Input.Static
+                     Effectful.Input.Static.Action
                      Effectful.Internal.Effect
                      Effectful.Internal.Effect.Dynamic
                      Effectful.Internal.Env
@@ -99,10 +102,18 @@ library
                      Effectful.Internal.Utils.Word64Map
                      Effectful.Labeled
                      Effectful.Labeled.Error
+                     Effectful.Labeled.Input
+                     Effectful.Labeled.Output
                      Effectful.Labeled.Reader
                      Effectful.Labeled.State
                      Effectful.Labeled.Writer
                      Effectful.NonDet
+                     Effectful.Output.Dynamic
+                     Effectful.Output.Static.Action
+                     Effectful.Output.Static.Local.Array
+                     Effectful.Output.Static.Local.List
+                     Effectful.Output.Static.Shared.Array
+                     Effectful.Output.Static.Shared.List
                      Effectful.Prim
                      Effectful.Provider
                      Effectful.Provider.List

@@ -18,8 +18,11 @@ module Effectful.Internal.Utils
   , Unique
   , newUnique
 
-  -- * CallStack
+    -- * CallStack
   , thawCallStack
+
+    -- * Array capacity
+  , growCapacity
   ) where
 
 import Control.Exception
@@ -129,3 +132,11 @@ thawCallStack :: CallStack -> CallStack
 thawCallStack = \case
   FreezeCallStack cs -> cs
   cs -> cs
+
+----------------------------------------
+
+-- | Grow capacity of an array.
+--
+-- See https://archive.ph/Z2R8w.
+growCapacity :: Int -> Int
+growCapacity n = 1 + quot (n * 3) 2

@@ -477,7 +477,7 @@ insertEffect storage e f = do
         Storage (bumpVersion version) (StorageData (size + 1) vs0 es0 fs0)
       pure $ Ref size version
     EQ -> do
-      let len = doubleCapacity len0
+      let len = growCapacity len0
       vs <- newPrimArray len
       es <- newSmallArray len undefinedEffect
       fs <- newSmallArray len undefinedRelinker
@@ -510,10 +510,6 @@ deleteEffect storage (Ref ref version) = do
 -- | Relink the environment to use the new storage.
 relinkEnv :: IORef' Storage -> Env es -> IO (Env es)
 relinkEnv storage (Env offset refs _) = pure $ Env offset refs storage
-
--- | Double the capacity of an array.
-doubleCapacity :: Int -> Int
-doubleCapacity n = max 1 n * 2
 
 undefinedVersion :: Version
 undefinedVersion = Version 0

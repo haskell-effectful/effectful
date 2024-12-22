@@ -1,4 +1,8 @@
 -- | Support for access to a read only value of a particular type.
+--
+-- /Note:/ strictly speaking the value is not read only because of 'local'. If
+-- you want to ensure that the initial value never changes, use
+-- "Effectful.Input.Static.Value".
 module Effectful.Reader.Static
   ( -- * Effect
     Reader

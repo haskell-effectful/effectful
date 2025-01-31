@@ -86,6 +86,7 @@ library
                      Effectful.Dispatch.Static
                      Effectful.Dispatch.Static.Primitive
                      Effectful.Dispatch.Static.Unsafe
+                     Effectful.EarlyReturn.Dynamic
                      Effectful.Error.Dynamic
                      Effectful.Error.Static
                      Effectful.Exception

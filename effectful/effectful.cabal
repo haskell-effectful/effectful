@@ -115,6 +115,7 @@ library
     reexported-modules:    Effectful
                          , Effectful.Dispatch.Dynamic
                          , Effectful.Dispatch.Static
+                         , Effectful.EarlyReturn.Dynamic
                          , Effectful.Error.Static
                          , Effectful.Error.Dynamic
                          , Effectful.Exception
@@ -162,6 +163,7 @@ test-suite test
 
     other-modules:  AsyncTests
                     ConcurrencyTests
+                    EarlyReturnTests
                     EnvTests
                     EnvironmentTests
                     ErrorTests

@@ -7,24 +7,28 @@
 -- will most likely run your @EarlyReturn@ effect handler in the block you want
 -- to return early from. As example of the former, with the handler in @main@:
 --
--- @
+-- >>> :{
 -- early1 :: forall es. (HasCallStack, IOE :> es, EarlyReturn Bool :> es) => Int -> Eff es Bool
 -- early1 n = do
 --   when (n > 10) $ do
 --     returnWith True
 --   pure False
+-- :}
 -- 
+-- >>> :{
 -- f1 :: forall es. (HasCallStack, IOE :> es, EarlyReturn Bool :> es) => Int -> Eff es Bool
 -- f1 x = do
 --   y <- early1 x
 --   liftIO $ putStrLn $ "in f1, y=" <> show y
 --   pure y
+-- :}
 --
+-- >>> :{
 -- main1 :: IO ()
 -- main1 = do
 --   x <- runEff . runEarlyReturn $ f1 20
 --   print x
--- @
+-- :}
 --
 -- >>> main1
 -- True
@@ -35,24 +39,28 @@
 -- Now with our handler running in the block we want to be able to return early
 -- from:
 --
--- @
+-- >>> :{
 -- early2 :: forall es. (HasCallStack, IOE :> es) => Int -> Eff es Bool
 -- early2 x = runEarlyReturn $ do
 --   when (x > 10) $ do
 --     returnWith True
 --   pure False
--- 
+-- :}
+--
+-- >>> :{
 -- f2 :: forall es a. (HasCallStack, IOE :> es) => Int -> Eff es Bool
 -- f2 x = do
 --   y <- early2 x
 --   liftIO $ putStrLn $ "in f2, y=" <> show y
 --   pure y
+-- :}
 --
+-- >>> :{
 -- main2 :: IO ()
 -- main2 = do
 --   y <- runEff $ f2 20
 --   print y
--- @
+-- :}
 --
 -- >>> main2
 -- in f2, y=True

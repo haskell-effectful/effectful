@@ -8,6 +8,12 @@
 -- to return early from. As example of the former, with the handler in @main@:
 --
 -- >>> :{
+-- import Control.Monad              (when)
+-- import Effectful                  (Eff, IOE, liftIO, runEff, (:>))
+-- import Effectful.Dispatch.Dynamic (HasCallStack)
+-- :}
+--
+-- >>> :{
 -- early1 :: forall es. (HasCallStack, IOE :> es, EarlyReturn Bool :> es) => Int -> Eff es Bool
 -- early1 n = do
 --   when (n > 10) $ do

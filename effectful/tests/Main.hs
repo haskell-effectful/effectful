@@ -4,6 +4,7 @@ import Test.Tasty
 
 import AsyncTests
 import ConcurrencyTests
+import EarlyReturnTests
 import EnvTests
 import EnvironmentTests
 import ErrorTests
@@ -19,6 +20,7 @@ main :: IO ()
 main = defaultMain $ testGroup "effectful"
   [ asyncTests
   , concurrencyTests
+  , earlyReturnTests
   , envTests
   , environmentTests
   , errorTests

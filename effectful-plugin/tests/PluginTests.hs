@@ -1,4 +1,4 @@
--- Tests copied from polysemy-plugin:
+-- Most tests copied from polysemy-plugin:
 --
 -- https://github.com/polysemy-research/polysemy/tree/master/polysemy-plugin/test
 --
@@ -14,6 +14,8 @@ import Unsafe.Coerce
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
+import Effectful.Labeled
+import Effectful.Labeled.Reader
 import Effectful.State.Static.Local
 
 main :: IO ()
@@ -22,17 +24,51 @@ main = pure ()
 ----------------------------------------
 -- Tests
 
+data Function i o :: Effect where
+  Call :: i -> Function i o m o
+type instance DispatchOf (Function i o) = Dynamic
+
+call :: (HasCallStack, Function i o :> es) => i -> Eff es o
+call a = send $ Call a
+
+callTest
+  :: ( Function Int a :> es
+     , Function a Int :> es
+     , Labeled "x" (Reader Int) :> es
+     , Labeled "y" (Reader b) :> es
+     , IsString s
+     , Function s a :> es
+     )
+  => Eff es ()
+callTest = do
+  a1 <- call 1
+  a2 <- call ""
+  _ <- call a1
+  _ <- call a2
+  (_::Int) <- ask
+  _ <- ask @"y"
+  pure ()
+
+class X a where
+  xxx :: a
+
 class MPTC a b where
   mptc :: a -> b
 
 instance MPTC Bool Int where
   mptc _ = 1000
 
-uniquelyInt :: (State Int :> es, State String :> es) => Eff es ()
-uniquelyInt = put 10
+ordPut :: (State s :> es, Ord s) => s -> Eff es ()
+ordPut = put
 
-uniquelyA :: (Num a, State a :> es, State b :> es) => Eff es ()
-uniquelyA = put 10
+uniquelyX :: (X a, State a :> es) => Eff es ()
+uniquelyX = put xxx
+
+uniquelyA :: (Num a, State a :> es, State b :> es, IsString b) => Eff es ()
+uniquelyA = put 10 >> put ""
+
+uniquelyInt :: (State Int :> es, State String :> es) => Eff es ()
+uniquelyInt = ordPut 10 >> put ""
 
 uniquelyString :: (State Int :> es, State String :> es) => Eff es ()
 uniquelyString = put mempty

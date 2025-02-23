@@ -2,73 +2,41 @@
 module Effectful.Plugin (plugin) where
 
 import Data.Either
-import Data.Function
+import Data.Foldable
 import Data.IORef
 import Data.Maybe
-import Data.Set (Set)
-import Data.Set qualified as Set
-import Data.Traversable
-
-import GHC.Core.Class (Class)
-import GHC.Core.InstEnv (InstEnvs, lookupInstEnv)
-import GHC.Core.Predicate (isIPClass)
-import GHC.Core.TyCo.Rep (PredType, Type)
+import GHC.Core.Class
+import GHC.Core.Coercion
+import GHC.Core.InstEnv
+import GHC.Core.Predicate
+import GHC.Core.TyCo.Rep
 import GHC.Core.TyCo.Subst
-import GHC.Core.TyCon (tyConClass_maybe)
-import GHC.Core.Type (splitAppTys)
-import GHC.Core.Unify (tcUnifyTy)
-import GHC.Driver.Config.Finder (initFinderOpts)
-import GHC.Driver.Env (hsc_home_unit, hsc_units)
-import GHC.Driver.Env.Types (HscEnv (..))
-import GHC.Driver.Plugins (Plugin (..), defaultPlugin, purePlugin)
-import GHC.Tc.Plugin (getTopEnv, lookupOrig, tcLookupClass, tcPluginIO)
-import GHC.Tc.Solver.Monad (newWantedEq, runTcSEarlyAbort)
+import GHC.Core.TyCon
+import GHC.Core.Type
+import GHC.Core.Unify
+import GHC.Driver.Config.Finder
+import GHC.Driver.Env
+import GHC.Driver.Plugins
+import GHC.Tc.Plugin
 import GHC.Tc.Types
-  ( TcPlugin (..)
-  , TcPluginM
-  , TcPluginSolveResult (..)
-  , unsafeTcPluginTcM
-  )
 import GHC.Tc.Types.Constraint
-  ( Ct (..)
-  , CtEvidence (..)
-#if __GLASGOW_HASKELL__ < 912
-  , CtLoc
+import GHC.Tc.Types.Evidence
+import GHC.Tc.Utils.TcType
+import GHC.Types.Name
+import GHC.Types.Unique.FM
+import GHC.Types.Unique.Set
+import GHC.Types.Var.Set
+import GHC.Unit.Finder
+import GHC.Unit.Module
+import GHC.Utils.Outputable qualified as O
+
+#if __GLASGOW_HASKELL__ <= 904
+type Subst = TCvSubst
 #endif
-#if __GLASGOW_HASKELL__ >= 908
-  , DictCt (..)
-#endif
-  , ctPred
-  , emptyRewriterSet
-  )
+
 #if __GLASGOW_HASKELL__ >= 912
-import GHC.Tc.Types.CtLoc (CtLoc)
+import GHC.Tc.Types.CtLoc
 #endif
-import GHC.Tc.Types.Evidence (EvBindsVar, Role (..))
-import GHC.Tc.Utils.Env (tcGetInstEnvs)
-import GHC.Tc.Utils.TcType (tcSplitTyConApp, eqType, nonDetCmpType)
-import GHC.Types.Name (mkTcOcc)
-import GHC.Types.Unique.FM (emptyUFM)
-import GHC.Unit.Finder (FindResult (..), findPluginModule)
-import GHC.Unit.Module (Module, ModuleName, mkModuleName)
-import GHC.Utils.Outputable (Outputable (..), showSDocUnsafe)
-
-#if __GLASGOW_HASKELL__ >= 906
-type TCvSubst = Subst
-#endif
-
-plugin :: Plugin
-plugin = defaultPlugin
-  { tcPlugin = \_ -> Just TcPlugin
-    { tcPluginInit = initPlugin
-    , tcPluginRewrite = \_ -> emptyUFM
-    , tcPluginSolve = solveFakedep
-    , tcPluginStop = \_ -> pure ()
-    }
-  , pluginRecompile = purePlugin
-  }
-
-----------------------------------------
 
 data EffGiven = EffGiven
   { givenEffHead :: Type
@@ -76,9 +44,9 @@ data EffGiven = EffGiven
   , givenEs :: Type
   }
 
-instance Show EffGiven where
-  show (EffGiven _ e es) =
-    "[G] " ++ showSDocUnsafe (ppr e) <> " :> " <> showSDocUnsafe (ppr es)
+instance O.Outputable EffGiven where
+  ppr (EffGiven _ e es) =
+    O.text "[G]" O.<+> O.ppr e O.<+> O.text ":>" O.<+> O.ppr es
 
 data EffWanted = EffWanted
   { wantedEffHead :: Type
@@ -87,28 +55,39 @@ data EffWanted = EffWanted
   , wantedLoc :: CtLoc
   }
 
-instance Show EffWanted where
-  show (EffWanted _ e es _) =
-    "[W] " <> showSDocUnsafe (ppr e) <> " :> " <> showSDocUnsafe (ppr es)
+instance O.Outputable EffWanted where
+  ppr (EffWanted _ e es _) =
+    O.text "[W]" O.<+> O.ppr e O.<+> O.text ":>" O.<+> O.ppr es
 
-newtype OrdType = OrdType {unOrdType :: Type}
+data OtherWanted = OtherWanted
+  { wantedType :: Type
+  , wantedVars :: CoVarSet
+  }
 
-instance Eq OrdType where
-  (==) = eqType `on` unOrdType
+instance O.Outputable OtherWanted where
+  ppr (OtherWanted ty _) =
+    O.text "[W]" O.<+> O.ppr ty
 
-instance Ord OrdType where
-  compare = nonDetCmpType `on` unOrdType
+data Candidates = None | Single EffGiven | Multiple
 
 ----------------------------------------
 
-type VisitedSet = Set (OrdType, OrdType)
+plugin :: Plugin
+plugin = defaultPlugin
+  { tcPlugin = \_ -> Just TcPlugin
+    { tcPluginInit = initPlugin
+    , tcPluginRewrite = \_ -> emptyUFM
+    , tcPluginSolve = disambiguateEffects
+    , tcPluginStop = \_ -> pure ()
+    }
+  , pluginRecompile = purePlugin
+  }
 
-initPlugin :: TcPluginM (Class, IORef VisitedSet)
+initPlugin :: TcPluginM Class
 initPlugin = do
   recMod <- lookupModule $ mkModuleName "Effectful.Internal.Effect"
   cls <- tcLookupClass =<< lookupOrig recMod (mkTcOcc ":>")
-  visited <- tcPluginIO $ newIORef Set.empty
-  pure (cls, visited)
+  pure cls
   where
     lookupModule :: ModuleName -> TcPluginM Module
     lookupModule mod_nm = do
@@ -122,193 +101,236 @@ initPlugin = do
         Found _ md -> pure md
         _ -> errorWithoutStackTrace "Please add effectful-core to the list of dependencies."
 
-solveFakedep
-  :: (Class, IORef VisitedSet)
+disambiguateEffects
+  :: Class
   -> EvBindsVar
   -> [Ct]
   -> [Ct]
   -> TcPluginM TcPluginSolveResult
-solveFakedep (elemCls, visitedRef) _ allGivens allWanteds = do
-  -- We're given two lists of constraints here:
-  --
-  -- - 'allGivens' are constraints already in our context,
-  --
-  -- - 'allWanteds' are constraints that need to be solved.
-  --
-  -- In the following notes, the words "give/given" and "want/wanted" all refer
-  -- to this specific technical concept: given constraints are those that we can
-  -- use, and wanted constraints are those that we need to solve.
-
-  --tcPluginIO $ do
-  --  putStrLn $ "Givens: " <> show (showSDocUnsafe . ppr <$> allGivens)
-  --  putStrLn $ "Wanteds: " <> show (showSDocUnsafe . ppr <$> allWanteds)
-
-  -- For each 'e :> es' we /want/ to solve (the "goal"), we need to eventually
-  -- correspond it to another unique /given/ 'e :> es' that will make the
-  -- program typecheck (the "solution").
-  globals <- unsafeTcPluginTcM tcGetInstEnvs
-  let solns = mapMaybe (solve globals) effWanteds
-
-  -- Now we need to tell GHC the solutions. The way we do this is to generate a
-  -- new equality constraint, like 'State e ~ State Int', so that GHC's
-  -- constraint solver will know that 'e' must be 'Int'.
-  eqns <- for solns $ \(goal, soln) -> do
-    let wantedEq = newWantedEq (wantedLoc goal) emptyRewriterSet Nominal
-                               (wantedEff goal) (givenEff soln)
-    (eqn, _) <- unsafeTcPluginTcM $ runTcSEarlyAbort wantedEq
-    pure (CNonCanonical eqn, (OrdType $ wantedEff goal, OrdType $ givenEff soln))
-
-  -- For any solution we've generated, we need to be careful not to generate it
-  -- again, or we might end up generating infinitely many solutions. So, we
-  -- record any already generated solution in a set.
-  visitedSolnPairs <- tcPluginIO $ readIORef visitedRef
-  let solnEqns = fmap fst . flip filter eqns $ \(_, pair) -> Set.notMember pair visitedSolnPairs
-  tcPluginIO $ do
-    modifyIORef visitedRef (Set.union $ Set.fromList $ map snd eqns)
-    --putStrLn $ "Emitting: " <> showSDocUnsafe (ppr solnEqns)
-
-  pure $ TcPluginSolveResult [] [] solnEqns
+disambiguateEffects elemCls _ allGivens allWanteds = do
+  printList "EffGivens" effGivens
+  printList "OtherGivens" otherGivens
+  printList "EffWanteds" effWanteds
+  printList "OtherWanteds" otherWanteds
+  instEnvs <- getInstEnvs
+  solutions <- tcPluginIO $ newIORef []
+  forM_ effWanteds $ \wanted -> do
+    printSingle "Wanted" wanted
+    let extraEffGivens = extractEffGivens (wantedEs wanted) (wantedEs wanted)
+    case mapMaybe (maybeUnifiesWith wanted) $ extraEffGivens ++ effGivens of
+      [] -> printLn "No candidates"
+      [(given, _)] -> do
+        printSingle "Single candidate found" given
+        emitEqConstraint solutions wanted given
+      candidates -> do
+        printList "Multiple candidates found" $ map fst candidates
+        filterCandidates instEnvs None candidates >>= \case
+          None -> printLn "No candidates left"
+          Single given -> do
+            printSingle "Single candidate left" given
+            emitEqConstraint solutions wanted given
+          Multiple -> printLn "Multiple candidates left"
+  printLn ""
+  TcPluginSolveResult [] [] <$> tcPluginIO (readIORef solutions)
   where
-    -- The only type of constraint we're interested in solving are 'e :> es'
-    -- constraints. Therefore, we extract these constraints out of the
-    -- 'allGivens' and 'allWanted's.
-    effGivens = mapMaybe maybeEffGiven allGivens
-    (otherWantedTys, effWanteds) = partitionEithers
-      . map splitWanteds
-      -- Get rid of implicit parameters, they're weird.
+    (otherGivens, effGivens) = partitionEithers
+      . map (groupGivens elemCls)
+      . filter (not . isIP)
+      $ allGivens
+
+    (otherWanteds, effWanteds) = partitionEithers
+      . map (groupWanteds elemCls)
       . filter (not . isIP)
       $ allWanteds
 
-    -- We store a list of the types of all given constraints, which will be
-    -- useful later.
-    allGivenTys = ctPred <$> allGivens
-
-    -- Determine if there is a unique solution to a goal from a set of
-    -- candidates.
-    solve
+    filterCandidates
       :: InstEnvs
-      -> EffWanted
-      -> Maybe (EffWanted, EffGiven)
-    solve globals goal = case unifiableCands of
-      -- If there's already only one unique solution, commit to it; in the worst
-      -- case where it doesn't actually match, we get a cleaner error message
-      -- like "Unable to match (State String) to (State Int)" instead of a type
-      -- ambiguity error.
-      [(soln, _)] -> Just (goal, soln)
-      _ ->
-        -- Otherwise, the second criteria comes in: the candidate must satisfy
-        -- all other constraints we /want/ to solve. For example, when we want
-        -- to solve '(State a :> es, Num a)`, the candidate 'State Int :> es'
-        -- will do the job, because it satisfied 'Num a'; however 'State String
-        -- :> es' will be excluded.
-        let satisfiableCands = filter (satisfiable globals) unifiableCands
-        in -- Finally, if there is a unique candidate remaining, we use it as
-           -- the solution; otherwise we don't solve anything.
-           case satisfiableCands of
-             [(soln, _)] -> Just (goal, soln)
-             _ -> Nothing
+      -> Candidates
+      -> [(EffGiven, Subst)]
+      -> TcPluginM Candidates
+    filterCandidates instEnvs acc = \case
+      [] -> pure acc
+      ((given, subst) : rest) -> do
+        printSingle "Candidate" given
+        let relevantWanteds = (`mapMaybe` otherWanteds) $ \wanted ->
+              if substHasAnyVar subst $ wantedVars wanted
+              then Just . substTy subst $ wantedType wanted
+              else Nothing
+        printList "Relevant wanteds" relevantWanteds
+        allWantedsSolvable relevantWanteds >>= \case
+          True -> do
+            printLn "Candidate fits"
+            case acc of
+              None -> filterCandidates instEnvs (Single given) rest
+              Single _ -> pure Multiple
+              Multiple -> error "unreachable"
+          False -> do
+            printLn "Candidate doesn't fit, skipping"
+            filterCandidates instEnvs acc rest
       where
-        -- Apart from ':>' constraints in the context, the effects already
-        -- hardwired into the effect stack type, like those in 'A : B : C : es'
-        -- also need to be considered. So here we extract that for them to be
-        -- considered simultaneously with regular ':>' constraints.
-        cands = extractExtraGivens (wantedEs goal) (wantedEs goal) <> effGivens
-        -- The first criteria is that the candidate constraint must /unify/ with
-        -- the goal. This means that the type variables in the goal can be
-        -- instantiated in a way so that the goal becomes equal to the
-        -- candidate. For example, the candidates 'State Int :> es' and 'State
-        -- String :> es' both unify with the goal 'State s :> es'.
-        unifiableCands = mapMaybe (unifiableWith goal) cands
+        allWantedsSolvable :: [Type] -> TcPluginM Bool
+        allWantedsSolvable = \case
+          [] -> pure True
+          wanted : rest -> do
+            printSingle "Checking" wanted
+            if wanted `unifiesWithAny` otherGivens
+              then do
+                printLn "Solvable from local context"
+                allWantedsSolvable rest
+              else case tcSplitTyConApp wanted of
+                (con, args) -> case tyConClass_maybe con of
+                  Nothing -> do
+                    printLn "Not a class constraint"
+                    pure False
+                  Just cls -> case lookupInstEnv False instEnvs cls args of
+                    ([], _, _) -> do
+                      printLn "No matching instances found"
+                      pure False
+                    _ -> do
+                      printLn "Found matching instances"
+                      allWantedsSolvable rest
 
-    -- Extract the heads of a type like 'A : B : C : es' into 'FakedepGiven's.
-    extractExtraGivens :: Type -> Type -> [EffGiven]
-    extractExtraGivens fullEs es = case splitAppTys es of
-      (_colon, [_kind, e, es']) ->
-        let (dtHead, _tyArgs) = splitAppTys e
-        in EffGiven { givenEffHead = dtHead
-                    , givenEff = e
-                    , givenEs = fullEs
-                    } : extractExtraGivens fullEs es'
-      _ -> []
+----------------------------------------
+-- Standalone helpers
 
-    -- Determine whether a given constraint is of form 'e :> es'.
-    maybeEffGiven :: Ct -> Maybe EffGiven
-    maybeEffGiven = \case
+-- | Record a wanted equality constraint to aid typechecking.
+emitEqConstraint :: IORef [Ct] -> EffWanted -> EffGiven -> TcPluginM ()
+emitEqConstraint solutions wanted given = do
+  let predTy = mkPrimEqPred (wantedEff wanted) (givenEff given)
+  printSingle "Emitting constraint" predTy
+  ev <- newWanted (wantedLoc wanted) predTy
+  tcPluginIO $ modifyIORef' solutions (mkNonCanonical ev :)
+
+-- | Separate givens based on whether they're of the form @e :> es@ or not.
+groupGivens :: Class -> Ct -> Either Type EffGiven
+groupGivens elemCls = \case
 #if __GLASGOW_HASKELL__ < 908
-      CDictCan { cc_class = cls
-               , cc_tyargs = [eff, es]
-               } ->
+  CDictCan
+    { cc_class = cls
+    , cc_tyargs = [eff, es]
+    }
+    | cls == elemCls ->
 #else
-      CDictCan DictCt { di_cls = cls
-                      , di_tys = [eff, es]
-                      } ->
+  CDictCan DictCt
+    { di_cls = cls
+    , di_tys = [eff, es]
+    }
+    | cls == elemCls ->
 #endif
-        if cls == elemCls
-        then Just EffGiven { givenEffHead = fst $ splitAppTys eff
-                           , givenEff = eff
-                           , givenEs = es
-                           }
-        else Nothing
-      _ -> Nothing
+    Right EffGiven
+      { givenEffHead = fst $ splitAppTys eff
+      , givenEff = eff
+      , givenEs = es
+      }
+  ct -> Left $ ctPred ct
 
-    -- Check if a constraint in an implicit parameter.
-    isIP :: Ct -> Bool
-    isIP = \case
+-- | Separate wanteds based on whether they're of the form @e :> es@ or not.
+groupWanteds :: Class -> Ct -> Either OtherWanted EffWanted
+groupWanteds elemCls = \case
 #if __GLASGOW_HASKELL__ < 908
-      CDictCan { cc_class = cls } -> isIPClass cls
+  CDictCan
+    { cc_ev = CtWanted { ctev_loc = loc }
+    , cc_class = cls
+    , cc_tyargs = [eff, es]
+    }
+    | cls == elemCls ->
 #else
-      CDictCan DictCt { di_cls = cls } -> isIPClass cls
+  CDictCan DictCt
+    { di_ev = CtWanted { ctev_loc = loc }
+    , di_cls = cls
+    , di_tys = [eff, es]
+    }
+    | cls == elemCls ->
 #endif
-      _ -> False
+    Right EffWanted
+      { wantedEffHead = fst $ splitAppTys eff
+      , wantedEff = eff
+      , wantedEs = es
+      , wantedLoc = loc
+      }
+  ct ->
+    Left $ OtherWanted
+      { wantedType = ctPred ct
+      , wantedVars = tyCoVarsOfType $ ctPred ct
+      }
 
-    -- Determine whether a wanted constraint is of form 'e :> es'.
-    splitWanteds :: Ct -> Either PredType EffWanted
-    splitWanteds = \case
+-- | We don't get appropriate given constraints when dealing with concrete (or
+-- partially concrete) effect lists like (A : B : C : es), so they need to be
+-- manually added (GHC will conjure them later).
+extractEffGivens :: Type -> Type -> [EffGiven]
+extractEffGivens fullEs es = case splitAppTys es of
+  (_colon, [_kind, eff, esTail]) ->
+    let (effCon, _tyArgs) = splitAppTys eff
+    in EffGiven { givenEffHead = effCon
+                , givenEff = eff
+                , givenEs = fullEs
+                } : extractEffGivens fullEs esTail
+  _ -> []
+
+-- | Check if a constraint in an implicit parameter. We discard all of them
+-- since they will not affect resolution of @:>@ constraints.
+isIP :: Ct -> Bool
+isIP = \case
 #if __GLASGOW_HASKELL__ < 908
-      ct@CDictCan { cc_ev = CtWanted { ctev_loc = loc }
-               , cc_class = cls
-               , cc_tyargs = [eff, es]
-               } ->
+  CDictCan { cc_class = cls } -> isIPClass cls
 #else
-      ct@(CDictCan DictCt { di_ev = CtWanted { ctev_loc = loc }
-                          , di_cls = cls
-                          , di_tys = [eff, es]
-                          }) ->
+  CDictCan DictCt { di_cls = cls } -> isIPClass cls
 #endif
-        if cls == elemCls
-        then Right EffWanted { wantedEffHead = fst $ splitAppTys eff
-                             , wantedEff = eff
-                             , wantedEs = es
-                             , wantedLoc = loc
-                             }
-        else Left $ ctPred ct
-      ct -> Left $ ctPred ct
+  _ -> False
 
-    -- Given a wanted constraint and a given constraint, unify them and give
-    -- back a substitution that can be applied to the wanted to make it equal to
-    -- the given.
-    unifiableWith :: EffWanted -> EffGiven -> Maybe (EffGiven, TCvSubst)
-    unifiableWith goal cand =
-      if    wantedEs      goal `eqType` givenEs      cand
-         && wantedEffHead goal `eqType` givenEffHead cand
-      then (cand, ) <$> tcUnifyTy (wantedEff goal) (givenEff cand)
-      else Nothing
+-- | Attempt to unify types, but skip skolem (rigid) type variables. This is
+-- crucial for proper filtering of candidates.
+tcUnifyTyNoSkolems :: Type -> Type -> Maybe Subst
+tcUnifyTyNoSkolems ty1 ty2 = tcUnifyTys bindFun [ty1] [ty2]
+  where
+    bindFun var _ty = if isSkolemTyVar var then Apart else BindMe
 
-    -- Check whether a candidate can satisfy all the wanted constraints.
-    satisfiable :: InstEnvs -> (EffGiven, TCvSubst) -> Bool
-    satisfiable globals (_, subst) = flip all wantedsInst $ \wanted ->
-      if Set.member (OrdType wanted) givensInst
-        then True -- Can we find this constraint in our local context?
-        else case tcSplitTyConApp wanted of
-          (con, args) ->
-            -- If not, lookup the global environment.
-            case tyConClass_maybe con of
-              Nothing -> False
-              Just cls ->
-                let (res, _, _) = lookupInstEnv False globals cls args
-                in not $ null res
-      where
-        -- The wanteds after unification.
-        wantedsInst = substTys subst otherWantedTys
-        -- The local given context after unification.
-        givensInst = Set.fromList (OrdType <$> substTys subst allGivenTys)
+unifiesWithAny :: Type -> [Type] -> Bool
+unifiesWithAny ty = any (isJust . tcUnifyTyNoSkolems ty)
+
+substHasAnyVar :: Subst -> TyCoVarSet -> Bool
+substHasAnyVar subst = uniqSetAny (`elemUFM` getTvSubstEnv subst)
+
+-- | Given a wanted constraint and a given constraint, attempt to unify them and
+-- give back a substitution that can be applied to the wanted to make it equal
+-- to the given.
+maybeUnifiesWith :: EffWanted -> EffGiven -> Maybe (EffGiven, Subst)
+maybeUnifiesWith wanted given =
+  if    wantedEs      wanted `eqType` givenEs      given
+     && wantedEffHead wanted `eqType` givenEffHead given
+  then (given, ) <$> tcUnifyTyNoSkolems (wantedEff wanted) (givenEff given)
+  else Nothing
+
+----------------------------------------
+-- Debugging
+
+#ifdef VERBOSE
+
+showOut :: O.Outputable o => o -> String
+showOut = O.showSDocOneLine O.defaultSDocContext . O.ppr
+
+printSingle :: O.Outputable x => String -> x -> TcPluginM ()
+printSingle header x = printLn $ header ++ ": " ++ showOut x
+
+printList :: O.Outputable x => String -> [x] -> TcPluginM ()
+printList header = \case
+  [] -> printLn $ header ++ ": []"
+  xs -> do
+    printLn $ header ++ ":"
+    forM_ xs $ \x -> printLn $ "- " ++ showOut x
+
+printLn :: String -> TcPluginM ()
+printLn = tcPluginIO . putStrLn
+
+#else
+
+printSingle :: String -> x -> TcPluginM ()
+printSingle _ _ = pure ()
+
+printList :: String -> [x] -> TcPluginM ()
+printList _ _ = pure ()
+
+printLn :: String -> TcPluginM ()
+printLn _ = pure ()
+
+#endif

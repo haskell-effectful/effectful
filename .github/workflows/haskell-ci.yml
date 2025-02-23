@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.19.20250216
+# version: 0.19.20250506
 #
-# REGENDATA ("0.19.20250216",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.19.20250506",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -81,12 +81,12 @@ jobs:
       - name: Install GHCup
         run: |
           mkdir -p "$HOME/.ghcup/bin"
-          curl -sL https://downloads.haskell.org/ghcup/0.1.30.0/x86_64-linux-ghcup-0.1.30.0 > "$HOME/.ghcup/bin/ghcup"
+          curl -sL https://downloads.haskell.org/ghcup/0.1.50.1/x86_64-linux-ghcup-0.1.50.1 > "$HOME/.ghcup/bin/ghcup"
           chmod a+x "$HOME/.ghcup/bin/ghcup"
       - name: Install cabal-install
         run: |
-          "$HOME/.ghcup/bin/ghcup" install cabal 3.12.1.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
-          echo "CABAL=$HOME/.ghcup/bin/cabal-3.12.1.0 -vnormal+nowrap" >> "$GITHUB_ENV"
+          "$HOME/.ghcup/bin/ghcup" install cabal 3.14.2.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
+          echo "CABAL=$HOME/.ghcup/bin/cabal-3.14.2.0 -vnormal+nowrap" >> "$GITHUB_ENV"
       - name: Install GHC (GHCup)
         if: matrix.setup-method == 'ghcup'
         run: |
@@ -184,7 +184,7 @@ jobs:
         run: |
           touch cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful-core" >> cabal.project
-          echo "packages: $GITHUB_WORKSPACE/source/effectful-plugin" >> cabal.project
+          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "packages: $GITHUB_WORKSPACE/source/effectful-plugin" >> cabal.project ; fi
           echo "packages: $GITHUB_WORKSPACE/source/effectful-th" >> cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful" >> cabal.project
           cat cabal.project
@@ -210,13 +210,13 @@ jobs:
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_effectful_core}" >> cabal.project
-          echo "packages: ${PKGDIR_effectful_plugin}" >> cabal.project
+          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "packages: ${PKGDIR_effectful_plugin}" >> cabal.project ; fi
           echo "packages: ${PKGDIR_effectful_th}" >> cabal.project
           echo "packages: ${PKGDIR_effectful}" >> cabal.project
           echo "package effectful-core" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
-          echo "package effectful-plugin" >> cabal.project
-          echo "    ghc-options: -Werror=missing-methods" >> cabal.project
+          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "package effectful-plugin" >> cabal.project ; fi
+          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
           echo "package effectful-th" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           echo "package effectful" >> cabal.project
@@ -279,8 +279,8 @@ jobs:
         run: |
           cd ${PKGDIR_effectful_core} || false
           ${CABAL} -vnormal check
-          cd ${PKGDIR_effectful_plugin} || false
-          ${CABAL} -vnormal check
+          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful_plugin} || false ; fi
+          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then ${CABAL} -vnormal check ; fi
           cd ${PKGDIR_effectful_th} || false
           ${CABAL} -vnormal check
           cd ${PKGDIR_effectful} || false

@@ -1,4 +1,5 @@
 # effectful-core-2.6.0.0 (????-??-??)
+* Re-export `ThreadId` from `Effectful.Concurrent` for convenience.
 * **Breaking changes**:
   - Change the order of type parameters in `raise` for better usability.
   - `Effectful.Error.Static.ErrorWrapper` is no longer caught by `catchSync`.

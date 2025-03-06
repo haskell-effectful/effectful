@@ -20,6 +20,7 @@ module Effectful.Concurrent
   , runConcurrent
 
     -- * Basic concurrency operations
+  , C.ThreadId
   , myThreadId
   , forkIO
   , forkFinally

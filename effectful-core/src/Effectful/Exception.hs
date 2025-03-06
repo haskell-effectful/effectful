@@ -59,6 +59,7 @@ module Effectful.Exception
   , C.ExitCase(..)
   , finally
   , onException
+  , withException
 
     -- * Utils
 
@@ -511,6 +512,21 @@ onException
   -> Eff es a
 onException action handler = reallyUnsafeUnliftIO $ \unlift -> do
   E.onException (unlift action) (unlift handler)
+
+-- | Like 'onException', but provides the handler the thrown exception.
+withException :: C.Exception e => Eff es a -> (e -> Eff es b) -> Eff es a
+withException thing after = uninterruptibleMask $ \restore -> do
+    res1 <- try $ restore thing
+    case res1 of
+        Left e1 -> do
+            -- explicitly ignore exceptions from after. We know that
+            -- no async exceptions were thrown there, so therefore
+            -- the stronger exception must come from thing
+            --
+            -- https://github.com/fpco/safe-exceptions/issues/2
+            _ :: Either C.SomeException b <- try $ after e1
+            throwIO e1
+        Right x -> pure x
 
 ----------------------------------------
 -- Utils

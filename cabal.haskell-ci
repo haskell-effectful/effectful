@@ -11,5 +11,15 @@ jobs-selection: any
 installed:      -all
 
 raw-project
+  package effectful-core
+    ghc-options: -Werror
+
+  package effectful-plugin
+    ghc-options: -Werror
+
+  package effectful-th
+    ghc-options: -Werror
+
   package effectful
+    ghc-options: -Werror
     flags: +benchmark-foreign-libraries

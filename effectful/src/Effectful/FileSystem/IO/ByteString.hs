@@ -36,7 +36,6 @@ module Effectful.FileSystem.IO.ByteString
   ) where
 
 import Data.ByteString (ByteString)
-import Data.ByteString qualified as BS
 import Data.ByteString.Char8 qualified as BS8
 import Prelude hiding (appendFile, readFile, writeFile)
 import System.IO (Handle)
@@ -44,6 +43,10 @@ import System.IO (Handle)
 import Effectful
 import Effectful.Dispatch.Static
 import Effectful.FileSystem
+
+#if MIN_VERSION_bytestring(0,11,2)
+import Data.ByteString qualified as BS
+#endif
 
 ----------------------------------------
 -- Introducing and eliminating ByteStrings

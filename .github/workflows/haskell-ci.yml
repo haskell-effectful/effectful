@@ -229,8 +229,18 @@ jobs:
           allow-newer: async:base
           allow-newer: hashable:base
 
+          package effectful-core
+            ghc-options: -Werror
+
+          package effectful-plugin
+            ghc-options: -Werror
+
+          package effectful-th
+            ghc-options: -Werror
+
           package effectful
-            flags: +benchmark-foreign-libraries
+            ghc-options: -Werror
+            flags:       +benchmark-foreign-libraries
           EOF
           cat cabal.project
           cat cabal.project.local

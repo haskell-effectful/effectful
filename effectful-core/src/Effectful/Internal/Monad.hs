@@ -1,5 +1,4 @@
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-noncanonical-monad-instances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- | The 'Eff' monad.
@@ -276,10 +275,9 @@ instance Applicative (Eff es) where
   liftA2 f (Eff ma) (Eff mb) = unsafeEff $ \es -> liftA2 f (ma es) (mb es)
 
 instance Monad (Eff es) where
-  return = unsafeEff_ . pure
   Eff m >>= k = unsafeEff $ \es -> m es >>= \a -> unEff (k a) es
   -- https://gitlab.haskell.org/ghc/ghc/-/issues/20008
-  Eff ma >> Eff mb = unsafeEff $ \es -> ma es >> mb es
+  {-# INLINE (>>=) #-}
 
 instance MonadFix (Eff es) where
   mfix f = unsafeEff $ \es -> mfix $ \a -> unEff (f a) es

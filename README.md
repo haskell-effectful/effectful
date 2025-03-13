@@ -6,7 +6,7 @@
 [![Stackage Nightly](https://www.stackage.org/package/effectful/badge/nightly)](https://www.stackage.org/nightly/package/effectful)
 
 
-<img src="https://user-images.githubusercontent.com/387658/127747903-f728437f-2ee4-47b8-9f0c-5102fd44c8e4.png" width="128">
+<img src="https://raw.githubusercontent.com/haskell-effectful/effectful/logo-svg/logo.svg" width="150">
 
 An easy to use, fast extensible effects library with seamless integration with
 the existing Haskell ecosystem.

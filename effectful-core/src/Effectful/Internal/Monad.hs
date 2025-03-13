@@ -47,6 +47,8 @@ module Effectful.Internal.Monad
   , withSeqEffToIO
   , withEffToIO
   , withConcEffToIO
+  , reallyUnsafeLiftMapIO
+  , reallyUnsafeUnliftIO
 
   -- ** Low-level unlifts
   , seqUnliftIO
@@ -261,6 +263,53 @@ concUnliftIO es Ephemeral Unlimited = ephemeralConcUnlift es maxBound
 concUnliftIO es Persistent (Limited threads) = persistentConcUnlift es False threads
 concUnliftIO es Persistent Unlimited = persistentConcUnlift es True maxBound
 
+-- | Utility for lifting 'IO' computations of type
+--
+-- @'IO' a -> 'IO' b@
+--
+-- to
+--
+-- @'Eff' es a -> 'Eff' es b@
+--
+-- This function is __really unsafe__ because:
+--
+-- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
+--   computations.
+--
+-- - The 'IO' computation must run its argument in a way that's perceived as
+--   sequential to the outside observer, e.g. in the same thread or in a worker
+--   thread that finishes before the argument is run again.
+--
+-- __Warning:__ if you disregard the second point, you will experience weird
+-- bugs, data races or internal consistency check failures.
+--
+-- When in doubt, use 'Effectful.Dispatch.Static.unsafeLiftMapIO', especially
+-- since this version saves only a simple safety check per call of
+-- @reallyUnsafeLiftMapIO f@.
+reallyUnsafeLiftMapIO :: (IO a -> IO b) -> Eff es a -> Eff es b
+reallyUnsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
+
+-- | Create an unlifting function.
+--
+-- This function is __really unsafe__ because:
+--
+-- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
+--   computations.
+--
+-- - Unlifted 'Eff' computations must be run in a way that's perceived as
+--   sequential to the outside observer, e.g. in the same thread as the caller
+--   of 'reallyUnsafeUnliftIO' or in a worker thread that finishes before
+--   another unlifted computation is run.
+--
+-- __Warning:__ if you disregard the second point, you will experience weird
+-- bugs, data races or internal consistency check failures.
+--
+-- When in doubt, use 'Effectful.Dispatch.Static.unsafeSeqUnliftIO', especially
+-- since this version saves only a simple safety check per call of the unlifting
+-- function.
+reallyUnsafeUnliftIO :: ((forall r. Eff es r -> IO r) -> IO a) -> Eff es a
+reallyUnsafeUnliftIO k = unsafeEff $ \es -> k (`unEff` es)
+
 ----------------------------------------
 -- Base
 
@@ -308,39 +357,40 @@ instance NonDet :> es => MonadPlus (Eff es)
 -- Exception
 
 instance C.MonadThrow (Eff es) where
-  throwM = unsafeEff_ . E.throwIO
+  throwM = unsafeEff_ . withFrozenCallStack E.throwIO
 
 instance C.MonadCatch (Eff es) where
-  catch m handler = unsafeEff $ \es -> do
-    unEff m es `E.catch` \e -> do
-      unEff (handler e) es
+  catch action handler = reallyUnsafeUnliftIO $ \unlift -> do
+    E.catch (unlift action) (unlift . handler)
 
 instance C.MonadMask (Eff es) where
-  mask k = unsafeEff $ \es -> E.mask $ \unmask ->
-    unEff (k $ \m -> unsafeEff $ unmask . unEff m) es
+  mask k = reallyUnsafeUnliftIO $ \unlift -> do
+    E.mask $ \release -> unlift $ k (reallyUnsafeLiftMapIO release)
 
-  uninterruptibleMask k = unsafeEff $ \es -> E.uninterruptibleMask $ \unmask ->
-    unEff (k $ \m -> unsafeEff $ unmask . unEff m) es
+  uninterruptibleMask k = reallyUnsafeUnliftIO $ \unlift -> do
+    E.uninterruptibleMask $ \release -> unlift $ k (reallyUnsafeLiftMapIO release)
 
-  generalBracket acquire release use = unsafeEff $ \es -> E.mask $ \unmask -> do
-    resource <- unEff acquire es
+  generalBracket before after action = reallyUnsafeUnliftIO $ \unlift -> do
+     E.mask $ \unmask -> do
+      a <- unlift before
 #if MIN_VERSION_base(4,21,0)
-    b <- E.catchNoPropagate
-      (unmask (unEff (use resource) es))
-      (\ec@(E.ExceptionWithContext _ e) -> do
-          _ <- unEff (release resource $ C.ExitCaseException e) es
-          E.rethrowIO ec
-      )
+      b <- E.catchNoPropagate
+        (unmask . unlift $ action a)
+        (\ec@(E.ExceptionWithContext _ e) -> do
+            _ <- E.annotateIO (E.WhileHandling (E.toException ec)) $ do
+              unlift . after a $ C.ExitCaseException e
+            E.rethrowIO ec
+        )
 #else
-    b <- E.catch
-      (unmask (unEff (use resource) es))
-      (\e -> do
-          _ <- unEff (release resource $ C.ExitCaseException e) es
-          E.throwIO e
-      )
+      b <- E.catch
+        (unmask . unlift $ action a)
+        (\e -> do
+            _ <- unlift . after a $ C.ExitCaseException e
+            E.throwIO e
+        )
 #endif
-    c <- unEff (release resource $ C.ExitCaseSuccess b) es
-    pure (b, c)
+      c <- unlift . after a $ C.ExitCaseSuccess b
+      pure (b, c)
 
 ----------------------------------------
 -- Fail

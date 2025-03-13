@@ -333,7 +333,7 @@ instance C.MonadMask (Eff es) where
       )
 #else
     b <- E.catch
-      (unEff (use resource) es)
+      (unmask (unEff (use resource) es))
       (\e -> do
           _ <- unEff (release resource $ C.ExitCaseException e) es
           E.throwIO e

@@ -1,6 +1,6 @@
 # effectful
 
-[![Build Status](https://github.com/haskell-effectful/effectful/workflows/Haskell-CI/badge.svg?branch=master)](https://github.com/haskell-effectful/effectful/actions?query=branch%3Amaster)
+[![CI](https://github.com/haskell-effectful/effectful/actions/workflows/haskell-ci.yml/badge.svg?branch=master)](https://github.com/haskell-effectful/effectful/actions/workflows/haskell-ci.yml)
 [![Hackage](https://img.shields.io/hackage/v/effectful.svg)](https://hackage.haskell.org/package/effectful)
 [![Stackage LTS](https://www.stackage.org/package/effectful/badge/lts)](https://www.stackage.org/lts/package/effectful)
 [![Stackage Nightly](https://www.stackage.org/package/effectful/badge/nightly)](https://www.stackage.org/nightly/package/effectful)

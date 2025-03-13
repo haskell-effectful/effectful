@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_HADDOCK not-home #-}
@@ -323,9 +324,21 @@ instance C.MonadMask (Eff es) where
 
   generalBracket acquire release use = unsafeEff $ \es -> E.mask $ \unmask -> do
     resource <- unEff acquire es
-    b <- unmask (unEff (use resource) es) `E.catch` \e -> do
-      _ <- unEff (release resource $ C.ExitCaseException e) es
-      E.throwIO e
+#if MIN_VERSION_base(4,21,0)
+    b <- E.catchNoPropagate
+      (unmask (unEff (use resource) es))
+      (\ec@(E.ExceptionWithContext _ e) -> do
+          _ <- unEff (release resource $ C.ExitCaseException e) es
+          E.rethrowIO ec
+      )
+#else
+    b <- E.catch
+      (unEff (use resource) es)
+      (\e -> do
+          _ <- unEff (release resource $ C.ExitCaseException e) es
+          E.throwIO e
+      )
+#endif
     c <- unEff (release resource $ C.ExitCaseSuccess b) es
     pure (b, c)
 

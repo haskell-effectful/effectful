@@ -1,6 +1,7 @@
 # effectful-core-2.6.0.0 (????-??-??)
 * Adjust `generalBracket` with `base >= 4.21` to make use of the new exception
   annotation mechanism.
+* Add `withException` to `Effectful.Exception`.
 * Re-export `ThreadId` from `Effectful.Concurrent` for convenience.
 * **Breaking changes**:
   - Change the order of type parameters in `raise` for better usability.

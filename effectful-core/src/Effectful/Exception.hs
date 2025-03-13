@@ -59,6 +59,7 @@ module Effectful.Exception
   , C.ExitCase(..)
   , finally
   , onException
+  , withException
 
     -- * Utils
 
@@ -511,6 +512,27 @@ onException
   -> Eff es a
 onException action handler = reallyUnsafeUnliftIO $ \unlift -> do
   E.onException (unlift action) (unlift handler)
+
+-- | A variant of 'onException' that gives access to the exception.
+--
+-- @since 2.6.0.0
+withException
+  :: E.Exception e
+  => Eff es a
+  -> (e -> Eff es b)
+  -- ^ Computation to run last when an exception or
+  -- t'Effectful.Error.Static.Error' was thrown.
+  -> Eff es a
+withException action cleanup = do
+#if MIN_VERSION_base(4,21,0)
+  action `catchNoPropagate` \ec@(E.ExceptionWithContext _ e) -> do
+    _ <- annotateIO (E.WhileHandling (E.toException ec)) (cleanup e)
+    rethrowIO ec
+#else
+  action `catch` \e -> do
+    _ <- cleanup e
+    throwIO e
+#endif
 
 ----------------------------------------
 -- Utils

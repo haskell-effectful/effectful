@@ -338,6 +338,10 @@ instance MonadFix (Eff es) where
 -- | Provide the ability to use the 'Alternative' and 'MonadPlus' instance for
 -- 'Eff'.
 --
+-- /Note:/ 'NonDet' does not backtrack. Formally, it obeys the "left-catch" law
+-- for 'MonadPlus', rather than the "left-distribution" law. This means that it
+-- behaves more like 'Maybe' than @[]@.
+--
 -- @since 2.2.0.0
 data NonDet :: Effect where
   Empty   :: NonDet m a

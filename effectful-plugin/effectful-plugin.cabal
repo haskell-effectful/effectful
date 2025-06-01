@@ -72,7 +72,7 @@ library
       cpp-options: -DVERBOSE
 
     build-depends:    base                >= 4.16      && < 5
-                    , effectful-core      >= 1.0.0.0   && < 3.0.0.0
+                    , effectful-core      >= 2.5.0.0   && < 3.0.0.0
                     , ghc                 >= 9.4       && < 9.13
 
     hs-source-dirs: src

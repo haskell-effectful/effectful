@@ -1,7 +1,7 @@
 cabal-version:      3.0
 build-type:         Simple
 name:               effectful-plugin
-version:            1.1.0.4
+version:            2.0.0.0
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control
@@ -17,12 +17,16 @@ description:
 extra-source-files: CHANGELOG.md
                     README.md
 
-tested-with: GHC == { 8.10.7, 9.0.2, 9.2.8, 9.4.8, 9.6.5, 9.8.4, 9.10.1, 9.12.1 }
+tested-with: GHC == { 9.4.8, 9.6.5, 9.8.4, 9.10.1, 9.12.1 }
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head
   type:     git
   location: https://github.com/haskell-effectful/effectful.git
+
+flag verbose
+    description: Trace plugin execution
+    default: False
 
 common language
     ghc-options:        -Wall
@@ -39,6 +43,7 @@ common language
                         DeriveFunctor
                         DeriveGeneric
                         DerivingStrategies
+                        DuplicateRecordFields
                         FlexibleContexts
                         FlexibleInstances
                         GADTs
@@ -46,7 +51,9 @@ common language
                         ImportQualifiedPost
                         LambdaCase
                         MultiParamTypeClasses
+                        NoFieldSelectors
                         NoStarIsType
+                        OverloadedRecordDot
                         PolyKinds
                         RankNTypes
                         RecordWildCards
@@ -61,18 +68,14 @@ common language
 library
     import:         language
 
-    build-depends:    base                >= 4.14      && < 5
-                    , effectful-core      >= 1.0.0.0   && < 3.0.0.0
-                    , containers          >= 0.5
-                    , ghc                 >= 8.10      && < 9.13
+    if flag(verbose)
+      cpp-options: -DVERBOSE
 
-    if impl(ghc < 9.4)
-      build-depends:  ghc-tcplugins-extra >= 0.3       && < 0.5
+    build-depends:    base                >= 4.16      && < 5
+                    , effectful-core      >= 2.5.0.0   && < 3.0.0.0
+                    , ghc                 >= 9.4       && < 9.13
 
-    if impl(ghc < 9.4)
-      hs-source-dirs: src-legacy
-    else
-      hs-source-dirs: src
+    hs-source-dirs: src
 
     exposed-modules: Effectful.Plugin
 

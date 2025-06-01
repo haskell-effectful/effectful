@@ -1,3 +1,7 @@
+# effectful-plugin-2.0.0.0 (2025-??-??)
+* Drop support for GHC < 9.4.
+* Fix various bugs and shortcomings.
+
 # effectful-plugin-1.1.0.4 (2024-10-08)
 * Fix inference in presence of implicit parameters.
 

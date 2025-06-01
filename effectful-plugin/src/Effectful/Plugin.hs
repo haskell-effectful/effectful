@@ -6,7 +6,6 @@ import Data.Foldable
 import Data.IORef
 import Data.Maybe
 import GHC.Core.Class
-import GHC.Core.Coercion
 import GHC.Core.InstEnv
 import GHC.Core.Predicate
 import GHC.Core.TyCo.Rep
@@ -14,7 +13,6 @@ import GHC.Core.TyCo.Subst
 import GHC.Core.TyCon
 import GHC.Core.Type
 import GHC.Core.Unify
-import GHC.Driver.Config.Finder
 import GHC.Driver.Env
 import GHC.Driver.Plugins
 import GHC.Tc.Plugin
@@ -30,12 +28,16 @@ import GHC.Unit.Finder
 import GHC.Unit.Module
 import GHC.Utils.Outputable qualified as O
 
-#if __GLASGOW_HASKELL__ <= 904
-type Subst = TCvSubst
+#if __GLASGOW_HASKELL__ <= 912
+import GHC.Driver.Config.Finder
 #endif
 
 #if __GLASGOW_HASKELL__ >= 912
 import GHC.Tc.Types.CtLoc
+#endif
+
+#if __GLASGOW_HASKELL__ <= 904
+type Subst = TCvSubst
 #endif
 
 data EffGiven = EffGiven
@@ -85,19 +87,14 @@ plugin = defaultPlugin
 
 initPlugin :: TcPluginM Class
 initPlugin = do
-  recMod <- lookupModule $ mkModuleName "Effectful.Internal.Effect"
-  cls <- tcLookupClass =<< lookupOrig recMod (mkTcOcc ":>")
+  clsMod <- lookupModule $ mkModuleName "Effectful.Internal.Effect"
+  cls <- tcLookupClass =<< lookupOrig clsMod (mkTcOcc ":>")
   pure cls
   where
     lookupModule :: ModuleName -> TcPluginM Module
-    lookupModule mod_nm = do
-      hsc_env <- getTopEnv
-      let dflags = hsc_dflags hsc_env
-          fopts = initFinderOpts dflags
-          fc = hsc_FC hsc_env
-          units = hsc_units hsc_env
-          home_unit = hsc_home_unit hsc_env
-      tcPluginIO (findPluginModule fc fopts units (Just home_unit) mod_nm) >>= \case
+    lookupModule modName = do
+      hscEnv <- getTopEnv
+      findPluginModuleCompat hscEnv modName >>= \case
         Found _ md -> pure md
         _ -> errorWithoutStackTrace "Please add effectful-core to the list of dependencies."
 
@@ -193,10 +190,28 @@ disambiguateEffects elemCls _ allGivens allWanteds = do
 ----------------------------------------
 -- Standalone helpers
 
+findPluginModuleCompat :: HscEnv -> ModuleName -> TcPluginM FindResult
+findPluginModuleCompat hsc_env mod_name = do
+#if __GLASGOW_HASKELL__ <= 912
+  let dflags = hsc_dflags hsc_env
+      fopts = initFinderOpts dflags
+      fc = hsc_FC hsc_env
+      units = hsc_units hsc_env
+      home_unit = hsc_home_unit hsc_env
+  tcPluginIO (findPluginModule fc fopts units (Just home_unit) mod_name)
+#else
+  tcPluginIO (findPluginModule hsc_env mod_name)
+#endif
+
 -- | Record a wanted equality constraint to aid typechecking.
 emitEqConstraint :: IORef [Ct] -> EffWanted -> EffGiven -> TcPluginM ()
 emitEqConstraint solutions wanted given = do
-  let predTy = mkPrimEqPred (wantedEff wanted) (givenEff given)
+  let predTy =
+#if __GLASGOW_HASKELL__ <= 912
+        mkPrimEqPred (wantedEff wanted) (givenEff given)
+#else
+        mkNomEqPred (wantedEff wanted) (givenEff given)
+#endif
   printSingle "Emitting constraint" predTy
   ev <- newWanted (wantedLoc wanted) predTy
   tcPluginIO $ modifyIORef' solutions (mkNonCanonical ev :)
@@ -234,9 +249,16 @@ groupWanteds elemCls = \case
     , cc_tyargs = [eff, es]
     }
     | cls == elemCls ->
-#else
+#elif __GLASGOW_HASKELL__ <= 912
   CDictCan DictCt
     { di_ev = CtWanted { ctev_loc = loc }
+    , di_cls = cls
+    , di_tys = [eff, es]
+    }
+    | cls == elemCls ->
+#else
+  CDictCan DictCt
+    { di_ev = CtWanted WantedCt { ctev_loc = loc }
     , di_cls = cls
     , di_tys = [eff, es]
     }
@@ -283,7 +305,14 @@ isIP = \case
 tcUnifyTyNoSkolems :: Type -> Type -> Maybe Subst
 tcUnifyTyNoSkolems ty1 ty2 = tcUnifyTys bindFun [ty1] [ty2]
   where
-    bindFun var _ty = if isSkolemTyVar var then Apart else BindMe
+    bindFun var _ty = if isSkolemTyVar var then dontBindMe else BindMe
+
+    dontBindMe =
+#if __GLASGOW_HASKELL__ <= 912
+      Apart
+#else
+      DontBindMe
+#endif
 
 unifiesWithAny :: Type -> [Type] -> Bool
 unifiesWithAny ty = any (isJust . tcUnifyTyNoSkolems ty)

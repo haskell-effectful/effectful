@@ -41,34 +41,42 @@ type Subst = TCvSubst
 #endif
 
 data EffGiven = EffGiven
-  { givenEffHead :: Type
-  , givenEff :: Type
-  , givenEs :: Type
+  { effCon :: Type
+  , eff :: Type
+  , es :: Type
   }
 
 instance O.Outputable EffGiven where
-  ppr (EffGiven _ e es) =
-    O.text "[G]" O.<+> O.ppr e O.<+> O.text ":>" O.<+> O.ppr es
+  ppr given =
+    O.text "[G]" O.<+> O.ppr given.eff O.<+> O.text ":>" O.<+> O.ppr given.es
 
 data EffWanted = EffWanted
-  { wantedEffHead :: Type
-  , wantedEff :: Type
-  , wantedEs :: Type
-  , wantedLoc :: CtLoc
+  { effCon :: Type
+  , eff :: Type
+  , es :: Type
+  , loc :: CtLoc
   }
 
+newtype OtherGiven = OtherGiven
+  { ty :: Type
+  }
+
+instance O.Outputable OtherGiven where
+  ppr given =
+    O.text "[G]" O.<+> O.ppr given.ty
+
 instance O.Outputable EffWanted where
-  ppr (EffWanted _ e es _) =
-    O.text "[W]" O.<+> O.ppr e O.<+> O.text ":>" O.<+> O.ppr es
+  ppr wanted =
+    O.text "[W]" O.<+> O.ppr wanted.eff O.<+> O.text ":>" O.<+> O.ppr wanted.es
 
 data OtherWanted = OtherWanted
-  { wantedType :: Type
-  , wantedVars :: CoVarSet
+  { ty :: Type
+  , vars :: CoVarSet
   }
 
 instance O.Outputable OtherWanted where
-  ppr (OtherWanted ty _) =
-    O.text "[W]" O.<+> O.ppr ty
+  ppr wanted =
+    O.text "[W]" O.<+> O.ppr wanted.ty
 
 data Candidates = None | Single EffGiven | Multiple
 
@@ -113,7 +121,7 @@ disambiguateEffects elemCls _ allGivens allWanteds = do
   solutions <- tcPluginIO $ newIORef []
   forM_ effWanteds $ \wanted -> do
     printSingle "Wanted" wanted
-    let extraEffGivens = extractEffGivens (wantedEs wanted) (wantedEs wanted)
+    let extraEffGivens = extractEffGivens wanted.es wanted.es
     case mapMaybe (maybeUnifiesWith wanted) $ extraEffGivens ++ effGivens of
       [] -> printLn "No candidates"
       [(given, _)] -> do
@@ -150,8 +158,8 @@ disambiguateEffects elemCls _ allGivens allWanteds = do
       ((given, subst) : rest) -> do
         printSingle "Candidate" given
         let relevantWanteds = (`mapMaybe` otherWanteds) $ \wanted ->
-              if substHasAnyVar subst $ wantedVars wanted
-              then Just . substTy subst $ wantedType wanted
+              if substHasAnyVar subst wanted.vars
+              then Just $ substTy subst wanted.ty
               else Nothing
         printList "Relevant wanteds" relevantWanteds
         allWantedsSolvable relevantWanteds >>= \case
@@ -208,16 +216,16 @@ emitEqConstraint :: IORef [Ct] -> EffWanted -> EffGiven -> TcPluginM ()
 emitEqConstraint solutions wanted given = do
   let predTy =
 #if __GLASGOW_HASKELL__ <= 912
-        mkPrimEqPred (wantedEff wanted) (givenEff given)
+        mkPrimEqPred wanted.eff given.eff
 #else
-        mkNomEqPred (wantedEff wanted) (givenEff given)
+        mkNomEqPred wanted.eff given.eff
 #endif
   printSingle "Emitting constraint" predTy
-  ev <- newWanted (wantedLoc wanted) predTy
+  ev <- newWanted wanted.loc predTy
   tcPluginIO $ modifyIORef' solutions (mkNonCanonical ev :)
 
 -- | Separate givens based on whether they're of the form @e :> es@ or not.
-groupGivens :: Class -> Ct -> Either Type EffGiven
+groupGivens :: Class -> Ct -> Either OtherGiven EffGiven
 groupGivens elemCls = \case
 #if __GLASGOW_HASKELL__ < 908
   CDictCan
@@ -233,11 +241,13 @@ groupGivens elemCls = \case
     | cls == elemCls ->
 #endif
     Right EffGiven
-      { givenEffHead = fst $ splitAppTys eff
-      , givenEff = eff
-      , givenEs = es
+      { effCon = fst $ splitAppTys eff
+      , eff = eff
+      , es = es
       }
-  ct -> Left $ ctPred ct
+  ct -> Left OtherGiven
+    { ty = ctPred ct
+    }
 
 -- | Separate wanteds based on whether they're of the form @e :> es@ or not.
 groupWanteds :: Class -> Ct -> Either OtherWanted EffWanted
@@ -265,15 +275,15 @@ groupWanteds elemCls = \case
     | cls == elemCls ->
 #endif
     Right EffWanted
-      { wantedEffHead = fst $ splitAppTys eff
-      , wantedEff = eff
-      , wantedEs = es
-      , wantedLoc = loc
+      { effCon = fst $ splitAppTys eff
+      , eff = eff
+      , es = es
+      , loc = loc
       }
   ct ->
-    Left $ OtherWanted
-      { wantedType = ctPred ct
-      , wantedVars = tyCoVarsOfType $ ctPred ct
+    Left OtherWanted
+      { ty = ctPred ct
+      , vars = tyCoVarsOfType $ ctPred ct
       }
 
 -- | We don't get appropriate given constraints when dealing with concrete (or
@@ -283,9 +293,9 @@ extractEffGivens :: Type -> Type -> [EffGiven]
 extractEffGivens fullEs es = case splitAppTys es of
   (_colon, [_kind, eff, esTail]) ->
     let (effCon, _tyArgs) = splitAppTys eff
-    in EffGiven { givenEffHead = effCon
-                , givenEff = eff
-                , givenEs = fullEs
+    in EffGiven { effCon = effCon
+                , eff = eff
+                , es = fullEs
                 } : extractEffGivens fullEs esTail
   _ -> []
 
@@ -314,8 +324,8 @@ tcUnifyTyNoSkolems ty1 ty2 = tcUnifyTys bindFun [ty1] [ty2]
       DontBindMe
 #endif
 
-unifiesWithAny :: Type -> [Type] -> Bool
-unifiesWithAny ty = any (isJust . tcUnifyTyNoSkolems ty)
+unifiesWithAny :: Type -> [OtherGiven] -> Bool
+unifiesWithAny ty = any (isJust . tcUnifyTyNoSkolems ty . (.ty))
 
 substHasAnyVar :: Subst -> TyCoVarSet -> Bool
 substHasAnyVar subst = uniqSetAny (`elemUFM` getTvSubstEnv subst)
@@ -325,9 +335,8 @@ substHasAnyVar subst = uniqSetAny (`elemUFM` getTvSubstEnv subst)
 -- to the given.
 maybeUnifiesWith :: EffWanted -> EffGiven -> Maybe (EffGiven, Subst)
 maybeUnifiesWith wanted given =
-  if    wantedEs      wanted `eqType` givenEs      given
-     && wantedEffHead wanted `eqType` givenEffHead given
-  then (given, ) <$> tcUnifyTyNoSkolems (wantedEff wanted) (givenEff given)
+  if wanted.es `eqType` given.es && wanted.effCon `eqType` given.effCon
+  then (given, ) <$> tcUnifyTyNoSkolems wanted.eff given.eff
   else Nothing
 
 ----------------------------------------

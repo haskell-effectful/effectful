@@ -43,6 +43,7 @@ common language
                         DeriveFunctor
                         DeriveGeneric
                         DerivingStrategies
+                        DuplicateRecordFields
                         FlexibleContexts
                         FlexibleInstances
                         GADTs
@@ -50,7 +51,9 @@ common language
                         ImportQualifiedPost
                         LambdaCase
                         MultiParamTypeClasses
+                        NoFieldSelectors
                         NoStarIsType
+                        OverloadedRecordDot
                         PolyKinds
                         RankNTypes
                         RecordWildCards

@@ -9,7 +9,3 @@ allow-newer: cleff:*
            , freer-simple:*
            , fused-effects:*
            , polysemy:*
-
--- GHC 9.12.1
-allow-newer: async:base
-           , hashable:base

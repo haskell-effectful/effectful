@@ -32,14 +32,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.12.1
+          - compiler: ghc-9.12.2
             compilerKind: ghc
-            compilerVersion: 9.12.1
+            compilerVersion: 9.12.2
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.10.1
+          - compiler: ghc-9.10.2
             compilerKind: ghc
-            compilerVersion: 9.10.1
+            compilerVersion: 9.10.2
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.8.4
@@ -47,9 +47,9 @@ jobs:
             compilerVersion: 9.8.4
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.6.5
+          - compiler: ghc-9.6.7
             compilerKind: ghc
-            compilerVersion: 9.6.5
+            compilerVersion: 9.6.7
             setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.4.8
@@ -155,7 +155,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache/restore@v4
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-8029961e
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-e7451788
           path: ~/.haskell-ci-tools
       - name: install cabal-plan
         run: |
@@ -168,13 +168,13 @@ jobs:
           cabal-plan --version
       - name: install doctest
         run: |
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.22.0' ; fi
+          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project -j2 doctest --constraint='doctest ^>=0.24' ; fi
           if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest --version ; fi
       - name: save cache (tools)
         if: always()
         uses: actions/cache/save@v4
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-8029961e
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-e7451788
           path: ~/.haskell-ci-tools
       - name: checkout
         uses: actions/checkout@v4
@@ -226,8 +226,6 @@ jobs:
           allow-newer: freer-simple:*
           allow-newer: fused-effects:*
           allow-newer: polysemy:*
-          allow-newer: async:base
-          allow-newer: hashable:base
 
           package effectful-core
             ghc-options: -Werror

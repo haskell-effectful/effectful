@@ -1,10 +1,13 @@
 {-# LANGUAGE CPP #-}
 module Effectful.Plugin (plugin) where
 
+import Data.Bifunctor
+import Data.Coerce
 import Data.Either
 import Data.Foldable
 import Data.IORef
 import Data.Maybe
+import Data.Set qualified as S
 import GHC.Core.Class
 import GHC.Core.InstEnv
 import GHC.Core.Predicate
@@ -113,16 +116,17 @@ disambiguateEffects
   -> [Ct]
   -> TcPluginM TcPluginSolveResult
 disambiguateEffects elemCls _ allGivens allWanteds = do
+  printList "Givens" allGivens
   printList "EffGivens" effGivens
   printList "OtherGivens" otherGivens
+  printList "Wanteds" allWanteds
   printList "EffWanteds" effWanteds
   printList "OtherWanteds" otherWanteds
   instEnvs <- getInstEnvs
   solutions <- tcPluginIO $ newIORef []
   forM_ effWanteds $ \wanted -> do
     printSingle "Wanted" wanted
-    let extraEffGivens = extractEffGivens wanted.es wanted.es
-    case mapMaybe (maybeUnifiesWith wanted) $ extraEffGivens ++ effGivens of
+    case mapMaybe (maybeUnifiesWith wanted) effGivens of
       [] -> printLn "No candidates"
       [(given, _)] -> do
         printSingle "Single candidate found" given
@@ -138,12 +142,15 @@ disambiguateEffects elemCls _ allGivens allWanteds = do
   printLn ""
   TcPluginSolveResult [] [] <$> tcPluginIO (readIORef solutions)
   where
-    (otherGivens, effGivens) = partitionEithers
+    (otherGivens, effGivens)
+      = second (extendEffGivens effWanteds)
+      . partitionEithers
       . map (groupGivens elemCls)
       . filter (not . isIP)
       $ allGivens
 
-    (otherWanteds, effWanteds) = partitionEithers
+    (otherWanteds, effWanteds)
+      = partitionEithers
       . map (groupWanteds elemCls)
       . filter (not . isIP)
       $ allWanteds
@@ -155,7 +162,7 @@ disambiguateEffects elemCls _ allGivens allWanteds = do
       -> TcPluginM Candidates
     filterCandidates instEnvs acc = \case
       [] -> pure acc
-      ((given, subst) : rest) -> do
+      (given, subst) : rest -> do
         printSingle "Candidate" given
         let relevantWanteds = (`mapMaybe` otherWanteds) $ \wanted ->
               if substHasAnyVar subst wanted.vars
@@ -288,16 +295,23 @@ groupWanteds elemCls = \case
 
 -- | We don't get appropriate given constraints when dealing with concrete (or
 -- partially concrete) effect lists like (A : B : C : es), so they need to be
--- manually added (GHC will conjure them later).
-extractEffGivens :: Type -> Type -> [EffGiven]
-extractEffGivens fullEs es = case splitAppTys es of
-  (_colon, [_kind, eff, esTail]) ->
-    let (effCon, _tyArgs) = splitAppTys eff
-    in EffGiven { effCon = effCon
-                , eff = eff
-                , es = fullEs
-                } : extractEffGivens fullEs esTail
-  _ -> []
+-- manually added (GHC will resolve them later).
+extendEffGivens :: [EffWanted] -> [EffGiven] -> [EffGiven]
+extendEffGivens wanteds givens = loop givens . nubType $ map (.es) wanteds
+  where
+    loop :: [EffGiven] -> [Type] -> [EffGiven]
+    loop acc = \case
+      [] -> acc
+      es : rest -> loop (extractGivens es es ++ acc) rest
+
+    extractGivens :: Type -> Type -> [EffGiven]
+    extractGivens fullEs es = case splitAppTys es of
+      (_colon, [_kind, eff, esTail]) -> EffGiven
+        { effCon = fst $ splitAppTys eff
+        , eff = eff
+        , es = fullEs
+        } : extractGivens fullEs esTail
+      _ -> []
 
 -- | Check if a constraint in an implicit parameter. We discard all of them
 -- since they will not affect resolution of @:>@ constraints.
@@ -338,6 +352,17 @@ maybeUnifiesWith wanted given =
   if wanted.es `eqType` given.es && wanted.effCon `eqType` given.effCon
   then (given, ) <$> tcUnifyTyNoSkolems wanted.eff given.eff
   else Nothing
+
+nubType :: [Type] -> [Type]
+nubType = coerce . S.toList . S.fromList @OrdType . coerce
+
+newtype OrdType = OrdType Type
+
+instance Eq OrdType where
+  (==) = coerce eqType
+
+instance Ord OrdType where
+  compare = coerce nonDetCmpType
 
 ----------------------------------------
 -- Debugging

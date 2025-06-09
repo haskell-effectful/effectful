@@ -66,6 +66,7 @@ common language
                         TypeApplications
                         TypeFamilies
                         TypeOperators
+                        UndecidableInstances
 
     if impl(ghc >= 9.4)
       default-extensions: NoFieldSelectors

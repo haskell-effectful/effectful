@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ImplicitParams #-}
-{-# LANGUAGE UndecidableInstances #-}
 -- | Dynamically dispatched effects.
 module Effectful.Dispatch.Dynamic
   ( -- * Introduction
@@ -348,8 +347,6 @@ import Effectful.Internal.Utils
 -- @MonadRNG@ type class! Therefore, what we do instead is provide an
 -- __orphan__, __canonical__ instance of @MonadRNG@ for 'Eff' that delegates to
 -- the @RNG@ effect:
---
--- >>> :set -XUndecidableInstances
 --
 -- >>> :{
 --   instance RNG :> es => MonadRNG (Eff es) where

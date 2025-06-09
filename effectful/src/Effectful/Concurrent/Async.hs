@@ -1,4 +1,3 @@
-{-# LANGUAGE UndecidableInstances #-}
 -- | Lifted "Control.Concurrent.Async".
 module Effectful.Concurrent.Async
   ( -- * Effect

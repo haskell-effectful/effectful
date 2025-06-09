@@ -1,7 +1,8 @@
 -- | The dynamically dispatched variant of the 'Error' effect.
 --
--- /Note:/ unless you plan to change interpretations at runtime, it's
--- recommended to use the statically dispatched variant,
+-- /Note:/ unless you plan to change interpretations at runtime or you need the
+-- t'Control.Monad.Error.MonadError' instance for compatibility with existing
+-- code, it's recommended to use the statically dispatched variant,
 -- i.e. "Effectful.Error.Static".
 module Effectful.Error.Dynamic
   ( -- * Effect
@@ -33,14 +34,7 @@ import GHC.Stack (withFrozenCallStack)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static qualified as E
-
--- | Provide the ability to handle errors of type @e@.
-data Error e :: Effect where
-  -- | @since 2.4.0.0
-  ThrowErrorWith :: (e -> String) -> e -> Error e m a
-  CatchError :: m a -> (E.CallStack -> e -> m a) -> Error e m a
-
-type instance DispatchOf (Error e) = Dynamic
+import Effectful.Internal.Monad (Error(..))
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static").
 runError

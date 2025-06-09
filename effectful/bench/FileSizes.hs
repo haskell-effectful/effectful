@@ -1,6 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE UndecidableInstances #-}
 module FileSizes where
 
 import Control.Exception

@@ -1,7 +1,8 @@
 -- | The dynamically dispatched variant of the 'Reader' effect.
 --
--- /Note:/ unless you plan to change interpretations at runtime, it's
--- recommended to use the statically dispatched variant,
+-- /Note:/ unless you plan to change interpretations at runtime or you need the
+-- t'Control.Monad.Reader.MonadReader' instance for compatibility with existing
+-- code, it's recommended to use the statically dispatched variant,
 -- i.e. "Effectful.Reader.Static".
 module Effectful.Reader.Dynamic
   ( -- * Effect
@@ -19,12 +20,7 @@ module Effectful.Reader.Dynamic
 
 import Effectful
 import Effectful.Dispatch.Dynamic
-
-data Reader r :: Effect where
-  Ask   :: Reader r m r
-  Local :: (r -> r) -> m a -> Reader r m a
-
-type instance DispatchOf (Reader r) = Dynamic
+import Effectful.Internal.Monad (Reader(..))
 
 -- | Run the 'Reader' effect with the given initial environment.
 runReader

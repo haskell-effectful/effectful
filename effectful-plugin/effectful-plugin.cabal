@@ -68,6 +68,7 @@ common language
                         TypeApplications
                         TypeFamilies
                         TypeOperators
+                        UndecidableInstances
 
 library
     import:         language

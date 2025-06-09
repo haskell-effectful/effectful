@@ -1,7 +1,8 @@
 -- | The dynamically dispatched variant of the 'Writer' effect.
 --
--- /Note:/ unless you plan to change interpretations at runtime, it's
--- recommended to use one of the statically dispatched variants,
+-- /Note:/ unless you plan to change interpretations at runtime or you need the
+-- t'Control.Monad.Writer.MonadWriter' instance for compatibility with existing
+-- code, it's recommended to use one of the statically dispatched variants,
 -- i.e. "Effectful.Writer.Static.Local" or "Effectful.Writer.Static.Shared".
 module Effectful.Writer.Dynamic
   ( -- * Effect
@@ -25,15 +26,9 @@ module Effectful.Writer.Dynamic
 
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Internal.Monad (Writer(..))
 import Effectful.Writer.Static.Local qualified as L
 import Effectful.Writer.Static.Shared qualified as S
-
--- | Provide access to a write only value of type @w@.
-data Writer w :: Effect where
-  Tell   :: w   -> Writer w m ()
-  Listen :: m a -> Writer w m (a, w)
-
-type instance DispatchOf (Writer w) = Dynamic
 
 ----------------------------------------
 -- Local

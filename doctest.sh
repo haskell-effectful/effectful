@@ -37,7 +37,8 @@ run_doctest() {
     -XTupleSections \
     -XTypeApplications \
     -XTypeFamilies \
-    -XTypeOperators
+    -XTypeOperators \
+    -XUndecidableInstances
   popd
 }
 

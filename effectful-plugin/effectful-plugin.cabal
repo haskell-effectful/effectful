@@ -83,6 +83,8 @@ library
 test-suite plugin-tests
     import:         language
 
+    ghc-options:    -fplugin=Effectful.Plugin
+
     build-depends:    base
                     , effectful-core
                     , effectful-plugin

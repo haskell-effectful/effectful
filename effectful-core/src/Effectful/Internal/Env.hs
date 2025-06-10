@@ -439,7 +439,7 @@ getLocation (Env offset refs storage) = do
          ++ show storageVersion ++ ")\n"
          ++ "If you're attempting to run an unlifting function outside "
          ++ "of the scope of effects it captures, have a look at "
-         ++ "UnliftingStrategy (SeqForkUnlift)."
+         ++ "UnliftStrategy (SeqForkUnlift)."
   pure (ref, es)
   where
     Ref ref version = indexPrimArray refs (offset + reifyIndex @e @es)

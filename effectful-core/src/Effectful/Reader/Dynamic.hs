@@ -19,7 +19,6 @@ module Effectful.Reader.Dynamic
 
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Reader.Static qualified as R
 
 data Reader r :: Effect where
   Ask   :: Reader r m r
@@ -27,16 +26,19 @@ data Reader r :: Effect where
 
 type instance DispatchOf (Reader r) = Dynamic
 
--- | Run the 'Reader' effect with the given initial environment (via
--- "Effectful.Reader.Static").
+-- | Run the 'Reader' effect with the given initial environment.
 runReader
   :: HasCallStack
   => r -- ^ The initial environment.
   -> Eff (Reader r : es) a
   -> Eff es a
-runReader r = reinterpret (R.runReader r) $ \env -> \case
-  Ask       -> R.ask
-  Local f m -> localSeqUnlift env $ \unlift -> R.local f (unlift m)
+runReader r0 = interpret $ handler r0
+  where
+    handler :: r -> EffectHandler (Reader r) es
+    handler r env = \case
+      Ask -> pure r
+      Local f action -> localSeqUnlift env $ \unlift -> do
+        unlift $ interpose (handler $ f r) action
 
 -- | Execute a computation in a modified environment.
 --

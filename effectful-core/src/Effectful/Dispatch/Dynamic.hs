@@ -466,6 +466,41 @@ interpretWith action handler = interpretImpl action $
 -- | Interpret an effect using other, private effects.
 --
 -- @'interpret' ≡ 'reinterpret' 'id'@
+--
+-- /Note:/ If you want to interpret multiple effects using other, private
+-- effects, you can do so with a combination of 'interpret' and 'inject'.
+--
+-- This is in particular useful for splitting a large effect into smaller
+-- ones. For example, let's say you want to split a
+-- t'Effectful.State.Static.Local.State' into a read only and read write
+-- component:
+--
+-- >>> :{
+--  data Get s :: Effect where
+--    Get :: Get s m s
+--  type instance DispatchOf (Get s) = Dynamic
+-- :}
+--
+-- >>> :{
+--  data Put s :: Effect where
+--    Put :: s -> Put s m ()
+--  type instance DispatchOf (Put s) = Dynamic
+-- :}
+--
+-- >>> import Effectful.State.Static.Local qualified as S
+--
+-- >>> :{
+--  runGetPut :: forall s es a. s -> Eff (Get s : Put s : es) a -> Eff es (a, s)
+--  runGetPut s0
+--    = S.runState s0
+--    . interpret_ @(Put s) (\(Put s) -> S.put s)
+--    . interpret_ @(Get s) (\Get -> S.get)
+--    . inject
+-- :}
+--
+-- Here, a t'Effectful.State.Static.Local.State' effect is introduced, then
+-- @Put@ and @Get@ effects that use it underneath and finally 'inject' hides the
+-- original state from downstream code.
 reinterpret
   :: (HasCallStack, DispatchOf e ~ Dynamic)
   => (Eff handlerEs a -> Eff es b)

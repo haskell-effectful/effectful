@@ -46,7 +46,6 @@ module Effectful
   , withUnliftStrategy
   , withSeqEffToIO
   , withEffToIO
-  , withConcEffToIO
 
     -- ** Lifting
   , raise

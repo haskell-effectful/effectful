@@ -46,7 +46,6 @@ module Effectful.Internal.Monad
   , withUnliftStrategy
   , withSeqEffToIO
   , withEffToIO
-  , withConcEffToIO
   , reallyUnsafeLiftMapIO
   , reallyUnsafeUnliftIO
 
@@ -204,20 +203,6 @@ withEffToIO strategy k = case strategy of
   SeqForkUnlift  -> unsafeEff $ \es -> seqForkUnliftIO es k
   ConcUnlift p b -> unsafeEff $ \es -> concUnliftIO es p b k
 {-# INLINE withEffToIO #-}
-
--- | Create an unlifting function with the 'ConcUnlift' strategy.
---
--- @since 2.2.2.0
-withConcEffToIO
-  :: (HasCallStack, IOE :> es)
-  => Persistence
-  -> Limit
-  -> ((forall r. Eff es r -> IO r) -> IO a)
-  -- ^ Continuation with the unlifting function in scope.
-  -> Eff es a
-withConcEffToIO persistence limit k = unsafeEff $ \es ->
-  concUnliftIO es persistence limit k
-{-# DEPRECATED withConcEffToIO "Use withEffToIO with the appropriate strategy." #-}
 
 -- | Create an unlifting function with the 'SeqUnlift' strategy.
 seqUnliftIO

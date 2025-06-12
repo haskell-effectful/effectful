@@ -53,6 +53,7 @@ withReader
 withReader f m = do
   r <- ask
   raise $ runReader (f r) m
+{-# DEPRECATED withReader "withReader doesn't work correctly for all potential interpreters" #-}
 
 ----------------------------------------
 -- Operations

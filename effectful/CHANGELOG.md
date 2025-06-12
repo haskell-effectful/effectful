@@ -2,6 +2,8 @@
 * Adjust `generalBracket` with `base >= 4.21` to make use of the new exception
   annotation mechanism.
 * Add `withException` to `Effectful.Exception`.
+* Deprecate `Effectful.Reader.Dynamic.withReader` as it doesn't work correctly
+  for all potential interpreters.
 * Re-export `ThreadId` from `Effectful.Concurrent` for convenience.
 * **Breaking changes**:
   - Change the order of type parameters in `raise` for better usability.

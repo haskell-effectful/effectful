@@ -37,6 +37,7 @@ module Effectful.Concurrent.STM
   , STM.takeTMVar
   , STM.putTMVar
   , STM.readTMVar
+  , STM.writeTMVar
   , STM.tryReadTMVar
   , STM.swapTMVar
   , STM.tryTakeTMVar

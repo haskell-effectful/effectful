@@ -78,7 +78,7 @@ library
                     , process             >= 1.6.9
                     , strict-mutable-base >= 1.1.0.0
                     , time                >= 1.9.2
-                    , stm                 >= 2.5.0.0
+                    , stm                 >= 2.5.1.0
                     , unliftio            >= 0.2.20
 
     hs-source-dirs:  src

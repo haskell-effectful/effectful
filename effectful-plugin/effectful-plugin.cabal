@@ -24,6 +24,10 @@ source-repository head
   type:     git
   location: https://github.com/haskell-effectful/effectful.git
 
+flag timing
+    description: Show timing information
+    default: False
+
 flag verbose
     description: Trace plugin execution
     default: False
@@ -67,6 +71,9 @@ common language
 
 library
     import:         language
+
+    if flag(timing)
+      cpp-options: -DTIMING
 
     if flag(verbose)
       cpp-options: -DVERBOSE

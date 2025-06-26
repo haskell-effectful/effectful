@@ -1,5 +1,6 @@
 # effectful-plugin-2.0.0.1 (2025-??-??)
 * Small optimization of checking suitable effects for unification.
+* Add `timing` flag for tracking execution time of the plugin.
 
 # effectful-plugin-2.0.0.0 (2025-06-09)
 * Drop support for GHC < 9.4.

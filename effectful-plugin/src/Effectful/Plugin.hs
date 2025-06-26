@@ -39,6 +39,10 @@ import GHC.Driver.Config.Finder
 import GHC.Tc.Types.CtLoc
 #endif
 
+#ifdef TIMING
+import GHC.Clock
+#endif
+
 #if __GLASGOW_HASKELL__ <= 904
 type Subst = TCvSubst
 #endif
@@ -85,22 +89,28 @@ data Candidates = None | Single EffGiven | Multiple
 
 ----------------------------------------
 
+data PluginData = PluginData
+  { elemClass :: Class
+  , totalTime :: !(IORef Double)
+  }
+
 plugin :: Plugin
 plugin = defaultPlugin
   { tcPlugin = \_ -> Just TcPlugin
     { tcPluginInit = initPlugin
     , tcPluginRewrite = \_ -> emptyUFM
     , tcPluginSolve = disambiguateEffects
-    , tcPluginStop = \_ -> pure ()
+    , tcPluginStop = pluginStopHook
     }
   , pluginRecompile = purePlugin
   }
 
-initPlugin :: TcPluginM Class
+initPlugin :: TcPluginM PluginData
 initPlugin = do
   clsMod <- lookupModule $ mkModuleName "Effectful.Internal.Effect"
-  cls <- tcLookupClass =<< lookupOrig clsMod (mkTcOcc ":>")
-  pure cls
+  elemClass <- tcLookupClass =<< lookupOrig clsMod (mkTcOcc ":>")
+  totalTime <- tcPluginIO $ newIORef 0
+  pure PluginData{..}
   where
     lookupModule :: ModuleName -> TcPluginM Module
     lookupModule modName = do
@@ -110,12 +120,12 @@ initPlugin = do
         _ -> errorWithoutStackTrace "Please add effectful-core to the list of dependencies."
 
 disambiguateEffects
-  :: Class
+  :: PluginData
   -> EvBindsVar
   -> [Ct]
   -> [Ct]
   -> TcPluginM TcPluginSolveResult
-disambiguateEffects elemCls _ allGivens allWanteds = do
+disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
   printList "Givens" allGivens
   printList "EffGivens" effGivens
   printList "OtherGivens" otherGivens
@@ -145,13 +155,13 @@ disambiguateEffects elemCls _ allGivens allWanteds = do
     (otherGivens, effGivens)
       = second (extendEffGivens effWanteds)
       . partitionEithers
-      . map (groupGivens elemCls)
+      . map (groupGivens pd.elemClass)
       . filter (not . isIP)
       $ allGivens
 
     (otherWanteds, effWanteds)
       = partitionEithers
-      . map (groupWanteds elemCls)
+      . map (groupWanteds pd.elemClass)
       . filter (not . isIP)
       $ allWanteds
 
@@ -302,16 +312,16 @@ extendEffGivens wanteds givens = loop givens . nubType $ map (.es) wanteds
     loop :: [EffGiven] -> [Type] -> [EffGiven]
     loop acc = \case
       [] -> acc
-      es : rest -> loop (extractGivens es es ++ acc) rest
-
-    extractGivens :: Type -> Type -> [EffGiven]
-    extractGivens fullEs es = case splitAppTys es of
-      (_colon, [_kind, eff, esTail]) -> EffGiven
-        { effCon = fst $ splitAppTys eff
-        , eff = eff
-        , es = fullEs
-        } : extractGivens fullEs esTail
-      _ -> []
+      fullEs : rest ->
+        let extractGivens :: Type -> [EffGiven]
+            extractGivens es = case splitAppTys es of
+              (_colon, [_kind, eff, esTail]) -> EffGiven
+                { effCon = fst $ splitAppTys eff
+                , eff = eff
+                , es = fullEs
+                } : extractGivens esTail
+              _ -> []
+        in loop (extractGivens fullEs ++ acc) rest
 
 -- | Check if a constraint in an implicit parameter. We discard all of them
 -- since they will not affect resolution of @:>@ constraints.
@@ -366,6 +376,32 @@ instance Ord OrdType where
 
 ----------------------------------------
 -- Debugging
+
+#ifdef TIMING
+
+timed :: PluginData -> TcPluginM a -> TcPluginM a
+timed pd action = do
+  t1 <- tcPluginIO getMonotonicTime
+  a <- action
+  tcPluginIO $ do
+    t2 <- getMonotonicTime
+    modifyIORef' pd.totalTime (+ (t2 - t1))
+  pure a
+
+pluginStopHook :: PluginData -> TcPluginM ()
+pluginStopHook pd = tcPluginIO $ do
+  time <- readIORef pd.totalTime
+  putStrLn $ "Execution time of effectful-plugin (seconds): " ++ show time
+
+#else
+
+timed :: PluginData -> TcPluginM a -> TcPluginM a
+timed _ action = action
+
+pluginStopHook :: PluginData -> TcPluginM ()
+pluginStopHook _ = pure ()
+
+#endif
 
 #ifdef VERBOSE
 

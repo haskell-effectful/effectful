@@ -188,10 +188,10 @@ benchmark bench
        if impl(ghc < 9.9)
           build-depends: freer-simple >= 1.2.1.2
 
-       if impl(ghc < 9.13)
+       if impl(ghc < 9.15)
           build-depends: fused-effects >= 1.1.2.3
 
-       if impl(ghc < 9.13)
+       if impl(ghc < 9.15)
           build-depends: polysemy >= 1.9.2.0
 
     build-depends:    base

@@ -1,3 +1,6 @@
+# effectful-plugin-2.0.0.1 (2025-??-??)
+* Small optimization of checking suitable effects for unification.
+
 # effectful-plugin-2.0.0.0 (2025-06-09)
 * Drop support for GHC < 9.4.
 * Fix various bugs and shortcomings.

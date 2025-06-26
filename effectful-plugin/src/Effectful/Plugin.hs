@@ -349,7 +349,7 @@ substHasAnyVar subst = uniqSetAny (`elemUFM` getTvSubstEnv subst)
 -- to the given.
 maybeUnifiesWith :: EffWanted -> EffGiven -> Maybe (EffGiven, Subst)
 maybeUnifiesWith wanted given =
-  if wanted.es `eqType` given.es && wanted.effCon `eqType` given.effCon
+  if wanted.effCon `eqType` given.effCon && wanted.es `eqType` given.es
   then (given, ) <$> tcUnifyTyNoSkolems wanted.eff given.eff
   else Nothing
 

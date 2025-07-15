@@ -18,7 +18,8 @@ module Effectful.Concurrent.Async
 
     -- ** Querying 'Async's
   , wait, poll, waitCatch, A.asyncThreadId
-  , cancel, uninterruptibleCancel, cancelWith, A.AsyncCancelled(..)
+  , cancel, cancelMany, uninterruptibleCancel, cancelWith
+  , A.AsyncCancelled(..)
   , A.compareAsyncs
 
     -- ** High-level utilities
@@ -173,6 +174,12 @@ poll = unsafeEff_ . A.poll
 -- | Lifted 'A.cancel'.
 cancel :: Concurrent :> es => Async a -> Eff es ()
 cancel = unsafeEff_ . A.cancel
+
+-- | Lifted 'A.cancelMany'.
+--
+-- @since 2.6.1.0
+cancelMany :: Concurrent :> es => [Async a] -> Eff es ()
+cancelMany = unsafeEff_ . A.cancelMany
 
 -- | Lifted 'A.cancelWith'.
 cancelWith :: (Exception e, Concurrent :> es) => Async a -> e -> Eff es ()

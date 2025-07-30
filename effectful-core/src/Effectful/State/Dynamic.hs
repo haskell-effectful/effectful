@@ -1,6 +1,8 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 -- | The dynamically dispatched variant of the 'State' effect.
 --
--- /Note:/ unless you plan to change interpretations at runtime, it's
+-- /Note:/ unless you plan to change interpretations at runtime or you need the
+-- 'MTL.MonadState' instance for compatibility with existing code, it's
 -- recommended to use one of the statically dispatched variants,
 -- i.e. "Effectful.State.Static.Local" or "Effectful.State.Static.Shared".
 module Effectful.State.Dynamic
@@ -28,6 +30,8 @@ module Effectful.State.Dynamic
   , stateM
   , modifyM
   ) where
+
+import Control.Monad.State qualified as MTL
 
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -149,3 +153,15 @@ modifyM
   => (s -> Eff es s)
   -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)
+
+----------------------------------------
+-- Orphan instance
+
+-- | Instance included for compatibility with existing code.
+instance
+  ( State s :> es
+  , MTL.MonadState s (Eff es)
+  ) => MTL.MonadState s (Eff es) where
+  get = send Get
+  put = send . Put
+  state = send . State

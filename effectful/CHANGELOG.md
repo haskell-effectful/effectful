@@ -1,4 +1,6 @@
 # effectful-2.6.1.0 (????-??-??)
+* Add `MonadError`, `MonadReader`, `MonadState` and `MonadWriter` instances for
+  `Eff` for compatibility with existing code.
 * Re-export `writeTMVar` from `stm-2.5.1.0` in `Effectful.Concurrent.STM`.
 * Add `cancelMany` to `Effectful.Concurrent.Async`.
 

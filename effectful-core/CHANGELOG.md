@@ -1,3 +1,7 @@
+# effectful-core-2.6.1.0 (????-??-??)
+* Add `MonadError`, `MonadReader`, `MonadState` and `MonadWriter` instances for
+  `Eff` for compatibility with existing code.
+
 # effectful-core-2.6.0.0 (2025-06-13)
 * Adjust `generalBracket` with `base >= 4.21` to make use of the new exception
   annotation mechanism.

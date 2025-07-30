@@ -1,6 +1,8 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 -- | The dynamically dispatched variant of the 'Writer' effect.
 --
--- /Note:/ unless you plan to change interpretations at runtime, it's
+-- /Note:/ unless you plan to change interpretations at runtime or you need the
+-- 'MTL.MonadWriter' instance for compatibility with existing code, it's
 -- recommended to use one of the statically dispatched variants,
 -- i.e. "Effectful.Writer.Static.Local" or "Effectful.Writer.Static.Shared".
 module Effectful.Writer.Dynamic
@@ -22,6 +24,8 @@ module Effectful.Writer.Dynamic
   , listen
   , listens
   ) where
+
+import Control.Monad.Writer qualified as MTL
 
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -102,3 +106,17 @@ listens
 listens f m = do
   (a, w) <- listen m
   pure (a, f w)
+
+----------------------------------------
+-- Orphan instance
+
+-- | Instance included for compatibility with existing code.
+instance
+  ( Monoid w
+  , Writer w :> es
+  , MTL.MonadWriter w (Eff es)
+  ) => MTL.MonadWriter w (Eff es) where
+  writer (a, w) = a <$ send (Tell w)
+  tell = send . Tell
+  listen = send . Listen
+  pass = error "pass is not implemented due to ambiguous semantics in presence of runtime exceptions"

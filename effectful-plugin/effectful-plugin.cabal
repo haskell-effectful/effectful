@@ -55,9 +55,7 @@ common language
                         ImportQualifiedPost
                         LambdaCase
                         MultiParamTypeClasses
-                        NoFieldSelectors
                         NoStarIsType
-                        OverloadedRecordDot
                         PolyKinds
                         RankNTypes
                         RecordWildCards
@@ -68,6 +66,10 @@ common language
                         TypeApplications
                         TypeFamilies
                         TypeOperators
+
+    if impl(ghc >= 9.4)
+      default-extensions: NoFieldSelectors
+                        , OverloadedRecordDot
 
 library
     import:         language

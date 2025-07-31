@@ -1,9 +1,8 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
 -- | The dynamically dispatched variant of the 'Reader' effect.
 --
 -- /Note:/ unless you plan to change interpretations at runtime or you need the
--- 'MTL.MonadReader' instance for compatibility with existing code, it's
--- recommended to use the statically dispatched variant,
+-- t'Control.Monad.Reader.MonadReader' instance for compatibility with existing
+-- code, it's recommended to use the statically dispatched variant,
 -- i.e. "Effectful.Reader.Static".
 module Effectful.Reader.Dynamic
   ( -- * Effect
@@ -19,16 +18,9 @@ module Effectful.Reader.Dynamic
   , local
   ) where
 
-import Control.Monad.Reader qualified as MTL
-
 import Effectful
 import Effectful.Dispatch.Dynamic
-
-data Reader r :: Effect where
-  Ask   :: Reader r m r
-  Local :: (r -> r) -> m a -> Reader r m a
-
-type instance DispatchOf (Reader r) = Dynamic
+import Effectful.Internal.MTL (Reader(..))
 
 -- | Run the 'Reader' effect with the given initial environment.
 runReader
@@ -85,15 +77,3 @@ local
   -> Eff es a
   -> Eff es a
 local f = send . Local f
-
-----------------------------------------
--- Orphan instance
-
--- | Instance included for compatibility with existing code.
-instance
-  ( Reader r :> es
-  , MTL.MonadReader r (Eff es)
-  ) => MTL.MonadReader r (Eff es) where
-  ask = send Ask
-  local f = send . Local f
-  reader f = f <$> send Ask

@@ -2,8 +2,8 @@
 -- | The dynamically dispatched variant of the 'Writer' effect.
 --
 -- /Note:/ unless you plan to change interpretations at runtime or you need the
--- 'MTL.MonadWriter' instance for compatibility with existing code, it's
--- recommended to use one of the statically dispatched variants,
+-- t'Control.Monad.Writer.MonadWriter' instance for compatibility with existing
+-- code, it's recommended to use one of the statically dispatched variants,
 -- i.e. "Effectful.Writer.Static.Local" or "Effectful.Writer.Static.Shared".
 module Effectful.Writer.Dynamic
   ( -- * Effect
@@ -25,19 +25,11 @@ module Effectful.Writer.Dynamic
   , listens
   ) where
 
-import Control.Monad.Writer qualified as MTL
-
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Internal.MTL (Writer(..))
 import Effectful.Writer.Static.Local qualified as L
 import Effectful.Writer.Static.Shared qualified as S
-
--- | Provide access to a write only value of type @w@.
-data Writer w :: Effect where
-  Tell   :: w   -> Writer w m ()
-  Listen :: m a -> Writer w m (a, w)
-
-type instance DispatchOf (Writer w) = Dynamic
 
 ----------------------------------------
 -- Local
@@ -106,17 +98,3 @@ listens
 listens f m = do
   (a, w) <- listen m
   pure (a, f w)
-
-----------------------------------------
--- Orphan instance
-
--- | Instance included for compatibility with existing code.
-instance
-  ( Monoid w
-  , Writer w :> es
-  , MTL.MonadWriter w (Eff es)
-  ) => MTL.MonadWriter w (Eff es) where
-  writer (a, w) = a <$ send (Tell w)
-  tell = send . Tell
-  listen = send . Listen
-  pass = error "pass is not implemented due to ambiguous semantics in presence of runtime exceptions"

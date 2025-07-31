@@ -1,9 +1,8 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
 -- | The dynamically dispatched variant of the 'Error' effect.
 --
 -- /Note:/ unless you plan to change interpretations at runtime or you need the
--- 'MTL.MonadError' instance for compatibility with existing code, it's
--- recommended to use the statically dispatched variant,
+-- t'Control.Monad.Error.MonadError' instance for compatibility with existing
+-- code, it's recommended to use the statically dispatched variant,
 -- i.e. "Effectful.Error.Static".
 module Effectful.Error.Dynamic
   ( -- * Effect
@@ -30,20 +29,12 @@ module Effectful.Error.Dynamic
   , E.prettyCallStack
   ) where
 
-import Control.Monad.Except qualified as MTL
 import GHC.Stack (withFrozenCallStack)
 
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static qualified as E
-
--- | Provide the ability to handle errors of type @e@.
-data Error e :: Effect where
-  -- | @since 2.4.0.0
-  ThrowErrorWith :: (e -> String) -> e -> Error e m a
-  CatchError :: m a -> (E.CallStack -> e -> m a) -> Error e m a
-
-type instance DispatchOf (Error e) = Dynamic
+import Effectful.Internal.MTL (Error(..))
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static").
 runError
@@ -151,15 +142,3 @@ tryError
   -- ^ The inner computation.
   -> Eff es (Either (E.CallStack, e) a)
 tryError m = (Right <$> m) `catchError` \es e -> pure $ Left (es, e)
-
-----------------------------------------
--- Orphan instance
-
--- | Instance included for compatibility with existing code.
-instance
-  ( Show e
-  , Error e :> es
-  , MTL.MonadError e (Eff es)
-  ) => MTL.MonadError e (Eff es) where
-  throwError = send . ThrowErrorWith show
-  catchError action = send . CatchError action . const

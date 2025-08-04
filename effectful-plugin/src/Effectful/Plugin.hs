@@ -45,6 +45,9 @@ import GHC.Clock
 
 #if __GLASGOW_HASKELL__ <= 904
 type Subst = TCvSubst
+
+isEmptySubst :: Subst -> Bool
+isEmptySubst = isEmptyTCvSubst
 #endif
 
 data EffGiven = EffGiven
@@ -136,12 +139,13 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
   solutions <- tcPluginIO $ newIORef []
   forM_ effWanteds $ \wanted -> do
     printSingle "Wanted" wanted
-    case mapMaybe (maybeUnifiesWith wanted) effGivens of
-      [] -> printLn "No candidates"
-      [(given, _)] -> do
+    case findCandidates wanted effGivens of
+      Left given -> printSingle "Already solved by" given
+      Right [] -> printLn "No candidates"
+      Right [(given, _)] -> do
         printSingle "Single candidate found" given
         emitEqConstraint solutions wanted given
-      candidates -> do
+      Right candidates -> do
         printList "Multiple candidates found" $ map fst candidates
         filterCandidates instEnvs None candidates >>= \case
           None -> printLn "No candidates left"
@@ -354,14 +358,23 @@ unifiesWithAny ty = any (isJust . tcUnifyTyNoSkolems ty . (.ty))
 substHasAnyVar :: Subst -> TyCoVarSet -> Bool
 substHasAnyVar subst = uniqSetAny (`elemUFM` getTvSubstEnv subst)
 
--- | Given a wanted constraint and a given constraint, attempt to unify them and
--- give back a substitution that can be applied to the wanted to make it equal
--- to the given.
-maybeUnifiesWith :: EffWanted -> EffGiven -> Maybe (EffGiven, Subst)
-maybeUnifiesWith wanted given =
-  if wanted.effCon `eqType` given.effCon && wanted.es `eqType` given.es
-  then (given, ) <$> tcUnifyTyNoSkolems wanted.eff given.eff
-  else Nothing
+-- | Find givens unifiable with a wanted and give them back along with
+-- appropriate substitutions.
+--
+-- Returns Left if the wanted is already solved by one of the givens.
+findCandidates :: EffWanted -> [EffGiven] -> Either EffGiven [(EffGiven, Subst)]
+findCandidates wanted = loop []
+  where
+    loop acc = \case
+      [] -> Right acc
+      given : rest ->
+        if wanted.effCon `eqType` given.effCon && wanted.es `eqType` given.es
+        then case tcUnifyTyNoSkolems wanted.eff given.eff of
+          Just subst
+            | isEmptySubst subst -> Left given
+            | otherwise -> loop ((given, subst) : acc) rest
+          Nothing -> loop acc rest
+        else loop acc rest
 
 nubType :: [Type] -> [Type]
 nubType = coerce . S.toList . S.fromList @OrdType . coerce

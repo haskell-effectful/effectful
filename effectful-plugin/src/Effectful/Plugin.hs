@@ -81,7 +81,7 @@ instance O.Outputable EffWanted where
 
 data OtherWanted = OtherWanted
   { ty :: Type
-  , vars :: CoVarSet
+  , vars :: TyCoVarSet
   }
 
 instance O.Outputable OtherWanted where
@@ -179,7 +179,7 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
       (given, subst) : rest -> do
         printSingle "Candidate" given
         let relevantWanteds = (`mapMaybe` otherWanteds) $ \wanted ->
-              if substHasAnyVar subst wanted.vars
+              if substHasAnyTyVar subst wanted.vars
               then Just $ substTy subst wanted.ty
               else Nothing
         printList "Relevant wanteds" relevantWanteds
@@ -355,8 +355,8 @@ tcUnifyTyNoSkolems ty1 ty2 = tcUnifyTys bindFun [ty1] [ty2]
 unifiesWithAny :: Type -> [OtherGiven] -> Bool
 unifiesWithAny ty = any (isJust . tcUnifyTyNoSkolems ty . (.ty))
 
-substHasAnyVar :: Subst -> TyCoVarSet -> Bool
-substHasAnyVar subst = uniqSetAny (`elemUFM` getTvSubstEnv subst)
+substHasAnyTyVar :: Subst -> TyCoVarSet -> Bool
+substHasAnyTyVar subst = uniqSetAny (`elemUFM` getTvSubstEnv subst)
 
 -- | Find givens unifiable with a wanted and give them back along with
 -- appropriate substitutions.

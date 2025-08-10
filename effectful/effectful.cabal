@@ -106,6 +106,8 @@ library
                      Effectful.Prim.IORef
                      Effectful.Prim.IORef.Strict
                      Effectful.Process
+                     Effectful.ST
+                     Effectful.ST.STRef
                      Effectful.Temporary
                      Effectful.Timeout
 
@@ -171,6 +173,7 @@ test-suite test
                     PrimTests
                     ReaderTests
                     StateTests
+                    STTests
                     TimeoutTests
                     UnliftTests
                     Utils

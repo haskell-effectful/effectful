@@ -17,7 +17,7 @@ description:
 extra-source-files: CHANGELOG.md
                     README.md
 
-tested-with: GHC == { 9.4.8, 9.6.7, 9.8.4, 9.10.2, 9.12.2 }
+tested-with: GHC == { 9.4.8, 9.6.7, 9.8.4, 9.10.2, 9.12.2, 9.14.1 }
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head
@@ -83,8 +83,7 @@ library
 
     build-depends:    base                >= 4.16      && < 5
                     , containers          >= 0.5
-                    , effectful-core      >= 2.5.0.0   && < 3.0.0.0
-                    , ghc                 >= 9.4       && < 9.13
+                    , ghc                 >= 9.4       && < 9.15
 
     hs-source-dirs: src
 

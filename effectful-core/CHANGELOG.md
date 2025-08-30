@@ -1,4 +1,4 @@
-# effectful-core-2.6.1.0 (????-??-??)
+# effectful-core-2.6.1.0 (2025-08-30)
 * Add `MonadError`, `MonadReader`, `MonadState` and `MonadWriter` instances for
   `Eff` for compatibility with existing code.
 

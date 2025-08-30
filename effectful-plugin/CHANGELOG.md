@@ -1,4 +1,4 @@
-# effectful-plugin-2.0.0.1 (2025-??-??)
+# effectful-plugin-2.0.0.1 (2025-08-30)
 * Small optimization of checking suitable effects for unification.
 * Add `timing` flag for tracking execution time of the plugin.
 * Expect wanted constraints that are already solved.

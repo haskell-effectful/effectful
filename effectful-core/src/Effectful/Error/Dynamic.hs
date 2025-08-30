@@ -1,7 +1,7 @@
 -- | The dynamically dispatched variant of the 'Error' effect.
 --
 -- /Note:/ unless you plan to change interpretations at runtime or you need the
--- t'Control.Monad.Error.MonadError' instance for compatibility with existing
+-- t'Control.Monad.Except.MonadError' instance for compatibility with existing
 -- code, it's recommended to use the statically dispatched variant,
 -- i.e. "Effectful.Error.Static".
 module Effectful.Error.Dynamic

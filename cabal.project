@@ -9,3 +9,9 @@ allow-newer: cleff:*
            , freer-simple:*
            , fused-effects:*
            , polysemy:*
+
+-- ghc-9.14
+allow-newer: *:base
+           , *:containers
+           , *:template-haskell
+           , hashable:ghc-bignum

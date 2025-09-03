@@ -438,6 +438,9 @@ fe_calculateFileSizesDeep
 class Monad m => MonadFile m where
   mtl_tryFileSize :: FilePath -> m (Maybe Int)
 
+instance Effectful_File E.:> es => MonadFile (E.Eff es) where
+  mtl_tryFileSize = effectful_tryFileSize
+
 newtype FileT m a = FileT { runFileT :: m a }
   deriving newtype (Functor, Applicative, Monad, MonadIO)
 
@@ -456,6 +459,9 @@ instance MonadIO m => MonadFile (FileT m) where
 
 class Monad m => MonadLog m where
   mtl_logMsg :: String -> m ()
+
+instance Effectful_Logging E.:> es => MonadLog (E.Eff es) where
+  mtl_logMsg = effectful_logMsg
 
 newtype LoggingT m a = LoggingT (M.StateT [Text] m a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, M.MonadTrans)
@@ -491,17 +497,30 @@ mtl_program files = do
   pure $ sum sizes
 {-# NOINLINE mtl_program #-}
 
-mtl_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
-mtl_calculateFileSizes = runFileT . runLoggingT . mtl_program
+mtl_calculateFileSizesTransformers :: [FilePath] -> IO (Int, [Text])
+mtl_calculateFileSizesTransformers = runFileT . runLoggingT . mtl_program
 
-mtl_calculateFileSizesDeep :: [FilePath] -> IO (Int, [Text])
-mtl_calculateFileSizesDeep
+mtl_calculateFileSizesTransformersDeep :: [FilePath] -> IO (Int, [Text])
+mtl_calculateFileSizesTransformersDeep
   = runR . runR . runR . runR . runR
   . runFileT . runLoggingT
   . runR . runR . runR . runR . runR
   . mtl_program
   where
     runR = flip M.runReaderT ()
+
+mtl_calculateFileSizesEffectful :: [FilePath] -> IO (Int, [Text])
+mtl_calculateFileSizesEffectful =
+  E.runEff . effectful_runFile . effectful_runLogging . mtl_program
+
+mtl_calculateFileSizesEffectfulDeep :: [FilePath] -> IO (Int, [Text])
+mtl_calculateFileSizesEffectfulDeep = E.runEff
+  . runR . runR . runR . runR . runR
+  . effectful_runFile . effectful_runLogging
+  . runR . runR . runR . runR . runR
+  . mtl_program
+  where
+    runR = E.runReader ()
 
 #endif
 

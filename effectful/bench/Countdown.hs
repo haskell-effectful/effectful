@@ -95,17 +95,29 @@ programMtl = do
       programMtl
 {-# NOINLINE programMtl #-}
 
-countdownMtl :: Integer -> (Integer, Integer)
-countdownMtl n = flip M.runState n $ programMtl
+countdownMtlTransformers :: Integer -> (Integer, Integer)
+countdownMtlTransformers n = flip M.runState n $ programMtl
 
-countdownMtlDeep :: Integer -> (Integer, Integer)
-countdownMtlDeep n = runIdentity
+countdownMtlTransformersDeep :: Integer -> (Integer, Integer)
+countdownMtlTransformersDeep n = runIdentity
   . runR . runR . runR . runR . runR
   . flip M.runStateT n
   . runR . runR . runR . runR . runR
   $ programMtl
   where
     runR = flip M.runReaderT ()
+
+countdownMtlEffectful :: Integer -> (Integer, Integer)
+countdownMtlEffectful n = E.runPureEff . ED.runStateLocal n $ programMtl
+
+countdownMtlEffectfulDeep :: Integer -> (Integer, Integer)
+countdownMtlEffectfulDeep n = E.runPureEff
+  . runR . runR . runR . runR . runR
+  . ED.runStateLocal n
+  . runR . runR . runR . runR . runR
+  $ programMtl
+  where
+    runR = E.runReader ()
 
 #endif
 

@@ -12,6 +12,7 @@ allow-newer: cleff:*
 
 -- ghc-9.14
 allow-newer: *:base
-           , *:containers
-           , *:template-haskell
+           , hashable:containers
            , hashable:ghc-bignum
+           , tagged:template-haskell
+           , th-abstraction:template-haskell

@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.19.20250821
+# version: 0.19.20260104
 #
-# REGENDATA ("0.19.20250821",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.19.20260104",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -18,6 +18,9 @@ on:
     branches:
       - master
   pull_request:
+    branches:
+      - master
+  merge_group:
     branches:
       - master
 jobs:
@@ -32,10 +35,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - compiler: ghc-9.14.0.20250819
+          - compiler: ghc-9.14.1
             compilerKind: ghc
-            compilerVersion: 9.14.0.20250819
-            setup-method: ghcup-prerelease
+            compilerVersion: 9.14.1
+            setup-method: ghcup
             allow-failure: false
           - compiler: ghc-9.12.2
             compilerKind: ghc
@@ -106,21 +109,6 @@ jobs:
           HCKIND: ${{ matrix.compilerKind }}
           HCNAME: ${{ matrix.compiler }}
           HCVER: ${{ matrix.compilerVersion }}
-      - name: Install GHC (GHCup prerelease)
-        if: matrix.setup-method == 'ghcup-prerelease'
-        run: |
-          "$HOME/.ghcup/bin/ghcup" config add-release-channel prereleases
-          "$HOME/.ghcup/bin/ghcup" install ghc "$HCVER" || (cat "$HOME"/.ghcup/logs/*.* && false)
-          HC=$("$HOME/.ghcup/bin/ghcup" whereis ghc "$HCVER")
-          HCPKG=$(echo "$HC" | sed 's#ghc$#ghc-pkg#')
-          HADDOCK=$(echo "$HC" | sed 's#ghc$#haddock#')
-          echo "HC=$HC" >> "$GITHUB_ENV"
-          echo "HCPKG=$HCPKG" >> "$GITHUB_ENV"
-          echo "HADDOCK=$HADDOCK" >> "$GITHUB_ENV"
-        env:
-          HCKIND: ${{ matrix.compilerKind }}
-          HCNAME: ${{ matrix.compiler }}
-          HCVER: ${{ matrix.compilerVersion }}
       - name: Set PATH and environment variables
         run: |
           echo "$HOME/.cabal/bin" >> $GITHUB_PATH
@@ -131,7 +119,7 @@ jobs:
           echo "HCNUMVER=$HCNUMVER" >> "$GITHUB_ENV"
           echo "ARG_TESTS=--enable-tests" >> "$GITHUB_ENV"
           echo "ARG_BENCH=--enable-benchmarks" >> "$GITHUB_ENV"
-          if [ $((HCNUMVER >= 91400)) -ne 0 ] ; then echo "HEADHACKAGE=true" >> "$GITHUB_ENV" ; else echo "HEADHACKAGE=false" >> "$GITHUB_ENV" ; fi
+          echo "HEADHACKAGE=false" >> "$GITHUB_ENV"
           echo "ARG_COMPILER=--$HCKIND --with-compiler=$HC" >> "$GITHUB_ENV"
         env:
           HCKIND: ${{ matrix.compilerKind }}
@@ -159,18 +147,6 @@ jobs:
           repository hackage.haskell.org
             url: http://hackage.haskell.org/
           EOF
-          if $HEADHACKAGE; then
-          cat >> $CABAL_CONFIG <<EOF
-          repository head.hackage.ghc.haskell.org
-             url: https://ghc.gitlab.haskell.org/head.hackage/
-             secure: True
-             root-keys: 7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
-                        26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
-                        f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
-             key-threshold: 3
-          active-repositories: hackage.haskell.org, head.hackage.ghc.haskell.org:override
-          EOF
-          fi
           cat >> $CABAL_CONFIG <<EOF
           program-default-options
             ghc-options: $GHCJOBS +RTS -M3G -RTS
@@ -187,7 +163,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache/restore@v4
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-28109522
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-e7451788
           path: ~/.haskell-ci-tools
       - name: install cabal-plan
         run: |
@@ -206,10 +182,10 @@ jobs:
         if: always()
         uses: actions/cache/save@v4
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-28109522
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-e7451788
           path: ~/.haskell-ci-tools
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: source
       - name: initial cabal.project for sdist
@@ -274,10 +250,12 @@ jobs:
           allow-newer: freer-simple:*
           allow-newer: fused-effects:*
           allow-newer: polysemy:*
-          allow-newer: *:base
-          allow-newer: *:containers
-          allow-newer: *:template-haskell
+          allow-newer: async:base
+          allow-newer: hashable:base
+          allow-newer: hashable:containers
           allow-newer: hashable:ghc-bignum
+          allow-newer: tagged:template-haskell
+          allow-newer: th-abstraction:template-haskell
 
           package effectful-core
             ghc-options: -Werror
@@ -292,9 +270,6 @@ jobs:
             ghc-options: -Werror
             flags:       +benchmark-foreign-libraries
           EOF
-          if $HEADHACKAGE; then
-          echo "allow-newer: $($HCPKG list --simple-output | sed -E 's/([a-zA-Z-]+)-[0-9.]+/*:\1,/g')" >> cabal.project
-          fi
           cat cabal.project
           cat cabal.project.local
       - name: dump install plan

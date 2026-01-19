@@ -103,13 +103,13 @@ countdown n = bgroup (show n)
     ]
 #endif
 #ifdef VERSION_mtl
-  , bgroup "mtl (transformers)"
-    [ bench "shallow" $ nf countdownMtlTransformers n
-    , bench "deep"    $ nf countdownMtlTransformersDeep n
-    ]
   , bgroup "mtl (effectful)"
     [ bench "shallow" $ nf countdownMtlEffectful n
     , bench "deep"    $ nf countdownMtlEffectfulDeep n
+    ]
+  , bgroup "mtl (transformers)"
+    [ bench "shallow" $ nf countdownMtlTransformers n
+    , bench "deep"    $ nf countdownMtlTransformersDeep n
     ]
 #endif
 #ifdef VERSION_fused_effects
@@ -152,13 +152,13 @@ filesize n = bgroup (show n)
     ]
 #endif
 #ifdef VERSION_mtl
-  , bgroup "mtl (transformers)"
-    [ bench "shallow" $ nfAppIO mtl_calculateFileSizesTransformers (take n files)
-    , bench "deep"    $ nfAppIO mtl_calculateFileSizesTransformersDeep (take n files)
-    ]
   , bgroup "mtl (effectful)"
     [ bench "shallow" $ nfAppIO mtl_calculateFileSizesEffectful (take n files)
     , bench "deep"    $ nfAppIO mtl_calculateFileSizesEffectfulDeep (take n files)
+    ]
+  , bgroup "mtl (transformers)"
+    [ bench "shallow" $ nfAppIO mtl_calculateFileSizesTransformers (take n files)
+    , bench "deep"    $ nfAppIO mtl_calculateFileSizesTransformersDeep (take n files)
     ]
 #endif
 #ifdef VERSION_fused_effects

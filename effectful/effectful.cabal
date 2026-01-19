@@ -195,6 +195,9 @@ benchmark bench
        if impl(ghc < 9.15)
           build-depends: polysemy >= 1.9.2.0
 
+       if impl(ghc >= 9.12) && impl(ghc < 9.15)
+          build-depends: theseus
+
     build-depends:    base
                     , async
                     , effectful

@@ -55,6 +55,14 @@ import Polysemy.Reader qualified as P
 import Polysemy.State qualified as P
 #endif
 
+-- theseus
+#ifdef VERSION_theseus
+import Theseus.Eff qualified as T
+import Theseus.Effect.IO qualified as T
+import Theseus.Effect.Reader qualified as T
+import Theseus.Effect.State qualified as T
+#endif
+
 tryGetFileSize :: FilePath -> IO (Maybe Int)
 tryGetFileSize path = try @IOException (getFileStatus path) >>= \case
   Left  _    -> pure Nothing
@@ -586,4 +594,74 @@ poly_calculateFileSizesDeep = P.runM
   . poly_program
   where
     runR = P.runReader ()
+#endif
+
+----------------------------------------
+-- theseus
+
+#ifdef VERSION_theseus
+
+data Theseus_File :: E.Effect where
+  Theseus_tryFileSize :: FilePath -> Theseus_File m (Maybe Int)
+
+theseus_tryFileSize :: Theseus_File T.:> es => FilePath -> T.Eff ef es (Maybe Int)
+theseus_tryFileSize = T.send . Theseus_tryFileSize
+
+theseus_runFile
+  :: (T.IOE T.:> es, ef T.Identity)
+  => T.Eff ef (Theseus_File : es) a
+  -> T.Eff ef es a
+theseus_runFile = T.interpret_ \case
+  Theseus_tryFileSize path -> liftIO $ tryGetFileSize path
+
+data Theseus_Logging :: E.Effect where
+  Theseus_logMsg :: !Text -> Theseus_Logging m ()
+
+theseus_logMsg :: Theseus_Logging T.:> es => String -> T.Eff ef es ()
+theseus_logMsg = T.send . Theseus_logMsg . T.pack
+
+theseus_runLogging
+  :: (ef (T.StateResult [Text]), ef T.Identity)
+  => T.Eff ef (Theseus_Logging : es) a
+  -> T.Eff ef es (a, [Text])
+theseus_runLogging = T.using (fmap theseus_swap . T.runState []) $ T.interpret_ \case
+  Theseus_logMsg msg -> T.modify (msg :)
+
+theseus_swap :: (a, b) -> (b, a)
+theseus_swap (x, y) = (y, x)
+
+----------
+
+theseus_calculateFileSize
+  :: (Theseus_File T.:> es, Theseus_Logging T.:> es)
+  => FilePath
+  -> T.Eff ef es Int
+theseus_calculateFileSize path = do
+  theseus_logMsg $ "Calculating the size of " ++ path
+  theseus_tryFileSize path >>= \case
+    Nothing   -> 0    <$ theseus_logMsg ("Could not calculate the size of " ++ path)
+    Just size -> size <$ theseus_logMsg (path ++ " is " ++ show size ++ " bytes")
+{-# NOINLINE theseus_calculateFileSize #-}
+
+theseus_program
+  :: (Theseus_File T.:> es, Theseus_Logging T.:> es)
+  => [FilePath]
+  -> T.Eff ef es Int
+theseus_program files = do
+  sizes <- traverse theseus_calculateFileSize files
+  pure $ sum sizes
+{-# NOINLINE theseus_program #-}
+
+theseus_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
+theseus_calculateFileSizes =
+  T.runEffIO . theseus_runFile . theseus_runLogging . theseus_program
+
+theseus_calculateFileSizesDeep :: [FilePath] -> IO (Int, [Text])
+theseus_calculateFileSizesDeep = T.runEffIO
+  . runR . runR . runR . runR . runR
+  . theseus_runFile . theseus_runLogging
+  . runR . runR . runR . runR . runR
+  . theseus_program
+  where
+    runR = T.runReader ()
 #endif

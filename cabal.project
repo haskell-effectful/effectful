@@ -4,11 +4,17 @@ packages:
   effectful-th/*.cabal
   effectful/*.cabal
 
+source-repository-package
+    type: git
+    location: https://github.com/jhgarner/Theseus.git
+    branch: 7299b625e2f3278f0e10bfccc6b71cedea5326d6
+
 -- Ignore dependencies of other effect libraries.
 allow-newer: cleff:*
            , freer-simple:*
            , fused-effects:*
            , polysemy:*
+           , theseus:*
 
 -- ghc-9.14
 allow-newer: *:base

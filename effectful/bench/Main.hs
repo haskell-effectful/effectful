@@ -124,6 +124,12 @@ countdown n = bgroup (show n)
     , bench "deep"    $ nf countdownPolysemyDeep n
     ]
 #endif
+#ifdef VERSION_theseus
+  , bgroup "theseus"
+    [ bench "shallow" $ nf countdownTheseus n
+    , bench "deep"    $ nf countdownTheseusDeep n
+    ]
+#endif
   ]
 
 filesize :: Int -> Benchmark
@@ -171,6 +177,12 @@ filesize n = bgroup (show n)
   , bgroup "polysemy"
     [ bench "shallow" $ nfAppIO poly_calculateFileSizes (take n files)
     , bench "deep"    $ nfAppIO poly_calculateFileSizesDeep (take n files)
+    ]
+#endif
+#ifdef VERSION_theseus
+  , bgroup "theseus"
+    [ bench "shallow" $ nfAppIO theseus_calculateFileSizes (take n files)
+    , bench "deep"    $ nfAppIO theseus_calculateFileSizesDeep (take n files)
     ]
 #endif
   ]

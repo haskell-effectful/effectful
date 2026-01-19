@@ -53,6 +53,13 @@ import Polysemy.Reader qualified as P
 import Polysemy.State qualified as P
 #endif
 
+-- theseus
+#ifdef VERSION_theseus
+import Theseus.Eff qualified as T
+import Theseus.Effect.Reader qualified as T
+import Theseus.Effect.State qualified as T
+#endif
+
 ----------------------------------------
 -- reference
 
@@ -434,6 +441,35 @@ countdownPolysemyDeep n = P.run
   $ programPolysemy
   where
     runR = P.runReader ()
+
+#endif
+
+----------------------------------------
+-- theseus
+
+#ifdef VERSION_theseus
+
+programTheseus :: T.State Integer T.:> es => T.Eff ef es Integer
+programTheseus = do
+  n <- T.get @Integer
+  if n <= 0
+    then pure n
+    else do
+      T.put (n - 1)
+      programTheseus
+{-# NOINLINE programTheseus #-}
+
+countdownTheseus :: Integer -> (Integer, Integer)
+countdownTheseus n = T.runEff . T.runState n $ programTheseus
+
+countdownTheseusDeep :: Integer -> (Integer, Integer)
+countdownTheseusDeep n = T.runEff
+  . runR . runR . runR . runR . runR
+  . T.runState n
+  . runR . runR . runR . runR . runR
+  $ programTheseus
+  where
+    runR = T.runReader ()
 
 #endif
 

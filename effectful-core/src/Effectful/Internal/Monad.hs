@@ -347,9 +347,18 @@ instance NonDet :> es => MonadPlus (Eff es)
 instance C.MonadThrow (Eff es) where
   throwM = unsafeEff_ . withFrozenCallStack E.throwIO
 
+#if MIN_VERSION_base(4,21,0) && MIN_VERSION_exceptions(0,10,11)
+  rethrowM = unsafeEff_ . E.rethrowIO
+#endif
+
 instance C.MonadCatch (Eff es) where
   catch action handler = reallyUnsafeUnliftIO $ \unlift -> do
     E.catch (unlift action) (unlift . handler)
+
+#if MIN_VERSION_base(4,21,0) && MIN_VERSION_exceptions(0,10,11)
+  catchNoPropagate action handler = reallyUnsafeUnliftIO $ \unlift -> do
+    E.catchNoPropagate (unlift action) (unlift . handler)
+#endif
 
 instance C.MonadMask (Eff es) where
   mask k = reallyUnsafeUnliftIO $ \unlift -> do

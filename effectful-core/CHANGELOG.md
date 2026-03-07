@@ -1,3 +1,7 @@
+# effectful-core-2.7.0.0 (2026-??-??)
+* Add definitions of `rethrowM` to `MonadThrow` and `catchNoPropagate` to
+  `MonadCatch` instances for `Eff` when appropriate (`exceptions` >= 0.10.11).
+
 # effectful-core-2.6.1.0 (2025-08-30)
 * Add `MonadError`, `MonadReader`, `MonadState` and `MonadWriter` instances for
   `Eff` for compatibility with existing code.

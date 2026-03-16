@@ -15,9 +15,38 @@ import Countdown
 import FileSizes
 import Unlift
 
+----------------------------------------
+
+import Data.Bifunctor
+import Data.Foldable
+import Effectful
+import Effectful.Dispatch.Dynamic
+import Effectful.State.Static.Local
+import Effectful.Output.Dynamic
+
+runOutputNaiveList :: Eff (Output o : es) a -> Eff es (a, [o])
+runOutputNaiveList = reinterpret_ run $ \case
+  Output o -> modify (o :)
+  where
+    run = fmap (second reverse) . runState []
+
+benchOutput
+  :: (forall r es. Eff (Output Int : es) r -> Eff es (r, x))
+  -> Int
+  -> IO x
+benchOutput run n = fmap snd . runEff . run $ forM_ [1..n] output
+
+zzz :: Int
+zzz = 50_000_000
+
 main :: IO ()
 main = defaultMain
-  [ concurrencyBenchmark
+  [ bgroup "output"
+    [ bench "array" $ nfAppIO (benchOutput runOutputLocalArray) zzz
+    , bench "list" $ nfAppIO (benchOutput runOutputLocalList) zzz
+    , bench "list (naive)" $ nfAppIO (benchOutput runOutputNaiveList) zzz
+    ]
+  , concurrencyBenchmark
   , unliftBenchmark
   , bgroup "countdown" $ map countdown [1000, 2000, 3000]
   , bgroup "countdown (extra)" $ map countdownExtra [1000, 2000, 3000]

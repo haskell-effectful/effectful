@@ -31,7 +31,6 @@ source-repository head
 common language
     ghc-options:        -Wall
                         -Wcompat
-                        -Wno-unticked-promoted-constructors
                         -Wmissing-deriving-strategies
                         -Werror=prepositive-qualified-module
 

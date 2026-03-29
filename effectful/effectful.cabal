@@ -36,7 +36,6 @@ flag benchmark-foreign-libraries
 common language
     ghc-options:        -Wall
                         -Wcompat
-                        -Wno-unticked-promoted-constructors
                         -Wmissing-deriving-strategies
                         -Werror=prepositive-qualified-module
 

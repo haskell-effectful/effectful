@@ -21,7 +21,7 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
-tested-with: GHC == { 8.10.7, 9.0.2, 9.2.8, 9.4.8, 9.6.7, 9.8.4, 9.10.2, 9.12.2, 9.14.1 }
+tested-with: GHC == { 9.6.7, 9.8.4, 9.10.2, 9.12.2, 9.14.1 }
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head
@@ -50,7 +50,9 @@ common language
                         ImportQualifiedPost
                         LambdaCase
                         MultiParamTypeClasses
+                        NoFieldSelectors
                         NoStarIsType
+                        OverloadedRecordDot
                         PolyKinds
                         RankNTypes
                         RoleAnnotations
@@ -67,7 +69,7 @@ library
 
     ghc-options:    -O2
 
-    build-depends:    base                >= 4.14      && < 5
+    build-depends:    base                >= 4.18      && < 5
                     , containers          >= 0.6
                     , deepseq             >= 1.2
                     , exceptions          >= 0.10.4
@@ -79,9 +81,6 @@ library
                     , unliftio-core       >= 0.2.0.1
 
     hs-source-dirs:  src
-
-    if impl(ghc < 9)
-      c-sources:     cbits/utils.c
 
     exposed-modules: Effectful
                      Effectful.Dispatch.Dynamic

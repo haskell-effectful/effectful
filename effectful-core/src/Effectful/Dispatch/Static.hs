@@ -214,4 +214,5 @@ unsafeConcUnliftIO persistence limit k = unsafeEff $ \es -> do
   concUnliftIO es persistence limit k
 
 -- $setup
+-- >>> :seti -XFieldSelectors
 -- >>> import Effectful

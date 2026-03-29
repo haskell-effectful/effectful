@@ -1,4 +1,5 @@
 # effectful-core-2.7.0.0 (2026-??-??)
+* Drop support for GHC < 9.6.
 * Add definitions of `rethrowM` to `MonadThrow` and `catchNoPropagate` to
   `MonadCatch` instances for `Eff` when appropriate (`exceptions` >= 0.10.11).
 

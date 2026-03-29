@@ -160,7 +160,7 @@ ephemeralConcUnlift es0 uses k = do
   mvUses <- newMVar' uses
   k $ \m -> do
     es <- myThreadId >>= \case
-      tid | tid0 `eqThreadId` tid -> pure es0
+      tid | tid0 == tid -> pure es0
       _ -> modifyMVar' mvUses $ \case
         0 -> error
            $ "Number of permitted calls (" ++ show uses ++ ") to the unlifting "
@@ -194,136 +194,65 @@ persistentConcUnlift es0 cleanUp threads k = do
   mvEntries <- newMVar' $ ThreadEntries threads IM.empty
   k $ \m -> do
     es <- myThreadId >>= \case
-      tid | tid0 `eqThreadId` tid -> pure es0
+      tid | tid0 == tid -> pure es0
       tid -> modifyMVar' mvEntries $ \te -> do
         let wkTid = weakThreadId tid
-        (mes, i) <- case wkTid `IM.lookup` teEntries te of
-          Just (ThreadEntry i td) -> (, i) <$> lookupEnv tid td
-          Nothing                 -> pure (Nothing, newEntryId)
-        case mes of
-          Just es -> pure (te, es)
-          Nothing -> case teCapacity te of
+        case wkTid `IM.lookup` te.entries of
+          Just wkEs -> deRefWeak wkEs >>= \case
+            Nothing -> error "Impossible, thread alive but its weak ref dead"
+            Just es -> pure (te, es)
+          Nothing -> case te.capacity of
             0 -> error
               $ "Number of other threads (" ++ show threads ++ ") permitted to "
               ++ "use the unlifting function was exceeded. Please increase the "
               ++ "limit or use the unlimited variant."
             1 -> do
-              wkTidEs <- mkWeakThreadIdEnv tid esTemplate wkTid i mvEntries cleanUp
+              wkTidEs <- mkWeakThreadIdEnv tid wkTid esTemplate mvEntries cleanUp
               let newEntries = ThreadEntries
-                    { teCapacity = teCapacity te - 1
-                    , teEntries  = addThreadData wkTid i wkTidEs $ teEntries te
+                    { capacity = te.capacity - 1
+                    , entries  = IM.insert wkTid wkTidEs te.entries
                     }
               pure (newEntries, esTemplate)
             _ -> do
               es      <- cloneEnv esTemplate
-              wkTidEs <- mkWeakThreadIdEnv tid es wkTid i mvEntries cleanUp
+              wkTidEs <- mkWeakThreadIdEnv tid wkTid es mvEntries cleanUp
               let newEntries = ThreadEntries
-                    { teCapacity = teCapacity te - 1
-                    , teEntries  = addThreadData wkTid i wkTidEs $ teEntries te
+                    { capacity = te.capacity - 1
+                    , entries  = IM.insert wkTid wkTidEs te.entries
                     }
               pure (newEntries, es)
     coerce m es
 {-# NOINLINE persistentConcUnlift #-}
 
 ----------------------------------------
--- Data types
-
-newtype EntryId = EntryId Int
-  deriving newtype Eq
-
-newEntryId :: EntryId
-newEntryId = EntryId 0
-
-nextEntryId :: EntryId -> EntryId
-nextEntryId (EntryId i) = EntryId (i + 1)
+-- Internal helpers
 
 data ThreadEntries es = ThreadEntries
-  { teCapacity :: !Int
-  , teEntries  :: !(IM.IntMap (ThreadEntry es))
+  { capacity :: !Int
+  , entries  :: !(IM.IntMap (Weak (Env es)))
   }
-
--- | In GHC < 9 weak thread ids are 32bit long, while ThreadIdS are 64bit long,
--- so there is potential for collisions. This is solved by keeping, for a
--- particular weak thread id, a list of ThreadIdS with unique EntryIdS.
-data ThreadEntry es = ThreadEntry !EntryId !(ThreadData es)
-
-data ThreadData es
-  = ThreadData !EntryId !(Weak (ThreadId, Env es)) (ThreadData es)
-  | NoThreadData
-
-----------------------------------------
--- Weak references to threads
 
 mkWeakThreadIdEnv
   :: ThreadId
-  -> Env es
   -> Int
-  -> EntryId
+  -> Env es
   -> MVar' (ThreadEntries es)
   -> Bool
-  -> IO (Weak (ThreadId, Env es))
-mkWeakThreadIdEnv t@(ThreadId t#) es wkTid i v = \case
+  -> IO (Weak (Env es))
+mkWeakThreadIdEnv (ThreadId t#) wkTid es v = \case
   True -> IO $ \s0 ->
-    case mkWeak# t# (t, es) finalizer s0 of
+    case mkWeak# t# es finalizer s0 of
       (# s1, w #) -> (# s1, Weak w #)
   False -> IO $ \s0 ->
-    case mkWeakNoFinalizer# t# (t, es) s0 of
+    case mkWeakNoFinalizer# t# es s0 of
       (# s1, w #) -> (# s1, Weak w #)
   where
-    IO finalizer = deleteThreadData wkTid i v
-
-----------------------------------------
--- Manipulation of ThreadEntries
-
-lookupEnv :: ThreadId -> ThreadData es -> IO (Maybe (Env es))
-lookupEnv tid0 = \case
-  NoThreadData -> pure Nothing
-  ThreadData _ wkTidEs td -> deRefWeak wkTidEs >>= \case
-    Nothing -> lookupEnv tid0 td
-    Just (tid, es)
-      | tid0 `eqThreadId` tid -> pure $ Just es
-      | otherwise             -> lookupEnv tid0 td
-
-----------------------------------------
-
-addThreadData
-  :: Int
-  -> EntryId
-  -> Weak (ThreadId, Env es)
-  -> IM.IntMap (ThreadEntry es)
-  -> IM.IntMap (ThreadEntry es)
-addThreadData wkTid i w teMap
-  | i == newEntryId = IM.insert wkTid (newThreadEntry i w) teMap
-  | otherwise       = IM.adjust (consThreadData w) wkTid teMap
-
-newThreadEntry :: EntryId -> Weak (ThreadId, Env es) -> ThreadEntry es
-newThreadEntry i w = ThreadEntry (nextEntryId i) $ ThreadData i w NoThreadData
-
-consThreadData :: Weak (ThreadId, Env es) -> ThreadEntry es -> ThreadEntry es
-consThreadData w (ThreadEntry i td) =
-  ThreadEntry (nextEntryId i) $ ThreadData i w td
-
-----------------------------------------
-
-deleteThreadData :: Int -> EntryId -> MVar' (ThreadEntries es) -> IO ()
-deleteThreadData wkTid i v = modifyMVar'_ v $ \te -> do
-  pure ThreadEntries
-    { teCapacity = case teCapacity te of
-        -- If the template copy of the environment hasn't been consumed
-        -- yet, the capacity can be restored.
-        0 -> 0
-        n -> n + 1
-    , teEntries = IM.update (cleanThreadEntry i) wkTid $ teEntries te
-    }
-
-cleanThreadEntry :: EntryId -> ThreadEntry es -> Maybe (ThreadEntry es)
-cleanThreadEntry i0 (ThreadEntry i td0) = case cleanThreadData i0 td0 of
-  NoThreadData -> Nothing
-  td           -> Just (ThreadEntry i td)
-
-cleanThreadData :: EntryId -> ThreadData es -> ThreadData es
-cleanThreadData i0 = \case
-  NoThreadData -> NoThreadData
-  ThreadData i w td
-    | i0 == i   -> td
-    | otherwise -> ThreadData i w (cleanThreadData i0 td)
+    IO finalizer = modifyMVar'_ v $ \te -> do
+      pure ThreadEntries
+        { capacity = case te.capacity of
+            -- If the template copy of the environment hasn't been consumed
+            -- yet, the capacity can be restored.
+            0 -> 0
+            n -> n + 1
+        , entries = IM.delete wkTid te.entries
+        }

@@ -92,9 +92,9 @@ type role Env nominal
 -- - Cloning: /@O(N)@/, where @N@ is the size of the 'Storage'.
 --
 data Env (es :: [Effect]) = Env
-  { envOffset  :: !Int
-  , envRefs    :: !(PrimArray Ref)
-  , envStorage :: !(IORef' Storage)
+  { offset  :: !Int
+  , refs    :: !(PrimArray Ref)
+  , storage :: !(IORef' Storage)
   }
 
 -- | Reference to the effect in 'Storage'.
@@ -142,8 +142,8 @@ newtype Version = Version Int
 
 -- | A storage of effects.
 data Storage = Storage
-  { stVersion :: !Version
-  , stData    :: {-# UNPACK #-} !StorageData
+  { version :: !Version
+  , data_   :: {-# UNPACK #-} !StorageData
   }
 
 ----------------------------------------
@@ -170,10 +170,10 @@ fromAnyRelinker (AnyRelinker f) = fromAny f
 ----------------------------------------
 
 data StorageData = StorageData
-  { sdSize      :: !Int
-  , sdVersions  :: !(MutablePrimArray RealWorld Version)
-  , sdEffects   :: !(SmallMutableArray RealWorld AnyEffect)
-  , sdRelinkers :: !(SmallMutableArray RealWorld AnyRelinker)
+  { size      :: !Int
+  , versions  :: !(MutablePrimArray RealWorld Version)
+  , effects   :: !(SmallMutableArray RealWorld AnyEffect)
+  , relinkers :: !(SmallMutableArray RealWorld AnyRelinker)
   }
 
 -- | Make a shallow copy of the 'StorageData'.
@@ -200,9 +200,9 @@ copyStorageData (StorageData storageSize vs0 es0 fs0) = do
 -- @since 2.5.0.0
 restoreStorageData :: HasCallStack => StorageData -> Env es -> IO ()
 restoreStorageData newStorageData env = do
-  modifyIORef' (envStorage env) $ \(Storage version oldStorageData) ->
-    let oldSize = sdSize oldStorageData
-        newSize = sdSize newStorageData
+  modifyIORef' env.storage $ \(Storage version oldStorageData) ->
+    let oldSize = oldStorageData.size
+        newSize = newStorageData.size
     in if newSize /= oldSize
     then error $ "newSize (" ++ show newSize ++ ") /= oldSize (" ++ show oldSize ++ ")"
     else Storage version newStorageData

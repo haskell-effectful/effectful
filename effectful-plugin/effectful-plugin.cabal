@@ -1,7 +1,7 @@
 cabal-version:      3.0
 build-type:         Simple
 name:               effectful-plugin
-version:            2.0.0.1
+version:            2.0.0.2
 license:            BSD-3-Clause
 license-file:       LICENSE
 category:           Control
@@ -17,7 +17,7 @@ description:
 extra-source-files: CHANGELOG.md
                     README.md
 
-tested-with: GHC == { 9.4.8, 9.6.7, 9.8.4, 9.10.2, 9.12.2, 9.14.1 }
+tested-with: GHC == { 9.6.7, 9.8.4, 9.10.2, 9.12.2, 9.14.1 }
 
 bug-reports:   https://github.com/haskell-effectful/effectful/issues
 source-repository head
@@ -55,7 +55,9 @@ common language
                         ImportQualifiedPost
                         LambdaCase
                         MultiParamTypeClasses
+                        NoFieldSelectors
                         NoStarIsType
+                        OverloadedRecordDot
                         PolyKinds
                         RankNTypes
                         RecordWildCards
@@ -68,10 +70,6 @@ common language
                         TypeOperators
                         UndecidableInstances
 
-    if impl(ghc >= 9.4)
-      default-extensions: NoFieldSelectors
-                        , OverloadedRecordDot
-
 library
     import:         language
 
@@ -81,9 +79,9 @@ library
     if flag(verbose)
       cpp-options: -DVERBOSE
 
-    build-depends:    base                >= 4.16      && < 5
+    build-depends:    base                >= 4.18      && < 5
                     , containers          >= 0.5
-                    , ghc                 >= 9.4       && < 9.15
+                    , ghc                 >= 9.6       && < 9.15
 
     hs-source-dirs: src
 

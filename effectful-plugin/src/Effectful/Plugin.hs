@@ -43,13 +43,6 @@ import GHC.Tc.Types.CtLoc
 import GHC.Clock
 #endif
 
-#if __GLASGOW_HASKELL__ <= 904
-type Subst = TCvSubst
-
-isEmptySubst :: Subst -> Bool
-isEmptySubst = isEmptyTCvSubst
-#endif
-
 data EffGiven = EffGiven
   { effCon :: Type
   , eff :: Type

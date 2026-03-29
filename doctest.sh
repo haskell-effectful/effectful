@@ -27,7 +27,9 @@ run_doctest() {
     -XImportQualifiedPost \
     -XLambdaCase \
     -XMultiParamTypeClasses \
+    -XNoFieldSelectors \
     -XNoStarIsType \
+    -XOverloadedRecordDot \
     -XPolyKinds \
     -XRankNTypes \
     -XRecordWildCards \

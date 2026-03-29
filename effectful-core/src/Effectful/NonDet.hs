@@ -141,4 +141,4 @@ noError :: Either (cs, e) a -> Either cs a
 noError = either (Left . fst) Right
 
 backupStorageData :: HasCallStack => Env es -> IO I.StorageData
-backupStorageData env = I.copyStorageData . I.stData =<< readIORef' (I.envStorage env)
+backupStorageData env = I.copyStorageData . (.data_) =<< readIORef' env.storage

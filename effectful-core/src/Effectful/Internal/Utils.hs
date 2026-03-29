@@ -7,7 +7,6 @@ module Effectful.Internal.Utils
 
     -- * Utils for 'ThreadId'
   , weakThreadId
-  , eqThreadId
 
     -- * Utils for 'Any'
   , Any
@@ -36,11 +35,7 @@ import Unsafe.Coerce (unsafeCoerce)
 import GHC.Conc.Sync (fromThreadId)
 #else
 import GHC.Exts (Addr#, ThreadId#, unsafeCoerce#)
-#if __GLASGOW_HASKELL__ >= 904
 import Data.Word
-#else
-import Foreign.C.Types
-#endif
 #endif
 
 -- | Version of bracket with an INLINE pragma to work around
@@ -63,15 +58,8 @@ weakThreadId = fromIntegral . fromThreadId
 weakThreadId (ThreadId t#) = fromIntegral $ rts_getThreadId (threadIdToAddr# t#)
 
 foreign import ccall unsafe "rts_getThreadId"
-#if __GLASGOW_HASKELL__ >= 904
   -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6163
   rts_getThreadId :: Addr# -> Word64
-#elif __GLASGOW_HASKELL__ >= 900
-  -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/1254
-  rts_getThreadId :: Addr# -> CLong
-#else
-  rts_getThreadId :: Addr# -> CInt
-#endif
 
 -- Note: FFI imports take Addr# instead of ThreadId# because of
 -- https://gitlab.haskell.org/ghc/ghc/-/issues/8281, which would prevent loading
@@ -83,26 +71,6 @@ foreign import ccall unsafe "rts_getThreadId"
 -- The coercion is fine because GHC represents ThreadId# as a pointer.
 threadIdToAddr# :: ThreadId# -> Addr#
 threadIdToAddr# = unsafeCoerce#
-#endif
-
-----------------------------------------
-
-#if __GLASGOW_HASKELL__ < 900
-
--- | 'Eq' instance for 'ThreadId' is broken in GHC < 9, see
--- https://gitlab.haskell.org/ghc/ghc/-/issues/16761 for more info.
-eqThreadId :: ThreadId -> ThreadId -> Bool
-eqThreadId (ThreadId t1#) (ThreadId t2#) =
-  eq_thread (threadIdToAddr# t1#) (threadIdToAddr# t2#) == 1
-
-foreign import ccall unsafe "effectful_eq_thread"
-  eq_thread :: Addr# -> Addr# -> CLong
-
-#else
-
-eqThreadId :: ThreadId -> ThreadId -> Bool
-eqThreadId = (==)
-
 #endif
 
 ----------------------------------------

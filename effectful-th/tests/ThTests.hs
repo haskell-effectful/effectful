@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE FieldSelectors #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
 

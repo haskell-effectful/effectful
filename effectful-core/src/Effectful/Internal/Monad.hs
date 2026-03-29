@@ -215,7 +215,7 @@ seqUnliftIO es k = do
   tid0 <- myThreadId
   k $ \m -> do
     tid <- myThreadId
-    if tid `eqThreadId` tid0
+    if tid == tid0
       then unEff m es
       else error
          $ "If you want to use the unlifting function to run Eff computations "
@@ -616,7 +616,7 @@ send
   -> Eff es a
 send op = unsafeEff $ \es -> do
   Handler handlerEs (HandlerImpl handler) <- getEnv es
-  when (envStorage es /= envStorage handlerEs) $ do
+  when (es.storage /= handlerEs.storage) $ do
     error "es and handlerEs point to different Storages"
   -- Prevent the addition of unnecessary 'handler' stack frame to the call
   -- stack. Note that functions 'interpret', 'reinterpret', 'interpose' and

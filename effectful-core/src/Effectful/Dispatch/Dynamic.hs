@@ -423,7 +423,7 @@ passthrough
   -> Eff es a
 passthrough (LocalEnv les) op = unsafeEff $ \es -> do
   Handler handlerEs (HandlerImpl handler) <- getEnv es
-  when (envStorage les /= envStorage handlerEs) $ do
+  when (les.storage /= handlerEs.storage) $ do
     error "les and handlerEs point to different Storages"
   -- Prevent the addition of unnecessary 'handler' stack frame to the call
   -- stack. Note that functions 'interpret', 'reinterpret', 'interpose' and
@@ -1265,7 +1265,7 @@ copyRefs src@(Env soffset srefs _) dest@(Env doffset drefs storage) = do
 
 requireMatchingStorages :: HasCallStack => Env es1 -> Env es2 -> IO ()
 requireMatchingStorages es1 es2
-  | envStorage es1 /= envStorage es2 = error
+  | es1.storage /= es2.storage = error
     $ "Env and LocalEnv point to different Storages.\n"
     ++ "If you passed LocalEnv to a different thread and tried to create an "
     ++ "unlifting function there, it's not allowed. You need to create it in "

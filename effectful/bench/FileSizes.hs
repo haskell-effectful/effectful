@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE FieldSelectors #-}
 module FileSizes where
 
 import Control.Exception

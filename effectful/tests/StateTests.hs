@@ -51,7 +51,7 @@ test_stateM = runEff $ do
   U.assertEqual "correct a" "hi"    a
   U.assertEqual "correct b" "hi!!!" b
   where
-    getEffectReps = unsafeEff $ \es -> sdEffects . stData <$> readIORef' (envStorage es)
+    getEffectReps = unsafeEff $ \es -> (.effects) . (.data_) <$> readIORef' es.storage
 
 test_deepStack :: Assertion
 test_deepStack = runEff $ do

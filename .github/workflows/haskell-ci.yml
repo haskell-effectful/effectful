@@ -60,26 +60,6 @@ jobs:
             compilerVersion: 9.6.7
             setup-method: ghcup
             allow-failure: false
-          - compiler: ghc-9.4.8
-            compilerKind: ghc
-            compilerVersion: 9.4.8
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-9.2.8
-            compilerKind: ghc
-            compilerVersion: 9.2.8
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-9.0.2
-            compilerKind: ghc
-            compilerVersion: 9.0.2
-            setup-method: ghcup
-            allow-failure: false
-          - compiler: ghc-8.10.7
-            compilerKind: ghc
-            compilerVersion: 8.10.7
-            setup-method: ghcup
-            allow-failure: false
       fail-fast: false
     steps:
       - name: apt-get install
@@ -192,7 +172,7 @@ jobs:
         run: |
           touch cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful-core" >> cabal.project
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "packages: $GITHUB_WORKSPACE/source/effectful-plugin" >> cabal.project ; fi
+          echo "packages: $GITHUB_WORKSPACE/source/effectful-plugin" >> cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful-th" >> cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/effectful" >> cabal.project
           cat cabal.project
@@ -218,44 +198,38 @@ jobs:
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_effectful_core}" >> cabal.project
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "packages: ${PKGDIR_effectful_plugin}" >> cabal.project ; fi
+          echo "packages: ${PKGDIR_effectful_plugin}" >> cabal.project
           echo "packages: ${PKGDIR_effectful_th}" >> cabal.project
           echo "packages: ${PKGDIR_effectful}" >> cabal.project
           echo "package effectful-core" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields" >> cabal.project
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "package effectful-plugin" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields" >> cabal.project ; fi
+          echo "package effectful-plugin" >> cabal.project
+          echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields" >> cabal.project
           echo "package effectful-th" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields" >> cabal.project
           echo "package effectful" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields" >> cabal.project
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "package effectful-core" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "    ghc-options: -Werror=unused-packages" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "package effectful-plugin" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "    ghc-options: -Werror=unused-packages" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "package effectful-th" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "    ghc-options: -Werror=unused-packages" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "package effectful" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "    ghc-options: -Werror=unused-packages" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90000)) -ne 0 ] ; then echo "package effectful-core" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90000)) -ne 0 ] ; then echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "package effectful-plugin" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90000)) -ne 0 ] ; then echo "package effectful-th" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90000)) -ne 0 ] ; then echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90000)) -ne 0 ] ; then echo "package effectful" >> cabal.project ; fi
-          if [ $((HCNUMVER >= 90000)) -ne 0 ] ; then echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project ; fi
+          echo "package effectful-core" >> cabal.project
+          echo "    ghc-options: -Werror=unused-packages" >> cabal.project
+          echo "package effectful-plugin" >> cabal.project
+          echo "    ghc-options: -Werror=unused-packages" >> cabal.project
+          echo "package effectful-th" >> cabal.project
+          echo "    ghc-options: -Werror=unused-packages" >> cabal.project
+          echo "package effectful" >> cabal.project
+          echo "    ghc-options: -Werror=unused-packages" >> cabal.project
+          echo "package effectful-core" >> cabal.project
+          echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
+          echo "package effectful-plugin" >> cabal.project
+          echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
+          echo "package effectful-th" >> cabal.project
+          echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
+          echo "package effectful" >> cabal.project
+          echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
           cat >> cabal.project <<EOF
           allow-newer: cleff:*
           allow-newer: freer-simple:*
           allow-newer: fused-effects:*
           allow-newer: polysemy:*
-          allow-newer: async:base
-          allow-newer: hashable:base
-          allow-newer: hashable:containers
-          allow-newer: hashable:ghc-bignum
-          allow-newer: tagged:template-haskell
-          allow-newer: th-abstraction:template-haskell
 
           package effectful-core
             ghc-options: -Werror
@@ -298,17 +272,17 @@ jobs:
       - name: doctest
         run: |
           if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XPolyKinds -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XPolyKinds -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
           if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
           if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoStarIsType -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful_core} || false
           ${CABAL} -vnormal check
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then cd ${PKGDIR_effectful_plugin} || false ; fi
-          if [ $((HCNUMVER >= 90400)) -ne 0 ] ; then ${CABAL} -vnormal check ; fi
+          cd ${PKGDIR_effectful_plugin} || false
+          ${CABAL} -vnormal check
           cd ${PKGDIR_effectful_th} || false
           ${CABAL} -vnormal check
           cd ${PKGDIR_effectful} || false

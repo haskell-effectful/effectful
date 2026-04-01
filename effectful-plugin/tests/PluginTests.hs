@@ -9,6 +9,7 @@
 module Main where
 
 import Data.String
+import Data.Typeable
 import Unsafe.Coerce
 
 import Effectful
@@ -23,6 +24,20 @@ main = pure ()
 
 ----------------------------------------
 -- Tests
+
+data X1 = X1 { x1 :: Int }
+data X2 = X2 { x2 :: X1 }
+
+x1x2 :: (State X1 :> es, State X2 :> es) => Eff es ()
+x1x2 = do
+  _ <- gets (.x1)
+  _ <- gets (.x2.x1)
+  pure ()
+
+typeable :: (State X1 :> es, State x :> es) => Eff es ()
+typeable = do
+  _ <- gets typeOf
+  pure ()
 
 data Function i o :: Effect where
   Call :: i -> Function i o m o

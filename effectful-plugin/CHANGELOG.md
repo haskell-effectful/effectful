@@ -1,4 +1,4 @@
-# effectful-plugin-2.1.0.0 (????-??-??)
+# effectful-plugin-2.1.0.0 (2026-04-02)
 * Drop support for GHC < 9.6.
 * Consider built-in instances when filtering candidates.
 

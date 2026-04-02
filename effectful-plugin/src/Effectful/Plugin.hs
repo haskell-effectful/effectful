@@ -9,7 +9,6 @@ import Data.IORef
 import Data.Maybe
 import Data.Set qualified as S
 import GHC.Core.Class
-import GHC.Core.InstEnv
 import GHC.Core.Predicate
 import GHC.Core.TyCo.Rep
 import GHC.Core.TyCo.Subst
@@ -18,6 +17,7 @@ import GHC.Core.Type
 import GHC.Core.Unify
 import GHC.Driver.Env
 import GHC.Driver.Plugins
+import GHC.Tc.Instance.Class
 import GHC.Tc.Plugin
 import GHC.Tc.Types
 import GHC.Tc.Types.Constraint
@@ -31,12 +31,18 @@ import GHC.Unit.Finder
 import GHC.Unit.Module
 import GHC.Utils.Outputable qualified as O
 
+#if __GLASGOW_HASKELL__ >= 908
+import GHC.Driver.DynFlags (DynFlags)
+#else
+import GHC.Driver.Session (DynFlags)
+#endif
+
 #if __GLASGOW_HASKELL__ <= 912
-import GHC.Driver.Config.Finder
+import GHC.Driver.Config.Finder (initFinderOpts)
 #endif
 
 #if __GLASGOW_HASKELL__ >= 912
-import GHC.Tc.Types.CtLoc
+import GHC.Tc.Types.CtLoc (CtLoc)
 #endif
 
 #ifdef TIMING
@@ -128,7 +134,7 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
   printList "Wanteds" allWanteds
   printList "EffWanteds" effWanteds
   printList "OtherWanteds" otherWanteds
-  instEnvs <- getInstEnvs
+  dflags <- hsc_dflags <$> getTopEnv
   solutions <- tcPluginIO $ newIORef []
   forM_ effWanteds $ \wanted -> do
     printSingle "Wanted" wanted
@@ -140,7 +146,7 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
         emitEqConstraint solutions wanted given
       Right candidates -> do
         printList "Multiple candidates found" $ map fst candidates
-        filterCandidates instEnvs None candidates >>= \case
+        filterCandidates dflags None candidates >>= \case
           None -> printLn "No candidates left"
           Single given -> do
             printSingle "Single candidate left" given
@@ -163,11 +169,11 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
       $ allWanteds
 
     filterCandidates
-      :: InstEnvs
+      :: DynFlags
       -> Candidates
       -> [(EffGiven, Subst)]
       -> TcPluginM Candidates
-    filterCandidates instEnvs acc = \case
+    filterCandidates dflags acc = \case
       [] -> pure acc
       (given, subst) : rest -> do
         printSingle "Candidate" given
@@ -180,12 +186,12 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
           True -> do
             printLn "Candidate fits"
             case acc of
-              None -> filterCandidates instEnvs (Single given) rest
+              None -> filterCandidates dflags (Single given) rest
               Single _ -> pure Multiple
               Multiple -> error "unreachable"
           False -> do
             printLn "Candidate doesn't fit, skipping"
-            filterCandidates instEnvs acc rest
+            filterCandidates dflags acc rest
       where
         allWantedsSolvable :: [Type] -> TcPluginM Bool
         allWantedsSolvable = \case
@@ -201,16 +207,27 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
                   Nothing -> do
                     printLn "Not a class constraint"
                     pure False
-                  Just cls -> case lookupInstEnv False instEnvs cls args of
-                    ([], _, _) -> do
-                      printLn "No matching instances found"
-                      pure False
-                    _ -> do
-                      printLn "Found matching instances"
+                  Just cls -> findMatchingInstances dflags cls args >>= \case
+                    OneInst { cir_what = inst } -> do
+                      printSingle "Single matching instance" inst
                       allWantedsSolvable rest
+                    NoInstance -> do
+                      printLn "No matching instances"
+                      pure False
+                    NotSure -> do
+                      printLn "Multiple matching instances"
+                      pure False
 
 ----------------------------------------
 -- Standalone helpers
+
+findMatchingInstances :: DynFlags -> Class -> [Type] -> TcPluginM ClsInstResult
+findMatchingInstances dflags cls args =
+#if __GLASGOW_HASKELL__ <= 912
+  unsafeTcPluginTcM $ matchGlobalInst dflags False cls args
+#else
+  unsafeTcPluginTcM $ matchGlobalInst dflags False cls args Nothing
+#endif
 
 findPluginModuleCompat :: HscEnv -> ModuleName -> TcPluginM FindResult
 findPluginModuleCompat hsc_env mod_name = do

@@ -102,7 +102,12 @@ plugin = defaultPlugin
     { tcPluginInit = initPlugin
     , tcPluginRewrite = \_ -> emptyUFM
     , tcPluginSolve = disambiguateEffects
-    , tcPluginStop = pluginStopHook
+#if __GLASGOW_HASKELL__ >= 1001
+    , tcPluginPostTc = \_ -> pure ()
+    , tcPluginShutdown = pluginShutdownHook
+#else
+    , tcPluginStop = tcPluginIO . pluginShutdownHook
+#endif
     }
   , pluginRecompile = purePlugin
   }
@@ -411,8 +416,8 @@ timed pd action = do
     modifyIORef' pd.totalTime (+ (t2 - t1))
   pure a
 
-pluginStopHook :: PluginData -> TcPluginM ()
-pluginStopHook pd = tcPluginIO $ do
+pluginShutdownHook :: PluginData -> IO ()
+pluginShutdownHook pd = do
   time <- readIORef pd.totalTime
   putStrLn $ "Execution time of effectful-plugin (seconds): " ++ show time
 
@@ -421,8 +426,8 @@ pluginStopHook pd = tcPluginIO $ do
 timed :: PluginData -> TcPluginM a -> TcPluginM a
 timed _ action = action
 
-pluginStopHook :: PluginData -> TcPluginM ()
-pluginStopHook _ = pure ()
+pluginShutdownHook :: PluginData -> IO ()
+pluginShutdownHook _ = pure ()
 
 #endif
 

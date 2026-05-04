@@ -27,7 +27,7 @@ module Effectful.Writer.Dynamic
 
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Internal.MTL (Writer(..))
+import Effectful.Internal.Monad (Writer(..))
 import Effectful.Writer.Static.Local qualified as L
 import Effectful.Writer.Static.Shared qualified as S
 

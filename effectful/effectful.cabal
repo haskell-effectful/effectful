@@ -142,6 +142,8 @@ library
 test-suite test
     import:         language
 
+    ghc-options:    -Wno-x-partial
+
     ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
 
     build-depends:    base

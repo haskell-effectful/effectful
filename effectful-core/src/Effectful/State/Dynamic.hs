@@ -32,7 +32,7 @@ module Effectful.State.Dynamic
 
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Internal.MTL (State(..))
+import Effectful.Internal.Effect.Dynamic (State(..))
 import Effectful.State.Static.Local qualified as L
 import Effectful.State.Static.Shared qualified as S
 

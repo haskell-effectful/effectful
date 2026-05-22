@@ -3,7 +3,7 @@
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
-module Effectful.Internal.MTL where
+module Effectful.Internal.Effect.Dynamic where
 
 import Control.Monad.Except qualified as MTL
 import Control.Monad.Reader qualified as MTL

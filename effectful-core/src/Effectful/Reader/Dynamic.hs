@@ -20,7 +20,7 @@ module Effectful.Reader.Dynamic
 
 import Effectful
 import Effectful.Dispatch.Dynamic
-import Effectful.Internal.MTL (Reader(..))
+import Effectful.Internal.Effect.Dynamic (Reader(..))
 
 -- | Run the 'Reader' effect with the given initial environment.
 runReader

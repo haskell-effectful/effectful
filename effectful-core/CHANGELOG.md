@@ -2,6 +2,7 @@
 * Drop support for GHC < 9.6.
 * Add definitions of `rethrowM` to `MonadThrow` and `catchNoPropagate` to
   `MonadCatch` instances for `Eff` when appropriate (`exceptions` >= 0.10.11).
+* Rename `Effectful.Internal.MTL` module to `Effectful.Internal.Effect.Dynamic`.
 
 # effectful-core-2.6.1.0 (2025-08-30)
 * Add `MonadError`, `MonadReader`, `MonadState` and `MonadWriter` instances for

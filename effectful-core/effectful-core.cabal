@@ -91,8 +91,8 @@ library
                      Effectful.Exception
                      Effectful.Fail
                      Effectful.Internal.Effect
+                     Effectful.Internal.Effect.Dynamic
                      Effectful.Internal.Env
-                     Effectful.Internal.MTL
                      Effectful.Internal.Monad
                      Effectful.Internal.Unlift
                      Effectful.Internal.Utils

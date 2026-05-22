@@ -34,7 +34,7 @@ import GHC.Stack (withFrozenCallStack)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static qualified as E
-import Effectful.Internal.MTL (Error(..))
+import Effectful.Internal.Effect.Dynamic (Error(..))
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static").
 runError

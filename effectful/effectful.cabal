@@ -142,7 +142,8 @@ library
 test-suite test
     import:         language
 
-    ghc-options:    -Wno-x-partial
+    if impl(ghc >= 9.8)
+      ghc-options:  -Wno-x-partial
 
     ghc-options:    -threaded -rtsopts -with-rtsopts=-N4
 

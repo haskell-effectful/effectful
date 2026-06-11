@@ -247,7 +247,7 @@ waitEitherCatchCancel
   => Async a
   -> Async b
   -> Eff es (Either (Either SomeException a) (Either SomeException b))
-waitEitherCatchCancel a b = unsafeEff_  $ A.waitEitherCatch a b
+waitEitherCatchCancel a b = unsafeEff_ $ A.waitEitherCatchCancel a b
 
 -- | Lifted 'A.waitEither_'.
 waitEither_ :: Concurrent :> es => Async a -> Async b -> Eff es ()

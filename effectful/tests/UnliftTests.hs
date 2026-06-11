@@ -84,7 +84,6 @@ test_unliftingFunctions = runEff . E.runConcurrent $ do
   testFork "runFork2" runFork2
   testFork "runFork3" runFork3
   testFork "runFork4" runFork4
-  testFork "runFork5" runFork5
   where
     testFork description runFork = do
       a <- runFork . send $ ForkWithUnmask $ \unmask -> do
@@ -112,19 +111,9 @@ runFork1 = interpret $ \env -> \case
   where
     strategy = ConcUnlift Ephemeral $ Limited 1
 
--- | Uses 'localUnlift' and 'withLiftMap'.
-runFork2 :: (IOE :> es, E.Concurrent :> es) => Eff (Fork : es) a -> Eff es a
-runFork2 = interpret $ \env -> \case
-  ForkWithUnmask m -> do
-    withLiftMap env $ \liftMap -> do
-      localUnlift env strategy $ \unlift -> do
-        E.asyncWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
-  where
-    strategy = ConcUnlift Ephemeral $ Limited 1
-
 -- | Uses 'localLiftUnliftIO'.
-runFork3 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork3 = interpret $ \env -> \case
+runFork2 :: IOE :> es => Eff (Fork : es) a -> Eff es a
+runFork2 = interpret $ \env -> \case
   ForkWithUnmask m -> do
     localLiftUnliftIO env strategy $ \lift unlift -> do
       A.asyncWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift
@@ -132,8 +121,8 @@ runFork3 = interpret $ \env -> \case
     strategy = ConcUnlift Persistent $ Limited 1
 
 -- | Uses 'localLiftUnlift'.
-runFork4 :: (IOE :> es, E.Concurrent :> es) => Eff (Fork : es) a -> Eff es a
-runFork4 = interpret $ \env -> \case
+runFork3 :: (IOE :> es, E.Concurrent :> es) => Eff (Fork : es) a -> Eff es a
+runFork3 = interpret $ \env -> \case
   ForkWithUnmask m -> do
     localLiftUnlift env strategy $ \lift unlift -> do
       E.asyncWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift
@@ -141,8 +130,8 @@ runFork4 = interpret $ \env -> \case
     strategy = ConcUnlift Persistent $ Limited 1
 
 -- | Uses 'localLift' and 'localUnlift'.
-runFork5 :: (IOE :> es, E.Concurrent :> es) => Eff (Fork : es) a -> Eff es a
-runFork5 = interpret $ \env -> \case
+runFork4 :: (IOE :> es, E.Concurrent :> es) => Eff (Fork : es) a -> Eff es a
+runFork4 = interpret $ \env -> \case
   ForkWithUnmask m -> do
     localLift env strategy $ \lift -> do
       localUnlift env strategy $ \unlift -> do

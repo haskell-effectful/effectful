@@ -864,6 +864,10 @@ localLift (LocalEnv les) strategy k = unsafeEff $ \es -> do
 --
 -- /Note:/ the computation must not run its argument in a different thread,
 -- attempting to do so will result in a runtime error.
+--
+-- /Warning:/ if the lifting function is used in a thread distinct from its
+-- creator, the lifted computation must not interact with the environment. This
+-- cannot be detected at runtime, hence the deprecation.
 withLiftMap
   :: (HasCallStack, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
@@ -876,7 +880,8 @@ withLiftMap (LocalEnv les) k = unsafeEff $ \es -> do
   (`unEff` es) $ k $ \mapEff m -> unsafeEff $ \localEs -> do
     seqUnliftIO localEs $ \unlift -> do
       (`unEff` es) . mapEff . unsafeEff_ $ unlift m
-{-# INLINE withLiftMap #-}
+{-# DEPRECATED withLiftMap
+  "Misusing withLiftMap in multiple threads results in undefined behavior. Use localLiftUnlift or a combination of localLift and localUnlift with an appropriate UnliftStrategy instead." #-}
 
 -- | Utility for lifting 'IO' computations of type
 --
@@ -924,9 +929,6 @@ withLiftMapIO (LocalEnv les) k = unsafeEff $ \es -> do
 --
 -- Useful for lifting complicated 'Eff' computations where the monadic action
 -- shows in both positive (as a result) and negative (as an argument) position.
---
--- /Note:/ depending on the computation you're lifting 'localUnlift' along with
--- 'withLiftMap' might be enough and is more efficient.
 localLiftUnlift
   :: (HasCallStack, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs

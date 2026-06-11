@@ -3,6 +3,10 @@
 * Add definitions of `rethrowM` to `MonadThrow` and `catchNoPropagate` to
  `MonadCatch` instances for `Eff` when appropriate (`exceptions` >= 0.10.11).
 * Fix typo in `Effectful.Concurrent.Async.waitEitherCatchCancel`.
+* Deprecate `withLiftMap` as its misuse in a multithreaded environment results
+  in undefined behavior that cannot be detected at runtime. Use
+  `localLiftUnlift` or a combination of `localLift` and `localUnlift` with an
+  appropriate `UnliftStrategy` instead.
 
 # effectful-2.6.1.0 (2025-08-30)
 * Add `MonadError`, `MonadReader`, `MonadState` and `MonadWriter` instances for

@@ -29,12 +29,10 @@ shallowBench n = bgroup ("unmask " ++ show n ++ "x")
   , bench "async (Eff)" $ nfAppIO (runShallow . A.runConcurrent . asyncBench n) op
   , bench "Fork (localUnliftIO/withLiftMapIO)" $
     nfAppIO (runShallow . runFork1 . forkBench n) op
-  , bench "Fork (localUnlift/withLiftMap)" $
-    nfAppIO (runShallow . runFork2 . forkBench n) op
   , bench "Fork (localLiftUnliftIO)" $
-    nfAppIO (runShallow . runFork3 . forkBench n) op
+    nfAppIO (runShallow . runFork2 . forkBench n) op
   , bench "Fork (localLiftUnlift)" $
-    nfAppIO (runShallow . runFork4 . forkBench n) op
+    nfAppIO (runShallow . runFork3 . forkBench n) op
   ]
 
 deepBench :: Int -> Benchmark
@@ -42,12 +40,10 @@ deepBench n = bgroup ("unmask " ++ show n ++ "x")
   [ bench "async (Eff)" $ nfAppIO (runDeep . A.runConcurrent . asyncBench n) op
   , bench "Fork (localUnliftIO/withLiftMapIO)" $
     nfAppIO (runDeep . runFork1 . forkBench n) op
-  , bench "Fork (localUnlift/withLiftMap)" $
-    nfAppIO (runDeep . runFork2 . forkBench n) op
   , bench "Fork (localLiftUnliftIO)" $
-    nfAppIO (runDeep . runFork3 . forkBench n) op
+    nfAppIO (runDeep . runFork2 . forkBench n) op
   , bench "Fork (localLiftUnlift)" $
-    nfAppIO (runDeep . runFork4 . forkBench n) op
+    nfAppIO (runDeep . runFork3 . forkBench n) op
   ]
 
 op :: Monad m => m Int
@@ -67,23 +63,16 @@ runFork1 = interpret $ \env -> \case
     localUnliftIO env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
       asyncWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 
--- | Uses 'localUnlift' and 'withLiftMap'.
-runFork2 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork2 = reinterpret A.runConcurrent $ \env -> \case
-  ForkWithUnmask m -> withLiftMap env $ \liftMap -> do
-    localUnlift env (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
-      A.asyncWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
-
 -- | Uses 'localLiftUnliftIO'.
-runFork3 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork3 = interpret $ \env -> \case
+runFork2 :: IOE :> es => Eff (Fork : es) a -> Eff es a
+runFork2 = interpret $ \env -> \case
   ForkWithUnmask m -> do
     localLiftUnliftIO env (ConcUnlift Persistent $ Limited 1) $ \lift unlift -> do
       asyncWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift
 
 -- | Uses 'localLiftUnlift'.
-runFork4 :: IOE :> es => Eff (Fork : es) a -> Eff es a
-runFork4 = reinterpret A.runConcurrent $ \env -> \case
+runFork3 :: IOE :> es => Eff (Fork : es) a -> Eff es a
+runFork3 = reinterpret A.runConcurrent $ \env -> \case
   ForkWithUnmask m -> do
     localLiftUnlift env (ConcUnlift Persistent $ Limited 1) $ \lift unlift -> do
       A.asyncWithUnmask $ \unmask -> unlift $ m $ lift . unmask . unlift

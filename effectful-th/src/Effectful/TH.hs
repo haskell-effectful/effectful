@@ -188,13 +188,18 @@ makeCon makeSig name = do
   -- e x1 .. xK = send (E x1 .. xN :: E v1 .. vK (Eff es) r)
   let fnBody =
         let effOp  = F.foldl' (\f -> AppE f . VarE) (ConE name) fnArgs
-            effSig = effTy `AppT` (ConT ''Eff `AppT` esVar) `AppT` substM resTy
+            effSig = substM effTy `AppT` (ConT ''Eff `AppT` esVar) `AppT` substM resTy
         in if makeSig
            then VarE 'send `AppE` SigE effOp effSig
            else VarE 'send `AppE`      effOp
 #endif
+  -- The binder of the monad variable is removed from 'actionVars', so 'substM'
+  -- needs to be applied to every part of the signature that might mention it:
+  -- not just parameters and the result type, but also the effect type (e.g. E
+  -- (m Int) m ()) and the constructor context (e.g. Monad m => ... -> E m ()),
+  -- otherwise the generated signature references an out-of-scope name.
   let fnSig = ForallT actionVars
-        (ConT ''HasCallStack : UInfixT effTy ''(:>) esVar : actionCtx)
+        (ConT ''HasCallStack : UInfixT (substM effTy) ''(:>) esVar : map substM actionCtx)
         (makeTyp esVar substM resTy actionParams)
 
   let mkDec fix =

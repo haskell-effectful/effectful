@@ -138,6 +138,19 @@ data ByField :: Effect where
 
 makeEffect 'byFieldAf
 
+-- Test that the monad variable is substituted in constructor contexts.
+data MonadInCtx :: Effect where
+  MonadInCtxA :: Monad m => Int -> MonadInCtx m ()
+  MonadInCtxB :: (Monad m, Show a) => a -> MonadInCtx m a
+
+makeEffect ''MonadInCtx
+
+-- Test that the monad variable is substituted in the effect type.
+data MonadInHead a :: Effect where
+  MonadInHeadC :: Int -> MonadInHead (m Int) m ()
+
+makeEffect ''MonadInHead
+
 type family F ty
 data AmbEff :: Effect where
   AmbEff :: Int -> AmbEff m (F ty)

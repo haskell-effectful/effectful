@@ -207,8 +207,15 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
               then do
                 printLn "Solvable from local context"
                 allWantedsSolvable rest
-              else case tcSplitTyConApp wanted of
-                (con, args) -> case tyConClass_maybe con of
+              -- The predicate might not be a type constructor application,
+              -- e.g. when it's headed by a type variable or it's a quantified
+              -- constraint, so the total variant of the split needs to be used
+              -- to avoid compiler panics.
+              else case tcSplitTyConApp_maybe wanted of
+                Nothing -> do
+                  printLn "Not a type constructor application"
+                  pure False
+                Just (con, args) -> case tyConClass_maybe con of
                   Nothing -> do
                     printLn "Not a class constraint"
                     pure False

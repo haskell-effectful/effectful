@@ -8,6 +8,7 @@
 {-# OPTIONS_GHC -Wno-unused-foralls #-}
 module Main where
 
+import Data.Kind
 import Data.String
 import Data.Typeable
 import Unsafe.Coerce
@@ -165,3 +166,17 @@ type instance DispatchOf (DBAction whichDb) = Dynamic
 runDBAction :: Eff (DBAction which : es) a -> Eff es a
 runDBAction = interpret_ $ \case
   DoSelect (Select a) -> pure $ Just a
+
+-- Disambiguation in the presence of a constraint headed by a type variable
+-- must not panic the compiler when checking whether candidates fit, since the
+-- constraint is not a type constructor application.
+needC :: forall (c :: Type -> Constraint) a es. c a => a -> Eff es ()
+needC _ = pure ()
+
+constraintPoly
+  :: forall (c :: Type -> Constraint) es
+   . (c Int, State Int :> es, State String :> es)
+  => Eff es ()
+constraintPoly = do
+  s <- get
+  needC @c s

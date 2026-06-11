@@ -1,3 +1,7 @@
+# effectful-plugin-2.1.0.1 (2026-??-??)
+* Fix a compiler panic when a constraint headed by a type variable or a
+  quantified constraint is considered during candidate filtering.
+
 # effectful-plugin-2.1.0.0 (2026-04-02)
 * Drop support for GHC < 9.6.
 * Consider built-in instances when filtering candidates.

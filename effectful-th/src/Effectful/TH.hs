@@ -204,9 +204,9 @@ makeCon makeSig name = do
 
   let mkDec fix =
 #if MIN_VERSION_template_haskell(2,22,0)
-        InfixD fix DataNamespaceSpecifier name
+        InfixD fix NoNamespaceSpecifier fnName
 #else
-        InfixD fix name
+        InfixD fix fnName
 #endif
       rest = FunD fnName [Clause (VarP <$> fnArgs) (NormalB fnBody) []]
            : maybeToList (mkDec <$> fixity)

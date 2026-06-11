@@ -138,6 +138,19 @@ data ByField :: Effect where
 
 makeEffect 'byFieldAf
 
+-- Test that fixity is transferred to the generated function. With the default
+-- infixl 9 the expression below parses as (1 `fixityOp` 2) `fixityOp` pure 3
+-- and fails to typecheck.
+data Fixity :: Effect where
+  FixityOp :: Int -> m a -> Fixity m a
+
+infixr 5 `FixityOp`
+
+makeEffect ''Fixity
+
+fixityTest :: Fixity :> es => Eff es Int
+fixityTest = 1 `fixityOp` 2 `fixityOp` pure 3
+
 -- Test that the monad variable is substituted in constructor contexts.
 data MonadInCtx :: Effect where
   MonadInCtxA :: Monad m => Int -> MonadInCtx m ()

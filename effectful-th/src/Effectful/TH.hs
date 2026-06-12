@@ -154,20 +154,16 @@ makeCon makeSig name = do
                 ++ [kindedTVSpecified esName $ ListT `AppT` ConT ''Effect]
         Nothing -> origActionVars
 
-#if MIN_VERSION_template_haskell(2,17,0)
-  -- In GHC >= 9.0 it's possible to generate the following body:
+  -- Generate the following body:
   --
   -- e x1 .. xN = send (E @ty1 .. @tyN x1 .. xN)
   --
-  -- because specificities of constructor variables are exposed.
-  --
-  -- This allows to generate functions for such effects:
+  -- The type applications make it possible to generate functions for such
+  -- effects:
   --
   -- type family F ty :: Type
   -- data AmbEff :: Effect where
   --   AmbEff :: Int -> AmbEff m (F ty)
-  --
-  -- Sadly the version for GHC < 9 will not compile due to ambiguity error.
   let fnBody =
         let tyApps = (`mapMaybe` origActionVars) $ \v -> case tvFlag v of
               InferredSpec  -> Nothing
@@ -179,18 +175,6 @@ makeCon makeSig name = do
               then F.foldl' AppTypeE (ConE name) tyApps
               else                  ConE name
         in VarE 'send `AppE` F.foldl' (\f -> AppE f . VarE) effCon fnArgs
-#else
-  -- In GHC < 9.0, generate the following body:
-  --
-  -- e :: E v1 .. vN :> es => x1 -> .. -> xK -> E v1 .. vN (Eff es) r
-  -- e x1 .. xK = send (E x1 .. xN :: E v1 .. vK (Eff es) r)
-  let fnBody =
-        let effOp  = F.foldl' (\f -> AppE f . VarE) (ConE name) fnArgs
-            effSig = substM effTy `AppT` (ConT ''Eff `AppT` esVar) `AppT` substM resTy
-        in if makeSig
-           then VarE 'send `AppE` SigE effOp effSig
-           else VarE 'send `AppE`      effOp
-#endif
   -- The binder of the monad variable is removed from 'actionVars', so 'substM'
   -- needs to be applied to every part of the signature that might mention it:
   -- not just parameters and the result type, but also the effect type (e.g. E
@@ -233,11 +217,9 @@ extractParams = \case
   ArrowT `AppT` a `AppT` ty -> do
     (args, ret) <- extractParams ty
     pure (a : args, ret)
-#if MIN_VERSION_template_haskell(2,17,0)
   MulArrowT `AppT` _ `AppT` a `AppT` ty -> do
     (args, ret) <- extractParams ty
     pure (a : args, ret)
-#endif
   effTy `AppT` monadTy `AppT` resTy -> case monadTy of
     VarT monadName -> pure ([], (effTy, Right monadName, resTy))
     ConT eff `AppT` VarT esName
@@ -251,17 +233,13 @@ makeTyp esVar substM resTy = \case
   (p : ps) -> ArrowT `AppT` substM p `AppT` makeTyp esVar substM resTy ps
 
 withHaddock :: Name -> [Dec] -> Q [Dec]
-#if MIN_VERSION_template_haskell(2,18,0)
-withHaddock name decs = do 
+withHaddock name decs = do
   existingHaddock <- getDoc (DeclDoc name)
-  let newDoc = 
+  let newDoc =
         case existingHaddock of
           Just doc -> doc
           Nothing -> "Perform the operation '" ++ nameBase name ++ "'."
   withDecsDoc newDoc (pure decs)
-#else
-withHaddock _ decs = pure decs
-#endif
 
 checkRequiredExtensions :: Q ()
 checkRequiredExtensions = do
@@ -276,9 +254,7 @@ checkRequiredExtensions = do
   where
     exts = [ FlexibleContexts
            , ScopedTypeVariables
-#if MIN_VERSION_template_haskell(2,17,0)
            , TypeApplications
-#endif
            , TypeFamilies
            , TypeOperators
            ]

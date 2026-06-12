@@ -8,6 +8,7 @@ import Data.Foldable
 import Data.IORef
 import Data.Maybe
 import Data.Set qualified as S
+import GHC.Builtin.Types
 import GHC.Core.Class
 import GHC.Core.Predicate
 import GHC.Core.TyCo.Rep
@@ -340,12 +341,13 @@ extendEffGivens wanteds givens = loop givens . nubType $ map (.es) wanteds
       [] -> acc
       fullEs : rest ->
         let extractGivens :: Type -> [EffGiven]
-            extractGivens es = case splitAppTys es of
-              (_colon, [_kind, eff, esTail]) -> EffGiven
-                { effCon = fst $ splitAppTys eff
-                , eff = eff
-                , es = fullEs
-                } : extractGivens esTail
+            extractGivens es = case tcSplitTyConApp_maybe es of
+              Just (con, [_kind, eff, esTail])
+                | con == promotedConsDataCon -> EffGiven
+                  { effCon = fst $ splitAppTys eff
+                  , eff = eff
+                  , es = fullEs
+                  } : extractGivens esTail
               _ -> []
         in loop (extractGivens fullEs ++ acc) rest
 

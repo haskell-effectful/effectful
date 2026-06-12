@@ -47,6 +47,16 @@ data OnEmptyPolicy
   | OnEmptyRollback
   -- ^ Rollback modifications on 'Empty'.
   --
+  -- The rollback applies to the thread local state of __all__ effects, in
+  -- particular ones handled outside of 'runNonDet':
+  --
+  -- >>> import Effectful.State.Static.Local
+  -- >>> :{
+  --   runPureEff . runState @Int 0 . runNonDet OnEmptyRollback $
+  --     (modify @Int (+1) >> emptyEff) <|> get @Int
+  -- :}
+  -- (Right 0,0)
+  --
   -- /Note:/ state modifications are rolled back on 'Empty' only. In particular,
   -- they are __not__ rolled back on exceptions.
   deriving stock (Eq, Generic, Ord, Show)

@@ -66,6 +66,28 @@ tell w1 = unsafeEff $ \es -> do
 -- | Execute an action and append its output to the overall output of the
 -- 'Writer'.
 --
+-- /Note:/ the output of 'tell' executed from threads spawned within the nested
+-- action that outlive the scope of 'listen' will be lost:
+--
+-- >>> :{
+--   runEff . execWriter @String $ do
+--     lock <- liftIO newEmptyMVar
+--     done <- liftIO newEmptyMVar
+--     tell "1"
+--     _ <- listen @String $ do
+--       tell "2"
+--       withEffToIO (ConcUnlift Ephemeral $ Limited 1) $ \unlift -> do
+--         _ <- forkIO $ do
+--           takeMVar lock
+--           unlift $ tell "3"
+--           putMVar done ()
+--         pure ()
+--     liftIO $ putMVar lock ()
+--     liftIO $ takeMVar done
+--     tell "4"
+-- :}
+-- "124"
+--
 -- /Note:/ if an exception is received while the action is executed, the partial
 -- output of the action will still be appended to the overall output of the
 -- 'Writer':
@@ -115,5 +137,6 @@ listens f m = do
   pure (a, f w)
 
 -- $setup
+-- >>> import Control.Concurrent
 -- >>> import Control.Exception (ErrorCall)
 -- >>> import Effectful.Exception

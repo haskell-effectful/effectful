@@ -212,6 +212,11 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
               -- e.g. when it's headed by a type variable or it's a quantified
               -- constraint, so the total variant of the split needs to be used
               -- to avoid compiler panics.
+              --
+              -- The two veto branches below are deliberately conservative,
+              -- because these cases are hard to hit in real-world code and
+              -- treating them properly is a lot of work, so the juice is not
+              -- worth the squeeze.
               else case tcSplitTyConApp_maybe wanted of
                 Nothing -> do
                   printLn "Not a type constructor application"

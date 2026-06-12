@@ -51,6 +51,9 @@ inlineBracket before after action = mask $ \unmask -> do
 ----------------------------------------
 
 -- | Get an id of a thread that doesn't prevent its garbage collection.
+--
+-- /Note:/ on 32-bit platforms the id is truncated, but they are considered
+-- irrelevant at this point.
 weakThreadId :: ThreadId -> Int
 #if MIN_VERSION_base(4,19,0)
 weakThreadId = fromIntegral . fromThreadId

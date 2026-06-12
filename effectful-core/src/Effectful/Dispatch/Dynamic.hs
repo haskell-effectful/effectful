@@ -929,6 +929,44 @@ withLiftMapIO (LocalEnv les) k = unsafeEff $ \es -> do
 --
 -- Useful for lifting complicated 'Eff' computations where the monadic action
 -- shows in both positive (as a result) and negative (as an argument) position.
+--
+-- /Note:/ when 'SeqForkUnlift' or 'ConcUnlift' strategy is used, the handler
+-- and local environments are cloned independently of each other. In particular,
+-- when a computation run by the unlifting function makes use of the lifting
+-- function, the two will see separate copies of the thread local state of
+-- effects they share, e.g. a 'Effectful.State.Static.Local.put' performed via
+-- one of them will not be visible via the other:
+--
+-- >>> import Effectful.State.Static.Local
+--
+-- >>> :{
+--   data Cloned :: Effect where
+--     Cloned :: m () -> Cloned m Int
+--   type instance DispatchOf Cloned = Dynamic
+-- :}
+--
+-- >>> :{
+--   runCloned :: State Int :> es => UnliftStrategy -> Eff (Cloned : es) a -> Eff es a
+--   runCloned strategy = interpret $ \env (Cloned m) -> do
+--     localLiftUnlift env strategy $ \lift unlift -> do
+--       unlift $ do
+--         m                -- Modifies the state via the local environment.
+--         lift $ get @Int  -- Reads the state via the handler environment.
+-- :}
+--
+-- >>> :{
+--   demo strategy = runPureEff $ do
+--     runState @Int 0 . runCloned strategy $ do
+--       send . Cloned $ put @Int 1
+-- :}
+--
+-- >>> demo SeqForkUnlift
+-- (0,0)
+--
+-- Contrast this with the 'SeqUnlift' strategy, where state changes are visible:
+--
+-- >>> demo SeqUnlift
+-- (1,1)
 localLiftUnlift
   :: (HasCallStack, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs

@@ -195,17 +195,49 @@ copyStorageData (StorageData storageSize vs0 es0 fs0) = do
 
 -- | Restore a shallow copy of the 'StorageData'.
 --
--- The copy needs to be from the same 'Env' as the target.
+-- The copy needs to be from the same 'Env' as the target. It's consumed by
+-- this operation and must not be used afterwards.
 --
 -- @since 2.5.0.0
 restoreStorageData :: HasCallStack => StorageData -> Env es -> IO ()
-restoreStorageData newStorageData env = do
-  modifyIORef' env.storage $ \(Storage version oldStorageData) ->
-    let oldSize = oldStorageData.size
-        newSize = newStorageData.size
-    in if newSize /= oldSize
-    then error $ "newSize (" ++ show newSize ++ ") /= oldSize (" ++ show oldSize ++ ")"
-    else Storage version newStorageData
+restoreStorageData (StorageData newSize vs1 es1 fs1) env = do
+  Storage version (StorageData oldSize vs0 es0 fs0) <- readIORef' env.storage
+  when (newSize /= oldSize) $ do
+    error $ "newSize (" ++ show newSize ++ ") /= oldSize (" ++ show oldSize ++ ")"
+  -- Since the time the backup was made the storage might've been grown by
+  -- 'insertEffect', so if necessary create new arrays matching the current
+  -- capacity, as shrinking it would violate the invariant that out of date
+  -- references in 'getLocation' never read out of bounds.
+  vs0size <- getSizeofMutablePrimArray vs0
+  vs1size <- getSizeofMutablePrimArray vs1
+  vs <- if vs0size > vs1size
+    then do
+      vs <- newPrimArray vs0size
+      copyMutablePrimArray vs 0 vs1 0 newSize
+      -- Fill the unused part of the versions array with
+      -- 'undefinedVersion' to maintain the invariant that slots beyond
+      -- the size of the storage never contain garbage (see the note on
+      -- 'undefinedVersion').
+      setPrimArray vs newSize (vs0size - newSize) undefinedVersion
+      pure vs
+    else pure vs1
+  es0size <- getSizeofSmallMutableArray es0
+  es1size <- getSizeofSmallMutableArray es1
+  es <- if es0size > es1size
+    then do
+      es <- newSmallArray es0size undefinedEffect
+      copySmallMutableArray es 0 es1 0 newSize
+      pure es
+    else pure es1
+  fs0size <- getSizeofSmallMutableArray fs0
+  fs1size <- getSizeofSmallMutableArray fs1
+  fs <- if fs0size > fs1size
+    then do
+      fs <- newSmallArray fs0size undefinedRelinker
+      copySmallMutableArray fs 0 fs1 0 newSize
+      pure fs
+    else pure fs1
+  writeIORef' env.storage $ Storage version (StorageData newSize vs es fs)
 
 ----------------------------------------
 -- Relinker
@@ -481,6 +513,10 @@ insertEffect storage e f = do
       vs <- newPrimArray len
       es <- newSmallArray len undefinedEffect
       fs <- newSmallArray len undefinedRelinker
+      -- Fill the unused part of the versions array with 'undefinedVersion' to
+      -- maintain the invariant that slots beyond the size of the storage never
+      -- contain garbage (see the note on 'undefinedVersion').
+      setPrimArray vs size (len - size) undefinedVersion
       copyMutablePrimArray  vs 0 vs0 0 size
       copySmallMutableArray es 0 es0 0 size
       copySmallMutableArray fs 0 fs0 0 size
@@ -511,6 +547,12 @@ deleteEffect storage (Ref ref version) = do
 relinkEnv :: IORef' Storage -> Env es -> IO (Env es)
 relinkEnv storage (Env offset refs _) = pure $ Env offset refs storage
 
+-- | Version of an unused slot.
+--
+-- /Note:/ slots of the versions array beyond the current size of the storage
+-- always contain 'undefinedVersion', so that out of date references to them
+-- reliably fail the version check in 'getLocation'. This invariant is
+-- maintained by 'insertEffect', 'deleteEffect' and 'restoreStorageData'.
 undefinedVersion :: Version
 undefinedVersion = Version 0
 

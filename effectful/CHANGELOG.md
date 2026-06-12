@@ -7,6 +7,11 @@
   in undefined behavior that cannot be detected at runtime. Use
   `localLiftUnlift` or a combination of `localLift` and `localUnlift` with an
   appropriate `UnliftStrategy` instead.
+* **Bugfixes**:
+  - `restoreStorageData` no longer shrinks the capacity of the storage, which
+    could result in out of bounds reads when out of date references to the
+    environment were accessed after the rollback, e.g. by the unlifting function
+    that escaped its scope.
 
 # effectful-2.6.1.0 (2025-08-30)
 * Add `MonadError`, `MonadReader`, `MonadState` and `MonadWriter` instances for

@@ -1,5 +1,4 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE FieldSelectors #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Main where
@@ -179,7 +178,4 @@ type family F ty
 data AmbEff :: Effect where
   AmbEff :: Int -> AmbEff m (F ty)
 
--- This only works in GHC >= 9, otherwise the 'ty' variable is ambiguous.
-#if __GLASGOW_HASKELL__ >= 900
 makeEffect 'AmbEff
-#endif

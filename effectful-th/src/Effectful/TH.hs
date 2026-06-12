@@ -79,7 +79,7 @@ makeEffectImpl makeSig effName = do
   checkRequiredExtensions
   info <- reifyDatatype effName
   dispatch <- do
-    e <- getEff (ConT $ datatypeName info) (const WildCardT <$> datatypeInstTypes info)
+    e <- getEff (ConT $ datatypeName info) (datatypeInstTypes info)
     let dispatchE = ConT ''DispatchOf `AppT` e
         dynamic   = PromotedT 'Dynamic
     pure . TySynInstD $ TySynEqn Nothing dispatchE dynamic
@@ -92,12 +92,10 @@ makeEffectImpl makeSig effName = do
         checkKind "the next to last" (ArrowT `AppT` StarT `AppT` StarT) m
         checkKind "the last" StarT r
         pure e
-      (v : vs) -> getEff (e `AppT` forgetKind v) vs
+      -- Apply a wildcard instead of the type parameter to avoid the
+      -- Wunused-type-patterns warning in the generated code (#200).
+      (_ : vs) -> getEff (e `AppT` WildCardT) vs
       _        -> fail "The effect data type needs at least 2 type parameters"
-      where
-        forgetKind = \case
-          SigT v _ -> v
-          ty       -> ty
 
     checkKind which expected = \case
       SigT (VarT _) k

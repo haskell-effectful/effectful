@@ -6,6 +6,7 @@ module Main where
 
 import Data.Kind (Type)
 import GHC.TypeLits
+import Language.Haskell.TH (recover)
 
 import Effectful
 import Effectful.TH
@@ -150,6 +151,16 @@ makeEffect ''Fixity
 
 fixityTest :: Fixity :> es => Eff es Int
 fixityTest = 1 `fixityOp` 2 `fixityOp` pure 3
+
+-- Test that effects with mis-kinded type parameters are rejected with a
+-- friendly error. If the kind check doesn't fire, 'makeEffect' succeeds, so
+-- 'badKindRejected' is not generated and its usage below doesn't compile.
+data BadKind (m :: Type) (a :: Type)
+
+$(recover [d| badKindRejected :: (); badKindRejected = () |] $ makeEffect ''BadKind)
+
+useBadKindRejected :: ()
+useBadKindRejected = badKindRejected
 
 -- Test that the monad variable is substituted in constructor contexts.
 data MonadInCtx :: Effect where

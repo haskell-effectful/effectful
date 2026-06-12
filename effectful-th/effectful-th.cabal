@@ -79,6 +79,7 @@ test-suite th-tests
     build-depends:    base
                     , effectful-core
                     , effectful-th
+                    , template-haskell
 
     hs-source-dirs: tests
 

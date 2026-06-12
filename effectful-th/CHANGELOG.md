@@ -5,6 +5,8 @@
   ()`) or in arguments of the effect type (e.g. `Op :: Int -> E (m Int) m ()`).
 * Correctly transfer fixity annotations of constructors to the generated
   functions.
+* Restore the friendly error for effects with mis-kinded type parameters,
+  accidentally disabled in 1.0.0.2.
 
 # effectful-th-1.0.0.3 (2024-10-08)
 * Make `makeEffect` reuse Haddock descriptions of effect operations for

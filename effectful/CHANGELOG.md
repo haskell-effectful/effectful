@@ -7,6 +7,7 @@
   in undefined behavior that cannot be detected at runtime. Use
   `localLiftUnlift` or a combination of `localLift` and `localUnlift` with an
   appropriate `UnliftStrategy` instead.
+* Tighten pre-requisites for `unconsEnv` and `unreplaceEnv`.
 * **Bugfixes**:
   - `restoreStorageData` no longer shrinks the capacity of the storage, which
     could result in out of bounds reads when out of date references to the

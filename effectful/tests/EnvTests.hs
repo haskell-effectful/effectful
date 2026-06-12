@@ -17,6 +17,7 @@ import Utils qualified as U
 envTests :: TestTree
 envTests = testGroup "Env"
   [ testCase "tailEnv works" test_tailEnv
+  , testCase "unconsEnv of a derived environment errors out" test_unconsDerivedEnv
   , testCase "subsume works" test_subsumeEnv
   , testCase "inject works" test_injectEnv
   , testCase "unsafeCoerce doesn't work" test_noUnsafeCoerce
@@ -36,6 +37,14 @@ test_tailEnv = runEff . evalState s0 $ do
   where
     s0 :: Int
     s0 = 1337
+
+-- | 'unconsEnv' is only meant to form a bracket with 'consEnv', so it must
+-- reject environments with a non-zero offset instead of deleting an effect
+-- different than the requested one.
+test_unconsDerivedEnv :: Assertion
+test_unconsDerivedEnv = runEff . evalState @Int 0 . evalState @Bool False $ do
+  U.assertThrowsErrorCall "unconsEnv of a derived environment" $ do
+    unsafeEff $ \es -> unconsEnv =<< tailEnv es
 
 test_subsumeEnv :: Assertion
 test_subsumeEnv = runEff $ do

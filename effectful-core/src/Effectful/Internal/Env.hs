@@ -334,10 +334,15 @@ consEnv e f (Env offset refs0 storage) = do
 
 -- | Shrink the environment by one data type.
 --
+-- The environment needs to come from 'consEnv', i.e. the intended usage is
+-- @bracket (consEnv e f env) unconsEnv@.
+--
 -- /Note:/ after calling this function @e@ from the input environment is no
 -- longer usable.
 unconsEnv :: HasCallStack => Env (e : es) -> IO ()
-unconsEnv (Env _ refs storage) = do
+unconsEnv (Env offset refs storage) = do
+  when (offset /= 0) $ do
+    error $ "offset (" ++ show offset ++ ") /= 0"
   deleteEffect storage (indexPrimArray refs 0)
 {-# NOINLINE unconsEnv #-}
 
@@ -366,11 +371,16 @@ replaceEnv e f (Env offset refs0 storage) = do
 
 -- | Remove a reference to the replaced effect.
 --
+-- The environment needs to come from 'replaceEnv', i.e. the intended usage is
+-- @bracket (replaceEnv e f env) unreplaceEnv@.
+--
 -- /Note:/ after calling this function the input environment is no longer
 -- usable.
 unreplaceEnv :: forall e es. (HasCallStack, e :> es) => Env es -> IO ()
 unreplaceEnv (Env offset refs storage) = do
-  deleteEffect storage $ indexPrimArray refs (offset + reifyIndex @e @es)
+  when (offset /= 0) $ do
+    error $ "offset (" ++ show offset ++ ") /= 0"
+  deleteEffect storage $ indexPrimArray refs (reifyIndex @e @es)
 {-# NOINLINE unreplaceEnv #-}
 
 ----------------------------------------

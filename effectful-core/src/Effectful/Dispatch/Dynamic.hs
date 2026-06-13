@@ -881,7 +881,7 @@ withLiftMap (LocalEnv les) k = unsafeEff $ \es -> do
     seqUnliftIO localEs $ \unlift -> do
       (`unEff` es) . mapEff . unsafeEff_ $ unlift m
 {-# DEPRECATED withLiftMap
-  "Misusing withLiftMap in multiple threads results in undefined behavior. Use localLiftUnlift or a combination of localLift and localUnlift with an appropriate UnliftStrategy instead." #-}
+  "Misusing withLiftMap in multiple threads results in undefined behavior. Use localLiftUnlift with an appropriate UnliftStrategy instead." #-}
 
 -- | Utility for lifting 'IO' computations of type
 --
@@ -930,43 +930,9 @@ withLiftMapIO (LocalEnv les) k = unsafeEff $ \es -> do
 -- Useful for lifting complicated 'Eff' computations where the monadic action
 -- shows in both positive (as a result) and negative (as an argument) position.
 --
--- /Note:/ when 'SeqForkUnlift' or 'ConcUnlift' strategy is used, the handler
--- and local environments are cloned independently of each other. In particular,
--- when a computation run by the unlifting function makes use of the lifting
--- function, the two will see separate copies of the thread local state of
--- effects they share, e.g. a 'Effectful.State.Static.Local.put' performed via
--- one of them will not be visible via the other:
---
--- >>> import Effectful.State.Static.Local
---
--- >>> :{
---   data Cloned :: Effect where
---     Cloned :: m () -> Cloned m Int
---   type instance DispatchOf Cloned = Dynamic
--- :}
---
--- >>> :{
---   runCloned :: State Int :> es => UnliftStrategy -> Eff (Cloned : es) a -> Eff es a
---   runCloned strategy = interpret $ \env (Cloned m) -> do
---     localLiftUnlift env strategy $ \lift unlift -> do
---       unlift $ do
---         m                -- Modifies the state via the local environment.
---         lift $ get @Int  -- Reads the state via the handler environment.
--- :}
---
--- >>> :{
---   demo strategy = runPureEff $ do
---     runState @Int 0 . runCloned strategy $ do
---       send . Cloned $ put @Int 1
--- :}
---
--- >>> demo SeqForkUnlift
--- (0,0)
---
--- Contrast this with the 'SeqUnlift' strategy, where state changes are visible:
---
--- >>> demo SeqUnlift
--- (1,1)
+-- /Note:/ when 'SeqForkUnlift' or 'ConcUnlift' 'Persistent' strategy is used,
+-- the unlifting functions will share the effect storage (unlike with two
+-- separate calls to 'localLift' and 'localUnlift').
 localLiftUnlift
   :: (HasCallStack, SharedSuffix es handlerEs)
   => LocalEnv localEs handlerEs
@@ -981,12 +947,10 @@ localLiftUnlift (LocalEnv les) strategy k = unsafeEff $ \es -> do
     SeqUnlift -> seqUnliftIO es $ \unliftEs -> do
       seqUnliftIO les $ \unliftLocalEs -> do
         (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
-    SeqForkUnlift -> seqForkUnliftIO es $ \unliftEs -> do
-      seqForkUnliftIO les $ \unliftLocalEs -> do
-        (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
-    ConcUnlift p l -> concUnliftIO es p l $ \unliftEs -> do
-      concUnliftIO les p l $ \unliftLocalEs -> do
-        (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
+    SeqForkUnlift -> seqForkUnliftsIO es les $ \unliftEs unliftLocalEs -> do
+      (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
+    ConcUnlift p l -> concUnliftsIO es les p l $ \unliftEs unliftLocalEs -> do
+      (`unEff` es) $ k (unsafeEff_ . unliftEs) (unsafeEff_ . unliftLocalEs)
 {-# INLINE localLiftUnlift #-}
 
 -- | Create a local unlifting function with the given strategy along with an

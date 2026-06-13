@@ -5,14 +5,16 @@
 * Rename `Effectful.Internal.MTL` module to `Effectful.Internal.Effect.Dynamic`.
 * Deprecate `withLiftMap` as its misuse in a multithreaded environment results
   in undefined behavior that cannot be detected at runtime. Use
-  `localLiftUnlift` or a combination of `localLift` and `localUnlift` with an
-  appropriate `UnliftStrategy` instead.
+  `localLiftUnlift` with an appropriate `UnliftStrategy` instead.
 * Tighten pre-requisites for `unconsEnv` and `unreplaceEnv`.
 * **Bugfixes**:
   - `restoreStorageData` no longer shrinks the capacity of the storage, which
     could result in out of bounds reads when out of date references to the
     environment were accessed after the rollback, e.g. by the unlifting function
     that escaped its scope.
+  - Unlifting functions created by `localLiftUnlift` with `SeqForkUnlift` or
+    `ConcUnlift` `Persistent` strategy now correctly share the effect storage
+    and the thread limit now applies jointly to both functions.
 
 # effectful-core-2.6.1.0 (2025-08-30)
 * Add `MonadError`, `MonadReader`, `MonadState` and `MonadWriter` instances for

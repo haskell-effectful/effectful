@@ -12,6 +12,8 @@ module Effectful.Internal.Env
 
     -- ** StorageData
   , StorageData(..)
+  , cloneStorage
+  , replaceStorage
   , copyStorageData
   , restoreStorageData
 
@@ -176,6 +178,29 @@ data StorageData = StorageData
   , relinkers :: !(SmallMutableArray RealWorld AnyRelinker)
   }
 
+-- | Clone the storage to use it in a different thread.
+cloneStorage :: HasCallStack => IORef' Storage -> IO (IORef' Storage)
+cloneStorage storage0 = do
+  Storage version storageData0 <- readIORef' storage0
+  storageData@(StorageData storageSize _ es fs) <- copyStorageData storageData0
+  storage <- newIORef' $ Storage version storageData
+  let relinkEffects = \case
+        0 -> pure ()
+        k -> do
+          let i = k - 1
+          Relinker relinker <- fromAnyRelinker <$> readSmallArray fs i
+          readSmallArray es i
+            >>= relinker (relinkEnv storage) . fromAnyEffect
+            >>= writeSmallArray' es i . toAnyEffect
+          relinkEffects i
+  relinkEffects storageSize
+  pure storage
+{-# NOINLINE cloneStorage #-}
+
+-- | Replace the storage of the environment.
+replaceStorage :: Env es -> IORef' Storage -> IO (Env es)
+replaceStorage (Env offset refs _) storage = pure $ Env offset refs storage
+
 -- | Make a shallow copy of the 'StorageData'.
 --
 -- @since 2.5.0.0
@@ -284,22 +309,7 @@ emptyEnv = Env 0
 
 -- | Clone the environment to use it in a different thread.
 cloneEnv :: HasCallStack => Env es -> IO (Env es)
-cloneEnv (Env offset refs storage0) = do
-  Storage version storageData0 <- readIORef' storage0
-  storageData@(StorageData storageSize _ es fs) <- copyStorageData storageData0
-  storage <- newIORef' $ Storage version storageData
-  let relinkEffects = \case
-        0 -> pure ()
-        k -> do
-          let i = k - 1
-          Relinker relinker <- fromAnyRelinker <$> readSmallArray fs i
-          readSmallArray es i
-            >>= relinker (relinkEnv storage) . fromAnyEffect
-            >>= writeSmallArray' es i . toAnyEffect
-          relinkEffects i
-  relinkEffects storageSize
-  pure $ Env offset refs storage
-{-# NOINLINE cloneEnv #-}
+cloneEnv env = replaceStorage env =<< cloneStorage env.storage
 
 -- | Get the current size of the environment.
 sizeEnv :: Env es -> IO Int

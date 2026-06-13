@@ -52,6 +52,8 @@ module Effectful.Internal.Monad
   , seqUnliftIO
   , seqForkUnliftIO
   , concUnliftIO
+  , seqForkUnliftsIO
+  , concUnliftsIO
 
   -- * Dispatch
 
@@ -242,10 +244,61 @@ concUnliftIO
   -> ((forall r. Eff es r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> IO a
-concUnliftIO es Ephemeral (Limited uses) = ephemeralConcUnlift es uses
-concUnliftIO es Ephemeral Unlimited = ephemeralConcUnlift es maxBound
+concUnliftIO es Ephemeral (Limited uses) = ephemeralConcLimitedUnlift es uses
+concUnliftIO es Ephemeral Unlimited = ephemeralConcUnlimitedUnlift es
 concUnliftIO es Persistent (Limited threads) = persistentConcUnlift es False threads
 concUnliftIO es Persistent Unlimited = persistentConcUnlift es True maxBound
+
+-- | Create two unlifting functions with the 'SeqForkUnlift' strategy.
+--
+-- The unlifting functions will share the effect storage (unlike with two
+-- separate calls to 'seqForkUnliftIO').
+--
+-- /Warning:/ both environments must have the same underlying storage.
+seqForkUnliftsIO
+  :: HasCallStack
+  => Env es
+  -> Env localEs
+  -> ((forall r. Eff es r -> IO r) -> (forall r. Eff localEs r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting functions in scope.
+  -> IO a
+seqForkUnliftsIO es0 les0 k = do
+  storage <- cloneStorage es0.storage
+  es <- replaceStorage es0 storage
+  les <- replaceStorage les0 storage
+  seqUnliftIO es $ \unliftEs -> do
+    seqUnliftIO les $ \unliftLocalEs -> do
+      k unliftEs unliftLocalEs
+{-# INLINE seqForkUnliftsIO #-}
+
+-- | Create unlifting functions with the 'ConcUnlift' strategy.
+--
+-- In the 'Persistent' variant the unlifting functions will share the effect
+-- storage in each thread (unlike with two separate calls to 'concUnliftIO').
+--
+-- /Warning:/ both environments must have the same underlying storage.
+concUnliftsIO
+  :: HasCallStack
+  => Env es
+  -> Env localEs
+  -- ^ The environment.
+  -> Persistence
+  -> Limit
+  -> ((forall r. Eff es r -> IO r) -> (forall r. Eff localEs r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting functions in scope.
+  -> IO a
+concUnliftsIO es les Ephemeral (Limited uses) k = do
+  ephemeralConcLimitedUnlift es uses $ \unliftEs -> do
+    ephemeralConcLimitedUnlift les uses $ \unliftLocalEs -> do
+      k unliftEs unliftLocalEs
+concUnliftsIO es les Ephemeral Unlimited k = do
+  ephemeralConcUnlimitedUnlift es $ \unliftEs -> do
+    ephemeralConcUnlimitedUnlift les $ \unliftLocalEs -> do
+      k unliftEs unliftLocalEs
+concUnliftsIO es les Persistent (Limited threads) k = do
+  persistentConcUnlifts es les False threads k
+concUnliftsIO es les Persistent Unlimited k = do
+  persistentConcUnlifts es les True maxBound k
 
 -- | Utility for lifting 'IO' computations of type
 --

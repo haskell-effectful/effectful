@@ -13,8 +13,10 @@ module Effectful.Internal.Unlift
   , Limit(..)
 
     -- * Unlifting functions
-  , ephemeralConcUnlift
+  , ephemeralConcLimitedUnlift
+  , ephemeralConcUnlimitedUnlift
   , persistentConcUnlift
+  , persistentConcUnlifts
   ) where
 
 import Control.Concurrent
@@ -140,16 +142,16 @@ data Limit
 ----------------------------------------
 -- Unlift functions
 
--- | Concurrent unlift that doesn't preserve the environment between calls to
--- the unlifting function in threads other than its creator.
-ephemeralConcUnlift
-  :: (HasCallStack, forall r. Coercible (m r) (Env es -> IO r))
+-- | Concurrent unlift with limited uses that doesn't preserve the environment
+-- between calls to the unlifting function in threads other than its creator.
+ephemeralConcLimitedUnlift
+  :: (HasCallStack, forall r. Coercible (effEs r) (Env es -> IO r))
   => Env es
   -> Int
   -- ^ Number of permitted uses of the unlift function.
-  -> ((forall r. m r -> IO r) -> IO a)
+  -> ((forall r. effEs r -> IO r) -> IO a)
   -> IO a
-ephemeralConcUnlift es0 uses k = do
+ephemeralConcLimitedUnlift es0 uses k = do
   unless (uses > 0) $ do
     error $ "Invalid number of uses: " ++ show uses
   tid0 <- myThreadId
@@ -158,30 +160,48 @@ ephemeralConcUnlift es0 uses k = do
   -- have already changed by then.
   esTemplate <- cloneEnv es0
   mvUses <- newMVar' uses
-  k $ \m -> do
-    es <- myThreadId >>= \case
-      tid | tid0 == tid -> pure es0
-      _ -> modifyMVar' mvUses $ \case
-        0 -> error
-           $ "Number of permitted calls (" ++ show uses ++ ") to the unlifting "
-          ++ "function in other threads was exceeded. Please increase the limit "
-          ++ "or use the unlimited variant."
-        1 -> pure (0, esTemplate)
-        n -> do
-          es <- cloneEnv esTemplate
-          pure (n - 1, es)
-    coerce m es
-{-# NOINLINE ephemeralConcUnlift #-}
+  let getEs = myThreadId >>= \case
+        tid | tid0 == tid -> pure es0
+        _ -> modifyMVar' mvUses $ \case
+          0 -> error
+             $ "Number of permitted calls (" ++ show uses ++ ") to the unlifting "
+            ++ "function in other threads was exceeded. Please increase the limit "
+            ++ "or use the unlimited variant."
+          1 -> pure (0, esTemplate)
+          n -> do
+            es <- cloneEnv esTemplate
+            pure (n - 1, es)
+  k $ \action -> coerce action =<< getEs
+{-# INLINE ephemeralConcLimitedUnlift #-}
+
+-- | Concurrent unlift with unlimited uses that doesn't preserve the environment
+-- between calls to the unlifting function in threads other than its creator.
+ephemeralConcUnlimitedUnlift
+  :: (HasCallStack, forall r. Coercible (effEs r) (Env es -> IO r))
+  => Env es
+  -> ((forall r. effEs r -> IO r) -> IO a)
+  -> IO a
+ephemeralConcUnlimitedUnlift es0 k = do
+  tid0 <- myThreadId
+  -- Create a copy of the environment as a template for the other threads to
+  -- use. This can't be done from inside the callback as the environment might
+  -- have already changed by then.
+  esTemplate <- cloneEnv es0
+  let getEs = myThreadId >>= \case
+        tid | tid0 == tid -> pure es0
+        _ -> cloneEnv esTemplate
+  k $ \action -> coerce action =<< getEs
+{-# INLINE ephemeralConcUnlimitedUnlift #-}
 
 -- | Concurrent unlift that preserves the environment between calls to the
 -- unlifting function within a particular thread.
 persistentConcUnlift
-  :: (HasCallStack, forall r. Coercible (m r) (Env es -> IO r))
+  :: (HasCallStack, forall r. Coercible (effEs r) (Env es -> IO r))
   => Env es
   -> Bool
   -> Int
   -- ^ Number of threads that are allowed to use the unlift function.
-  -> ((forall r. m r -> IO r) -> IO a)
+  -> ((forall r. effEs r -> IO r) -> IO a)
   -> IO a
 persistentConcUnlift es0 cleanUp threads k = do
   unless (threads > 0) $ do
@@ -192,53 +212,118 @@ persistentConcUnlift es0 cleanUp threads k = do
   -- have already changed by then.
   esTemplate <- cloneEnv es0
   mvEntries <- newMVar' $ ThreadEntries threads IM.empty
-  k $ \m -> do
-    es <- myThreadId >>= \case
-      tid | tid0 == tid -> pure es0
-      tid -> modifyMVar' mvEntries $ \te -> do
-        let wkTid = weakThreadId tid
-        case wkTid `IM.lookup` te.entries of
-          Just wkEs -> deRefWeak wkEs >>= \case
-            Nothing -> error "Impossible, thread alive but its weak ref dead"
-            Just es -> pure (te, es)
-          Nothing -> case te.capacity of
-            0 -> error
-              $ "Number of other threads (" ++ show threads ++ ") permitted to "
-              ++ "use the unlifting function was exceeded. Please increase the "
-              ++ "limit or use the unlimited variant."
-            1 -> do
-              wkTidEs <- mkWeakThreadIdEnv tid wkTid esTemplate mvEntries cleanUp
-              let newEntries = ThreadEntries
-                    { capacity = te.capacity - 1
-                    , entries  = IM.insert wkTid wkTidEs te.entries
-                    }
-              pure (newEntries, esTemplate)
-            _ -> do
-              es      <- cloneEnv esTemplate
-              wkTidEs <- mkWeakThreadIdEnv tid wkTid es mvEntries cleanUp
-              let newEntries = ThreadEntries
-                    { capacity = te.capacity - 1
-                    , entries  = IM.insert wkTid wkTidEs te.entries
-                    }
-              pure (newEntries, es)
-    coerce m es
-{-# NOINLINE persistentConcUnlift #-}
+  let getEs = myThreadId >>= \case
+        tid | tid0 == tid -> pure es0
+        tid -> do
+          te0 <- readMVar' mvEntries
+          let wkTid = weakThreadId tid
+          case wkTid `IM.lookup` te0.entries of
+            Just wkEs -> getWkTidEnv wkEs
+            -- If the environment is not in the map, there is no point checking
+            -- again within modifyMVar' below, because this is the only thread
+            -- that can put it there.
+            Nothing -> modifyMVar' mvEntries $ \te -> case te.capacity of
+              0 -> noCapacityError threads
+              1 -> do
+                wkTidEs <- mkWeakThreadIdEnv tid wkTid esTemplate mvEntries cleanUp
+                let newEntries = ThreadEntries
+                      { capacity = te.capacity - 1
+                      , entries  = IM.insert wkTid wkTidEs te.entries
+                      }
+                pure (newEntries, esTemplate)
+              _ -> do
+                es <- cloneEnv esTemplate
+                wkTidEs <- mkWeakThreadIdEnv tid wkTid es mvEntries cleanUp
+                let newEntries = ThreadEntries
+                      { capacity = te.capacity - 1
+                      , entries  = IM.insert wkTid wkTidEs te.entries
+                      }
+                pure (newEntries, es)
+  k $ \action -> coerce action =<< getEs
+{-# INLINE persistentConcUnlift #-}
+
+persistentConcUnlifts
+  :: ( HasCallStack
+     , forall r. Coercible (effEs r) (Env es -> IO r)
+     , forall r. Coercible (effLocalEs r) (Env localEs -> IO r)
+     )
+  => Env es
+  -> Env localEs
+  -> Bool
+  -> Int
+  -- ^ Number of threads that are allowed to use the unlift function.
+  -> ((forall r. effEs r -> IO r) -> (forall r. effLocalEs r -> IO r) -> IO a)
+  -> IO a
+persistentConcUnlifts es0 les0 cleanUp threads k = do
+  unless (threads > 0) $ do
+    error $ "Invalid number of threads: " ++ show threads
+  tid0 <- myThreadId
+  -- Create a copy of the environments sharing the effect storage as a template
+  -- for the other threads to use. This can't be done from inside the callback
+  -- as the environment might have already changed by then.
+  storageTemplate <- cloneStorage es0.storage
+  esTemplate <- replaceStorage es0 storageTemplate
+  lesTemplate <- replaceStorage les0 storageTemplate
+  mvEntries <- newMVar' $ ThreadEntries threads IM.empty
+  let getEsLes = myThreadId >>= \case
+        tid | tid0 == tid -> pure (es0, les0)
+        tid -> do
+          te0 <- readMVar' mvEntries
+          let wkTid = weakThreadId tid
+          case wkTid `IM.lookup` te0.entries of
+            Just wkEsLes -> getWkTidEnv wkEsLes
+            -- If the environments are not in the map, there is no point
+            -- checking again within modifyMVar' below, because this is the only
+            -- thread that can put them there.
+            Nothing -> modifyMVar' mvEntries $ \te -> case te.capacity of
+              0 -> noCapacityError threads
+              1 -> do
+                wkTidEsLes <- mkWeakThreadIdEnv tid wkTid (esTemplate, lesTemplate) mvEntries cleanUp
+                let newEntries = ThreadEntries
+                      { capacity = te.capacity - 1
+                      , entries  = IM.insert wkTid wkTidEsLes te.entries
+                      }
+                pure (newEntries, (esTemplate, lesTemplate))
+              _ -> do
+                storage <- cloneStorage storageTemplate
+                es <- replaceStorage esTemplate storage
+                les <- replaceStorage lesTemplate storage
+                wkTidEsLes <- mkWeakThreadIdEnv tid wkTid (es, les) mvEntries cleanUp
+                let newEntries = ThreadEntries
+                      { capacity = te.capacity - 1
+                      , entries  = IM.insert wkTid wkTidEsLes te.entries
+                      }
+                pure (newEntries, (es, les))
+  k (\action -> coerce action . fst =<< getEsLes)
+    (\action -> coerce action . snd =<< getEsLes)
+{-# INLINE persistentConcUnlifts #-}
 
 ----------------------------------------
 -- Internal helpers
 
-data ThreadEntries es = ThreadEntries
+noCapacityError :: HasCallStack => Int -> a
+noCapacityError threads = error
+  $ "Number of other threads (" ++ show threads ++ ") permitted to "
+  ++ "use the unlifting function was exceeded. Please increase the "
+  ++ "limit or use the unlimited variant."
+
+getWkTidEnv :: HasCallStack => Weak a -> IO a
+getWkTidEnv wkTidEnv = deRefWeak wkTidEnv >>= \case
+  Nothing -> error "Impossible, thread alive but its weak ref dead"
+  Just env -> pure env
+
+data ThreadEntries a = ThreadEntries
   { capacity :: !Int
-  , entries  :: !(IM.IntMap (Weak (Env es)))
+  , entries  :: !(IM.IntMap (Weak a))
   }
 
 mkWeakThreadIdEnv
   :: ThreadId
   -> Int
-  -> Env es
-  -> MVar' (ThreadEntries es)
+  -> a
+  -> MVar' (ThreadEntries a)
   -> Bool
-  -> IO (Weak (Env es))
+  -> IO (Weak a)
 mkWeakThreadIdEnv (ThreadId t#) wkTid es v = \case
   True -> IO $ \s0 ->
     case mkWeak# t# es finalizer s0 of

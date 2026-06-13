@@ -56,6 +56,7 @@ module Effectful.Dispatch.Dynamic
   , localLend
   , localSeqBorrow
   , localBorrow
+  , localLendBorrow
   , SharedSuffix
   , KnownSubset
 
@@ -1098,6 +1099,42 @@ localBorrow (LocalEnv les) strategy k = unsafeEff $ \es -> do
     ConcUnlift p l -> concUnliftIO ees p l $ \unlift -> do
       (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localBorrow #-}
+
+-- | Simultaneously lend effects to the local environment and borrow effects
+-- from it with a given unlifting strategy.
+--
+-- /Note:/ when 'SeqForkUnlift' or 'ConcUnlift' 'Persistent' strategy is used,
+-- the lending and borrowing functions will share the effect storage (unlike
+-- with two separate calls to 'localLend' and 'localBorrow').
+--
+-- @since 2.7.0.0
+localLendBorrow
+  :: forall lentEs borrowedEs es handlerEs localEs a
+   . ( HasCallStack
+     , KnownSubset lentEs es
+     , KnownSubset borrowedEs localEs
+     , SharedSuffix es handlerEs
+     )
+  => LocalEnv localEs handlerEs
+  -> UnliftStrategy
+  -> (    (forall r. Eff (lentEs ++ localEs) r -> Eff localEs r)
+       -> (forall r. Eff (borrowedEs ++ es) r -> Eff es r)
+       -> Eff es a
+     )
+  -- ^ Continuation with the lending and borrowing functions in scope.
+  -> Eff es a
+localLendBorrow (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  eles <- copyRefs @lentEs es les
+  ees <- copyRefs @borrowedEs les es
+  case strategy of
+    SeqUnlift -> seqUnliftIO eles $ \unliftLent -> do
+      seqUnliftIO ees $ \unliftBorrowed -> do
+        (`unEff` es) $ k (unsafeEff_ . unliftLent) (unsafeEff_ . unliftBorrowed)
+    SeqForkUnlift -> seqForkUnliftsIO eles ees $ \unliftLent unliftBorrowed -> do
+      (`unEff` es) $ k (unsafeEff_ . unliftLent) (unsafeEff_ . unliftBorrowed)
+    ConcUnlift p l -> concUnliftsIO eles ees p l $ \unliftLent unliftBorrowed -> do
+      (`unEff` es) $ k (unsafeEff_ . unliftLent) (unsafeEff_ . unliftBorrowed)
+{-# INLINE localLendBorrow #-}
 
 -- | Require that both effect stacks share an opaque suffix.
 --

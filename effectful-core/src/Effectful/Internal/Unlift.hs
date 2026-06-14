@@ -146,6 +146,8 @@ data Limit
 
 -- | Concurrent unlift with limited uses that doesn't preserve the environment
 -- between calls to the unlifting function in threads other than its creator.
+--
+-- @since 2.7.0.0
 ephemeralConcLimitedUnlift
   :: (HasCallStack, forall r. Coercible (effEs r) (Env es -> IO r))
   => Env es
@@ -178,6 +180,8 @@ ephemeralConcLimitedUnlift es0 uses k = do
 
 -- | Concurrent unlift with unlimited uses that doesn't preserve the environment
 -- between calls to the unlifting function in threads other than its creator.
+--
+-- @since 2.7.0.0
 ephemeralConcUnlimitedUnlift
   :: (HasCallStack, forall r. Coercible (effEs r) (Env es -> IO r))
   => Env es
@@ -246,6 +250,8 @@ persistentConcUnlift es0 cleanUp threads k = do
 
 -- | Variant of 'persistentConcUnlift' for a single other thread that doesn't
 -- need ThreadEntries.
+--
+-- @since 2.7.0.0
 persistentConcSingleUnlift
   :: ( HasCallStack, forall r. Coercible (effEs r) (Env es -> IO r))
   => Env es
@@ -272,6 +278,10 @@ persistentConcSingleUnlift es0 k = do
   k $ \action -> coerce action =<< getEs
 {-# INLINE persistentConcSingleUnlift #-}
 
+-- | Variant of 'persistentConcUnlift' producing two unlifting functions that
+-- share the effect storage in each thread.
+--
+-- @since 2.7.0.0
 persistentConcUnlifts
   :: ( HasCallStack
      , forall r. Coercible (effEs r) (Env es -> IO r)
@@ -330,6 +340,8 @@ persistentConcUnlifts es0 les0 cleanUp threads k = do
 
 -- | Variant of 'persistentConcUnlifts' for a single other thread that doesn't
 -- need ThreadEntries.
+--
+-- @since 2.7.0.0
 persistentConcSingleUnlifts
   :: ( HasCallStack
      , forall r. Coercible (effEs r) (Env es -> IO r)

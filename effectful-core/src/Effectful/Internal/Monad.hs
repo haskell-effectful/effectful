@@ -258,6 +258,8 @@ concUnliftIO es Persistent Unlimited k = persistentConcUnlift es True maxBound k
 -- separate calls to 'seqForkUnliftIO').
 --
 -- /Warning:/ both environments must have the same underlying storage.
+--
+-- @since 2.7.0.0
 seqForkUnliftsIO
   :: HasCallStack
   => Env es
@@ -280,6 +282,8 @@ seqForkUnliftsIO es0 les0 k = do
 -- storage in each thread (unlike with two separate calls to 'concUnliftIO').
 --
 -- /Warning:/ both environments must have the same underlying storage.
+--
+-- @since 2.7.0.0
 concUnliftsIO
   :: HasCallStack
   => Env es

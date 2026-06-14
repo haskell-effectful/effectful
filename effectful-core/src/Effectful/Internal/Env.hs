@@ -62,6 +62,7 @@ import Data.IORef.Strict
 import Data.Primitive.PrimArray
 import Data.Primitive.SmallArray
 import Data.Primitive.Types
+import Data.Proxy
 import GHC.Exts ((*#), (+#))
 import GHC.Stack
 
@@ -103,8 +104,8 @@ data Env (es :: [Effect]) = Env
 data Ref = Ref !Int !Version
 
 instance Prim Ref where
-  sizeOf# _ = 2# *# sizeOf# (undefined :: Int)
-  alignment# _ = alignment# (undefined :: Int)
+  sizeOfType# _ = 2# *# sizeOfType# (Proxy @Int)
+  alignmentOfType# _ = alignmentOfType# (Proxy @Int)
   indexByteArray# arr i =
     let n = 2# *# i
         ref = indexByteArray# arr n
@@ -120,7 +121,6 @@ instance Prim Ref where
         s1 = writeByteArray# arr n ref s0
         s2 = writeByteArray# arr (n +# 1#) version s1
     in s2
-  setByteArray# = defaultSetByteArray#
   indexOffAddr# addr i =
     let n = 2# *# i
         ref = indexOffAddr# addr n
@@ -136,7 +136,6 @@ instance Prim Ref where
         s1 = writeOffAddr# addr n ref s0
         s2 = writeOffAddr# addr (n +# 1#) version s1
     in s2
-  setOffAddr# = defaultSetOffAddr#
 
 -- | Version of the effect.
 newtype Version = Version Int
@@ -601,8 +600,3 @@ undefinedRelinker = toAnyRelinker $ Relinker $ \_ _ -> do
 -- | A strict version of 'writeSmallArray'.
 writeSmallArray' :: SmallMutableArray RealWorld a -> Int -> a -> IO ()
 writeSmallArray' arr i a = a `seq` writeSmallArray arr i a
-
-#if !MIN_VERSION_primitive(0,9,0)
-getSizeofSmallMutableArray :: SmallMutableArray RealWorld a -> IO Int
-getSizeofSmallMutableArray arr = pure $! sizeofSmallMutableArray arr
-#endif

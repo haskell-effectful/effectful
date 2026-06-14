@@ -8,6 +8,7 @@
   `localLiftUnlift` with an appropriate `UnliftStrategy` instead.
 * Tighten pre-requisites for `unconsEnv` and `unreplaceEnv`.
 * Add `localLendBorrow` to `Effectful.Dispatch.Dynamic`.
+* Require `primitive` >= 0.9.0.0.
 * **Bugfixes**:
   - `restoreStorageData` no longer shrinks the capacity of the storage, which
     could result in out of bounds reads when out of date references to the

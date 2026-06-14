@@ -74,7 +74,7 @@ library
                     , exceptions          >= 0.10.4
                     , mtl                 >= 2.2.1
                     , monad-control       >= 1.0.3
-                    , primitive           >= 0.7.3.0
+                    , primitive           >= 0.9.0.0
                     , strict-mutable-base >= 1.1.0.0
                     , transformers-base   >= 0.4.6
                     , unliftio-core       >= 0.2.0.1

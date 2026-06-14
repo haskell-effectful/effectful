@@ -14,7 +14,7 @@ module Effectful.Internal.Env
   , StorageData(..)
   , cloneStorage
   , replaceStorage
-  , copyStorageData
+  , backupStorageData
   , restoreStorageData
 
     -- *** Utils
@@ -178,25 +178,19 @@ data StorageData = StorageData
   }
 
 -- | Clone the storage to use it in a different thread.
+--
+-- @since 2.7.0.0
 cloneStorage :: HasCallStack => IORef' Storage -> IO (IORef' Storage)
 cloneStorage storage0 = do
   Storage version storageData0 <- readIORef' storage0
-  storageData@(StorageData storageSize _ es fs) <- copyStorageData storageData0
+  storageData <- copyStorageData storageData0
   storage <- newIORef' $ Storage version storageData
-  let relinkEffects = \case
-        0 -> pure ()
-        k -> do
-          let i = k - 1
-          Relinker relinker <- fromAnyRelinker <$> readSmallArray fs i
-          readSmallArray es i
-            >>= relinker (relinkEnv storage) . fromAnyEffect
-            >>= writeSmallArray' es i . toAnyEffect
-          relinkEffects i
-  relinkEffects storageSize
+  relinkStorageData storageData storage
   pure storage
-{-# NOINLINE cloneStorage #-}
 
 -- | Replace the storage of the environment.
+--
+-- @since 2.7.0.0
 replaceStorage :: Env es -> IORef' Storage -> IO (Env es)
 replaceStorage (Env offset refs _) storage = pure $ Env offset refs storage
 
@@ -217,10 +211,40 @@ copyStorageData (StorageData storageSize vs0 es0 fs0) = do
   fs <- cloneSmallMutableArray fs0 0 fsSize
   pure $ StorageData storageSize vs es fs
 
--- | Restore a shallow copy of the 'StorageData'.
+-- | Relink effects in the storage data to the given storage.
 --
--- The copy needs to be from the same 'Env' as the target. It's consumed by
--- this operation and must not be used afterwards.
+-- @since 2.7.0.0
+relinkStorageData :: HasCallStack => StorageData -> IORef' Storage -> IO ()
+relinkStorageData (StorageData storageSize _ es fs) storage = go storageSize
+  where
+    go = \case
+      0 -> pure ()
+      k -> do
+        let i = k - 1
+        Relinker relinker <- fromAnyRelinker <$> readSmallArray fs i
+        readSmallArray es i
+          >>= relinker (relinkEnv storage) . fromAnyEffect
+          >>= writeSmallArray' es i . toAnyEffect
+        go i
+
+-- | Backup storage data of the environment.
+--
+-- It can be restored later with 'restoreStorageData'.
+--
+-- @since 2.7.0.0
+backupStorageData :: HasCallStack => Env es -> IO StorageData
+backupStorageData env = do
+  storageData <- copyStorageData . (.data_) =<< readIORef' env.storage
+  -- Relinking to the same storage might seem weird, but relinkers need to run
+  -- and make a copy of mutable data associated with statically dispatched
+  -- effects if appropriate.
+  relinkStorageData storageData env.storage
+  pure storageData
+
+-- | Restore a copy of the 'StorageData'.
+--
+-- The copy needs to be from the same 'Env' as the target. It's consumed by this
+-- operation and must not be used afterwards.
 --
 -- @since 2.5.0.0
 restoreStorageData :: HasCallStack => StorageData -> Env es -> IO ()

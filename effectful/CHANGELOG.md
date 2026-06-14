@@ -17,6 +17,8 @@
   - Unlifting functions created by `localLiftUnlift` with `SeqForkUnlift` or
     `ConcUnlift` `Persistent` strategy now correctly share the effect storage
     and the thread limit now applies jointly to both functions.
+  - `OnEmptyRollback` strategy of the `NonDet` effect now correctly rolls back
+    local state of statically dispatched effects stored in mutable variables.
 
 # effectful-2.6.1.0 (2025-08-30)
 * Add `MonadError`, `MonadReader`, `MonadState` and `MonadWriter` instances for

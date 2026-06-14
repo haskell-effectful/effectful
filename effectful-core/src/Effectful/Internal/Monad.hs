@@ -165,13 +165,13 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 --
 -- /Note:/ this strategy is implicitly used by the 'MonadUnliftIO' and
 -- 'MonadBaseControl' instance for 'Eff'.
-unliftStrategy :: IOE :> es => Eff es UnliftStrategy
+unliftStrategy :: (HasCallStack, IOE :> es) => Eff es UnliftStrategy
 unliftStrategy = do
   IOE unlift <- getStaticRep
   pure unlift
 
 -- | Locally override the current 'UnliftStrategy' with the given value.
-withUnliftStrategy :: IOE :> es => UnliftStrategy -> Eff es a -> Eff es a
+withUnliftStrategy :: (HasCallStack, IOE :> es) => UnliftStrategy -> Eff es a -> Eff es a
 withUnliftStrategy unlift = localStaticRep $ \_ -> IOE unlift
 
 -- | Create an unlifting function with the 'SeqUnlift' strategy. For the general

@@ -244,10 +244,13 @@ concUnliftIO
   -> ((forall r. Eff es r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
   -> IO a
-concUnliftIO es Ephemeral (Limited uses) = ephemeralConcLimitedUnlift es uses
-concUnliftIO es Ephemeral Unlimited = ephemeralConcUnlimitedUnlift es
-concUnliftIO es Persistent (Limited threads) = persistentConcUnlift es False threads
-concUnliftIO es Persistent Unlimited = persistentConcUnlift es True maxBound
+concUnliftIO es Ephemeral (Limited uses) k = ephemeralConcLimitedUnlift es uses k
+concUnliftIO es Ephemeral Unlimited k = ephemeralConcUnlimitedUnlift es k
+concUnliftIO es Persistent (Limited threads) k =
+  if threads == 1
+  then persistentConcSingleUnlift es k
+  else persistentConcUnlift es False threads k
+concUnliftIO es Persistent Unlimited k = persistentConcUnlift es True maxBound k
 
 -- | Create two unlifting functions with the 'SeqForkUnlift' strategy.
 --
@@ -296,7 +299,9 @@ concUnliftsIO es les Ephemeral Unlimited k = do
     ephemeralConcUnlimitedUnlift les $ \unliftLocalEs -> do
       k unliftEs unliftLocalEs
 concUnliftsIO es les Persistent (Limited threads) k = do
-  persistentConcUnlifts es les False threads k
+  if threads == 1
+    then persistentConcSingleUnlifts es les k
+    else persistentConcUnlifts es les False threads k
 concUnliftsIO es les Persistent Unlimited k = do
   persistentConcUnlifts es les True maxBound k
 

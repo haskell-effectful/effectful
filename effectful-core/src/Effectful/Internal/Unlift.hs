@@ -16,7 +16,9 @@ module Effectful.Internal.Unlift
   , ephemeralConcLimitedUnlift
   , ephemeralConcUnlimitedUnlift
   , persistentConcUnlift
+  , persistentConcSingleUnlift
   , persistentConcUnlifts
+  , persistentConcSingleUnlifts
   ) where
 
 import Control.Concurrent
@@ -242,6 +244,34 @@ persistentConcUnlift es0 cleanUp threads k = do
   k $ \action -> coerce action =<< getEs
 {-# INLINE persistentConcUnlift #-}
 
+-- | Variant of 'persistentConcUnlift' for a single other thread that doesn't
+-- need ThreadEntries.
+persistentConcSingleUnlift
+  :: ( HasCallStack, forall r. Coercible (effEs r) (Env es -> IO r))
+  => Env es
+  -> ((forall r. effEs r -> IO r) -> IO a)
+  -> IO a
+persistentConcSingleUnlift es0 k = do
+  tid0 <- myThreadId
+  -- Create a copy of the environment for the other thread to use. This can't be
+  -- done from inside the callback as the environment might have already changed
+  -- by then.
+  es <- cloneEnv es0
+  -- GHC never labels threads as 0.
+  mvWeakTid <- newMVar' 0
+  let getEs = myThreadId >>= \case
+        tid | tid0 == tid -> pure es0
+        tid -> do
+          let wkTid = weakThreadId tid
+          readMVar' mvWeakTid >>= \case
+            0 -> modifyMVar' mvWeakTid $ \case
+              0 -> pure (wkTid, es)
+              _ -> noCapacityError 1
+            v | v == wkTid -> pure es
+              | otherwise -> noCapacityError 1
+  k $ \action -> coerce action =<< getEs
+{-# INLINE persistentConcSingleUnlift #-}
+
 persistentConcUnlifts
   :: ( HasCallStack
      , forall r. Coercible (effEs r) (Env es -> IO r)
@@ -297,6 +327,41 @@ persistentConcUnlifts es0 les0 cleanUp threads k = do
   k (\action -> coerce action . fst =<< getEsLes)
     (\action -> coerce action . snd =<< getEsLes)
 {-# INLINE persistentConcUnlifts #-}
+
+-- | Variant of 'persistentConcUnlifts' for a single other thread that doesn't
+-- need ThreadEntries.
+persistentConcSingleUnlifts
+  :: ( HasCallStack
+     , forall r. Coercible (effEs r) (Env es -> IO r)
+     , forall r. Coercible (effLocalEs r) (Env localEs -> IO r)
+     )
+  => Env es
+  -> Env localEs
+  -> ((forall r. effEs r -> IO r) -> (forall r. effLocalEs r -> IO r) -> IO a)
+  -> IO a
+persistentConcSingleUnlifts es0 les0 k = do
+  tid0 <- myThreadId
+  -- Create a copy of the environments sharing the effect storage for the other
+  -- thread to use. This can't be done from inside the callback as the
+  -- environment might have already changed by then.
+  storage <- cloneStorage es0.storage
+  es <- replaceStorage es0 storage
+  les <- replaceStorage les0 storage
+  -- GHC never labels threads as 0.
+  mvWeakTid <- newMVar' 0
+  let getEsLes = myThreadId >>= \case
+        tid | tid0 == tid -> pure (es0, les0)
+        tid -> do
+          let wkTid = weakThreadId tid
+          readMVar' mvWeakTid >>= \case
+            0 -> modifyMVar' mvWeakTid $ \case
+              0 -> pure (wkTid, (es, les))
+              _ -> noCapacityError 1
+            v | v == wkTid -> pure (es, les)
+              | otherwise -> noCapacityError 1
+  k (\action -> coerce action . fst =<< getEsLes)
+    (\action -> coerce action . snd =<< getEsLes)
+{-# INLINE persistentConcSingleUnlifts #-}
 
 ----------------------------------------
 -- Internal helpers

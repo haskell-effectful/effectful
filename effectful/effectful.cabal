@@ -64,7 +64,7 @@ library
                     , file-io             >= 0.1.4
                     , filepath            >= 1.4.100
                     , process             >= 1.6.9
-                    , strict-mutable-base >= 1.1.0.0
+                    , strict-mutable-base >= 2.0.0.0   && < 3
                     , time                >= 1.9.2
                     , stm                 >= 2.5.1.0
                     , unliftio            >= 0.2.20

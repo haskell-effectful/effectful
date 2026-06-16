@@ -1,6 +1,6 @@
 module NonDetTests (nonDetTests) where
 
-import Data.IORef.Strict
+import Data.IORef.Strict qualified as S
 import Data.Primitive.PrimArray
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -105,15 +105,15 @@ test_independentHandlers step = runEff $ do
 -- which case the rollback must not shrink its capacity.
 test_staleReferenceAfterRollback :: Assertion
 test_staleReferenceAfterRollback = runEff $ do
-  ref <- liftIO $ newIORef' Nothing
+  ref <- liftIO $ S.newIORef Nothing
   result <- runNonDet OnEmptyRollback $
     (do stale <- captureStaleReference 16
         capacity <- getStorageCapacity
-        liftIO $ writeIORef' ref $ Just (capacity, stale)
+        liftIO $ S.writeIORef ref $ Just (capacity, stale)
         emptyEff)
     <|> pure True
   U.assertEqual "result" (Just True) (dropLeft result)
-  liftIO (readIORef' ref) >>= \case
+  liftIO (S.readIORef ref) >>= \case
     Nothing -> U.assertFailure "stale reference not captured"
     Just (capacity, stale) -> do
       -- If the rollback shrunk the capacity of the storage, evaluation of the
@@ -132,7 +132,7 @@ captureStaleReference n = evalStateLocal @Int n $
 -- | Get the current capacity of the underlying storage of effects.
 getStorageCapacity :: Eff es Int
 getStorageCapacity = unsafeEff $ \es -> do
-  I.Storage _ storageData <- readIORef' es.storage
+  I.Storage _ storageData <- S.readIORef es.storage
   getSizeofMutablePrimArray storageData.versions
 
 ----------------------------------------
@@ -140,11 +140,11 @@ getStorageCapacity = unsafeEff $ \es -> do
 
 data MutInt :: Effect
 type instance DispatchOf MutInt = Static NoSideEffects
-newtype instance StaticRep MutInt = MutInt (IORef' Int)
+newtype instance StaticRep MutInt = MutInt (S.IORef Int)
 
 runMutInt :: Int -> Eff (MutInt : es) a -> Eff es a
 runMutInt s action = unsafeEff $ \es -> do
-  ref <- newIORef' s
+  ref <- S.newIORef s
   inlineBracket
     (consEnv (MutInt ref) relinkMutInt es)
     unconsEnv
@@ -152,14 +152,14 @@ runMutInt s action = unsafeEff $ \es -> do
   where
     relinkMutInt :: Relinker StaticRep MutInt
     relinkMutInt = Relinker $ \_ (MutInt ref0) -> do
-      ref <- newIORef' =<< readIORef' ref0
+      ref <- S.newIORef =<< S.readIORef ref0
       pure $ MutInt ref
 
 stateMutInt :: MutInt :> es => (Int -> (a, Int)) -> Eff es a
 stateMutInt f = unsafeEff $ \es -> do
   MutInt ref <- getEnv es
-  (r, s) <- f <$> readIORef' ref
-  writeIORef' ref s
+  (r, s) <- f <$> S.readIORef ref
+  S.writeIORef ref s
   pure r
 
 modifyMutInt :: MutInt :> es => (Int -> Int) -> Eff es ()

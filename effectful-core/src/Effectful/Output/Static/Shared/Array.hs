@@ -15,7 +15,7 @@ module Effectful.Output.Static.Shared.Array
   , Array
   ) where
 
-import Control.Concurrent.MVar.Strict
+import Control.Concurrent.MVar.Strict qualified as S
 import Control.Monad.Primitive
 import Data.Kind
 import Data.Primitive.Array
@@ -31,7 +31,7 @@ data Output (o :: Type) :: Effect
 data OutputData o = OutputData !Int !(MutableArray RealWorld o)
 
 type instance DispatchOf (Output o) = Static NoSideEffects
-newtype instance StaticRep (Output o) = Output (MVar' (OutputData o))
+newtype instance StaticRep (Output o) = Output (S.MVar (OutputData o))
 
 -- | Run the 'Output' effect and return the final value along with the
 -- accumulated array.
@@ -46,7 +46,7 @@ output
   -> Eff es ()
 output !o = unsafeEff $ \es -> do
   Output v <- getEnv es
-  modifyMVar'_ v $ \(OutputData size arr0) -> do
+  S.modifyMVar_ v $ \(OutputData size arr0) -> do
     let len0 = sizeofMutableArray arr0
     arr <- case size `compare` len0 of
       GT -> error $ "size (" ++ show size ++ ") > len0 (" ++ show len0 ++ ")"
@@ -68,9 +68,9 @@ runOutputImpl
   -> Eff (Output o : es) a
   -> Eff es (a, acc)
 runOutputImpl f action = do
-  v <- unsafeEff_ $ newMVar' . OutputData 0 =<< newArray 0 undefinedValue
+  v <- unsafeEff_ $ S.newMVar . OutputData 0 =<< newArray 0 undefinedValue
   a <- evalStaticRep (Output v) action
-  acc <- unsafeEff_ $ f =<< readMVar' v
+  acc <- unsafeEff_ $ f =<< S.readMVar v
   pure (a, acc)
 
 undefinedValue :: HasCallStack => a

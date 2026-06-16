@@ -4,7 +4,7 @@ import Control.Exception.Lifted qualified as LE
 import Control.Exception.Safe qualified as Safe
 import Control.Monad
 import Control.Monad.Catch qualified as C
-import Data.IORef.Strict
+import Data.IORef.Strict qualified as S
 import Test.Tasty
 import Test.Tasty.HUnit
 import UnliftIO.Exception qualified as UE
@@ -51,7 +51,7 @@ test_stateM = runEff $ do
   U.assertEqual "correct a" "hi"    a
   U.assertEqual "correct b" "hi!!!" b
   where
-    getEffectReps = unsafeEff $ \es -> (.effects) . (.data_) <$> readIORef' es.storage
+    getEffectReps = unsafeEff $ \es -> (.effects) . (.data_) <$> S.readIORef es.storage
 
 test_deepStack :: Assertion
 test_deepStack = runEff $ do

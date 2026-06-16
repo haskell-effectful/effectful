@@ -233,6 +233,12 @@ jobs:
           allow-newer: fused-effects:*
           allow-newer: polysemy:*
 
+          source-repository-package
+            type:     git
+            location: https://github.com/arybczak/strict-mutable.git
+            tag:      a60db945dcc3283da2c5d45dadf423fadc2ff745
+            subdir:   strict-mutable-base
+
           package effectful-core
             ghc-options: -Werror
 

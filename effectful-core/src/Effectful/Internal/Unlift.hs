@@ -22,7 +22,7 @@ module Effectful.Internal.Unlift
   ) where
 
 import Control.Concurrent
-import Control.Concurrent.MVar.Strict
+import Control.Concurrent.MVar.Strict qualified as S
 import Control.Monad
 import Data.Coerce
 import Data.IntMap.Strict qualified as IM
@@ -163,10 +163,10 @@ ephemeralConcLimitedUnlift es0 uses k = do
   -- use. This can't be done from inside the callback as the environment might
   -- have already changed by then.
   esTemplate <- cloneEnv es0
-  mvUses <- newMVar' uses
+  mvUses <- S.newMVar uses
   let getEs = myThreadId >>= \case
         tid | tid0 == tid -> pure es0
-        _ -> modifyMVar' mvUses $ \case
+        _ -> S.modifyMVar mvUses $ \case
           0 -> error
              $ "Number of permitted calls (" ++ show uses ++ ") to the unlifting "
             ++ "function in other threads was exceeded. Please increase the limit "
@@ -217,18 +217,18 @@ persistentConcUnlift es0 cleanUp threads k = do
   -- use. This can't be done from inside the callback as the environment might
   -- have already changed by then.
   esTemplate <- cloneEnv es0
-  mvEntries <- newMVar' $ ThreadEntries threads IM.empty
+  mvEntries <- S.newMVar $ ThreadEntries threads IM.empty
   let getEs = myThreadId >>= \case
         tid | tid0 == tid -> pure es0
         tid -> do
-          te0 <- readMVar' mvEntries
+          te0 <- S.readMVar mvEntries
           let wkTid = weakThreadId tid
           case wkTid `IM.lookup` te0.entries of
             Just wkEs -> getWkTidEnv wkEs
             -- If the environment is not in the map, there is no point checking
-            -- again within modifyMVar' below, because this is the only thread
+            -- again within modifyMVar below, because this is the only thread
             -- that can put it there.
-            Nothing -> modifyMVar' mvEntries $ \te -> case te.capacity of
+            Nothing -> S.modifyMVar mvEntries $ \te -> case te.capacity of
               0 -> noCapacityError threads
               1 -> do
                 wkTidEs <- mkWeakThreadIdEnv tid wkTid esTemplate mvEntries cleanUp
@@ -264,13 +264,13 @@ persistentConcSingleUnlift es0 k = do
   -- by then.
   es <- cloneEnv es0
   -- GHC never labels threads as 0.
-  mvWeakTid <- newMVar' 0
+  mvWeakTid <- S.newMVar 0
   let getEs = myThreadId >>= \case
         tid | tid0 == tid -> pure es0
         tid -> do
           let wkTid = weakThreadId tid
-          readMVar' mvWeakTid >>= \case
-            0 -> modifyMVar' mvWeakTid $ \case
+          S.readMVar mvWeakTid >>= \case
+            0 -> S.modifyMVar mvWeakTid $ \case
               0 -> pure (wkTid, es)
               _ -> noCapacityError 1
             v | v == wkTid -> pure es
@@ -304,18 +304,18 @@ persistentConcUnlifts es0 les0 cleanUp threads k = do
   storageTemplate <- cloneStorage es0.storage
   esTemplate <- replaceStorage es0 storageTemplate
   lesTemplate <- replaceStorage les0 storageTemplate
-  mvEntries <- newMVar' $ ThreadEntries threads IM.empty
+  mvEntries <- S.newMVar $ ThreadEntries threads IM.empty
   let getEsLes = myThreadId >>= \case
         tid | tid0 == tid -> pure (es0, les0)
         tid -> do
-          te0 <- readMVar' mvEntries
+          te0 <- S.readMVar mvEntries
           let wkTid = weakThreadId tid
           case wkTid `IM.lookup` te0.entries of
             Just wkEsLes -> getWkTidEnv wkEsLes
             -- If the environments are not in the map, there is no point
-            -- checking again within modifyMVar' below, because this is the only
+            -- checking again within modifyMVar below, because this is the only
             -- thread that can put them there.
-            Nothing -> modifyMVar' mvEntries $ \te -> case te.capacity of
+            Nothing -> S.modifyMVar mvEntries $ \te -> case te.capacity of
               0 -> noCapacityError threads
               1 -> do
                 wkTidEsLes <- mkWeakThreadIdEnv tid wkTid (esTemplate, lesTemplate) mvEntries cleanUp
@@ -360,13 +360,13 @@ persistentConcSingleUnlifts es0 les0 k = do
   es <- replaceStorage es0 storage
   les <- replaceStorage les0 storage
   -- GHC never labels threads as 0.
-  mvWeakTid <- newMVar' 0
+  mvWeakTid <- S.newMVar 0
   let getEsLes = myThreadId >>= \case
         tid | tid0 == tid -> pure (es0, les0)
         tid -> do
           let wkTid = weakThreadId tid
-          readMVar' mvWeakTid >>= \case
-            0 -> modifyMVar' mvWeakTid $ \case
+          S.readMVar mvWeakTid >>= \case
+            0 -> S.modifyMVar mvWeakTid $ \case
               0 -> pure (wkTid, (es, les))
               _ -> noCapacityError 1
             v | v == wkTid -> pure (es, les)
@@ -398,7 +398,7 @@ mkWeakThreadIdEnv
   :: ThreadId
   -> Int
   -> a
-  -> MVar' (ThreadEntries a)
+  -> S.MVar (ThreadEntries a)
   -> Bool
   -> IO (Weak a)
 mkWeakThreadIdEnv (ThreadId t#) wkTid es v = \case
@@ -409,7 +409,7 @@ mkWeakThreadIdEnv (ThreadId t#) wkTid es v = \case
     case mkWeakNoFinalizer# t# es s0 of
       (# s1, w #) -> (# s1, Weak w #)
   where
-    IO finalizer = modifyMVar'_ v $ \te -> do
+    IO finalizer = S.modifyMVar_ v $ \te -> do
       pure ThreadEntries
         { capacity = case te.capacity of
             -- If the template copy of the environment hasn't been consumed

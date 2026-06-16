@@ -47,7 +47,7 @@ module Effectful.State.Static.Shared
   , modifyM
   ) where
 
-import Control.Concurrent.MVar.Strict
+import Control.Concurrent.MVar.Strict qualified as S
 import Data.Kind
 
 import Effectful
@@ -58,55 +58,55 @@ import Effectful.Dispatch.Static.Primitive
 data State (s :: Type) :: Effect
 
 type instance DispatchOf (State s) = Static NoSideEffects
-newtype instance StaticRep (State s) = State (MVar' s)
+newtype instance StaticRep (State s) = State (S.MVar s)
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value along with the final state.
 runState :: HasCallStack => s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = do
-  v <- unsafeEff_ $ newMVar' s
+  v <- unsafeEff_ $ S.newMVar s
   a <- evalStaticRep (State v) m
-  (a, ) <$> unsafeEff_ (readMVar' v)
+  (a, ) <$> unsafeEff_ (S.readMVar v)
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- value, discarding the final state.
 evalState :: HasCallStack => s -> Eff (State s : es) a -> Eff es a
 evalState s m = do
-  v <- unsafeEff_ $ newMVar' s
+  v <- unsafeEff_ $ S.newMVar s
   evalStaticRep (State v) m
 
 -- | Run the 'State' effect with the given initial state and return the final
 -- state, discarding the final value.
 execState :: HasCallStack => s -> Eff (State s : es) a -> Eff es s
 execState s m = do
-  v <- unsafeEff_ $ newMVar' s
+  v <- unsafeEff_ $ S.newMVar s
   _ <- evalStaticRep (State v) m
-  unsafeEff_ $ readMVar' v
+  unsafeEff_ $ S.readMVar v
 
--- | Run the 'State' effect with the given initial state 'MVar'' and return the
+-- | Run the 'State' effect with the given initial state 'S.MVar' and return the
 -- final value along with the final state.
-runStateMVar :: HasCallStack => MVar' s -> Eff (State s : es) a -> Eff es (a, s)
+runStateMVar :: HasCallStack => S.MVar s -> Eff (State s : es) a -> Eff es (a, s)
 runStateMVar v m = do
   a <- evalStaticRep (State v) m
-  (a, ) <$> unsafeEff_ (readMVar' v)
+  (a, ) <$> unsafeEff_ (S.readMVar v)
 
--- | Run the 'State' effect with the given initial state 'MVar'' and return the
+-- | Run the 'State' effect with the given initial state 'S.MVar' and return the
 -- final value, discarding the final state.
-evalStateMVar :: HasCallStack => MVar' s -> Eff (State s : es) a -> Eff es a
+evalStateMVar :: HasCallStack => S.MVar s -> Eff (State s : es) a -> Eff es a
 evalStateMVar v = evalStaticRep (State v)
 
--- | Run the 'State' effect with the given initial state 'MVar'' and return the
+-- | Run the 'State' effect with the given initial state 'S.MVar' and return the
 -- final state, discarding the final value.
-execStateMVar :: HasCallStack => MVar' s -> Eff (State s : es) a -> Eff es s
+execStateMVar :: HasCallStack => S.MVar s -> Eff (State s : es) a -> Eff es s
 execStateMVar v m = do
   _ <- evalStaticRep (State v) m
-  unsafeEff_ $ readMVar' v
+  unsafeEff_ $ S.readMVar v
 
 -- | Fetch the current value of the state.
 get :: (HasCallStack, State s :> es) => Eff es s
 get = unsafeEff $ \es -> do
   State v <- getEnv es
-  readMVar' v
+  S.readMVar v
 
 -- | Get a function of the current state.
 --
@@ -118,7 +118,7 @@ gets f = f <$> get
 put :: (HasCallStack, State s :> es) => s -> Eff es ()
 put s = unsafeEff $ \es -> do
   State v <- getEnv es
-  modifyMVar'_ v $ \_ -> pure s
+  S.modifyMVar_ v $ \_ -> pure s
 
 -- | Apply the function to the current state and return a value.
 --
@@ -126,7 +126,7 @@ put s = unsafeEff $ \es -> do
 state :: (HasCallStack, State s :> es) => (s -> (a, s)) -> Eff es a
 state f = unsafeEff $ \es -> do
   State v <- getEnv es
-  modifyMVar' v $ \s0 -> let (a, s) = f s0 in pure (s, a)
+  S.modifyMVar v $ \s0 -> let (a, s) = f s0 in pure (s, a)
 
 -- | Apply the function to the current state.
 --
@@ -142,7 +142,7 @@ modify f = state (\s -> ((), f s))
 stateM :: (HasCallStack, State s :> es) => (s -> Eff es (a, s)) -> Eff es a
 stateM f = unsafeEff $ \es -> do
   State v <- getEnv es
-  modifyMVar' v $ \s0 -> do
+  S.modifyMVar v $ \s0 -> do
     (a, s) <- unEff (f s0) es
     pure (s, a)
 

@@ -27,7 +27,7 @@ module Effectful.Writer.Static.Shared
   , listens
   ) where
 
-import Control.Concurrent.MVar.Strict
+import Control.Concurrent.MVar.Strict qualified as S
 import Control.Exception (onException, uninterruptibleMask)
 import Data.Kind
 
@@ -39,29 +39,29 @@ import Effectful.Dispatch.Static.Primitive
 data Writer (w :: Type) :: Effect
 
 type instance DispatchOf (Writer w) = Static NoSideEffects
-newtype instance StaticRep (Writer w) = Writer (MVar' w)
+newtype instance StaticRep (Writer w) = Writer (S.MVar w)
 
 -- | Run a 'Writer' effect and return the final value along with the final
 -- output.
 runWriter :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
-  v <- unsafeEff_ $ newMVar' mempty
+  v <- unsafeEff_ $ S.newMVar mempty
   a <- evalStaticRep (Writer v) m
-  (a, ) <$> unsafeEff_ (readMVar' v)
+  (a, ) <$> unsafeEff_ (S.readMVar v)
 
 -- | Run a 'Writer' effect and return the final output, discarding the final
 -- value.
 execWriter :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
-  v <- unsafeEff_ $ newMVar' mempty
+  v <- unsafeEff_ $ S.newMVar mempty
   _ <- evalStaticRep (Writer v) m
-  unsafeEff_ $ readMVar' v
+  unsafeEff_ $ S.readMVar v
 
 -- | Append the given output to the overall output of the 'Writer'.
 tell :: (HasCallStack, Writer w :> es, Monoid w) => w -> Eff es ()
 tell w1 = unsafeEff $ \es -> do
   Writer v <- getEnv es
-  modifyMVar'_ v $ \w0 -> let w = w0 <> w1 in pure w
+  S.modifyMVar_ v $ \w0 -> pure (w0 <> w1)
 
 -- | Execute an action and append its output to the overall output of the
 -- 'Writer'.
@@ -108,7 +108,7 @@ listen m = unsafeEff $ \es -> do
   -- might block and if an async exception is received while waiting, w1 will be
   -- lost.
   uninterruptibleMask $ \unmask -> do
-    v1 <- newMVar' mempty
+    v1 <- S.newMVar mempty
     -- Replace thread local MVar with a fresh one for isolated listening.
     v0 <- stateEnv es $ \(Writer v) -> (v, Writer v1)
     a <- unmask (unEff m es) `onException` merge es v0 v1
@@ -118,8 +118,8 @@ listen m = unsafeEff $ \es -> do
     -- exception was received while listening, merge results recorded so far.
     merge es v0 v1 = do
       putEnv es $ Writer v0
-      w1 <- readMVar' v1
-      modifyMVar'_ v0 $ \w0 -> let w = w0 <> w1 in pure w
+      w1 <- S.readMVar v1
+      S.modifyMVar_ v0 $ \w0 -> pure (w0 <> w1)
       pure w1
 
 -- | Execute an action and append its output to the overall output of the

@@ -363,7 +363,6 @@ consEnv e f (Env offset refs0 storage) = do
   writePrimArray mrefs 0 ref
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage
-{-# NOINLINE consEnv #-}
 
 -- | Shrink the environment by one data type.
 --
@@ -377,7 +376,6 @@ unconsEnv (Env offset refs storage) = do
   when (offset /= 0) $ do
     error $ "offset (" ++ show offset ++ ") /= 0"
   deleteEffect storage (indexPrimArray refs 0)
-{-# NOINLINE unconsEnv #-}
 
 ----------------------------------------
 
@@ -400,7 +398,6 @@ replaceEnv e f (Env offset refs0 storage) = do
   writePrimArray mrefs (reifyIndex @e @es) ref
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage
-{-# NOINLINE replaceEnv #-}
 
 -- | Remove a reference to the replaced effect.
 --
@@ -414,7 +411,6 @@ unreplaceEnv (Env offset refs storage) = do
   when (offset /= 0) $ do
     error $ "offset (" ++ show offset ++ ") /= 0"
   deleteEffect storage $ indexPrimArray refs (reifyIndex @e @es)
-{-# NOINLINE unreplaceEnv #-}
 
 ----------------------------------------
 
@@ -427,7 +423,6 @@ subsumeEnv (Env offset refs0 storage) = do
   writePrimArray mrefs 0 $ indexPrimArray refs0 (offset + reifyIndex @e @es)
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage
-{-# NOINLINE subsumeEnv #-}
 
 ----------------------------------------
 
@@ -569,6 +564,7 @@ insertEffect storage e f = do
       writeIORef' storage $
         Storage (bumpVersion version) (StorageData (size + 1) vs es fs)
       pure $ Ref size version
+{-# NOINLINE insertEffect #-}
 
 -- | Given a reference to an effect from the top of the stack, delete it from
 -- the storage.
@@ -585,6 +581,7 @@ deleteEffect storage (Ref ref version) = do
   writeSmallArray es ref undefinedEffect
   writeSmallArray fs ref undefinedRelinker
   writeIORef' storage $ Storage currentVersion (StorageData (size - 1) vs es fs)
+{-# NOINLINE deleteEffect #-}
 
 -- | Relink the environment to use the new storage.
 relinkEnv :: IORef' Storage -> Env es -> IO (Env es)

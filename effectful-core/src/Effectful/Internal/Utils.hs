@@ -26,6 +26,7 @@ module Effectful.Internal.Utils
 
 import Control.Exception
 import Data.Primitive.ByteArray
+import Data.Word
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (Any, RealWorld)
 import GHC.Stack.Types (CallStack(..))
@@ -35,8 +36,11 @@ import Unsafe.Coerce (unsafeCoerce)
 import GHC.Conc.Sync (fromThreadId)
 #else
 import GHC.Exts (Addr#, ThreadId#, unsafeCoerce#)
-import Data.Word
 #endif
+
+-- Pretend to depend on containers to silence -Wunused-packages as containers
+-- dependency is needed for doctests.
+import Data.IntMap.Strict ()
 
 -- | Version of bracket with an INLINE pragma to work around
 -- https://gitlab.haskell.org/ghc/ghc/-/issues/22824.
@@ -51,14 +55,11 @@ inlineBracket before after action = mask $ \unmask -> do
 ----------------------------------------
 
 -- | Get an id of a thread that doesn't prevent its garbage collection.
---
--- /Note:/ on 32-bit platforms the id is truncated, but they are considered
--- irrelevant at this point.
-weakThreadId :: ThreadId -> Int
+weakThreadId :: ThreadId -> Word64
 #if MIN_VERSION_base(4,19,0)
-weakThreadId = fromIntegral . fromThreadId
+weakThreadId = fromThreadId
 #else
-weakThreadId (ThreadId t#) = fromIntegral $ rts_getThreadId (threadIdToAddr# t#)
+weakThreadId (ThreadId t#) = rts_getThreadId (threadIdToAddr# t#)
 
 foreign import ccall unsafe "rts_getThreadId"
   -- https://gitlab.haskell.org/ghc/ghc/-/merge_requests/6163

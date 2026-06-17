@@ -25,7 +25,7 @@ import Control.Concurrent
 import Control.Concurrent.MVar.Strict
 import Control.Monad
 import Data.Coerce
-import Data.IntMap.Strict qualified as IM
+import Data.Word
 import GHC.Conc.Sync (ThreadId(..))
 import GHC.Exts (mkWeak#, mkWeakNoFinalizer#)
 import GHC.Generics (Generic)
@@ -36,6 +36,7 @@ import System.Mem.Weak (deRefWeak)
 
 import Effectful.Internal.Env
 import Effectful.Internal.Utils
+import Effectful.Internal.Utils.Word64Map qualified as M
 
 ----------------------------------------
 -- Unlift strategies
@@ -217,13 +218,13 @@ persistentConcUnlift es0 cleanUp threads k = do
   -- use. This can't be done from inside the callback as the environment might
   -- have already changed by then.
   esTemplate <- cloneEnv es0
-  mvEntries <- newMVar' $ ThreadEntries threads IM.empty
+  mvEntries <- newMVar' $ ThreadEntries threads M.empty
   let getEs = myThreadId >>= \case
         tid | tid0 == tid -> pure es0
         tid -> do
           te0 <- readMVar' mvEntries
           let wkTid = weakThreadId tid
-          case wkTid `IM.lookup` te0.entries of
+          case wkTid `M.lookup` te0.entries of
             Just wkEs -> getWkTidEnv wkEs
             -- If the environment is not in the map, there is no point checking
             -- again within modifyMVar' below, because this is the only thread
@@ -234,7 +235,7 @@ persistentConcUnlift es0 cleanUp threads k = do
                 wkTidEs <- mkWeakThreadIdEnv tid wkTid esTemplate mvEntries cleanUp
                 let newEntries = ThreadEntries
                       { capacity = te.capacity - 1
-                      , entries  = IM.insert wkTid wkTidEs te.entries
+                      , entries  = M.insert wkTid wkTidEs te.entries
                       }
                 pure (newEntries, esTemplate)
               _ -> do
@@ -242,7 +243,7 @@ persistentConcUnlift es0 cleanUp threads k = do
                 wkTidEs <- mkWeakThreadIdEnv tid wkTid es mvEntries cleanUp
                 let newEntries = ThreadEntries
                       { capacity = te.capacity - 1
-                      , entries  = IM.insert wkTid wkTidEs te.entries
+                      , entries  = M.insert wkTid wkTidEs te.entries
                       }
                 pure (newEntries, es)
   k $ \action -> coerce action =<< getEs
@@ -304,13 +305,13 @@ persistentConcUnlifts es0 les0 cleanUp threads k = do
   storageTemplate <- cloneStorage es0.storage
   esTemplate <- replaceStorage es0 storageTemplate
   lesTemplate <- replaceStorage les0 storageTemplate
-  mvEntries <- newMVar' $ ThreadEntries threads IM.empty
+  mvEntries <- newMVar' $ ThreadEntries threads M.empty
   let getEsLes = myThreadId >>= \case
         tid | tid0 == tid -> pure (es0, les0)
         tid -> do
           te0 <- readMVar' mvEntries
           let wkTid = weakThreadId tid
-          case wkTid `IM.lookup` te0.entries of
+          case wkTid `M.lookup` te0.entries of
             Just wkEsLes -> getWkTidEnv wkEsLes
             -- If the environments are not in the map, there is no point
             -- checking again within modifyMVar' below, because this is the only
@@ -321,7 +322,7 @@ persistentConcUnlifts es0 les0 cleanUp threads k = do
                 wkTidEsLes <- mkWeakThreadIdEnv tid wkTid (esTemplate, lesTemplate) mvEntries cleanUp
                 let newEntries = ThreadEntries
                       { capacity = te.capacity - 1
-                      , entries  = IM.insert wkTid wkTidEsLes te.entries
+                      , entries  = M.insert wkTid wkTidEsLes te.entries
                       }
                 pure (newEntries, (esTemplate, lesTemplate))
               _ -> do
@@ -331,7 +332,7 @@ persistentConcUnlifts es0 les0 cleanUp threads k = do
                 wkTidEsLes <- mkWeakThreadIdEnv tid wkTid (es, les) mvEntries cleanUp
                 let newEntries = ThreadEntries
                       { capacity = te.capacity - 1
-                      , entries  = IM.insert wkTid wkTidEsLes te.entries
+                      , entries  = M.insert wkTid wkTidEsLes te.entries
                       }
                 pure (newEntries, (es, les))
   k (\action -> coerce action . fst =<< getEsLes)
@@ -391,12 +392,12 @@ getWkTidEnv wkTidEnv = deRefWeak wkTidEnv >>= \case
 
 data ThreadEntries a = ThreadEntries
   { capacity :: !Int
-  , entries  :: !(IM.IntMap (Weak a))
+  , entries  :: !(M.Word64Map (Weak a))
   }
 
 mkWeakThreadIdEnv
   :: ThreadId
-  -> Int
+  -> Word64
   -> a
   -> MVar' (ThreadEntries a)
   -> Bool
@@ -416,5 +417,5 @@ mkWeakThreadIdEnv (ThreadId t#) wkTid es v = \case
             -- yet, the capacity can be restored.
             0 -> 0
             n -> n + 1
-        , entries = IM.delete wkTid te.entries
+        , entries = M.delete wkTid te.entries
         }

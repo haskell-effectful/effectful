@@ -96,6 +96,7 @@ library
                      Effectful.Internal.Monad
                      Effectful.Internal.Unlift
                      Effectful.Internal.Utils
+                     Effectful.Internal.Utils.Word64Map
                      Effectful.Labeled
                      Effectful.Labeled.Error
                      Effectful.Labeled.Reader

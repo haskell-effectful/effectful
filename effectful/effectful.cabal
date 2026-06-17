@@ -154,6 +154,7 @@ test-suite test
                     , exceptions
                     , lifted-base
                     , primitive
+                    , random
                     , safe-exceptions
                     , strict-mutable-base
                     , tasty
@@ -178,6 +179,7 @@ test-suite test
                     TimeoutTests
                     UnliftTests
                     Utils
+                    Word64MapTests
 
 benchmark bench
     import:         language

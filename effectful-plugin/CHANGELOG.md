@@ -3,6 +3,8 @@
   quantified constraint is considered during candidate filtering.
 * Make sure that givens are produced only from effect rows headed by the
   promoted list constructor.
+* Inject `import Effectful ()` statement into modules the plugin runs in so that
+  `-Wunused-packages` doesn't flag the required `effectful-core` dependency.
 
 # effectful-plugin-2.1.0.0 (2026-04-02)
 * Drop support for GHC < 9.6.

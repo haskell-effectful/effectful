@@ -18,6 +18,7 @@ import GHC.Core.Type
 import GHC.Core.Unify
 import GHC.Driver.Env
 import GHC.Driver.Plugins
+import GHC.Hs
 import GHC.Tc.Instance.Class
 import GHC.Tc.Plugin
 import GHC.Tc.Types
@@ -110,6 +111,7 @@ plugin = defaultPlugin
     , tcPluginStop = tcPluginIO . pluginShutdownHook
 #endif
     }
+  , parsedResultAction = \_ _ result -> pure $ addEmptyEffectfulImport result
   , pluginRecompile = purePlugin
   }
 
@@ -238,6 +240,21 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
 
 ----------------------------------------
 -- Standalone helpers
+
+-- | Inject 'import Effectful ()' into modules the plugin runs in so that
+-- -Wunused-packages doesn't flag the required effectful-core dependency.
+addEmptyEffectfulImport :: ParsedResult -> ParsedResult
+addEmptyEffectfulImport result = result
+  { parsedResultModule = pm { hpm_module = addImport <$> hpm_module pm }
+  }
+  where
+    pm = parsedResultModule result
+
+    addImport hsMod = hsMod { hsmodImports = imp : hsmodImports hsMod }
+
+    imp = noLocA $ (simpleImportDecl $ mkModuleName "Effectful")
+      { ideclImportList = Just (Exactly, noLocA [])
+      }
 
 findMatchingInstances :: DynFlags -> Class -> [Type] -> TcPluginM ClsInstResult
 findMatchingInstances dflags cls args =

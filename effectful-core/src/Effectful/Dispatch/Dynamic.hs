@@ -1032,6 +1032,7 @@ localSeqLend
   -- ^ Continuation with the lent handler in scope.
   -> Eff es a
 localSeqLend (LocalEnv les) k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
   eles <- copyRefs @lentEs es les
   seqUnliftIO eles $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localSeqLend #-}
@@ -1050,6 +1051,7 @@ localLend
   -- ^ Continuation with the lent handler in scope.
   -> Eff es a
 localLend (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
   eles <- copyRefs @lentEs es les
   case strategy of
     SeqUnlift -> seqUnliftIO eles $ \unlift -> do
@@ -1071,6 +1073,7 @@ localSeqBorrow
   -- ^ Continuation with the borrowed handler in scope.
   -> Eff es a
 localSeqBorrow (LocalEnv les) k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
   ees <- copyRefs @borrowedEs les es
   seqUnliftIO ees $ \unlift -> (`unEff` es) $ k $ unsafeEff_ . unlift
 {-# INLINE localSeqBorrow #-}
@@ -1090,6 +1093,7 @@ localBorrow
   -- ^ Continuation with the borrowed handler in scope.
   -> Eff es a
 localBorrow (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
   ees <- copyRefs @borrowedEs les es
   case strategy of
     SeqUnlift -> seqUnliftIO ees $ \unlift -> do
@@ -1124,6 +1128,7 @@ localLendBorrow
   -- ^ Continuation with the lending and borrowing functions in scope.
   -> Eff es a
 localLendBorrow (LocalEnv les) strategy k = unsafeEff $ \es -> do
+  requireMatchingStorages es les
   eles <- copyRefs @lentEs es les
   ees <- copyRefs @borrowedEs les es
   case strategy of
@@ -1287,8 +1292,7 @@ copyRefs
   => Env srcEs
   -> Env destEs
   -> IO (Env (es ++ destEs))
-copyRefs src@(Env soffset srefs _) dest@(Env doffset drefs storage) = do
-  requireMatchingStorages src dest
+copyRefs (Env soffset srefs _) (Env doffset drefs storage) = do
   let es = reifyIndices @es @srcEs
       esSize = length es
       destSize = sizeofPrimArray drefs - doffset

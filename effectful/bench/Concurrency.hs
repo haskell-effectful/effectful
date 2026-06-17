@@ -9,22 +9,39 @@ import Criterion hiding (env)
 import Test.Tasty.Bench hiding (env)
 #endif
 
+import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Monad
 
 import Effectful
 import Effectful.Concurrent.Async qualified as A
+import Effectful.Concurrent.STM
 import Effectful.Dispatch.Dynamic
 import Utils
 
 concurrencyBenchmark :: Benchmark
 concurrencyBenchmark = bgroup "concurrency"
-  [ bgroup "shallow" $ map shallowBench [1, 10, 100]
-  , bgroup "deep" $ map deepBench [1, 10, 100]
+  [ bgroup "shallow" $
+    [ bench "MultiFork" $ nfAppIO (runShallow . testMultiFork) 1000
+    ] ++ map shallowBenchUnmask [1, 10, 100]
+  , bgroup "deep" $
+    [ bench "MultiFork" $ nfAppIO (runDeep . testMultiFork) 1000
+    ] ++ map deepBenchUnmask [1, 10, 100]
   ]
 
-shallowBench :: Int -> Benchmark
-shallowBench n = bgroup ("unmask " ++ show n ++ "x")
+testMultiFork :: IOE :> es => Int -> Eff es ()
+testMultiFork threads = runConcurrent $ do
+  v <- newTVarIO 0
+  withEffToIO (ConcUnlift Persistent $ Limited threads) $ \unlift -> do
+    replicateM_ threads . liftIO . forkIO . unlift . atomically $ modifyTVar' v (+1)
+  atomically $ do
+    acc <- readTVar v
+    when (acc < threads) retry
+
+----------------------------------------
+
+shallowBenchUnmask :: Int -> Benchmark
+shallowBenchUnmask n = bgroup ("unmask " ++ show n ++ "x")
   [ bench "async (IO)" $ nfAppIO (asyncBenchIO n) op
   , bench "async (Eff)" $ nfAppIO (runShallow . A.runConcurrent . asyncBench n) op
   , bench "Fork (localUnliftIO/withLiftMapIO)" $
@@ -35,8 +52,8 @@ shallowBench n = bgroup ("unmask " ++ show n ++ "x")
     nfAppIO (runShallow . runFork3 . forkBench n) op
   ]
 
-deepBench :: Int -> Benchmark
-deepBench n = bgroup ("unmask " ++ show n ++ "x")
+deepBenchUnmask :: Int -> Benchmark
+deepBenchUnmask n = bgroup ("unmask " ++ show n ++ "x")
   [ bench "async (Eff)" $ nfAppIO (runDeep . A.runConcurrent . asyncBench n) op
   , bench "Fork (localUnliftIO/withLiftMapIO)" $
     nfAppIO (runDeep . runFork1 . forkBench n) op

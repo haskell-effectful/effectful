@@ -14,6 +14,7 @@ import ReaderTests
 import StateTests
 import TimeoutTests
 import UnliftTests
+import Word64MapTests
 
 main :: IO ()
 main = defaultMain $ testGroup "effectful"
@@ -29,4 +30,5 @@ main = defaultMain $ testGroup "effectful"
   , stateTests
   , timeoutTests
   , unliftTests
+  , word64MapTests
   ]

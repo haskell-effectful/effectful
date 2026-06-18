@@ -2,7 +2,6 @@ branches:        master
 
 doctest:         <9.11
 doctest-skip:    effectful-plugin
-doctest-version: ^>=0.24
 
 tests:           True
 benchmarks:      True

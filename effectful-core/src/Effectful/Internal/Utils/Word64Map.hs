@@ -1,5 +1,6 @@
 {-# LANGUAGE Strict #-}
--- | A minimal, strict map keyed by 'Word64' values.
+-- | A minimal, strict map keyed by 'Word64' values (adaptation of
+-- 'Data.IntMap.Strict').
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.

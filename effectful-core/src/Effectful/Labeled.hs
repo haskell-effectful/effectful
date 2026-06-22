@@ -23,6 +23,10 @@ import Effectful.Dispatch.Static
 
 -- | Assign a label to an effect.
 --
+-- /Note:/ labeled effects are best used together with the
+-- [effectful-plugin](https://hackage.haskell.org/package/effectful-plugin)
+-- package, as it significantly improves their usability.
+--
 -- The constructor is for sending labeled operations of a dynamically dispatched
 -- effect to the handler:
 --
@@ -39,7 +43,6 @@ import Effectful.Dispatch.Static
 --     send $ Labeled @"x" X
 -- :}
 -- 333
---
 newtype Labeled (label :: k) (e :: Effect) :: Effect where
   -- | @since 2.4.0.0
   Labeled :: forall label e m a. e m a -> Labeled label e m a

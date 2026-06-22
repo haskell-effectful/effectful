@@ -8,6 +8,8 @@
 -- is inefficient. __This applies, in particular, to the standard list type__,
 -- which makes the 'Writer' effect pretty niche.
 --
+-- __If you just want to accumulate values, use "Effectful.Output.Static.Shared.Array" or "Effectful.Output.Static.Shared.List".__
+--
 -- /Note:/ while the 'Control.Monad.Trans.Writer.Strict.Writer' from the
 -- @transformers@ package includes additional operations
 -- 'Control.Monad.Trans.Writer.Strict.pass' and
@@ -61,7 +63,7 @@ execWriter m = do
 tell :: (HasCallStack, Writer w :> es, Monoid w) => w -> Eff es ()
 tell w1 = unsafeEff $ \es -> do
   Writer v <- getEnv es
-  modifyMVar'_ v $ \w0 -> let w = w0 <> w1 in pure w
+  modifyMVar'_ v $ \w0 -> pure (w0 <> w1)
 
 -- | Execute an action and append its output to the overall output of the
 -- 'Writer'.
@@ -119,7 +121,7 @@ listen m = unsafeEff $ \es -> do
     merge es v0 v1 = do
       putEnv es $ Writer v0
       w1 <- readMVar' v1
-      modifyMVar'_ v0 $ \w0 -> let w = w0 <> w1 in pure w
+      modifyMVar'_ v0 $ \w0 -> pure (w0 <> w1)
       pure w1
 
 -- | Execute an action and append its output to the overall output of the

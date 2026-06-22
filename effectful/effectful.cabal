@@ -117,16 +117,27 @@ library
     reexported-modules:    Effectful
                          , Effectful.Dispatch.Dynamic
                          , Effectful.Dispatch.Static
-                         , Effectful.Error.Static
                          , Effectful.Error.Dynamic
+                         , Effectful.Error.Static
                          , Effectful.Exception
                          , Effectful.Fail
+                         , Effectful.Input.Dynamic
+                         , Effectful.Input.Static
+                         , Effectful.Input.Static.Action
                          , Effectful.Labeled
                          , Effectful.Labeled.Error
+                         , Effectful.Labeled.Input
+                         , Effectful.Labeled.Output
                          , Effectful.Labeled.Reader
                          , Effectful.Labeled.State
                          , Effectful.Labeled.Writer
                          , Effectful.NonDet
+                         , Effectful.Output.Dynamic
+                         , Effectful.Output.Static.Action
+                         , Effectful.Output.Static.Local.Array
+                         , Effectful.Output.Static.Local.List
+                         , Effectful.Output.Static.Shared.Array
+                         , Effectful.Output.Static.Shared.List
                          , Effectful.Prim
                          , Effectful.Provider
                          , Effectful.Provider.List
@@ -171,8 +182,10 @@ test-suite test
                     EnvTests
                     EnvironmentTests
                     ErrorTests
+                    InputTests
                     LabeledTests
                     NonDetTests
+                    OutputTests
                     PrimTests
                     ReaderTests
                     StateTests

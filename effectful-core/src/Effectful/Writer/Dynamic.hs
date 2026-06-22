@@ -5,6 +5,8 @@
 -- t'Control.Monad.Writer.MonadWriter' instance for compatibility with existing
 -- code, it's recommended to use one of the statically dispatched variants,
 -- i.e. "Effectful.Writer.Static.Local" or "Effectful.Writer.Static.Shared".
+--
+-- __If you just want to accumulate values, use "Effectful.Output.Dynamic".__
 module Effectful.Writer.Dynamic
   ( -- * Effect
     Writer(..)

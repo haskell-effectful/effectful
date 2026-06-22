@@ -21,6 +21,7 @@ module Effectful.Labeled.Error
   , tryError
 
     -- * Re-exports
+  , Labeled(..)
   , E.HasCallStack
   , E.CallStack
   , E.getCallStack

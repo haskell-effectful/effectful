@@ -26,6 +26,9 @@ module Effectful.Labeled.State
   , modify
   , stateM
   , modifyM
+
+    -- * Re-exports
+  , Labeled(..)
   ) where
 
 import Effectful

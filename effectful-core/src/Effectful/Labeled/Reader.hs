@@ -13,6 +13,9 @@ module Effectful.Labeled.Reader
   , ask
   , asks
   , local
+
+    -- * Re-exports
+  , Labeled(..)
   ) where
 
 import Effectful

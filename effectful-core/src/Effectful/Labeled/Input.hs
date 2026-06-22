@@ -13,6 +13,9 @@ module Effectful.Labeled.Input
     -- ** Operations
   , input
   , inputs
+
+    -- * Re-exports
+  , Labeled(..)
   ) where
 
 import Effectful

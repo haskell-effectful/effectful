@@ -20,6 +20,9 @@ module Effectful.Labeled.Writer
   , tell
   , listen
   , listens
+
+    -- * Re-exports
+  , Labeled(..)
   ) where
 
 import Effectful

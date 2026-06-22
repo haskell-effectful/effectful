@@ -17,6 +17,7 @@ module Effectful.Labeled.Output
   , output
 
     -- * Re-exports
+  , Labeled(..)
   , Array
   ) where
 

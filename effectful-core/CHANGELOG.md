@@ -7,6 +7,7 @@
   `Effectful.Output.Static.Local.List`, `Effectful.Output.Static.Shared.Array`,
   `Effectful.Output.Static.Shared.List` and `Effectful.Labeled.Output`) for
   accumulation of values.
+* Re-export `Labeled(..)` from all `Effectful.Labeled.*` modules.
 * Drop support for GHC < 9.6.
 * Add definitions of `rethrowM` to `MonadThrow` and `catchNoPropagate` to
   `MonadCatch` instances for `Eff` when appropriate (`exceptions` >= 0.10.11).

@@ -12,7 +12,7 @@ synopsis:           An easy to use, performant extensible effects library.
 description:
   An easy to use, performant extensible effects library with seamless
   integration with the existing Haskell ecosystem.
-  .
+
   This library provides core definitions with a minimal dependency
   footprint. See the @<https://hackage.haskell.org/package/effectful effectful>@
   package for the "batteries-included" variant.

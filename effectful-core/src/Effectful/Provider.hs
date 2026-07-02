@@ -1,4 +1,3 @@
-{-# LANGUAGE ImplicitParams #-}
 -- | Turn an effect handler into an effectful operation.
 --
 -- @since 2.3.0.0
@@ -7,7 +6,7 @@ module Effectful.Provider
     -- $example
 
     -- * Effect
-    Provider
+    Provider(..)
   , Provider_
 
     -- ** Handlers
@@ -21,18 +20,13 @@ module Effectful.Provider
   , provideWith_
   ) where
 
-import Control.Monad
 import Data.Coerce
 import Data.Functor.Identity
 import Data.Kind (Type)
-import Data.Primitive.PrimArray
 import GHC.Stack
 
 import Effectful
-import Effectful.Dispatch.Static
-import Effectful.Dispatch.Static.Primitive
-import Effectful.Internal.Env (Env(..))
-import Effectful.Internal.Utils
+import Effectful.Dispatch.Dynamic
 
 -- $example
 --
@@ -110,61 +104,83 @@ import Effectful.Internal.Utils
 --     $ action
 -- :}
 -- fromList [("in.txt",["hi","there"]),("out.txt",["good","bye"])]
+--
+-- Moreover, operations of the 'Provider' effect can be intercepted with
+-- 'interpose', e.g. to adjust the input of the effect handler:
+--
+-- >>> :{
+--   adjustPaths
+--     :: Provider_ Write FilePath :> es
+--     => Eff es a
+--     -> Eff es a
+--   adjustPaths = interpose @(Provider_ Write FilePath) $ \env -> \case
+--     ProvideWith fp action -> do
+--       passthrough env $ ProvideWith ("logs/" ++ fp) action
+-- :}
+--
+-- >>> :{
+--   runEff
+--     . runProvider_ runWriteIO
+--     . adjustPaths
+--     $ action
+-- :}
+-- logs/in.txt: hi
+-- logs/in.txt: there
+-- logs/out.txt: good
+-- logs/out.txt: bye
 
 -- | Provide a way to run a handler of @e@ with a given @input@.
 --
 -- /Note:/ @f@ can be used to alter the return type of the effect handler. If
 -- that's unnecessary, use 'Provider_'.
-data Provider (e :: Effect) (input :: Type) (f :: Type -> Type) :: Effect
+data Provider (e :: Effect) (input :: Type) (f :: Type -> Type) :: Effect where
+  -- | Run the effect handler with a given input.
+  --
+  -- @since 2.7.0.0
+  ProvideWith :: input -> Eff (e : es) a -> Provider e input f (Eff es) (f a)
 
 -- | A restricted variant of 'Provider' with unchanged return type of the effect
 -- handler.
 type Provider_ e input = Provider e input Identity
 
-type instance DispatchOf (Provider e input f) = Static NoSideEffects
-
--- | Wrapper to prevent a space leak on reconstruction of 'Provider' in
--- 'relinkProvider' (see https://gitlab.haskell.org/ghc/ghc/-/issues/25520).
-newtype ProviderImpl input f e es where
-  ProviderImpl
-    :: (forall r. HasCallStack => input -> Eff (e : es) r -> Eff es (f r))
-    -> ProviderImpl input f e es
-
-data instance StaticRep (Provider e input f) where
-  Provider
-    :: !(Env handlerEs)
-    -> !(ProviderImpl input f e handlerEs)
-    -> StaticRep (Provider e input f)
+type instance DispatchOf (Provider e input f) = Dynamic
 
 -- | Run the 'Provider' effect with a given effect handler.
 runProvider
-  :: HasCallStack
+  :: forall e input f es a
+   . HasCallStack
   => (forall r. HasCallStack => input -> Eff (e : es) r -> Eff es (f r))
   -- ^ The effect handler.
   -> Eff (Provider e input f : es) a
   -> Eff es a
-runProvider provider action = runProviderImpl action $
-  ProviderImpl (let ?callStack = thawCallStack ?callStack in provider)
+runProvider provider = interpret $ \env -> \case
+  ProvideWith input action -> provider input $ do
+    localSeqUnlift env $ \unlift -> do
+      localSeqLend @'[e] env $ \lend -> do
+        unlift . lend $ action
 
 -- | Run the 'Provider' effect with a given effect handler that doesn't change
 -- its return type.
 runProvider_
-  :: HasCallStack
+  :: forall e input es a
+   . HasCallStack
   => (forall r. HasCallStack => input -> Eff (e : es) r -> Eff es r)
   -- ^ The effect handler.
   -> Eff (Provider_ e input : es) a
   -> Eff es a
-runProvider_ provider action = runProviderImpl action $
-  ProviderImpl $ let ?callStack = thawCallStack ?callStack
-                 in \input -> coerce . provider input
+runProvider_ provider = interpret $ \env -> \case
+  ProvideWith input action -> provider input $ do
+    localSeqUnlift env $ \unlift -> do
+      localSeqLend @'[e] env $ \lend -> do
+        unlift . lend $ coerce action
 
 -- | Run the effect handler.
 provide :: (HasCallStack, Provider e () f :> es) => Eff (e : es) a -> Eff es (f a)
-provide = provideWith ()
+provide = send . ProvideWith ()
 
 -- | Run the effect handler with unchanged return type.
 provide_ :: (HasCallStack, Provider_ e () :> es) => Eff (e : es) a -> Eff es a
-provide_ = provideWith_ ()
+provide_ = dropIdentity . send . ProvideWith ()
 
 -- | Run the effect handler with a given input.
 provideWith
@@ -173,13 +189,7 @@ provideWith
   -- ^ The input to the effect handler.
   -> Eff (e : es) a
   -> Eff es (f a)
-provideWith input action = unsafeEff $ \es -> do
-  Provider handlerEs (ProviderImpl handler) <- getEnv es
-  (`unEff` handlerEs)
-    -- Corresponds to thawCallStack in runProvider.
-    . withFrozenCallStack handler input
-    . unsafeEff $ \eProviderEs -> do
-    unEff action =<< copyRef eProviderEs es
+provideWith input = send . ProvideWith input
 
 -- | Run the effect handler that doesn't change its return type with a given
 -- input.
@@ -189,42 +199,10 @@ provideWith_
   -- ^ The input to the effect handler.
   -> Eff (e : es) a
   -> Eff es a
-provideWith_ input = adapt . provideWith input
-  where
-    adapt :: Eff es (Identity a) -> Eff es a
-    adapt = coerce
+provideWith_ input = dropIdentity . send . ProvideWith input
 
 ----------------------------------------
 -- Helpers
 
-runProviderImpl
-  :: HasCallStack
-  => Eff (Provider e input f : es) a
-  -> ProviderImpl input f e es
-  -> Eff es a
-runProviderImpl action providerImpl = unsafeEff $ \es -> do
-  inlineBracket
-    (consEnv (Provider es providerImpl) relinkProvider es)
-    unconsEnv
-    (unEff action)
-{-# INLINE runProviderImpl #-}
-
-relinkProvider :: Relinker StaticRep (Provider e input f)
-relinkProvider = Relinker $ \relink (Provider handlerEs run) -> do
-  newHandlerEs <- relink handlerEs
-  pure $ Provider newHandlerEs run
-
-copyRef
-  :: HasCallStack
-  => Env (e : handlerEs)
-  -> Env es
-  -> IO (Env (e : es))
-copyRef (Env hoffset hrefs hstorage) (Env offset refs0 storage) = do
-  when (hstorage /= storage) $ do
-    error "storages do not match"
-  let size = sizeofPrimArray refs0 - offset
-  mrefs <- newPrimArray (size + 1)
-  writePrimArray mrefs 0 $ indexPrimArray hrefs hoffset
-  copyPrimArray mrefs 1 refs0 offset size
-  refs <- unsafeFreezePrimArray mrefs
-  pure $ Env 0 refs storage
+dropIdentity :: Eff es (Identity a) -> Eff es a
+dropIdentity = coerce

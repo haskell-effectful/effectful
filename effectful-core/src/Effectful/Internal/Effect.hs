@@ -13,7 +13,6 @@ module Effectful.Internal.Effect
   , KnownPrefix(..)
   , IsUnknownSuffixOf
   , type (++)
-  , KnownEffects(..)
 
   -- * Re-exports
   , Type
@@ -134,16 +133,3 @@ type family (xs :: [Effect]) ++ (ys :: [Effect]) :: [Effect] where
   (x : xs) ++ ys = x : xs ++ ys
 
 infixr 5 ++
-
--- | Calculate length of a list of known effects.
-class KnownEffects (es :: [Effect]) where
-  knownEffectsLength :: Int
-  knownEffectsLength =
-  -- Don't show "minimal complete definition" in haddock.
-    error "knownEffectsLength"
-
-instance KnownEffects es => KnownEffects (e : es) where
-  knownEffectsLength = 1 + knownEffectsLength @es
-
-instance KnownEffects '[] where
-  knownEffectsLength = 0

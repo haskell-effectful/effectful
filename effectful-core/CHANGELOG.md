@@ -7,6 +7,10 @@
   `Effectful.Output.Static.Local.List`, `Effectful.Output.Static.Shared.Array`,
   `Effectful.Output.Static.Shared.List` and `Effectful.Labeled.Output`) for
   accumulation of values.
+* Make the `Provider` and `ProviderList` effects dynamically dispatched and
+  export their operations.
+* Add `Effectful.Labeled.Provider` and `Effectful.Labeled.Provider.List` with
+  labeled versions of the `Provider` and `ProviderList` effects.
 * Re-export `Labeled(..)` from all `Effectful.Labeled.*` modules.
 * Drop support for GHC < 9.6.
 * Add definitions of `rethrowM` to `MonadThrow` and `catchNoPropagate` to
@@ -36,6 +40,8 @@
 * **Breaking changes**:
   - Remove the `handlerEs` type parameter of `LocalEnv` as it was only needed
     to support `SharedSuffix` constraints.
+  - Remove the `KnownEffects` class as it's no longer used; handlers of the
+    `ProviderList` effect now require the `KnownSubset` constraint instead.
 * **Bugfixes**:
   - `restoreStorageData` no longer shrinks the capacity of the storage, which
     could result in out of bounds reads when out of date references to the

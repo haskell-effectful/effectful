@@ -104,6 +104,8 @@ library
                      Effectful.Labeled.Error
                      Effectful.Labeled.Input
                      Effectful.Labeled.Output
+                     Effectful.Labeled.Provider
+                     Effectful.Labeled.Provider.List
                      Effectful.Labeled.Reader
                      Effectful.Labeled.State
                      Effectful.Labeled.Writer

@@ -1,4 +1,8 @@
 # effectful-2.7.0.0 (2026-??-??)
+* Add `OsPath` variants of the `FilePath` based APIs
+  (`Effectful.FileSystem.OsPath` for `System.Directory.OsPath` and
+  `Effectful.FileSystem.File.OsPath` for `System.File.OsPath` from the
+  `file-io` package).
 * Add the `Input` effect (`Effectful.Input.Dynamic`, `Effectful.Input.Static`,
   `Effectful.Input.Static.Action` and `Effectful.Labeled.Input`) for access to
   values.

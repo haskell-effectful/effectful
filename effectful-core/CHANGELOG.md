@@ -15,6 +15,18 @@
 * Deprecate `withLiftMap` as its misuse in a multithreaded environment results
   in undefined behavior that cannot be detected at runtime. Use
   `localLiftUnlift` with an appropriate `UnliftStrategy` instead.
+* Deprecate `stateM` and `modifyM` from `Effectful.State.Static.Local`,
+  `Effectful.State.Static.Shared`, `Effectful.State.Dynamic` and
+  `Effectful.Labeled.State` as well as the `StateM` operation of the dynamic
+  `State` effect. The shared variant pins the state to a lock-based
+  implementation, yet deadlocks when operations of the same `State` effect are
+  used within the callback, while the local variant silently discards state
+  modifications made this way. If you need atomic effectful updates of shared
+  state, use an explicit `MVar'`.
+* Deprecate `runStateMVar`, `evalStateMVar` and `execStateMVar` from
+  `Effectful.State.Static.Shared` so that the internal representation of the
+  shared `State` effect is not tied to an `MVar'`. If you need access to the
+  state from outside of the effect, manage an explicit `MVar'` yourself.
 * Tighten pre-requisites for `unconsEnv` and `unreplaceEnv`.
 * Add `localLendBorrow` to `Effectful.Dispatch.Dynamic`.
 * Require `primitive` >= 0.9.0.0.

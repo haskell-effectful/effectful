@@ -1,4 +1,7 @@
 {-# LANGUAGE CPP #-}
+-- The deprecated stateM and StateM need to be benchmarked until they're
+-- removed.
+{-# OPTIONS_GHC -Wno-deprecations #-}
 module Countdown where
 
 import Control.Monad.ST

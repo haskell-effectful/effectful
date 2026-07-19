@@ -1,3 +1,5 @@
+-- The deprecated stateM needs to be tested until it's removed.
+{-# OPTIONS_GHC -Wno-deprecations #-}
 module StateTests (stateTests) where
 
 import Control.Exception.Lifted qualified as LE

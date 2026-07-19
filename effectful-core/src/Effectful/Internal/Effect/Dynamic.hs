@@ -58,6 +58,8 @@ data State s :: Effect where
   State  :: (s ->   (a, s)) -> State s m a
   StateM :: (s -> m (a, s)) -> State s m a
 
+{-# DEPRECATED StateM "Use a combination of Get and Put instead." #-}
+
 type instance DispatchOf (State s) = Dynamic
 
 -- | Instance included for compatibility with existing code.

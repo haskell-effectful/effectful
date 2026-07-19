@@ -137,3 +137,6 @@ modifyM
   => (s -> Eff es s) -- ^ The monadic function to modify the state.
   -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)
+
+{-# DEPRECATED stateM, modifyM
+  "State modifications made via operations of the same State effect within the callback are discarded. Use a combination of get and put instead." #-}

@@ -75,8 +75,8 @@ runProviderList
 runProviderList providerList action = runProviderListImpl action $
   ProviderListImpl (let ?callStack = thawCallStack ?callStack in providerList)
 
--- | Run the 'Provider' effect with a given handler that doesn't change its
--- return type.
+-- | Run the 'ProviderList' effect with a given handler that doesn't change
+-- its return type.
 runProviderList_
   :: (HasCallStack, KnownEffects providedEs)
   => (forall r. HasCallStack => input -> Eff (providedEs ++ es) r -> Eff es r)

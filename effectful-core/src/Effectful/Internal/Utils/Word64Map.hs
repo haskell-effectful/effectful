@@ -10,6 +10,7 @@ module Effectful.Internal.Utils.Word64Map
   , lookup
   , insert
   , delete
+  , updateLookupWithKey
   ) where
 
 import Data.Bits
@@ -47,7 +48,7 @@ lookup k = go
 -- | Insert a new key/value pair in the map. If the key is already present, the
 -- associated value is replaced with the supplied one.
 --
--- The value is evaluated to WHNF before being inserted into the map.
+-- The value is evaluated to WHNF when it is inserted into the map.
 insert :: Word64 -> a -> Word64Map a -> Word64Map a
 insert k x = go
   where
@@ -73,6 +74,28 @@ delete k = go
       | k == ky     = Nil
       | otherwise   = t
     go Nil = Nil
+
+-- | Look up and update the value at a key in the map. The function returns the
+-- original value, if it exists, and the updated map.
+--
+-- The updated value is evaluated to WHNF when it is inserted into the map.
+updateLookupWithKey
+  :: (Word64 -> a -> Maybe a)
+  -> Word64
+  -> Word64Map a
+  -> (Maybe a, Word64Map a)
+updateLookupWithKey f k = go
+  where
+    go t@(Bin p l r)
+      | nomatch k p = (Nothing, t)
+      | left k p    = let (found, l') = go l in (found, binCheckLeft p l' r)
+      | otherwise   = let (found, r') = go r in (found, binCheckRight p l r')
+    go t@(Tip ky y)
+      | k == ky     = case f ky y of
+          Just y' -> (Just y, Tip ky y')
+          Nothing -> (Just y, Nil)
+      | otherwise   = (Nothing, t)
+    go Nil = (Nothing, Nil)
 
 ----------------------------------------
 -- Internal helpers

@@ -14,6 +14,7 @@ word64MapTests = testGroup "Word64Map"
   [ testCase "Matches Data.Map over a mix of operations" test_differential
   , testCase "Distinguishes keys colliding in the low 32 bits" test_truncation
   , testCase "Handles boundary keys" test_boundary
+  , testCase "updateLookupWithKey returns the original value" test_updateLookup
   ]
 
 -- | Run a large mix of inserts and deletes through both 'WM.Word64Map' and
@@ -29,6 +30,35 @@ test_differential = do
         | ins       = (WM.insert k v wm, M.insert k v m)
         | otherwise = (WM.delete k   wm, M.delete k   m)
       (wmFinal, mFinal) = L.foldl' step (WM.empty, M.empty) ops
+  case [ k | (_, k, _) <- ops, WM.lookup k wmFinal /= M.lookup k mFinal ] of
+    []      -> pure ()
+    (k : _) -> assertFailure $
+      "Word64Map and Data.Map disagree on key " ++ show k ++ ": "
+      ++ show (WM.lookup k wmFinal) ++ " vs " ++ show (M.lookup k mFinal)
+
+-- | Run a mix of inserts, updates and deletes through both 'WM.Word64Map' and
+-- 'M.Map', where updates and deletes go through 'WM.updateLookupWithKey'.
+-- Check that it returns the original value (like its 'Data.IntMap' counterpart
+-- and unlike the one from 'Data.Map', which returns the updated value) and
+-- that both maps agree on the value of every key ever touched.
+test_updateLookup :: Assertion
+test_updateLookup = do
+  let poolSize = 500 :: Word64
+      sels = randomRs (0 :: Int, 2) (mkStdGen 3)
+      keys = randomRs (0, poolSize - 1) (mkStdGen 4)
+      ops :: [(Int, Word64, Int)]
+      ops = take 50000 (zip3 sels keys [0 ..])
+      step (wm, m, bad) (sel, k, v) = case sel of
+        0 -> (WM.insert k v wm, M.insert k v m, bad)
+        1 -> let (mv, wm') = WM.updateLookupWithKey (\_ _ -> Nothing) k wm
+             in (wm', M.delete k m, [k | mv /= M.lookup k m] ++ bad)
+        _ -> let (mv, wm') = WM.updateLookupWithKey (\_ x -> Just (x + 1)) k wm
+             in (wm', M.adjust (+ 1) k m, [k | mv /= M.lookup k m] ++ bad)
+      (wmFinal, mFinal, mismatches) = L.foldl' step (WM.empty, M.empty, []) ops
+  case mismatches of
+    []      -> pure ()
+    (k : _) -> assertFailure $
+      "updateLookupWithKey returned a wrong value for key " ++ show k
   case [ k | (_, k, _) <- ops, WM.lookup k wmFinal /= M.lookup k mFinal ] of
     []      -> pure ()
     (k : _) -> assertFailure $

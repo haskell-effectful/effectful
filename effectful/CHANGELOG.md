@@ -1,4 +1,7 @@
 # effectful-2.7.0.0 (2026-??-??)
+* `runInBoundThread` and `runInUnboundThread` from `Effectful.Concurrent` no
+  longer run the computation in a cloned environment, so changes to thread-local
+  effects made within are no longer discarded.
 * Add the `Input` effect (`Effectful.Input.Dynamic`, `Effectful.Input.Static`,
   `Effectful.Input.Static.Action` and `Effectful.Labeled.Input`) for access to
   values.

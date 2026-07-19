@@ -69,7 +69,9 @@ tell w1 = unsafeEff $ \es -> do
 -- 'Writer'.
 --
 -- /Note:/ the output of 'tell' executed from threads spawned within the nested
--- action that outlive the scope of 'listen' will be lost:
+-- action is accounted for only if it completes before 'listen' merges the
+-- output, which happens as soon as the action finishes. In particular, the
+-- output of threads that outlive the scope of 'listen' will be lost:
 --
 -- >>> :{
 --   runEff . execWriter @String $ do

@@ -35,6 +35,11 @@
     `Persistent` strategy interrupted by an asynchronous exception no longer
     leaks a finalizer that corrupts the thread limit accounting when the thread
     dies.
+  - Running the computation given to the setup function of `reinterpret` or
+    `impose` in a cloned environment (e.g. by unlifting it with the
+    `SeqForkUnlift` strategy and running it outside of the scope of the setup
+    function) now results in an immediate, accurate error instead of
+    corruption of the environment of the call site.
 
 # effectful-2.6.1.0 (2025-08-30)
 * Add `MonadError`, `MonadReader`, `MonadState` and `MonadWriter` instances for

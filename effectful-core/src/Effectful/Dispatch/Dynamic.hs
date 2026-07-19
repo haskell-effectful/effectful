@@ -1232,6 +1232,7 @@ reinterpretImpl
   -> Eff      es  b
 reinterpretImpl runSetup action handlerImpl = unsafeEff $ \es -> do
   (`unEff` es) . runSetup . unsafeEff $ \handlerEs -> do
+    requireInScopeSetup es handlerEs
     (`unEff` es) $ runHandler (Handler handlerEs handlerImpl) action
 {-# INLINE reinterpretImpl #-}
 
@@ -1278,6 +1279,7 @@ imposeImpl runSetup action handlerImpl = unsafeEff $ \es -> do
     )
     (\newEs -> do
         (`unEff` newEs) . runSetup . unsafeEff $ \handlerEs -> do
+          requireInScopeSetup es handlerEs
           -- Replace the original handler with a new one. Note that
           -- 'newEs' (and thus 'handlerEs') wil still see the original
           -- handler.
@@ -1307,6 +1309,18 @@ copyRefs (Env soffset srefs _) (Env doffset drefs storage) = do
   refs <- unsafeFreezePrimArray mrefs
   pure $ Env 0 refs storage
 {-# NOINLINE copyRefs #-}
+
+-- | Make sure the setup function of 'reinterpret' or 'impose' runs its
+-- argument within its scope. If it runs in a cloned environment, the handler
+-- would still operate on the environment of the call site, corrupting it.
+requireInScopeSetup :: HasCallStack => Env es -> Env handlerEs -> IO ()
+requireInScopeSetup es handlerEs
+  | es.storage /= handlerEs.storage = error
+    $ "The setup function ran the computation in a cloned environment.\n"
+    ++ "If you unlifted it with the SeqForkUnlift or ConcUnlift strategy and "
+    ++ "attempted to run it outside of the scope of the setup function or in "
+    ++ "a different thread, it's not allowed."
+  | otherwise = pure ()
 
 requireMatchingStorages :: HasCallStack => Env es1 -> Env es2 -> IO ()
 requireMatchingStorages es1 es2

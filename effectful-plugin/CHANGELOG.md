@@ -4,7 +4,9 @@
 * Consider effects from the context as candidates for wanteds with (partially)
   concrete effect rows instead of silently favouring effects from the row.
   Genuinely ambiguous cases are now reported as such by GHC, while cases
-  disambiguated by other constraints resolve to the effect that fits.
+  disambiguated by other constraints resolve to the effect that fits. The
+  plugin also no longer commits to the sole candidate when it doesn't satisfy
+  the remaining constraints, which results in better error messages.
 * Make sure that givens are produced only from effect rows headed by the
   promoted list constructor.
 

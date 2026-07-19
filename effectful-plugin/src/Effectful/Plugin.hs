@@ -147,11 +147,8 @@ disambiguateEffects pd _ allGivens allWanteds = timed pd $ do
     case findCandidates wanted effGivens of
       Left given -> printSingle "Already solved by" given
       Right [] -> printLn "No candidates"
-      Right [(given, _)] -> do
-        printSingle "Single candidate found" given
-        emitEqConstraint solutions wanted given
       Right candidates -> do
-        printList "Multiple candidates found" $ map fst candidates
+        printList "Candidates found" $ map fst candidates
         filterCandidates dflags None candidates >>= \case
           None -> printLn "No candidates left"
           Single given -> do

@@ -390,6 +390,15 @@ substHasAnyTyVar subst = uniqSetAny (`elemUFM` getTvSubstEnv subst)
 -- | Find givens unifiable with a wanted and give them back along with
 -- appropriate substitutions.
 --
+-- A given @e :> es@ is a candidate for a wanted @e' :> ws@ not only when its
+-- effect row is equal to @ws@, but also when it's a suffix of @ws@, since then
+-- it solves the wanted via the @e :> es => e :> (x : es)@ instance just as
+-- well. This way effects from the context compete with effects from a
+-- (partially) concrete row instead of the latter silently winning.
+--
+-- Candidates with equal effect types represent the same solution (the emitted
+-- equality constraint would be identical), so only the first one is kept.
+--
 -- Returns Left if the wanted is already solved by one of the givens.
 findCandidates :: EffWanted -> [EffGiven] -> Either EffGiven [(EffGiven, Subst)]
 findCandidates wanted = loop []
@@ -397,13 +406,23 @@ findCandidates wanted = loop []
     loop acc = \case
       [] -> Right acc
       given : rest ->
-        if wanted.effCon `eqType` given.effCon && wanted.es `eqType` given.es
+        if wanted.effCon `eqType` given.effCon && given.es `isRowSuffixOf` wanted.es
         then case tcUnifyTyNoSkolems wanted.eff given.eff of
           Just subst
             | isEmptySubst subst -> Left given
+            | any (eqType given.eff . (.eff) . fst) acc -> loop acc rest
             | otherwise -> loop ((given, subst) : acc) rest
           Nothing -> loop acc rest
         else loop acc rest
+
+    -- Check whether the first effect row is a syntactic suffix of the second.
+    isRowSuffixOf :: Type -> Type -> Bool
+    isRowSuffixOf gs ws
+      | gs `eqType` ws = True
+      | otherwise = case tcSplitTyConApp_maybe ws of
+          Just (con, [_kind, _eff, wsTail])
+            | con == promotedConsDataCon -> gs `isRowSuffixOf` wsTail
+          _ -> False
 
 nubType :: [Type] -> [Type]
 nubType = coerce . S.toList . S.fromList @OrdType . coerce

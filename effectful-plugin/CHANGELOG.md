@@ -1,6 +1,10 @@
-# effectful-plugin-2.1.0.1 (2026-??-??)
+# effectful-plugin-2.2.0.0 (2026-??-??)
 * Fix a compiler panic when a constraint headed by a type variable or a
   quantified constraint is considered during candidate filtering.
+* Consider effects from the context as candidates for wanteds with (partially)
+  concrete effect rows instead of silently favouring effects from the row.
+  Genuinely ambiguous cases are now reported as such by GHC, while cases
+  disambiguated by other constraints resolve to the effect that fits.
 * Make sure that givens are produced only from effect rows headed by the
   promoted list constructor.
 

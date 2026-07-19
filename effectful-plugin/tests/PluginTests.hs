@@ -167,6 +167,24 @@ runDBAction :: Eff (DBAction which : es) a -> Eff es a
 runDBAction = interpret_ $ \case
   DoSelect (Select a) -> pure $ Just a
 
+-- An effect from the context competes with a concrete effect at the head of
+-- the row, so disambiguation needs to go through fit-checking instead of
+-- silently picking the head.
+uniquelyIntOrString :: State String :> es => Eff es ()
+uniquelyIntOrString = evalState (0 :: Int) $ ordPut 10 >> put ""
+
+-- An effect from the context that's identical to a concrete effect in the row
+-- is the same solution, not an ambiguity.
+sameEffectTwice :: State Int :> es => Eff es ()
+sameEffectTwice = evalState (0 :: Int) $ put 10
+
+-- Wanteds whose rows share a suffix containing the same concrete effect yield
+-- one solution, not an ambiguity.
+sharedRowSuffix :: Eff (State Int : es) ()
+sharedRowSuffix = do
+  _ <- runErrorNoCallStack @() $ put 10
+  put 20
+
 -- Disambiguation in the presence of a constraint headed by a type variable
 -- must not panic the compiler when checking whether candidates fit, since the
 -- constraint is not a type constructor application.

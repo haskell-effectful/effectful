@@ -417,8 +417,8 @@ import Effectful.Internal.Utils
 -- | A variant of 'send' for passing operations to the upstream handler within
 -- 'interpose' and 'impose' without having to fully pattern match on them.
 passthrough
-  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es, e :> localEs, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: (HasCallStack, DispatchOf e ~ Dynamic, e :> es, e :> localEs)
+  => LocalEnv localEs
   -> e (Eff localEs) a
   -- ^ The operation.
   -> Eff es a
@@ -750,8 +750,8 @@ imposeWith_ runSetup action handler = imposeImpl runSetup action $
 -- | Create a local unlifting function with the 'SeqUnlift' strategy. For the
 -- general version see 'localUnlift'.
 localSeqUnlift
-  :: (HasCallStack, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: HasCallStack
+  => LocalEnv localEs
   -- ^ Local environment.
   -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the unlifting function in scope.
@@ -765,8 +765,8 @@ localSeqUnlift (LocalEnv les) k = unsafeEff $ \es -> do
 -- | Create a local unlifting function with the 'SeqUnlift' strategy. For the
 -- general version see 'localUnliftIO'.
 localSeqUnliftIO
-  :: (HasCallStack, SharedSuffix es handlerEs, IOE :> es)
-  => LocalEnv localEs handlerEs
+  :: (HasCallStack, IOE :> es)
+  => LocalEnv localEs
   -- ^ Local environment.
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
   -- ^ Continuation with the unlifting function in scope.
@@ -778,8 +778,8 @@ localSeqUnliftIO (LocalEnv les) k = unsafeEff $ \es -> do
 
 -- | Create a local unlifting function with the given strategy.
 localUnlift
-  :: (HasCallStack, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: HasCallStack
+  => LocalEnv localEs
   -- ^ Local environment.
   -> UnliftStrategy
   -> ((forall r. Eff localEs r -> Eff es r) -> Eff es a)
@@ -798,8 +798,8 @@ localUnlift (LocalEnv les) strategy k = unsafeEff $ \es -> do
 
 -- | Create a local unlifting function with the given strategy.
 localUnliftIO
-  :: (HasCallStack, SharedSuffix es handlerEs, IOE :> es)
-  => LocalEnv localEs handlerEs
+  :: (HasCallStack, IOE :> es)
+  => LocalEnv localEs
   -- ^ Local environment.
   -> UnliftStrategy
   -> ((forall r. Eff localEs r -> IO r) -> IO a)
@@ -821,8 +821,8 @@ localUnliftIO (LocalEnv les) strategy k = unsafeEff $ \es -> do
 --
 -- @since 2.2.1.0
 localSeqLift
-  :: (HasCallStack, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: HasCallStack
+  => LocalEnv localEs
   -- ^ Local environment.
   -> ((forall r. Eff es r -> Eff localEs r) -> Eff es a)
   -- ^ Continuation with the lifting function in scope.
@@ -837,8 +837,8 @@ localSeqLift (LocalEnv les) k = unsafeEff $ \es -> do
 --
 -- @since 2.2.1.0
 localLift
-  :: (HasCallStack, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: HasCallStack
+  => LocalEnv localEs
   -- ^ Local environment.
   -> UnliftStrategy
   -> ((forall r. Eff es r -> Eff localEs r) -> Eff es a)
@@ -870,8 +870,8 @@ localLift (LocalEnv les) strategy k = unsafeEff $ \es -> do
 -- creator, the lifted computation must not interact with the environment. This
 -- cannot be detected at runtime, hence the deprecation.
 withLiftMap
-  :: (HasCallStack, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: HasCallStack
+  => LocalEnv localEs
   -- ^ Local environment.
   -> ((forall a b. (Eff es a -> Eff es b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -- ^ Continuation with the lifting function in scope.
@@ -911,8 +911,8 @@ withLiftMap (LocalEnv les) k = unsafeEff $ \es -> do
 --     forkIOWithUnmask $ \unmask -> unlift $ m $ liftMap unmask
 -- :}
 withLiftMapIO
-  :: (HasCallStack, SharedSuffix es handlerEs, IOE :> es)
-  => LocalEnv localEs handlerEs
+  :: (HasCallStack, IOE :> es)
+  => LocalEnv localEs
   -- ^ Local environment.
   -> ((forall a b. (IO a -> IO b) -> Eff localEs a -> Eff localEs b) -> Eff es r)
   -- ^ Continuation with the lifting function in scope.
@@ -935,8 +935,8 @@ withLiftMapIO (LocalEnv les) k = unsafeEff $ \es -> do
 -- the unlifting functions will share the effect storage (unlike with two
 -- separate calls to 'localLift' and 'localUnlift').
 localLiftUnlift
-  :: (HasCallStack, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: HasCallStack
+  => LocalEnv localEs
   -- ^ Local environment.
   -> UnliftStrategy
   -> ((forall r. Eff es r -> Eff localEs r) -> (forall r. Eff localEs r -> Eff es r) -> Eff es a)
@@ -963,8 +963,8 @@ localLiftUnlift (LocalEnv les) strategy k = unsafeEff $ \es -> do
 -- /Note:/ depending on the computation you're lifting 'localUnliftIO' along
 -- with 'withLiftMapIO' might be enough and is more efficient.
 localLiftUnliftIO
-  :: (HasCallStack, SharedSuffix es handlerEs, IOE :> es)
-  => LocalEnv localEs handlerEs
+  :: (HasCallStack, IOE :> es)
+  => LocalEnv localEs
   -- ^ Local environment.
   -> UnliftStrategy
   -> ((forall r. IO r -> Eff localEs r) -> (forall r. Eff localEs r -> IO r) -> IO a)
@@ -1025,9 +1025,9 @@ localLiftUnliftIO (LocalEnv les) strategy k = unsafeEff $ \es -> do
 --
 -- @since 2.4.0.0
 localSeqLend
-  :: forall lentEs es handlerEs localEs a
-   . (HasCallStack, KnownSubset lentEs es, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: forall lentEs es localEs a
+   . (HasCallStack, KnownSubset lentEs es)
+  => LocalEnv localEs
   -> ((forall r. Eff (lentEs ++ localEs) r -> Eff localEs r) -> Eff es a)
   -- ^ Continuation with the lent handler in scope.
   -> Eff es a
@@ -1043,9 +1043,9 @@ localSeqLend (LocalEnv les) k = unsafeEff $ \es -> do
 --
 -- @since 2.4.0.0
 localLend
-  :: forall lentEs es handlerEs localEs a
-   . (HasCallStack, KnownSubset lentEs es, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: forall lentEs es localEs a
+   . (HasCallStack, KnownSubset lentEs es)
+  => LocalEnv localEs
   -> UnliftStrategy
   -> ((forall r. Eff (lentEs ++ localEs) r -> Eff localEs r) -> Eff es a)
   -- ^ Continuation with the lent handler in scope.
@@ -1066,9 +1066,9 @@ localLend (LocalEnv les) strategy k = unsafeEff $ \es -> do
 --
 -- @since 2.4.0.0
 localSeqBorrow
-  :: forall borrowedEs es handlerEs localEs a
-   . (HasCallStack, KnownSubset borrowedEs localEs, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: forall borrowedEs es localEs a
+   . (HasCallStack, KnownSubset borrowedEs localEs)
+  => LocalEnv localEs
   -> ((forall r. Eff (borrowedEs ++ es) r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the borrowed handler in scope.
   -> Eff es a
@@ -1085,9 +1085,9 @@ localSeqBorrow (LocalEnv les) k = unsafeEff $ \es -> do
 --
 -- @since 2.4.0.0
 localBorrow
-  :: forall borrowedEs es handlerEs localEs a
-   . (HasCallStack, KnownSubset borrowedEs localEs, SharedSuffix es handlerEs)
-  => LocalEnv localEs handlerEs
+  :: forall borrowedEs es localEs a
+   . (HasCallStack, KnownSubset borrowedEs localEs)
+  => LocalEnv localEs
   -> UnliftStrategy
   -> ((forall r. Eff (borrowedEs ++ es) r -> Eff es r) -> Eff es a)
   -- ^ Continuation with the borrowed handler in scope.
@@ -1113,13 +1113,12 @@ localBorrow (LocalEnv les) strategy k = unsafeEff $ \es -> do
 --
 -- @since 2.7.0.0
 localLendBorrow
-  :: forall lentEs borrowedEs es handlerEs localEs a
+  :: forall lentEs borrowedEs es localEs a
    . ( HasCallStack
      , KnownSubset lentEs es
      , KnownSubset borrowedEs localEs
-     , SharedSuffix es handlerEs
      )
-  => LocalEnv localEs handlerEs
+  => LocalEnv localEs
   -> UnliftStrategy
   -> (    (forall r. Eff (lentEs ++ localEs) r -> Eff localEs r)
        -> (forall r. Eff (borrowedEs ++ es) r -> Eff es r)
@@ -1143,8 +1142,10 @@ localLendBorrow (LocalEnv les) strategy k = unsafeEff $ \es -> do
 
 -- | Require that both effect stacks share an opaque suffix.
 --
--- Functions from the 'localUnlift' family utilize this constraint to guarantee
--- sensible usage of unlifting functions.
+-- Functions from the 'localUnlift' family previously required this constraint
+-- to reject a subset of improper uses of unlifting functions at compile
+-- time. It's no longer necessary, since all of them are detected at runtime
+-- now.
 --
 -- As an example, consider the following higher order effect:
 --
@@ -1181,24 +1182,15 @@ localLendBorrow (LocalEnv les) strategy k = unsafeEff $ \es -> do
 --    E m -> pure . runPureEff $ do
 --      localSeqUnlift env $ \unlift -> unlift m
 -- :}
--- ...
--- ...Could not deduce ...SharedSuffix '[] es...
--- ...
 --
--- Running local actions in a monomorphic effect stack is also not fine as
--- this makes a special case of the above possible:
---
--- >>> :{
---  runE4 :: Eff [E, IOE] a -> Eff '[IOE] a
---  runE4 = interpret $ \env -> \case
---    E m -> pure . runPureEff $ do
---      localSeqUnlift env $ \unlift -> unlift m
--- :}
--- ...
--- ...Running local actions in monomorphic effect stacks is not supported...
+-- >>> runEff . runE3 $ send (E (pure 'x'))
+-- *** Exception: Env and LocalEnv point to different Storages.
 -- ...
 --
 -- @since 1.2.0.0
+{-# DEPRECATED SharedSuffix
+      "Runtime sanity checks in relevant functions make this constraint unnecessary."
+  #-}
 class SharedSuffix (es1 :: [Effect]) (es2 :: [Effect])
 
 instance {-# INCOHERENT #-} SharedSuffix es es
@@ -1326,9 +1318,9 @@ requireMatchingStorages :: HasCallStack => Env es1 -> Env es2 -> IO ()
 requireMatchingStorages es1 es2
   | es1.storage /= es2.storage = error
     $ "Env and LocalEnv point to different Storages.\n"
-    ++ "If you passed LocalEnv to a different thread and tried to create an "
-    ++ "unlifting function there, it's not allowed. You need to create it in "
-    ++ "the thread of the effect handler."
+    ++ "If you passed LocalEnv to a different thread/context and tried to "
+    ++ "create an unlifting function there, it's not allowed. You need to "
+    ++ "create it in the thread/context of the effect handler."
   | otherwise = pure ()
 
 -- $setup

@@ -33,6 +33,12 @@
 * Tighten pre-requisites for `unconsEnv` and `unreplaceEnv`.
 * Add `localLendBorrow` to `Effectful.Dispatch.Dynamic`.
 * Require `primitive` >= 0.9.0.0.
+* Remove `SharedSuffix` constraints from functions in
+  `Effectful.Dispatch.Dynamic` and deprecate the class, as runtime sanity
+  checks make it unnecessary.
+* **Breaking changes**:
+  - Remove the `handlerEs` type parameter of `LocalEnv` as it was only needed
+    to support `SharedSuffix` constraints.
 * **Bugfixes**:
   - `restoreStorageData` no longer shrinks the capacity of the storage, which
     could result in out of bounds reads when out of date references to the

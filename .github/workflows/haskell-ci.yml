@@ -285,11 +285,11 @@ jobs:
       - name: doctest
         run: |
           if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XPolyKinds -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
           if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
           if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful_core} || false

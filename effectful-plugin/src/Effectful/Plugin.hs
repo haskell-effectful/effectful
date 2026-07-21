@@ -118,7 +118,10 @@ initPlugin = do
   clsMod <- lookupModule $ mkModuleName "Effectful.Internal.Effect"
   elemClass <- tcLookupClass =<< lookupOrig clsMod (mkTcOcc ":>")
   totalTime <- tcPluginIO $ newIORef 0
-  pure PluginData{..}
+  pure PluginData
+    { elemClass = elemClass
+    , totalTime = totalTime
+    }
   where
     lookupModule :: ModuleName -> TcPluginM Module
     lookupModule modName = do

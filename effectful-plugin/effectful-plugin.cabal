@@ -1,4 +1,4 @@
-cabal-version:      3.0
+cabal-version:      3.8
 build-type:         Simple
 name:               effectful-plugin
 version:            2.2.0.0
@@ -35,38 +35,21 @@ flag verbose
 common language
     ghc-options:        -Wall
                         -Wcompat
-                        -Wmissing-deriving-strategies
+                        -Werror=missing-deriving-strategies
                         -Werror=prepositive-qualified-module
 
-    default-language:   Haskell2010
+    default-language:   GHC2021
 
-    default-extensions: BangPatterns
-                        ConstraintKinds
-                        DataKinds
-                        DeriveFunctor
-                        DeriveGeneric
+    default-extensions: DataKinds
+                        DeepSubsumption
                         DerivingStrategies
                         DuplicateRecordFields
-                        FlexibleContexts
-                        FlexibleInstances
-                        GADTs
-                        GeneralizedNewtypeDeriving
-                        ImportQualifiedPost
                         LambdaCase
-                        MultiParamTypeClasses
                         NoFieldSelectors
                         NoStarIsType
                         OverloadedRecordDot
-                        PolyKinds
-                        RankNTypes
-                        RecordWildCards
                         RoleAnnotations
-                        ScopedTypeVariables
-                        StandaloneDeriving
-                        TupleSections
-                        TypeApplications
                         TypeFamilies
-                        TypeOperators
                         UndecidableInstances
 
 library

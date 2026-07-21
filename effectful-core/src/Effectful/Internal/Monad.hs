@@ -59,7 +59,9 @@ module Effectful.Internal.Monad
 
   -- ** Dynamic dispatch
   , EffectHandler
-  , LocalEnv(..)
+  , LocalEnv
+  , unwrapLocalEnv
+  , requireMatchingStorages
   , Handler(..)
   , HandlerImpl(..)
   , relinkHandler
@@ -631,6 +633,23 @@ type role LocalEnv nominal
 -- /Note:/ functions that consume it perform runtime checks to ensure that it's
 -- used within the scope of the effect handler it belongs to.
 newtype LocalEnv (localEs :: [Effect]) = LocalEnv (Env localEs)
+
+-- | Unwrap the 'LocalEnv' via 'requireMatchingStorages'.
+unwrapLocalEnv :: HasCallStack => Env es -> LocalEnv localEs -> IO (Env localEs)
+unwrapLocalEnv es localEs@(LocalEnv les) = do
+  requireMatchingStorages es localEs
+  pure les
+
+-- | Make sure that the 'LocalEnv' is used in the thread/context of the effect
+-- handler it belongs to.
+requireMatchingStorages :: HasCallStack => Env es -> LocalEnv localEs -> IO ()
+requireMatchingStorages es (LocalEnv les)
+  | es.storage /= les.storage = error
+    $ "Env and LocalEnv point to different Storages.\n"
+    ++ "If you passed LocalEnv to a different thread/context and tried to "
+    ++ "use it there, it's not allowed. You need to use it in the "
+    ++ "thread/context of the effect handler."
+  | otherwise = pure ()
 
 -- | Type signature of the effect handler.
 type EffectHandler (e :: Effect) (es :: [Effect])

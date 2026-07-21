@@ -1,4 +1,8 @@
 # effectful-2.7.0.0 (2026-??-??)
+* Add `OsPath` variants of the `FilePath` based APIs
+  (`Effectful.FileSystem.OsPath` for `System.Directory.OsPath` and
+  `Effectful.FileSystem.File.OsPath` for `System.File.OsPath` from the
+  `file-io` package).
 * `runInBoundThread` and `runInUnboundThread` from `Effectful.Concurrent` no
   longer run the computation in a cloned environment, so changes to thread-local
   effects made within are no longer discarded.

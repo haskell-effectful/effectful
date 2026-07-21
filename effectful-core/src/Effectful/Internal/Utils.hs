@@ -100,6 +100,9 @@ newUnique = Unique <$> newByteArray 0
 
 ----------------------------------------
 
+-- | Remove exactly one layer of freezing, i.e. the one added by 'send' and
+-- friends via 'withFrozenCallStack'. Freezes applied by client code need to
+-- stay intact, so this must not recurse.
 thawCallStack :: CallStack -> CallStack
 thawCallStack = \case
   FreezeCallStack cs -> cs

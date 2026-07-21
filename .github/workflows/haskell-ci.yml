@@ -6,11 +6,11 @@
 #
 #   haskell-ci regenerate
 #
-# For more information, see https://github.com/haskell-CI/haskell-ci
+# For more information, see https://github.com/arybczak/haskell-ci
 #
-# version: 0.19.20260424
+# version: 0.19.20260721
 #
-# REGENDATA ("0.19.20260424",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.19.20260721",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -25,6 +25,9 @@ on:
       - master
   workflow_dispatch:
     {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   linux:
     name: Haskell-CI - Linux - ${{ matrix.compiler }}
@@ -32,7 +35,7 @@ jobs:
     timeout-minutes:
       60
     container:
-      image: buildpack-deps:jammy
+      image: buildpack-deps:resolute
     continue-on-error: ${{ matrix.allow-failure }}
     strategy:
       matrix:
@@ -67,7 +70,7 @@ jobs:
       - name: apt-get install
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr curl git software-properties-common libtinfo5
+          apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr curl git software-properties-common
       - name: Install GHCup
         run: |
           mkdir -p "$HOME/.ghcup/bin"
@@ -75,8 +78,8 @@ jobs:
           chmod a+x "$HOME/.ghcup/bin/ghcup"
       - name: Install cabal-install
         run: |
-          "$HOME/.ghcup/bin/ghcup" install cabal 3.16.0.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
-          echo "CABAL=$HOME/.ghcup/bin/cabal-3.16.0.0 -vnormal+nowrap" >> "$GITHUB_ENV"
+          "$HOME/.ghcup/bin/ghcup" install cabal 3.16.1.0 || (cat "$HOME"/.ghcup/logs/*.* && false)
+          echo "CABAL=$HOME/.ghcup/bin/cabal-3.16.1.0 -vnormal+nowrap" >> "$GITHUB_ENV"
       - name: Install GHC (GHCup)
         if: matrix.setup-method == 'ghcup'
         run: |
@@ -129,9 +132,9 @@ jobs:
           repository hackage.haskell.org
             url: http://hackage.haskell.org/
           EOF
+          if [ $((HCNUMVER >= 90800)) -ne 0 ] ; then echo "semaphore: True" >> $CABAL_CONFIG ; fi
           cat >> $CABAL_CONFIG <<EOF
-          program-default-options
-            ghc-options: $GHCJOBS +RTS -M3G -RTS
+          jobs: 4
           EOF
           cat $CABAL_CONFIG
       - name: versions
@@ -227,6 +230,14 @@ jobs:
           echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
           echo "package effectful" >> cabal.project
           echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then echo "package effectful-core" >> cabal.project ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then echo "    ghc-options: -j4" >> cabal.project ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then echo "package effectful-plugin" >> cabal.project ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then echo "    ghc-options: -j4" >> cabal.project ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then echo "package effectful-th" >> cabal.project ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then echo "    ghc-options: -j4" >> cabal.project ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then echo "package effectful" >> cabal.project ; fi
+          if [ $((HCNUMVER < 90800)) -ne 0 ] ; then echo "    ghc-options: -j4" >> cabal.project ; fi
           cat >> cabal.project <<EOF
           allow-newer: cleff:*
           allow-newer: freer-simple:*
@@ -274,11 +285,11 @@ jobs:
       - name: doctest
         run: |
           if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XPolyKinds -XRankNTypes -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
           if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
           if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XHaskell2010 -XBangPatterns -XConstraintKinds -XDataKinds -XDeriveFunctor -XDeriveGeneric -XDerivingStrategies -XFlexibleContexts -XFlexibleInstances -XGADTs -XGeneralizedNewtypeDeriving -XImportQualifiedPost -XLambdaCase -XMultiParamTypeClasses -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XPolyKinds -XRankNTypes -XRecordWildCards -XRoleAnnotations -XScopedTypeVariables -XStandaloneDeriving -XTupleSections -XTypeApplications -XTypeFamilies -XTypeOperators -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful_core} || false

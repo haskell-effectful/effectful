@@ -58,6 +58,8 @@ data State s :: Effect where
   State  :: (s ->   (a, s)) -> State s m a
   StateM :: (s -> m (a, s)) -> State s m a
 
+{-# DEPRECATED StateM "Use a combination of Get and Put instead." #-}
+
 type instance DispatchOf (State s) = Dynamic
 
 -- | Instance included for compatibility with existing code.
@@ -79,6 +81,11 @@ data Writer w :: Effect where
 type instance DispatchOf (Writer w) = Dynamic
 
 -- | Instance included for compatibility with existing code.
+--
+-- /Warning:/ 'MTL.pass' is not implemented due to ambiguous semantics in
+-- presence of runtime exceptions, so calling it (also indirectly via
+-- 'MTL.censor', which is defined in terms of 'MTL.pass') results in a runtime
+-- error.
 instance
   ( Monoid w
   , Writer w :> es

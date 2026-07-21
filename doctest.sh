@@ -13,33 +13,17 @@ run_doctest() {
   pushd "${1}"
   doctest \
     "${2}" \
-    -XHaskell2010 \
-    -XBangPatterns \
-    -XConstraintKinds \
+    -XGHC2021 \
     -XDataKinds \
-    -XDeriveFunctor \
-    -XDeriveGeneric \
+    -XDeepSubsumption \
     -XDerivingStrategies \
-    -XFlexibleContexts \
-    -XFlexibleInstances \
-    -XGADTs \
-    -XGeneralizedNewtypeDeriving \
-    -XImportQualifiedPost \
+    -XDuplicateRecordFields \
     -XLambdaCase \
-    -XMultiParamTypeClasses \
     -XNoFieldSelectors \
     -XNoStarIsType \
     -XOverloadedRecordDot \
-    -XPolyKinds \
-    -XRankNTypes \
-    -XRecordWildCards \
     -XRoleAnnotations \
-    -XScopedTypeVariables \
-    -XStandaloneDeriving \
-    -XTupleSections \
-    -XTypeApplications \
     -XTypeFamilies \
-    -XTypeOperators \
     -XUndecidableInstances
   popd
 }

@@ -199,15 +199,17 @@ isCurrentThreadBound = unsafeEff_ C.isCurrentThreadBound
 
 -- | Lifted 'C.runInBoundThread'.
 runInBoundThread :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es a
-runInBoundThread k = unsafeEff $ \es -> do
-  esF <- cloneEnv es
-  C.runInBoundThread $ unEff k esF
+runInBoundThread k = reallyUnsafeUnliftIO $ \unlift -> do
+  -- The worker thread runs the computation while the calling thread blocks, so
+  -- even though a different thread accesses the environment, the execution is
+  -- strictly sequential and sharing it is fine.
+  C.runInBoundThread $ unlift k
 
 -- | Lifted 'C.runInUnboundThread'.
 runInUnboundThread :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es a
-runInUnboundThread k = unsafeEff $ \es -> do
-  esF <- cloneEnv es
-  C.runInUnboundThread $ unEff k esF
+runInUnboundThread k = reallyUnsafeUnliftIO $ \unlift -> do
+  -- See the comment in runInBoundThread.
+  C.runInUnboundThread $ unlift k
 
 ----------------------------------------
 -- Weak references to ThreadIds

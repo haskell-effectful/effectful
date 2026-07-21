@@ -11,6 +11,7 @@ import Effectful.Dispatch.Static
 import Effectful.Dispatch.Static.Primitive
 import Effectful.Reader.Static
 import Effectful.Provider
+import Effectful.Provider.List
 import Effectful.State.Static.Local
 import Utils qualified as U
 
@@ -23,6 +24,8 @@ envTests = testGroup "Env"
   , testCase "unsafeCoerce doesn't work" test_noUnsafeCoerce
   , testCase "interpose works" test_interpose
   , testCase "interpose/provider works" test_interposeProvider
+  , testCase "provider interposition works" test_providerInterposition
+  , testCase "provider list interposition works" test_providerListInterposition
   , testCase "localSeqLend/localSeqBorrow works" test_lendBorrowSeparate
   , testCase "localLendBorrow works" test_lendBorrowCombined
   , testCase "lend/borrow combined shares storage" test_lendBorrowForkShares
@@ -175,6 +178,42 @@ test_interposeProvider = runEff $ do
         b7 <- doubleA $ send B
         U.assertEqual "b6" 4 b6
         U.assertEqual "b7" 8 b7
+
+test_providerInterposition :: IO ()
+test_providerInterposition = runEff $ do
+  runProvider_ @B @Int (\n -> interpret_ $ \case B -> pure n) $ do
+    b1 <- provideWith_ @B @Int 2 $ send B
+    U.assertEqual "b1 original" 2 b1
+    doubleProviderInput $ do
+      b2 <- provideWith_ @B @Int 2 $ send B
+      U.assertEqual "b2 interposed" 4 b2
+    b3 <- provideWith_ @B @Int 2 $ send B
+    U.assertEqual "b3 original" 2 b3
+
+-- | Modify the input of a provider and delegate to the original one.
+doubleProviderInput :: Provider_ B Int :> es => Eff es a -> Eff es a
+doubleProviderInput = interpose @(Provider_ B Int) $ \env -> \case
+  ProvideWith n action -> passthrough env $ ProvideWith (n * 2) action
+
+test_providerListInterposition :: IO ()
+test_providerListInterposition = runEff $ do
+  runProviderList_ @[B, A] (\(n :: Int) -> runA n . runB) $ do
+    b1 <- provideListWith_ @[B, A] @Int 2 $ send B
+    U.assertEqual "b1 original" 2 b1
+    doubleInput $ do
+      b2 <- provideListWith_ @[B, A] @Int 2 $ send B
+      U.assertEqual "b2 interposed" 4 b2
+    b3 <- provideListWith_ @[B, A] @Int 2 $ send B
+    U.assertEqual "b3 original" 2 b3
+  where
+    -- Delegates manually instead of using passthrough to exercise
+    -- localSeqLend with effects introduced by an upstream handler.
+    doubleInput :: ProviderList_ [B, A] Int :> es => Eff es a -> Eff es a
+    doubleInput = interpose @(ProviderList_ [B, A] Int) $ \env -> \case
+      ProvideListWith n action -> provideListWith @[B, A] (n * 2) $ do
+        localSeqUnlift env $ \unlift -> do
+          localSeqLend @[B, A] env $ \lend -> do
+            unlift (lend action)
 
 data A :: Effect where
   A :: A m Int

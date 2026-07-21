@@ -8,6 +8,7 @@ import Test.Tasty.HUnit
 import UnliftIO
 
 import Effectful
+import Effectful.Concurrent qualified as E
 import Effectful.Concurrent.Async qualified as E
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -24,6 +25,8 @@ concurrencyTests = testGroup "Concurrency"
   , testCase "pooled workers" test_pooledWorkers
   , testCase "using local unlift correctly works" test_correctLocalUnlift
   , testCase "using local unlift incorrectly doesn't work" test_wrongLocalUnlift
+  , testCase "runInBoundThread shares the environment" test_runInBoundThread
+  , testCase "runInUnboundThread shares the environment" test_runInUnboundThread
   ]
 
 test_localState :: Assertion
@@ -134,6 +137,16 @@ test_wrongLocalUnlift = runEff . E.runConcurrent $ do
   U.assertThrowsErrorCall "invalid LocalEnv use" $ do
     x <- runFork . send . RunAsyncWrong $ pure ()
     E.wait x
+
+test_runInBoundThread :: Assertion
+test_runInBoundThread = runEff . E.runConcurrent . evalStateLocal @Int 0 $ do
+  E.runInBoundThread $ put @Int 1
+  U.assertEqual "state change visible" 1 =<< get @Int
+
+test_runInUnboundThread :: Assertion
+test_runInUnboundThread = runEff . E.runConcurrent . evalStateLocal @Int 0 $ do
+  E.runInUnboundThread $ put @Int 1
+  U.assertEqual "state change visible" 1 =<< get @Int
 
 data Fork :: Effect where
   RunAsyncCorrect :: m a -> Fork m (E.Async a)

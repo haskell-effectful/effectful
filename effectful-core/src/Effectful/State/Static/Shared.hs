@@ -102,6 +102,9 @@ execStateMVar v m = do
   _ <- evalStaticRep (State v) m
   unsafeEff_ $ readMVar' v
 
+{-# DEPRECATED runStateMVar, evalStateMVar, execStateMVar
+  "If you need access to the state from outside of the State effect, manage an explicit MVar' yourself." #-}
+
 -- | Fetch the current value of the state.
 get :: (HasCallStack, State s :> es) => Eff es s
 get = unsafeEff $ \es -> do
@@ -153,3 +156,6 @@ stateM f = unsafeEff $ \es -> do
 -- /Note:/ this function gets an exclusive access to the state for its duration.
 modifyM :: (HasCallStack, State s :> es) => (s -> Eff es s) -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)
+
+{-# DEPRECATED stateM, modifyM
+  "Operations of the same State effect used within the callback deadlock. Use a combination of get and put instead, or an explicit MVar' if you need atomic updates." #-}

@@ -1,5 +1,6 @@
 module UnliftTests (unliftTests) where
 
+import Data.List (isInfixOf)
 import Test.Tasty
 import Test.Tasty.HUnit
 import UnliftIO.Async qualified as A
@@ -7,6 +8,7 @@ import UnliftIO.Async qualified as A
 import Effectful
 import Effectful.Concurrent.Async qualified as E
 import Effectful.Dispatch.Dynamic
+import Effectful.Exception
 import Effectful.State.Static.Local
 import Utils qualified as U
 
@@ -25,6 +27,8 @@ unliftTests = testGroup "Unlift"
     , testCase "Uses in multiple threads" test_persistentMultipleThreads
     ]
   , testCase "Unlifting functions work correctly" test_unliftingFunctions
+  , testCase "Escaped setup of reinterpret" test_escapedReinterpretSetup
+  , testCase "Escaped setup of impose" test_escapedImposeSetup
   ]
 
 test_threadStrategy :: Assertion
@@ -96,6 +100,29 @@ test_unliftingFunctions = runEff . E.runConcurrent $ do
       E.waitCatch a >>= \case
         Right () -> pure ()
         Left err -> U.assertFailure $ description ++ ": " ++ show err
+
+test_escapedReinterpretSetup :: Assertion
+test_escapedReinterpretSetup = runEff $ do
+  io <- reinterpret_ smuggle (\case E -> pure ()) $ send E
+  U.assertThrows "EscapedSetup error" escapedSetupError $ liftIO io
+
+test_escapedImposeSetup :: Assertion
+test_escapedImposeSetup = runEff . interpret_ (\case E -> pure ()) $ do
+  io <- impose_ smuggle (\case E -> pure ()) $ send E
+  U.assertThrows "EscapedSetup error" escapedSetupError $ liftIO io
+  -- The escaped computation didn't corrupt the environment.
+  send E
+
+-- | Smuggle the computation out of the scope of the setup function.
+smuggle :: IOE :> es => Eff es a -> Eff es (IO a)
+smuggle m = withEffToIO SeqForkUnlift $ \unlift -> pure (unlift m)
+
+escapedSetupError :: ErrorCall -> Bool
+escapedSetupError e = "cloned environment" `isInfixOf` show e
+
+data E :: Effect where
+  E :: E m ()
+type instance DispatchOf E = Dynamic
 
 data Fork :: Effect where
   ForkWithUnmask :: ((forall a. m a -> m a) -> m r) -> Fork m (A.Async r)

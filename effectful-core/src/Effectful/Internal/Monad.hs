@@ -622,21 +622,20 @@ inject m = unsafeEff $ \es -> unEff m =<< injectEnv es
 ----------------------------------------
 -- Dynamic dispatch
 
-type role LocalEnv nominal nominal
+type role LocalEnv nominal
 
 -- | Opaque representation of the 'Eff' environment at the point of calling the
 -- 'send' function, i.e. right before the control is passed to the effect
 -- handler.
 --
--- The second type variable represents effects of a handler and is needed for
--- technical reasons to guarantee soundness (see
--- t'Effectful.Dispatch.Dynamic.SharedSuffix' for more information).
-newtype LocalEnv (localEs :: [Effect]) (handlerEs :: [Effect]) = LocalEnv (Env localEs)
+-- /Note:/ functions that consume it perform runtime checks to ensure that it's
+-- used within the scope of the effect handler it belongs to.
+newtype LocalEnv (localEs :: [Effect]) = LocalEnv (Env localEs)
 
 -- | Type signature of the effect handler.
 type EffectHandler (e :: Effect) (es :: [Effect])
   = forall a localEs. (HasCallStack, e :> localEs)
-  => LocalEnv localEs es
+  => LocalEnv localEs
   -- ^ Capture of the local environment for handling local 'Eff' computations
   -- when @e@ is a higher order effect.
   -> e (Eff localEs) a

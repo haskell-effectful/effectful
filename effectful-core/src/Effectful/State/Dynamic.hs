@@ -1,3 +1,6 @@
+-- The handlers need to interpret the deprecated StateM operation until it's
+-- removed.
+{-# OPTIONS_GHC -Wno-deprecations #-}
 -- | The dynamically dispatched variant of the 'State' effect.
 --
 -- /Note:/ unless you plan to change interpretations at runtime or you need the
@@ -142,3 +145,6 @@ modifyM
   => (s -> Eff es s)
   -> Eff es ()
 modifyM f = stateM (\s -> ((), ) <$> f s)
+
+{-# DEPRECATED stateM, modifyM
+  "Use a combination of get and put instead." #-}

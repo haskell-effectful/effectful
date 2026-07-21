@@ -410,12 +410,26 @@ mkWeakThreadIdEnv (ThreadId t#) wkTid es v = \case
     case mkWeakNoFinalizer# t# es s0 of
       (# s1, w #) -> (# s1, Weak w #)
   where
+    -- The finalizer runs only if the corresponding entry is in the map. It
+    -- might not be there for two reasons:
+    --
+    -- 1. Registration of the thread was interrupted by an asynchronous
+    --    exception after the finalizer was attached, but before the update of
+    --    the map was committed. The commit was rolled back, so there is
+    --    nothing to clean up (and if the thread registered successfully
+    --    afterwards, the entry belongs to the finalizer attached then).
+    --
+    -- 2. The thread registered successfully after one or more interrupted
+    --    attempts, so multiple finalizers run on its death and another one
+    --    already cleaned up the entry.
     IO finalizer = modifyMVar'_ v $ \te -> do
-      pure ThreadEntries
-        { capacity = case te.capacity of
-            -- If the template copy of the environment hasn't been consumed
-            -- yet, the capacity can be restored.
-            0 -> 0
-            n -> n + 1
-        , entries = M.delete wkTid te.entries
-        }
+      pure $ case M.updateLookupWithKey (\_ _ -> Nothing) wkTid te.entries of
+        (Nothing, _) -> te
+        (Just _, newEntries) -> ThreadEntries
+          { capacity = case te.capacity of
+              -- If the template copy of the environment hasn't been consumed
+              -- yet, the capacity can be restored.
+              0 -> 0
+              n -> n + 1
+          , entries = newEntries
+          }

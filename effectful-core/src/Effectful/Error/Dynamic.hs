@@ -18,6 +18,9 @@ module Effectful.Error.Dynamic
   , throwErrorWith
   , throwError
   , throwError_
+  , rethrowErrorWith
+  , rethrowError
+  , rethrowError_
   , catchError
   , handleError
   , tryError
@@ -43,6 +46,7 @@ runError
   -> Eff es (Either (E.CallStack, e) a)
 runError = reinterpret E.runError $ \env -> \case
   ThrowErrorWith display e -> E.throwErrorWith display e
+  RethrowErrorWith display cs e -> E.rethrowErrorWith display cs e
   CatchError m h -> localSeqUnlift env $ \unlift -> do
     E.catchError (unlift m) (\cs -> unlift . h cs)
 
@@ -112,6 +116,51 @@ throwError_
   -- ^ The error.
   -> Eff es a
 throwError_ = withFrozenCallStack throwErrorWith (const "<opaque>")
+
+-- | Throw an error of type @e@ with the given 'E.CallStack' and specify a
+-- display function in case a third-party code catches the internal exception
+-- and 'show's it.
+--
+-- Useful e.g. when you want to catch an error and rethrow it converted to a
+-- different type without losing the original 'E.CallStack'.
+--
+-- @since 2.7.0.0
+rethrowErrorWith
+  :: Error e :> es
+  => (e -> String)
+  -- ^ The display function.
+  -> E.CallStack
+  -- ^ The 'E.CallStack' to attach to the error.
+  -> e
+  -- ^ The error.
+  -> Eff es a
+rethrowErrorWith display cs = send . RethrowErrorWith display cs
+
+-- | Throw an error of type @e@ with the given 'E.CallStack' and 'show' as a
+-- display function.
+--
+-- @since 2.7.0.0
+rethrowError
+  :: (Error e :> es, Show e)
+  => E.CallStack
+  -- ^ The 'E.CallStack' to attach to the error.
+  -> e
+  -- ^ The error.
+  -> Eff es a
+rethrowError = rethrowErrorWith show
+
+-- | Throw an error of type @e@ with the given 'E.CallStack' and no display
+-- function.
+--
+-- @since 2.7.0.0
+rethrowError_
+  :: Error e :> es
+  => E.CallStack
+  -- ^ The 'E.CallStack' to attach to the error.
+  -> e
+  -- ^ The error.
+  -> Eff es a
+rethrowError_ = rethrowErrorWith (const "<opaque>")
 
 -- | Handle an error of type @e@.
 catchError

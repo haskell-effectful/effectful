@@ -12,6 +12,7 @@ errorTests :: TestTree
 errorTests = testGroup "Error"
   [ testCase "different handlers are independent" test_independentHandlers
   , testCase "call stack of dynamic throwError doesn't show internal details" test_dynamicThrowErrorCallStack
+  , testCase "rethrowError attaches the given call stack" test_rethrowError
   ]
 
 test_independentHandlers :: Assertion
@@ -29,6 +30,20 @@ test_dynamicThrowErrorCallStack = do
   case getCallStack cs of
     [("throwError", _)] -> pure ()
     _ -> assertFailure $ "invalid call stack: " ++ prettyCallStack cs
+
+test_rethrowError :: Assertion
+test_rethrowError = runEff $ do
+  result <- runError @Int . runError @String $ do
+    originalThrow `catchError` \cs (_ :: String) -> rethrowError cs (42 :: Int)
+  liftIO $ case result of
+    Left (cs, e) -> do
+      assertEqual "rethrown error" 42 e
+      assertBool "stack trace points to the original throw" $
+        "originalThrow" == fst (last $ getCallStack cs)
+    Right _ -> assertFailure "error not rethrown"
+  where
+    originalThrow :: (HasCallStack, Error String :> es) => Eff es a
+    originalThrow = throwError "oops"
 
 ----------------------------------------
 -- Helpers

@@ -16,6 +16,9 @@ module Effectful.Labeled.Error
   , throwErrorWith
   , throwError
   , throwError_
+  , rethrowErrorWith
+  , rethrowError
+  , rethrowError_
   , catchError
   , handleError
   , tryError
@@ -105,6 +108,55 @@ throwError_
   -- ^ The error.
   -> Eff es a
 throwError_ = withFrozenCallStack (throwErrorWith @label) (const "<opaque>")
+
+-- | Throw an error of type @e@ with the given 'E.CallStack' and specify a
+-- display function in case a third-party code catches the internal exception
+-- and 'show's it.
+--
+-- Useful e.g. when you want to catch an error and rethrow it converted to a
+-- different type without losing the original 'E.CallStack'.
+--
+-- @since 2.7.0.0
+rethrowErrorWith
+  :: forall label e es a
+   . Labeled label (Error e) :> es
+  => (e -> String)
+  -- ^ The display function.
+  -> E.CallStack
+  -- ^ The 'E.CallStack' to attach to the error.
+  -> e
+  -- ^ The error.
+  -> Eff es a
+rethrowErrorWith display cs =
+  send . Labeled @label . RethrowErrorWith display cs
+
+-- | Throw an error of type @e@ with the given 'E.CallStack' and 'show' as a
+-- display function.
+--
+-- @since 2.7.0.0
+rethrowError
+  :: forall label e es a
+   . (Labeled label (Error e) :> es, Show e)
+  => E.CallStack
+  -- ^ The 'E.CallStack' to attach to the error.
+  -> e
+  -- ^ The error.
+  -> Eff es a
+rethrowError = rethrowErrorWith @label show
+
+-- | Throw an error of type @e@ with the given 'E.CallStack' and no display
+-- function.
+--
+-- @since 2.7.0.0
+rethrowError_
+  :: forall label e es a
+   . Labeled label (Error e) :> es
+  => E.CallStack
+  -- ^ The 'E.CallStack' to attach to the error.
+  -> e
+  -- ^ The error.
+  -> Eff es a
+rethrowError_ = rethrowErrorWith @label (const "<opaque>")
 
 -- | Handle an error of type @e@.
 catchError

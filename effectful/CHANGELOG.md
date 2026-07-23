@@ -36,6 +36,9 @@
   state from outside of the effect, manage an explicit `MVar'` yourself.
 * Tighten pre-requisites for `unconsEnv` and `unreplaceEnv`.
 * Add `localLendBorrow` to `Effectful.Dispatch.Dynamic`.
+* Add `rethrowErrorWith`, `rethrowError` and `rethrowError_` (along with the
+  corresponding `RethrowErrorWith` operation of the dynamic `Error` effect) for
+  throwing errors with a given `CallStack`.
 * Require `primitive` >= 0.9.0.0.
 * Remove `SharedSuffix` constraints from functions in
   `Effectful.Dispatch.Dynamic` and deprecate the class, as runtime sanity

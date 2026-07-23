@@ -19,6 +19,8 @@ import Effectful.Internal.Monad
 data Error e :: Effect where
   -- | @since 2.4.0.0
   ThrowErrorWith :: (e -> String) -> e -> Error e m a
+  -- | @since 2.7.0.0
+  RethrowErrorWith :: (e -> String) -> CallStack -> e -> Error e m a
   CatchError :: m a -> (CallStack -> e -> m a) -> Error e m a
 
 type instance DispatchOf (Error e) = Dynamic

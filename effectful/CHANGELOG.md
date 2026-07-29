@@ -39,6 +39,8 @@
 * Add `rethrowErrorWith`, `rethrowError` and `rethrowError_` (along with the
   corresponding `RethrowErrorWith` operation of the dynamic `Error` effect) for
   throwing errors with a given `CallStack`.
+* Document why the `MonadThrow`, `MonadCatch` and `MonadMask` instances for
+  `Eff` are available without any effect requirements.
 * Require `primitive` >= 0.9.0.0.
 * Remove `SharedSuffix` constraints from functions in
   `Effectful.Dispatch.Dynamic` and deprecate the class, as runtime sanity

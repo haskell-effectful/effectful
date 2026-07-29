@@ -408,6 +408,11 @@ instance NonDet :> es => MonadPlus (Eff es)
 ----------------------------------------
 -- Exception
 
+-- | Available without any effect requirements.
+--
+-- Gating it behind an effect (such as 'IOE' or a more specialized effect) would
+-- accomplish nothing, since any Haskell expression is free to throw an
+-- exception with 'E.throw' at any point.
 instance C.MonadThrow (Eff es) where
   throwM = unsafeEff_ . withFrozenCallStack E.throwIO
 
@@ -415,6 +420,17 @@ instance C.MonadThrow (Eff es) where
   rethrowM = unsafeEff_ . E.rethrowIO
 #endif
 
+-- | Available without any effect requirements.
+--
+-- This is the one instance of the three that would arguably benefit from
+-- requiring 'IOE' (or a more specialized effect), as catching imprecise
+-- exceptions makes it possible to write non-deterministic pure functions with
+-- 'runPureEff'. Unfortunately it can't, because t'C.MonadCatch' is a superclass
+-- of t'C.MonadMask', which needs to be available unconditionally (see the note
+-- there).
+--
+-- For the full discussion see
+-- [issue #76](https://github.com/haskell-effectful/effectful/issues/76).
 instance C.MonadCatch (Eff es) where
   catch action handler = reallyUnsafeUnliftIO $ \unlift -> do
     E.catch (unlift action) (unlift . handler)
@@ -424,6 +440,22 @@ instance C.MonadCatch (Eff es) where
     E.catchNoPropagate (unlift action) (unlift . handler)
 #endif
 
+-- | Available without any effect requirements.
+--
+-- This makes it possible to use cleanup functions such as
+-- 'Effectful.Exception.bracket' or 'Effectful.Exception.finally' anywhere, e.g.
+-- to restore a state on error:
+--
+-- @
+-- transactionally :: forall s es a. 'Effectful.State.Static.Local.State' s ':>' es => 'Eff' es a -> 'Eff' es a
+-- transactionally = 'Effectful.Exception.bracketOnError' ('Effectful.State.Static.Local.get' \@s) ('Effectful.State.Static.Local.put' \@s) . const
+-- @
+--
+-- Requiring 'IOE' would make functions like the above impossible to write and
+-- force 'IOE' to show up in application code that otherwise only needs more
+-- restricted effects, which would be a significant usability regression. On the
+-- other hand, requiring a more specialized effect would be annoying, since
+-- functions making use of t'C.MonadMask' are ubiquitous.
 instance C.MonadMask (Eff es) where
   mask k = reallyUnsafeUnliftIO $ \unlift -> do
     E.mask $ \release -> unlift $ k (reallyUnsafeLiftMapIO release)

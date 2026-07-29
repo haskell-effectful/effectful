@@ -52,6 +52,7 @@ module Effectful.Exception
     -- | #cleanup#
 
     -- * Cleanup (no recovery)
+    -- $cleanup
   , bracket
   , bracket_
   , bracketOnError
@@ -444,6 +445,15 @@ catchesDeep action = catches (evaluateDeep =<< action)
 ----------------------------------------
 -- Cleanup
 
+-- $cleanup
+--
+-- /Note:/ when compiled with @base@ >= 4.21, if the computation to run last
+-- throws an exception while another one is being propagated, the original
+-- exception is preserved in a @WhileHandling@ annotation of the new one. This
+-- is what the corresponding functions from "Control.Exception" do since @base@
+-- 4.23 instead of discarding the original exception, see [CLC proposal
+-- #397](https://github.com/haskell/core-libraries-committee/issues/397).
+
 -- | Lifted 'E.bracket'.
 bracket
   :: Eff es a
@@ -453,8 +463,11 @@ bracket
   -> (a -> Eff es c)
   -- ^ Computation to run in-between.
   -> Eff es c
-bracket before after action = reallyUnsafeUnliftIO $ \unlift -> do
-  E.bracket (unlift before) (unlift . after) (unlift . action)
+bracket before after action = mask $ \restore -> do
+  a <- before
+  r <- restore (action a) `onException` after a
+  _ <- after a
+  pure r
 
 -- | Lifted 'E.bracket_'.
 bracket_
@@ -465,8 +478,7 @@ bracket_
   -> Eff es c
   -- ^ Computation to run in-between.
   -> Eff es c
-bracket_ before after action = reallyUnsafeUnliftIO $ \unlift -> do
-  E.bracket_ (unlift before) (unlift after) (unlift action)
+bracket_ before after action = bracket before (const after) (const action)
 
 -- | Lifted 'E.bracketOnError'.
 bracketOnError
@@ -478,8 +490,9 @@ bracketOnError
   -> (a -> Eff es c)
   -- ^ Computation to run in-between.
   -> Eff es c
-bracketOnError before after action = reallyUnsafeUnliftIO $ \unlift -> do
-  E.bracketOnError (unlift before) (unlift . after) (unlift . action)
+bracketOnError before after action = mask $ \restore -> do
+  a <- before
+  restore (action a) `onException` after a
 
 -- | Generalization of 'bracket'.
 --
@@ -500,8 +513,10 @@ finally
   -> Eff es b
   -- ^ Computation to run last.
   -> Eff es a
-finally action handler = reallyUnsafeUnliftIO $ \unlift -> do
-  E.finally (unlift action) (unlift handler)
+finally action handler = mask $ \restore -> do
+  r <- restore action `onException` handler
+  _ <- handler
+  pure r
 
 -- | Lifted 'E.onException'.
 onException
@@ -510,8 +525,8 @@ onException
   -- ^ Computation to run last when an exception or
   -- t'Effectful.Error.Static.Error' was thrown.
   -> Eff es a
-onException action handler = reallyUnsafeUnliftIO $ \unlift -> do
-  E.onException (unlift action) (unlift handler)
+onException action handler =
+  withException @E.SomeException action (const handler)
 
 -- | A variant of 'onException' that gives access to the exception.
 --

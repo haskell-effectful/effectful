@@ -15,6 +15,10 @@
 * Drop support for GHC < 9.6.
 * Add definitions of `rethrowM` to `MonadThrow` and `catchNoPropagate` to
   `MonadCatch` instances for `Eff` when appropriate (`exceptions` >= 0.10.11).
+* If the cleanup action of `bracket`, `bracket_`, `bracketOnError`, `finally` or
+  `onException` from `Effectful.Exception` throws, the original exception is no
+  longer lost - it is preserved in a `WhileHandling` annotation of the new one
+  (`base` >= 4.21).
 * Rename `Effectful.Internal.MTL` module to `Effectful.Internal.Effect.Dynamic`.
 * Deprecate `withLiftMap` as its misuse in a multithreaded environment results
   in undefined behavior that cannot be detected at runtime. Use

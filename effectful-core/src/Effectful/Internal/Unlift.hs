@@ -114,6 +114,78 @@ data UnliftStrategy
 -- - Lifting 'Control.Concurrent.forkIOWithUnmask' requires the 'Persistent'
 --   strategy, otherwise the unmasking function would start with a fresh
 --   environment each time it's called.
+--
+-- Both cases come down to what happens when the unlifting function is called
+-- more than once in the same thread. If a thread calls it only once, the
+-- 'Persistence' setting makes no observable difference.
+--
+-- === Example 1
+--
+-- Consider a thread that modifies thread local state, then inspects it with a
+-- second call to the unlifting function:
+--
+-- >>> import Control.Concurrent
+-- >>> import Control.Monad
+-- >>> import Effectful
+-- >>> import Effectful.State.Dynamic
+--
+-- >>> :{
+--   modifyThenGet :: UnliftStrategy -> IO Int
+--   modifyThenGet strategy = runEff . evalStateLocal @Int 0 $ do
+--     withEffToIO strategy $ \unlift -> do
+--       result <- newEmptyMVar
+--       void . forkIO $ do
+--         unlift $ modify @Int (+1)
+--         putMVar result =<< unlift (get @Int)
+--       takeMVar result
+-- :}
+--
+-- With the 'Persistent' strategy the unlifting function keeps the environment
+-- between the calls, so the second call sees the modification from the first
+-- one:
+--
+-- >>> modifyThenGet $ ConcUnlift Persistent (Limited 1)
+-- 1
+--
+-- On the other hand, with 'Ephemeral' each call to the unlifting function
+-- starts with a fresh copy of the environment, so the modification is silently
+-- lost:
+--
+-- >>> modifyThenGet $ ConcUnlift Ephemeral (Limited 2)
+-- 0
+--
+-- This also showcases the limit meaning different things for the two settings:
+-- for the 'Persistent' strategy it limits the number of threads the unlifting
+-- can happen in, for 'Ephemeral' it limits the number of calls to the unlifting
+-- function.
+--
+-- === Example 2
+--
+-- Consider a situation where a single worker thread runs multiple independent
+-- jobs:
+--
+-- >>> :{
+--   twoJobs :: UnliftStrategy -> IO [Int]
+--   twoJobs strategy = runEff . evalStateLocal @Int 0 $ do
+--     withEffToIO strategy $ \unlift -> do
+--       result <- newEmptyMVar
+--       void . forkIO $ do
+--         let job = unlift $ modify @Int (+1) >> get @Int
+--         putMVar result =<< sequence [job, job]
+--       takeMVar result
+-- :}
+--
+-- With 'Ephemeral' both jobs start from the environment as it was when the
+-- unlifting function was created:
+--
+-- >>> twoJobs $ ConcUnlift Ephemeral Unlimited
+-- [1,1]
+--
+-- With 'Persistent' the second job inherits changes made by the first one, even
+-- though the user would most likely expect them to be independent:
+--
+-- >>> twoJobs $ ConcUnlift Persistent Unlimited
+-- [1,2]
 data Persistence
   = Ephemeral
   -- ^ Don't persist the environment between calls to the unlifting function in

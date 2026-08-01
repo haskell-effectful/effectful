@@ -92,6 +92,7 @@ library
                      Effectful.Labeled.Provider
                      Effectful.Labeled.Provider.List
                      Effectful.Labeled.Reader
+                     Effectful.Labeled.ReturnWith
                      Effectful.Labeled.State
                      Effectful.Labeled.Writer
                      Effectful.NonDet
@@ -106,6 +107,8 @@ library
                      Effectful.Provider.List
                      Effectful.Reader.Dynamic
                      Effectful.Reader.Static
+                     Effectful.ReturnWith.Dynamic
+                     Effectful.ReturnWith.Static
                      Effectful.State.Dynamic
                      Effectful.State.Static.Local
                      Effectful.State.Static.Shared

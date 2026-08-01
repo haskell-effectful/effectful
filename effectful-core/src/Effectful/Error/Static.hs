@@ -291,8 +291,9 @@ newErrorId = ErrorId <$> newUnique
 data ErrorWrapper = ErrorWrapper !ErrorId CallStack String Any
 
 instance Show ErrorWrapper where
-  showsPrec _ (ErrorWrapper _ cs errRep _)
-    = ("Effectful.Error.Static.ErrorWrapper: " ++)
+  showsPrec p (ErrorWrapper _ cs errRep _)
+    = showParen (p > 10)
+    $ ("Effectful.Error.Static.ErrorWrapper: " ++)
     . (errRep ++)
     . ("\n" ++)
     . (prettyCallStack cs ++)

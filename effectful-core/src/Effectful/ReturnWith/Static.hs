@@ -77,8 +77,9 @@ newReturnWithId = ReturnWithId <$> newUnique
 data ReturnWithWrapper = ReturnWithWrapper !ReturnWithId CallStack Any
 
 instance Show ReturnWithWrapper where
-  showsPrec _ (ReturnWithWrapper _ cs _)
-    = ("Effectful.ReturnWith.Static.ReturnWithWrapper\n" ++)
+  showsPrec p (ReturnWithWrapper _ cs _)
+    = showParen (p > 10)
+    $ ("Effectful.ReturnWith.Static.ReturnWithWrapper\n" ++)
     . (prettyCallStack cs ++)
 
 instance Exception ReturnWithWrapper where

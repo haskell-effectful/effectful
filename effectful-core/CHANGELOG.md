@@ -7,6 +7,9 @@
   `Effectful.Output.Static.Local.List`, `Effectful.Output.Static.Shared.Array`,
   `Effectful.Output.Static.Shared.List` and `Effectful.Labeled.Output`) for
   accumulation of values.
+* Add the `ReturnWith` effect (`Effectful.ReturnWith.Dynamic`,
+  `Effectful.ReturnWith.Static` and `Effectful.Labeled.ReturnWith`) for early
+  return from a computation.
 * Make the `Provider` and `ProviderList` effects dynamically dispatched and
   export their operations.
 * Add `Effectful.Labeled.Provider` and `Effectful.Labeled.Provider.List` with

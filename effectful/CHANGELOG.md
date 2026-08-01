@@ -14,6 +14,9 @@
   `Effectful.Output.Static.Local.List`, `Effectful.Output.Static.Shared.Array`,
   `Effectful.Output.Static.Shared.List` and `Effectful.Labeled.Output`) for
   accumulation of values.
+* Add the `ReturnWith` effect (`Effectful.ReturnWith.Dynamic`,
+  `Effectful.ReturnWith.Static` and `Effectful.Labeled.ReturnWith`) for early
+  return from a computation.
 * Re-export `Labeled(..)` from all `Effectful.Labeled.*` modules.
 * Drop support for GHC < 9.6.
 * Add definitions of `rethrowM` to `MonadThrow` and `catchNoPropagate` to

@@ -4,6 +4,9 @@
 -- recommended to use the statically dispatched variant,
 -- i.e. "Effectful.ReturnWith.Static".
 --
+-- All caveats described in "Effectful.ReturnWith.Static" (in particular the
+-- interaction with threads) apply.
+--
 -- @since 2.7.0.0
 module Effectful.ReturnWith.Dynamic
   ( -- * Effect

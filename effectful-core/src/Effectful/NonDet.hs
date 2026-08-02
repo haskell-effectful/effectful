@@ -1,5 +1,9 @@
 -- | Provider of the t'Control.Applicative.Alternative' and
 -- t'Control.Monad.MonadPlus' instance for 'Eff'.
+--
+-- /Note:/ the 'NonDet' effect uses the t'Effectful.Error.Static.Error' effect
+-- underneath, so caveats described in "Effectful.Error.Static" (in particular
+-- the interaction with threads) apply.
 module Effectful.NonDet
   ( -- * Effect
     NonDet(..)

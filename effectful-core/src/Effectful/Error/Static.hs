@@ -75,6 +75,20 @@
 -- /Hint:/ if you'd like to reproduce the transactional behavior with the
 -- t'Effectful.State.Static.Local.State' effect, appropriate usage of
 -- 'Effectful.Exception.bracketOnError' will do the trick.
+--
+-- === Interaction with threads
+--
+-- The 'Error' effect uses runtime exceptions underneath, so the usual rules
+-- apply. In particular, in multi-threaded code an error thrown in a child
+-- thread will not automatically propagate to the parent. If you need that, use
+-- functions such as @withAsync@ from the
+-- [Effectful.Concurrent.Async](https://hackage.haskell.org/package/effectful/docs/Effectful-Concurrent-Async.html)
+-- module of the @effectful@ package (which propagate exceptions from child
+-- threads to their parents) or arrange the propagation yourself.
+--
+-- For more information see the documentation of the
+-- [Concurrent](https://hackage.haskell.org/package/effectful/docs/Effectful-Concurrent.html#t:Concurrent)
+-- effect.
 module Effectful.Error.Static
   ( -- * Effect
     Error
@@ -297,6 +311,11 @@ instance Show ErrorWrapper where
     . (errRep ++)
     . ("\n" ++)
     . (prettyCallStack cs ++)
+    . ("\n\nIf you see this message, most likely an error escaped the " ++)
+    . ("scope of its handler, e.g. by being thrown from a thread that " ++)
+    . ("outlived it, or was caught by an overly zealous exception handler. " ++)
+    . ("For more information see the documentation of the " ++)
+    . ("Effectful.Error.Static module." ++)
 
 instance Exception ErrorWrapper where
   -- See discussion in https://github.com/haskell-effectful/effectful/pull/232.

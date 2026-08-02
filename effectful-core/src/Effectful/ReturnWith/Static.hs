@@ -16,6 +16,20 @@
 -- >>> runEff . runReturnWith $ classify (-5)
 -- "negative"
 --
+-- === Interaction with threads
+--
+-- The 'ReturnWith' effect uses runtime exceptions underneath, so the usual
+-- rules apply. In particular, in multi-threaded code a call to 'returnWith' in
+-- a child thread will not automatically propagate to the parent. If you need
+-- that, use functions such as @withAsync@ from the
+-- [Effectful.Concurrent.Async](https://hackage.haskell.org/package/effectful/docs/Effectful-Concurrent-Async.html)
+-- module of the @effectful@ package (which propagate exceptions from child
+-- threads to their parents) or arrange the propagation yourself.
+--
+-- For more information see the documentation of the
+-- [Concurrent](https://hackage.haskell.org/package/effectful/docs/Effectful-Concurrent.html#t:Concurrent)
+-- effect.
+--
 -- @since 2.7.0.0
 module Effectful.ReturnWith.Static
   ( -- * Effect
@@ -81,6 +95,11 @@ instance Show ReturnWithWrapper where
     = showParen (p > 10)
     $ ("Effectful.ReturnWith.Static.ReturnWithWrapper\n" ++)
     . (prettyCallStack cs ++)
+    . ("\n\nIf you see this message, most likely a call to returnWith " ++)
+    . ("escaped the scope of its handler, e.g. by being made from a thread " ++)
+    . ("that outlived it, or was caught by an overly zealous exception " ++)
+    . ("handler. For more information see the documentation of the " ++)
+    . ("Effectful.ReturnWith.Static module." ++)
 
 instance Exception ReturnWithWrapper where
   -- See discussion in https://github.com/haskell-effectful/effectful/pull/232.

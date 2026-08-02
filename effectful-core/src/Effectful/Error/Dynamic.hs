@@ -4,6 +4,9 @@
 -- t'Control.Monad.Except.MonadError' instance for compatibility with existing
 -- code, it's recommended to use the statically dispatched variant,
 -- i.e. "Effectful.Error.Static".
+--
+-- All caveats described in "Effectful.Error.Static" (in particular the
+-- interaction with threads) apply.
 module Effectful.Error.Dynamic
   ( -- * Effect
     Error(..)

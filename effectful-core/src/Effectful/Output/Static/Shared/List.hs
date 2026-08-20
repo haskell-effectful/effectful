@@ -12,7 +12,7 @@ module Effectful.Output.Static.Shared.List
   , output
   ) where
 
-import Control.Concurrent.MVar.Strict
+import Control.Concurrent.MVar.Strict qualified as S
 import Data.Kind
 
 import Effectful
@@ -23,15 +23,15 @@ import Effectful.Dispatch.Static.Primitive
 data Output (o :: Type) :: Effect
 
 type instance DispatchOf (Output o) = Static NoSideEffects
-newtype instance StaticRep (Output o) = Output (MVar' [o])
+newtype instance StaticRep (Output o) = Output (S.MVar [o])
 
 -- | Run the 'Output' effect and return the final value along with the
 -- accumulated list.
 runOutput :: HasCallStack => Eff (Output o : es) a -> Eff es (a, [o])
 runOutput action = do
-  v <- unsafeEff_ $ newMVar' []
+  v <- unsafeEff_ $ S.newMVar []
   a <- evalStaticRep (Output v) action
-  (a, ) . reverse <$> unsafeEff_ (readMVar' v)
+  (a, ) . reverse <$> unsafeEff_ (S.readMVar v)
 
 -- | Append the value to the end of the list.
 output
@@ -40,4 +40,4 @@ output
   -> Eff es ()
 output !o = unsafeEff $ \es -> do
   Output v <- getEnv es
-  modifyMVar'_ v $ \acc -> pure (o : acc)
+  S.modifyMVar_ v $ \acc -> pure (o : acc)

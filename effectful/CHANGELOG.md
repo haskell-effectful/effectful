@@ -49,6 +49,7 @@
 * Document why the `MonadThrow`, `MonadCatch` and `MonadMask` instances for
   `Eff` are available without any effect requirements.
 * Require `primitive` >= 0.9.0.0.
+* Require `strict-mutable-base` >= 2.0.0.0.
 * Remove `SharedSuffix` constraints from functions in
   `Effectful.Dispatch.Dynamic` and deprecate the class, as runtime sanity
   checks make it unnecessary.
@@ -57,6 +58,9 @@
     to support `SharedSuffix` constraints.
   - Remove the `KnownEffects` class as it's no longer used; handlers of the
     `ProviderList` effect now require the `KnownSubset` constraint instead.
+  - Drop ticks from the API of `Effectful.Concurrent.Chan.Strict`,
+    `Effectful.Concurrent.MVar.Strict` and `Effectful.Prim.IORef.Strict` to
+    match `strict-mutable-base` 2.0.0.0.
 * **Bugfixes**:
   - `restoreStorageData` no longer shrinks the capacity of the storage, which
     could result in out of bounds reads when out of date references to the

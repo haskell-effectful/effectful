@@ -46,6 +46,7 @@
 * Document why the `MonadThrow`, `MonadCatch` and `MonadMask` instances for
   `Eff` are available without any effect requirements.
 * Require `primitive` >= 0.9.0.0.
+* Require `strict-mutable-base` >= 2.0.0.0.
 * Remove `SharedSuffix` constraints from functions in
   `Effectful.Dispatch.Dynamic` and deprecate the class, as runtime sanity
   checks make it unnecessary.

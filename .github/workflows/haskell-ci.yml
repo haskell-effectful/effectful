@@ -148,7 +148,7 @@ jobs:
       - name: cache (tools)
         uses: actions/cache/restore@v5
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-a943d659
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-98456d37
           path: ~/.haskell-ci-tools
       - name: install cabal-plan
         run: |
@@ -161,13 +161,13 @@ jobs:
           cabal-plan --version
       - name: install doctest
         run: |
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project doctest --constraint='doctest ^>=0.25.0' ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest --version ; fi
+          if [ $((HCNUMVER < 91200 || HCNUMVER >= 91400)) -ne 0 ] ; then $CABAL --store-dir=$HOME/.haskell-ci-tools/store v2-install $ARG_COMPILER --ignore-project doctest --constraint='doctest ^>=0.25.0' ; fi
+          if [ $((HCNUMVER < 91200 || HCNUMVER >= 91400)) -ne 0 ] ; then doctest --version ; fi
       - name: save cache (tools)
         if: always()
         uses: actions/cache/save@v5
         with:
-          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-a943d659
+          key: ${{ runner.os }}-${{ matrix.compiler }}-tools-98456d37
           path: ~/.haskell-ci-tools
       - name: checkout
         uses: actions/checkout@v7
@@ -284,12 +284,12 @@ jobs:
           $CABAL v2-test $ARG_COMPILER $ARG_TESTS $ARG_BENCH all --test-show-details=direct
       - name: doctest
         run: |
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
-          if [ $((HCNUMVER < 91200)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200 || HCNUMVER >= 91400)) -ne 0 ] ; then cd ${PKGDIR_effectful_core} || false ; fi
+          if [ $((HCNUMVER < 91200 || HCNUMVER >= 91400)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200 || HCNUMVER >= 91400)) -ne 0 ] ; then cd ${PKGDIR_effectful_th} || false ; fi
+          if [ $((HCNUMVER < 91200 || HCNUMVER >= 91400)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
+          if [ $((HCNUMVER < 91200 || HCNUMVER >= 91400)) -ne 0 ] ; then cd ${PKGDIR_effectful} || false ; fi
+          if [ $((HCNUMVER < 91200 || HCNUMVER >= 91400)) -ne 0 ] ; then doctest  -XGHC2021 -XDataKinds -XDeepSubsumption -XDerivingStrategies -XDuplicateRecordFields -XLambdaCase -XNoFieldSelectors -XNoStarIsType -XOverloadedRecordDot -XRoleAnnotations -XTypeFamilies -XUndecidableInstances src ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_effectful_core} || false

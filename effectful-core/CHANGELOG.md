@@ -1,4 +1,4 @@
-# effectful-core-2.7.0.0 (2026-??-??)
+# effectful-core-2.7.0.0 (2026-08-24)
 * Add the `Input` effect (`Effectful.Input.Dynamic`, `Effectful.Input.Static`,
   `Effectful.Input.Static.Action` and `Effectful.Labeled.Input`) for access to
   values.
@@ -33,11 +33,11 @@
   implementation, yet deadlocks when operations of the same `State` effect are
   used within the callback, while the local variant silently discards state
   modifications made this way. If you need atomic effectful updates of shared
-  state, use an explicit `MVar'`.
+  state, use an explicit `MVar`.
 * Deprecate `runStateMVar`, `evalStateMVar` and `execStateMVar` from
   `Effectful.State.Static.Shared` so that the internal representation of the
-  shared `State` effect is not tied to an `MVar'`. If you need access to the
-  state from outside of the effect, manage an explicit `MVar'` yourself.
+  shared `State` effect is not tied to an `MVar`. If you need access to the
+  state from outside of the effect, manage an explicit `MVar` yourself.
 * Tighten pre-requisites for `unconsEnv` and `unreplaceEnv`.
 * Add `localLendBorrow` to `Effectful.Dispatch.Dynamic`.
 * Add `rethrowErrorWith`, `rethrowError` and `rethrowError_` (along with the

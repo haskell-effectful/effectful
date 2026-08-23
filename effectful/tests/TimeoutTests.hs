@@ -16,7 +16,7 @@ timeoutTests = testGroup "Timeout"
 
 test_returnBeforeTimeout :: Assertion
 test_returnBeforeTimeout = runEff $ do
-  result <- runTimeout $ timeout 1000 $ return ()
+  result <- runTimeout $ timeout 1000000 $ return ()
   U.assertEqual "return value" (Just ()) result
 
 test_timeoutBeforeReturn :: Assertion

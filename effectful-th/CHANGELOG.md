@@ -1,4 +1,4 @@
-# effectful-th-1.0.0.4 (????-??-??)
+# effectful-th-1.0.0.4 (2026-08-24)
 * Drop support for GHC < 9.6.
 * Don't generate signatures with an out-of-scope name when a constructor
   mentions the monad variable in its context (e.g. `Op :: Monad m => Int -> E m

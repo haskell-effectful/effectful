@@ -1,4 +1,4 @@
-# effectful-plugin-2.2.0.0 (2026-??-??)
+# effectful-plugin-2.2.0.0 (2026-08-24)
 * Fix a compiler panic when a constraint headed by a type variable or a
   quantified constraint is considered during candidate filtering.
 * Consider effects from the context as candidates for wanteds with (partially)

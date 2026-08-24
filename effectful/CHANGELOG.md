@@ -1,3 +1,7 @@
+# effectful-2.7.0.1 (2026-08-24)
+* Re-export `Effectful.Labeled.Provider` and `Effectful.Labeled.Provider.List`
+  from `effectful-core`.
+
 # effectful-2.7.0.0 (2026-08-24)
 * Add `OsPath` variants of the `FilePath` based APIs
   (`Effectful.FileSystem.OsPath` for `System.Directory.OsPath` and
@@ -17,6 +21,8 @@
 * Add the `ReturnWith` effect (`Effectful.ReturnWith.Dynamic`,
   `Effectful.ReturnWith.Static` and `Effectful.Labeled.ReturnWith`) for early
   return from a computation.
+* Make the `Provider` and `ProviderList` effects dynamically dispatched and
+  export their operations.
 * Re-export `Labeled(..)` from all `Effectful.Labeled.*` modules.
 * Drop support for GHC < 9.6.
 * Add definitions of `rethrowM` to `MonadThrow` and `catchNoPropagate` to
@@ -87,7 +93,7 @@
 * Re-export `writeTMVar` from `stm-2.5.1.0` in `Effectful.Concurrent.STM`.
 * Add `cancelMany` to `Effectful.Concurrent.Async`.
 
-# effectful-core-2.6.0.0 (2025-06-13)
+# effectful-2.6.0.0 (2025-06-13)
 * Adjust `generalBracket` with `base >= 4.21` to make use of the new exception
   annotation mechanism.
 * Add `withException` to `Effectful.Exception`.

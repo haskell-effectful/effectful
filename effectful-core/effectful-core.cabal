@@ -51,6 +51,10 @@ common language
 library
     import:         language
 
+    -- -O2 enables -ffast-pap-calls, without which the handler invocation in
+    -- send and passthrough (an unknown call with 5 pointers and the State#
+    -- token that matches no precompiled RTS apply pattern) allocates an
+    -- intermediate PAP on every operation of a dynamically dispatched effect.
     ghc-options:    -O2
 
     build-depends:    base                >= 4.18      && < 5

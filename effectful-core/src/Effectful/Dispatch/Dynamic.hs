@@ -1210,6 +1210,21 @@ instance
 ----------------------------------------
 -- Helpers
 
+-- Note [NOINLINE on the Impl functions]
+--
+-- The public wrappers must inline at call sites, because that's the only place
+-- the callstack-thawing adapter around the handler (see 'HandlerImpl') can
+-- fuse with a concrete handler. If it doesn't, the adapter is stored in the
+-- 'Handler' as a closure over an unknown function and every 'send' pays for an
+-- extra unknown call, CallStack allocation and generic apply of a PAP.
+--
+-- The wrappers have no INLINE pragmas, so they expose their optimized RHS as
+-- the unfolding and GHC inlines them based on its size. NOINLINE below keeps
+-- the bodies of the Impl functions out of these unfoldings, guaranteeing that
+-- they stay small. Historically reinterpretImpl had an INLINE pragma instead
+-- and a minor addition to it grew the wrappers of reinterpret past the
+-- inlining threshold, silently causing exactly this regression.
+
 interpretImpl
   :: (HasCallStack, DispatchOf e ~ Dynamic)
   => Eff (e : es) a
@@ -1217,7 +1232,7 @@ interpretImpl
   -> Eff      es  a
 interpretImpl action handlerImpl = unsafeEff $ \es -> do
   (`unEff` es) $ runHandler (Handler es handlerImpl) action
-{-# INLINE interpretImpl #-}
+{-# NOINLINE interpretImpl #-}
 
 reinterpretImpl
   :: (HasCallStack, DispatchOf e ~ Dynamic)
@@ -1229,7 +1244,7 @@ reinterpretImpl runSetup action handlerImpl = unsafeEff $ \es -> do
   (`unEff` es) . runSetup . unsafeEff $ \handlerEs -> do
     requireInScopeSetup es handlerEs
     (`unEff` es) $ runHandler (Handler handlerEs handlerImpl) action
-{-# INLINE reinterpretImpl #-}
+{-# NOINLINE reinterpretImpl #-}
 
 interposeImpl
   :: forall e es a. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
@@ -1253,7 +1268,7 @@ interposeImpl action handlerImpl = unsafeEff $ \es -> do
         putEnv es $ Handler newEs handlerImpl
         unEff action es
     )
-{-# INLINE interposeImpl #-}
+{-# NOINLINE interposeImpl #-}
 
 imposeImpl
   :: forall e es handlerEs a b. (HasCallStack, DispatchOf e ~ Dynamic, e :> es)
@@ -1281,7 +1296,7 @@ imposeImpl runSetup action handlerImpl = unsafeEff $ \es -> do
           putEnv es $ Handler handlerEs handlerImpl
           unEff action es
     )
-{-# INLINE imposeImpl #-}
+{-# NOINLINE imposeImpl #-}
 
 copyRefs
   :: forall es srcEs destEs

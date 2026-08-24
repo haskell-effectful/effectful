@@ -373,7 +373,7 @@ pooledMapConcurrently
 pooledMapConcurrently f t = unsafeEff $ \es -> do
   U.pooledMapConcurrently (\a -> unEff (f a) =<< cloneEnv es) t
 
--- | Lifted 'U.pooledMapConcurrentlyN'.
+-- | Lifted 'U.pooledMapConcurrentlyN_'.
 pooledMapConcurrentlyN_
   :: (HasCallStack, Concurrent :> es, Foldable f)
   => Int
@@ -411,7 +411,7 @@ pooledForConcurrently
 pooledForConcurrently t f = unsafeEff $ \es -> do
   U.pooledForConcurrently t (\a -> unEff (f a) =<< cloneEnv es)
 
--- | Lifted 'U.pooledForConcurrentlyN'.
+-- | Lifted 'U.pooledForConcurrentlyN_'.
 pooledForConcurrentlyN_
   :: (HasCallStack, Concurrent :> es, Foldable f)
   => Int

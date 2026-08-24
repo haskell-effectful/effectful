@@ -61,7 +61,7 @@ atomicModifyIORef var = unsafeEff_ . Ref.atomicModifyIORef var
 atomicModifyIORef' :: Prim :> es => IORef a -> (a -> (a, b)) -> Eff es b
 atomicModifyIORef' var = unsafeEff_ . Ref.atomicModifyIORef' var
 
--- | Lifted 'Ref.atomicWriteIORef''.
+-- | Lifted 'Ref.atomicWriteIORef'.
 atomicWriteIORef :: Prim :> es => IORef a -> a -> Eff es ()
 atomicWriteIORef var = unsafeEff_ . Ref.atomicWriteIORef var
 

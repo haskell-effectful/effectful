@@ -77,7 +77,7 @@ type role Env nominal
 -- __Warning: the environment is a mutable data structure and cannot be simultaneously used from multiple threads under any circumstances.__
 --
 -- In order to pass it to a different thread, you need to perform a deep copy
--- with the 'cloneEnv' funtion.
+-- with the 'cloneEnv' function.
 --
 -- Offers very good performance characteristics for most often performed
 -- operations:
@@ -381,7 +381,7 @@ unconsEnv (Env offset refs storage) = do
 
 -- | Replace a specific effect in the stack with a new value.
 --
--- /Note:/ unlike in 'putEnv' the value in not changed in place, so only the new
+-- /Note:/ unlike in 'putEnv' the value is not changed in place, so only the new
 -- environment will see it.
 replaceEnv
   :: forall e es. (HasCallStack, e :> es)

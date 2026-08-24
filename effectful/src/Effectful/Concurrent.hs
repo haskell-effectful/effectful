@@ -186,7 +186,7 @@ forkOS k = unsafeEff $ \es -> do
   esF <- cloneEnv es
   C.forkOS $ unEff k esF
 
--- | Lifted 'E.forkOSWithUnmask'.
+-- | Lifted 'C.forkOSWithUnmask'.
 forkOSWithUnmask
   :: (HasCallStack, Concurrent :> es)
   => ((forall a. Eff es a -> Eff es a) -> Eff es ())

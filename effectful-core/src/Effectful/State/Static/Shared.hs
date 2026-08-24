@@ -1,6 +1,6 @@
 -- | Support for access to a shared, mutable value of a particular type.
 --
--- The value is shared between multiple threads. If you want each thead to
+-- The value is shared between multiple threads. If you want each thread to
 -- manage its own version of the value, use "Effectful.State.Static.Local".
 --
 -- /Note:/ unlike the 'Control.Monad.Trans.State.StateT' monad transformer from

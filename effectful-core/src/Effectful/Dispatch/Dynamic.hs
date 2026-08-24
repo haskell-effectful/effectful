@@ -59,6 +59,7 @@ module Effectful.Dispatch.Dynamic
   , localLendBorrow
   , SharedSuffix
   , KnownSubset
+  , type (++)
 
     -- ** Utils for first order effects
   , EffectHandler_

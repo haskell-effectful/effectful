@@ -29,7 +29,7 @@ import Data.Functor.Identity
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Labeled
-import Effectful.Provider.List (ProviderList(..), ProviderList_, type (++))
+import Effectful.Provider.List (ProviderList(..), ProviderList_)
 import Effectful.Provider.List qualified as P
 
 -- | Run the labeled 'ProviderList' effect with a given handler.

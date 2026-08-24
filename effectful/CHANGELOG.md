@@ -1,6 +1,10 @@
-# effectful-2.7.0.1 (2026-08-24)
+# effectful-2.7.1.0 (2026-??-??)
 * Re-export `Effectful.Labeled.Provider` and `Effectful.Labeled.Provider.List`
   from `effectful-core`.
+* Export `seqForkUnliftIO` and add `unsafeSeqForkUnliftIO` in
+  `Effectful.Dispatch.Static` for the `SeqForkUnlift` strategy.
+* Export `type (++)` from `Effectful.Dispatch.Dynamic`.
+* Remove an unnecessary `HasCallStack` constraint from `handleJust`.
 
 # effectful-2.7.0.0 (2026-08-24)
 * Add `OsPath` variants of the `FilePath` based APIs

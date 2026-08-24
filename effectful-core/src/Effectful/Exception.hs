@@ -302,7 +302,7 @@ handleDeep = flip catchDeep
 
 -- | Flipped version of 'catchJust'.
 handleJust
-  :: (HasCallStack, E.Exception e)
+  :: E.Exception e
   => (e -> Maybe b)
   -- ^ The predicate.
   -> (b -> Eff es a)

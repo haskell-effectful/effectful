@@ -1,3 +1,9 @@
+# effectful-core-2.7.1.0 (2026-??-??)
+* Export `seqForkUnliftIO` and add `unsafeSeqForkUnliftIO` in
+  `Effectful.Dispatch.Static` for the `SeqForkUnlift` strategy.
+* Export `type (++)` from `Effectful.Dispatch.Dynamic`.
+* Remove an unnecessary `HasCallStack` constraint from `handleJust`.
+
 # effectful-core-2.7.0.0 (2026-08-24)
 * Add the `Input` effect (`Effectful.Input.Dynamic`, `Effectful.Input.Static`,
   `Effectful.Input.Static.Action` and `Effectful.Labeled.Input`) for access to

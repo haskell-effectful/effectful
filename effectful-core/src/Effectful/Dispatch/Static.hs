@@ -25,8 +25,10 @@ module Effectful.Dispatch.Static
 
     -- ** Unlifts
   , seqUnliftIO
+  , seqForkUnliftIO
   , concUnliftIO
   , unsafeSeqUnliftIO
+  , unsafeSeqForkUnliftIO
   , unsafeConcUnliftIO
 
     -- ** Utils
@@ -198,6 +200,20 @@ unsafeSeqUnliftIO
   -> Eff es a
 unsafeSeqUnliftIO k = unsafeEff $ \es -> do
   seqUnliftIO es k
+
+-- | Create an unlifting function with the 'SeqForkUnlift' strategy.
+--
+-- This function is __unsafe__ because it can be used to introduce arbitrary
+-- 'IO' actions into pure 'Eff' computations.
+--
+-- @since 2.7.1.0
+unsafeSeqForkUnliftIO
+  :: HasCallStack
+  => ((forall r. Eff es r -> IO r) -> IO a)
+  -- ^ Continuation with the unlifting function in scope.
+  -> Eff es a
+unsafeSeqForkUnliftIO k = unsafeEff $ \es -> do
+  seqForkUnliftIO es k
 
 -- | Create an unlifting function with the 'ConcUnlift' strategy.
 --

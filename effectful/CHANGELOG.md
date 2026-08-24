@@ -1,4 +1,4 @@
-# effectful-2.7.1.0 (2026-??-??)
+# effectful-2.7.1.0 (2026-08-24)
 * Re-export `Effectful.Labeled.Provider` and `Effectful.Labeled.Provider.List`
   from `effectful-core`.
 * Export `seqForkUnliftIO` and add `unsafeSeqForkUnliftIO` in

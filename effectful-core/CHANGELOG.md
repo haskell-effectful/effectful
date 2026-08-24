@@ -1,4 +1,4 @@
-# effectful-core-2.7.1.0 (2026-??-??)
+# effectful-core-2.7.1.0 (2026-08-24)
 * Export `seqForkUnliftIO` and add `unsafeSeqForkUnliftIO` in
   `Effectful.Dispatch.Static` for the `SeqForkUnlift` strategy.
 * Export `type (++)` from `Effectful.Dispatch.Dynamic`.

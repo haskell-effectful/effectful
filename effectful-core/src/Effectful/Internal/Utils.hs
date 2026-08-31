@@ -22,13 +22,19 @@ module Effectful.Internal.Utils
 
     -- * Array capacity
   , growCapacity
+
+    -- * Utils for 'MutablePrimArray'
+  , fillPrimArray
   ) where
 
 import Control.Exception
+import Control.Monad.Primitive
 import Data.Primitive.ByteArray
+import Data.Primitive.PrimArray
+import Data.Primitive.Types
 import Data.Word
 import GHC.Conc.Sync (ThreadId(..))
-import GHC.Exts (Any, RealWorld)
+import GHC.Exts (Any)
 import GHC.Stack.Types (CallStack(..))
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -115,3 +121,31 @@ thawCallStack = \case
 -- See https://archive.ph/Z2R8w.
 growCapacity :: Int -> Int
 growCapacity n = 1 + quot (n * 3) 2
+
+----------------------------------------
+
+-- | Fill a slice of a mutable primitive array with a value.
+fillPrimArray
+  :: forall a m
+   . (Prim a, PrimMonad m)
+  => MutablePrimArray (PrimState m) a
+  -> Int
+  -- ^ Offset of the first element to fill.
+  -> Int
+  -- ^ Number of elements to fill.
+  -> a
+  -- ^ Value to write.
+  -> m ()
+#if defined(javascript_HOST_ARCH)
+-- 'setPrimArray' calls a C memset helper of the primitive package. The
+-- JavaScript backend does not generate wrappers for foreign imports, and
+-- primitive ships no JavaScript sources, so the symbol is missing at run time.
+fillPrimArray arr off n x = go (off + n - 1)
+  where
+    go :: Int -> m ()
+    go i
+      | i >= off = writePrimArray arr i x >> go (i - 1)
+      | otherwise = pure ()
+#else
+fillPrimArray = setPrimArray
+#endif

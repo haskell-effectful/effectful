@@ -266,7 +266,7 @@ restoreStorageData (StorageData newSize vs1 es1 fs1) env = do
       -- 'undefinedVersion' to maintain the invariant that slots beyond
       -- the size of the storage never contain garbage (see the note on
       -- 'undefinedVersion').
-      setPrimArray vs newSize (vs0size - newSize) undefinedVersion
+      fillPrimArray vs newSize (vs0size - newSize) undefinedVersion
       pure vs
     else pure vs1
   es0size <- getSizeofSmallMutableArray es0
@@ -554,7 +554,7 @@ insertEffect storage e f = do
       -- Fill the unused part of the versions array with 'undefinedVersion' to
       -- maintain the invariant that slots beyond the size of the storage never
       -- contain garbage (see the note on 'undefinedVersion').
-      setPrimArray vs size (len - size) undefinedVersion
+      fillPrimArray vs size (len - size) undefinedVersion
       copyMutablePrimArray  vs 0 vs0 0 size
       copySmallMutableArray es 0 es0 0 size
       copySmallMutableArray fs 0 fs0 0 size

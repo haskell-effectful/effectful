@@ -1,3 +1,6 @@
+# effectful-core-2.7.1.2 (2026-??-??)
+* Make the library work with the JavaScript backend.
+
 # effectful-core-2.7.1.1 (2026-08-24)
 * Fix a performance regression introduced in 2.7.0.0 that increased the
   per-operation overhead of dynamically dispatched effects.

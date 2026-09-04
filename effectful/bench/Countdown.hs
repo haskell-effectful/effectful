@@ -45,7 +45,7 @@ import Control.Carrier.State.Strict qualified as FE
 -- mtl
 #ifdef VERSION_mtl
 import Control.Monad.Reader qualified as M
-import Control.Monad.State qualified as M
+import Control.Monad.State.Strict qualified as M
 import Data.Functor.Identity
 #endif
 

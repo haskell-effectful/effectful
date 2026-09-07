@@ -213,6 +213,9 @@ benchmark bench
        if impl(ghc < 9.15)
           build-depends: polysemy >= 1.9.2.0
 
+       if impl(ghc < 9.15)
+          build-depends: bluefin >= 0.9 && < 0.10
+
     build-depends:    base
                     , async
                     , effectful

@@ -82,7 +82,7 @@ module Effectful.Internal.Monad
   ) where
 
 import Control.Applicative
-import Control.Concurrent (myThreadId)
+import Control.Concurrent
 import Control.Exception qualified as E
 import Control.Monad
 import Control.Monad.Base
@@ -96,7 +96,7 @@ import Data.Kind (Constraint)
 import GHC.Exts (oneShot)
 import GHC.IO (IO(..))
 import GHC.Stack
-import System.IO.Unsafe (unsafeDupablePerformIO)
+import System.IO.Unsafe (unsafePerformIO)
 import Unsafe.Coerce (unsafeCoerce)
 
 import Effectful.Internal.Effect
@@ -129,15 +129,28 @@ newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
 -- | Run a pure 'Eff' computation.
 --
 -- For running computations with side effects see 'runEff'.
+--
+-- /Note:/ the computation runs in a separate thread as a workaround for
+-- [#380](https://github.com/haskell-effectful/effectful/issues/380).
 runPureEff :: HasCallStack => Eff '[] a -> a
-runPureEff (Eff m) =
-  -- unsafeDupablePerformIO is safe here since IOE was not on the stack, so no
-  -- IO with side effects was performed (unless someone sneakily introduced side
-  -- effects with unsafeEff, but then all bets are off).
-  --
-  -- Moreover, internals don't allocate any resources that require explicit
-  -- cleanup actions to run.
-  unsafeDupablePerformIO $ m =<< emptyEnv
+runPureEff (Eff m) = do
+  -- unsafePerformIO is safe here since IOE was not on the stack, so no IO with
+  -- side effects was performed (unless someone sneakily introduced side effects
+  -- with unsafeEff, but then all bets are off).
+  unsafePerformIO $ do
+    mv <- newEmptyMVar
+    _ <- E.mask_ $ forkIOWithUnmask $ \unmask -> do
+      r <- E.try @E.SomeException . unmask $ m =<< emptyEnv
+      putMVar mv r
+    -- Need to use readMVar instead of takeMVar. Entering the suspended
+    -- computation doesn't blackhole it, so several threads can resume it at
+    -- the same time and each of them needs the result.
+    --
+    -- The wait must not be wrapped in an exception handler that kills the
+    -- worker. A catch frame on this stack is exactly what the fork avoids, and
+    -- a thread that resumes the suspended computation later still needs the
+    -- worker to fill the MVar.
+    either E.throwIO pure =<< readMVar mv
 
 ----------------------------------------
 -- Access to the internal representation

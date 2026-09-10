@@ -139,6 +139,10 @@ runPureEff (Eff m) = do
   -- with unsafeEff, but then all bets are off).
   unsafePerformIO $ do
     mv <- newEmptyMVar
+    -- A thunk has no masking state, so a plain forkIO here would make the
+    -- worker inherit the masking state of whichever thread forces the thunk
+    -- first. Start the worker masked so that the try and the putMVar can't be
+    -- interrupted, and run the computation unmasked.
     _ <- E.mask_ $ forkIOWithUnmask $ \unmask -> do
       r <- E.try @E.SomeException . unmask $ m =<< emptyEnv
       putMVar mv r

@@ -1,4 +1,4 @@
-# effectful-core-2.7.1.2 (2026-??-??)
+# effectful-core-2.7.1.2 (2026-09-10)
 * Make the library work with the JavaScript backend.
 * Fix `runPureEff` values being permanently poisoned by an asynchronous
   exception delivered to a thread that forces them (see

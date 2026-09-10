@@ -14,6 +14,7 @@ import LabeledTests
 import NonDetTests
 import OutputTests
 import PrimTests
+import PureEffTests
 import ReaderTests
 import ReturnWithTests
 import StateTests
@@ -35,6 +36,7 @@ main = defaultMain $ testGroup "effectful"
   , nonDetTests
   , outputTests
   , primTests
+  , pureEffTests
   , readerTests
   , returnWithTests
   , stateTests

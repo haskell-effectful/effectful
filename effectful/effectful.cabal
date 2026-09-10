@@ -184,6 +184,7 @@ test-suite test
                     NonDetTests
                     OutputTests
                     PrimTests
+                    PureEffTests
                     ReaderTests
                     ReturnWithTests
                     StateTests

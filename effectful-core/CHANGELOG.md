@@ -1,5 +1,10 @@
 # effectful-core-2.7.1.2 (2026-??-??)
 * Make the library work with the JavaScript backend.
+* Fix `runPureEff` values being permanently poisoned by an asynchronous
+  exception delivered to a thread that forces them (see
+  [#380](https://github.com/haskell-effectful/effectful/issues/380) for more
+  information). As a workaround, `runPureEff` now runs the computation in a
+  separate thread.
 
 # effectful-core-2.7.1.1 (2026-08-24)
 * Fix a performance regression introduced in 2.7.0.0 that increased the

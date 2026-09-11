@@ -3,6 +3,8 @@ module PureEffTests (pureEffTests) where
 import Control.Concurrent
 import Control.Exception
 import Data.IORef
+import System.Mem
+import System.Timeout
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -14,6 +16,7 @@ pureEffTests :: TestTree
 pureEffTests = testGroup "PureEff"
   [ testCase "thunk survives a killed forcer" test_killedForcer
   , testCase "masking state doesn't leak into the forcer" test_maskingState
+  , testCase "worker dies with an unreachable result" test_unreachableResult
   ]
 
 -- The computation blocks on 'gate' so that the forcing thread is guaranteed to
@@ -80,3 +83,31 @@ test_maskingState = do
   case r of
     Left e -> assertFailure $ "exception delivered under a mask: " ++ show e
     Right v -> assertEqual "thunk is not poisoned" 42 v
+
+-- Kill a thread in the middle of forcing a 'runPureEff' thunk, drop the thunk
+-- and collect garbage. The worker must receive ThreadKilled from the reaper,
+-- not BlockedIndefinitelyOnMVar, so 'gate' stays reachable until the end.
+test_unreachableResult :: Assertion
+test_unreachableResult = do
+  started <- newEmptyMVar
+  gate <- newEmptyMVar
+  killed <- newEmptyMVar
+  shared <- newIORef . runPureEff $ do
+    unsafeEff_ $ do
+      putMVar started ()
+      takeMVar gate `catch` \e -> putMVar killed (e :: SomeException)
+    pure (42 :: Int)
+  done <- newEmptyMVar
+  worker <- forkIO $ do
+    r <- try @SomeException (readIORef shared >>= evaluate)
+    putMVar done r
+  takeMVar started
+  killThread worker
+  _ <- takeMVar done
+  writeIORef shared 0
+  performMajorGC
+  r <- timeout 1_000_000 $ takeMVar killed
+  case r of
+    Nothing -> assertFailure "worker is still running"
+    Just e -> assertEqual "worker got ThreadKilled" (Just ThreadKilled) (fromException e)
+  putMVar gate ()

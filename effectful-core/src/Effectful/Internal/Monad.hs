@@ -92,6 +92,7 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Primitive
 import Control.Monad.Trans.Control
+import Data.IORef
 import Data.Kind (Constraint)
 import GHC.Exts (oneShot)
 import GHC.IO (IO(..))
@@ -131,7 +132,8 @@ newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
 -- For running computations with side effects see 'runEff'.
 --
 -- /Note:/ the computation runs in a separate thread as a workaround for
--- [#380](https://github.com/haskell-effectful/effectful/issues/380).
+-- [#380](https://github.com/haskell-effectful/effectful/issues/380). The thread
+-- is killed when the result becomes unreachable.
 runPureEff :: HasCallStack => Eff '[] a -> a
 runPureEff (Eff m) = do
   -- unsafePerformIO is safe here since IOE was not on the stack, so no IO with
@@ -143,9 +145,16 @@ runPureEff (Eff m) = do
     -- worker inherit the masking state of whichever thread forces the thunk
     -- first. Start the worker masked so that the try and the putMVar can't be
     -- interrupted, and run the computation unmasked.
-    _ <- E.mask_ $ forkIOWithUnmask $ \unmask -> do
+    workerId <- E.mask_ $ forkIOWithUnmask $ \unmask -> do
       r <- E.try @E.SomeException . unmask $ m =<< emptyEnv
       putMVar mv r
+    -- Kill the worker once nobody can observe its result. The worker keeps mv
+    -- alive, so the weak pointer needs a key that only the waiting thread and
+    -- the suspended computation reference. keepAlive holds the key in a stack
+    -- frame, and an asynchronous exception captures that frame together with
+    -- the rest of the computation.
+    owner <- newIORef ()
+    _ <- mkWeakIORef owner $ killThread workerId
     -- Need to use readMVar instead of takeMVar. Entering the suspended
     -- computation doesn't blackhole it, so several threads can resume it at
     -- the same time and each of them needs the result.
@@ -154,7 +163,7 @@ runPureEff (Eff m) = do
     -- worker. A catch frame on this stack is exactly what the fork avoids, and
     -- a thread that resumes the suspended computation later still needs the
     -- worker to fill the MVar.
-    either E.throwIO pure =<< readMVar mv
+    keepAlive owner $ either E.throwIO pure =<< readMVar mv
 
 ----------------------------------------
 -- Access to the internal representation

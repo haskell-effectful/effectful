@@ -86,10 +86,16 @@ updateLookupWithKey
   -> (Maybe a, Word64Map a)
 updateLookupWithKey f k = go
   where
+    -- The rebuilt subtree is bound to a name, because a lazy component of the
+    -- result pair would make each level of the path allocate a thunk.
     go t@(Bin p l r)
       | nomatch k p = (Nothing, t)
-      | left k p    = let (found, l') = go l in (found, binCheckLeft p l' r)
-      | otherwise   = let (found, r') = go r in (found, binCheckRight p l r')
+      | left k p    = let (found, l') = go l
+                          t' = binCheckLeft p l' r
+                      in (found, t')
+      | otherwise   = let (found, r') = go r
+                          t' = binCheckRight p l r'
+                      in (found, t')
     go t@(Tip ky y)
       | k == ky     = case f ky y of
           Just y' -> (Just y, Tip ky y')

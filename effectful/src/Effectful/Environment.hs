@@ -31,46 +31,46 @@ data Environment :: Effect
 type instance DispatchOf Environment = Static WithSideEffects
 data instance StaticRep Environment = Environment
 
--- | Run the 'Environment' effect.
+-- | Run the t'Environment' effect.
 runEnvironment :: (HasCallStack, IOE :> es) => Eff (Environment : es) a -> Eff es a
 runEnvironment = evalStaticRep Environment
 
--- | Lifted 'E.getArgs'.
+-- | Lifted 'System.Environment.getArgs'.
 getArgs :: Environment :> es => Eff es [String]
 getArgs = unsafeEff_ E.getArgs
 
--- | Lifted 'E.getEnv'.
+-- | Lifted 'System.Environment.getEnv'.
 getEnv :: Environment :> es => String -> Eff es String
 getEnv = unsafeEff_ . E.getEnv
 
--- | Lifted 'E.getEnvironment'.
+-- | Lifted 'System.Environment.getEnvironment'.
 getEnvironment :: Environment :> es => Eff es [(String, String)]
 getEnvironment = unsafeEff_ E.getEnvironment
 
--- | Lifted 'E.getExecutablePath'.
+-- | Lifted 'System.Environment.getExecutablePath'.
 getExecutablePath :: Environment :> es => Eff es FilePath
 getExecutablePath = unsafeEff_ E.getExecutablePath
 
--- | Lifted 'E.getProgName'.
+-- | Lifted 'System.Environment.getProgName'.
 getProgName :: Environment :> es => Eff es String
 getProgName = unsafeEff_ E.getProgName
 
--- | Lifted 'E.lookupEnv'.
+-- | Lifted 'System.Environment.lookupEnv'.
 lookupEnv :: Environment :> es => String -> Eff es (Maybe String)
 lookupEnv = unsafeEff_ . E.lookupEnv
 
--- | Lifted 'E.setEnv'.
+-- | Lifted 'System.Environment.setEnv'.
 setEnv :: Environment :> es => String -> String -> Eff es ()
 setEnv n = unsafeEff_ . E.setEnv n
 
--- | Lifted 'E.unsetEnv'.
+-- | Lifted 'System.Environment.unsetEnv'.
 unsetEnv :: Environment :> es => String -> Eff es ()
 unsetEnv = unsafeEff_ . E.unsetEnv
 
--- | Lifted 'E.withArgs'.
+-- | Lifted 'System.Environment.withArgs'.
 withArgs :: Environment :> es => [String] -> Eff es a -> Eff es a
 withArgs = unsafeLiftMapIO . E.withArgs
 
--- | Lifted 'E.withProgName'.
+-- | Lifted 'System.Environment.withProgName'.
 withProgName :: Environment :> es => String -> Eff es a -> Eff es a
 withProgName = unsafeLiftMapIO . E.withProgName

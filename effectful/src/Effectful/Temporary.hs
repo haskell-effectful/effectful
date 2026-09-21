@@ -24,11 +24,11 @@ data Temporary :: Effect
 type instance DispatchOf Temporary = Static WithSideEffects
 data instance StaticRep Temporary = Temporary
 
--- | Run the 'Temporary' effect.
+-- | Run the t'Temporary' effect.
 runTemporary :: (HasCallStack, IOE :> es) => Eff (Temporary : es) a -> Eff es a
 runTemporary = evalStaticRep Temporary
 
--- | Lifted 'T.withSystemTempFile'.
+-- | Lifted 'UnliftIO.Temporary.withSystemTempFile'.
 withSystemTempFile
   :: Temporary :> es
   => String
@@ -39,7 +39,7 @@ withSystemTempFile
 withSystemTempFile template action = unsafeSeqUnliftIO $ \unlift -> do
   T.withSystemTempFile template $ \fp handle -> unlift $ action fp handle
 
--- | Lifted 'T.withSystemTempDirectory'.
+-- | Lifted 'UnliftIO.Temporary.withSystemTempDirectory'.
 withSystemTempDirectory
   :: Temporary :> es
   => String
@@ -50,7 +50,7 @@ withSystemTempDirectory
 withSystemTempDirectory template action = unsafeSeqUnliftIO $ \unlift -> do
   T.withSystemTempDirectory template $ \fp -> unlift $ action fp
 
--- | Lifted 'T.withTempFile'.
+-- | Lifted 'UnliftIO.Temporary.withTempFile'.
 withTempFile
   :: Temporary :> es
   => FilePath
@@ -63,7 +63,7 @@ withTempFile
 withTempFile tmpDir template action = unsafeSeqUnliftIO $ \unlift -> do
   T.withTempFile tmpDir template $ \fp handle -> unlift $ action fp handle
 
--- | Lifted 'T.withTempDirectory'.
+-- | Lifted 'UnliftIO.Temporary.withTempDirectory'.
 withTempDirectory
   :: Temporary :> es
   => FilePath

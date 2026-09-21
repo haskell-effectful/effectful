@@ -143,7 +143,7 @@ sumEff = foldr plusEff emptyEff
 ----------------------------------------
 -- Internal helpers
 
--- | Internal error type for the Empty action. Better than '()' in case it
+-- | Internal error type for the Empty action. Better than @()@ in case it
 -- escapes the scope of 'runNonDet' and shows up in error messages.
 data ErrorEmpty = ErrorEmpty
 instance Show ErrorEmpty where

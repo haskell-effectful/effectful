@@ -1,4 +1,4 @@
--- | The dynamically dispatched variant of the 'Input' effect.
+-- | The dynamically dispatched variant of the t'Input' effect.
 --
 -- /Note:/ unless you plan to change interpretations at runtime, it's
 -- recommended to use one of the statically dispatched variants,
@@ -30,7 +30,7 @@ type instance DispatchOf (Input i) = Dynamic
 ----------------------------------------
 -- Handlers
 
--- | Run the 'Input' effect with the given value.
+-- | Run the t'Input' effect with the given value.
 runInput
   :: HasCallStack
   => i
@@ -40,7 +40,7 @@ runInput
 runInput inputValue = interpret_ $ \case
   Input -> pure inputValue
 
--- | Run the 'Input' effect with the given action that supplies values.
+-- | Run the t'Input' effect with the given action that supplies values.
 runInputAction
   :: forall i es a
    . HasCallStack

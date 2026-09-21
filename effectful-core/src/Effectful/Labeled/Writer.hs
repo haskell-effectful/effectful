@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
--- | Convenience functions for the 'Labeled' 'Writer' effect.
+-- | Convenience functions for the t'Labeled' 'Writer' effect.
 --
 -- @since 2.4.0.0
 module Effectful.Labeled.Writer

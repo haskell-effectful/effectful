@@ -26,7 +26,7 @@ data Output (o :: Type) :: Effect
 
 type instance DispatchOf (Output o) = Static NoSideEffects
 
--- | Wrapper to prevent a space leak on reconstruction of 'Output' in
+-- | Wrapper to prevent a space leak on reconstruction of t'Output' in
 -- 'relinkOutput' (see https://gitlab.haskell.org/ghc/ghc/-/issues/25520).
 newtype OutputImpl o es where
   OutputImpl :: (HasCallStack => o -> Eff es ()) -> OutputImpl o es
@@ -37,7 +37,7 @@ data instance StaticRep (Output o) where
     -> !(OutputImpl o actionEs)
     -> StaticRep (Output o)
 
--- | Run the 'Output' effect with the given action for receiving values.
+-- | Run the t'Output' effect with the given action for receiving values.
 runOutput
   :: forall o es a
    . HasCallStack

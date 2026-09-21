@@ -31,7 +31,7 @@ data Output (o :: Type) :: Effect
 type instance DispatchOf (Output o) = Static NoSideEffects
 data instance StaticRep (Output o) = Output !Int !(MutableArray RealWorld o)
 
--- | Run the 'Output' effect and return the final value along with the
+-- | Run the t'Output' effect and return the final value along with the
 -- accumulated array.
 runOutput :: HasCallStack => Eff (Output o : es) a -> Eff es (a, Array o)
 runOutput = runOutputImpl $ \(Output size arr) -> do

@@ -1,6 +1,6 @@
 -- | Support for handling errors of a particular type, i.e. checked exceptions.
 --
--- The 'Error' effect is __not__ a general mechanism for handling regular
+-- The t'Error' effect is __not__ a general mechanism for handling regular
 -- exceptions, that's what functions from the "Effectful.Exception" module are
 -- for.
 --
@@ -39,7 +39,7 @@
 -- Left "oops"
 --
 -- /Note:/ unlike the 'Control.Monad.Trans.Except.ExceptT' monad transformer
--- from the @transformers@ library, the order in which you handle the 'Error'
+-- from the @transformers@ library, the order in which you handle the t'Error'
 -- effect with regard to other stateful effects does not matter. Consider the
 -- following:
 --
@@ -78,7 +78,7 @@
 --
 -- === Interaction with threads
 --
--- The 'Error' effect uses runtime exceptions underneath, so the usual rules
+-- The t'Error' effect uses runtime exceptions underneath, so the usual rules
 -- apply. In particular, in multi-threaded code an error thrown in a child
 -- thread will not automatically propagate to the parent. If you need that, use
 -- functions such as @withAsync@ from the
@@ -297,7 +297,7 @@ tryError action = do
 newtype ErrorId = ErrorId Unique
   deriving newtype Eq
 
--- | A unique is picked so that distinct 'Error' handlers for the same type
+-- | A unique is picked so that distinct t'Error' handlers for the same type
 -- don't catch each other's exceptions.
 newErrorId :: IO ErrorId
 newErrorId = ErrorId <$> newUnique

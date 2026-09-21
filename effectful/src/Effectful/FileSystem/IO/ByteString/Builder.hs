@@ -28,12 +28,12 @@ import Effectful.FileSystem
 ----------------------------------------
 -- Executing Builders
 
--- | Lifted 'BSB.hPutBuilder'.
+-- | Lifted 'Data.ByteString.Builder.hPutBuilder'.
 hPutBuilder :: FileSystem :> es => Handle -> Builder -> Eff es ()
 hPutBuilder h = unsafeEff_ . BSB.hPutBuilder h
 
 #if MIN_VERSION_bytestring(0,11,2)
--- | Lifted 'BSB.writeFile'.
+-- | Lifted 'Data.ByteString.Builder.writeFile'.
 writeFile :: FileSystem :> es => FilePath -> Builder -> Eff es ()
 writeFile fp = unsafeEff_ . BSB.writeFile fp
 #endif

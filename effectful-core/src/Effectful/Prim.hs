@@ -1,4 +1,4 @@
--- | Provider of the 'MonadPrim' instance for 'Eff'.
+-- | Provider of the t'Control.Monad.Primitive.MonadPrim' instance for 'Eff'.
 module Effectful.Prim
   ( -- * Effect
     Prim

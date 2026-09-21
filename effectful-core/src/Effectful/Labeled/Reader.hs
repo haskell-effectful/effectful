@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
--- | Convenience functions for the 'Labeled' 'Reader' effect.
+-- | Convenience functions for the t'Labeled' 'Reader' effect.
 --
 -- @since 2.4.0.0
 module Effectful.Labeled.Reader

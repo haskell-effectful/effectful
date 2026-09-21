@@ -20,14 +20,14 @@ import Effectful
 import Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
 
--- | Lifted 'Q.newQSemN'.
+-- | Lifted 'Control.Concurrent.QSemN.newQSemN'.
 newQSemN :: Concurrent :> es => Int -> Eff es QSemN
 newQSemN = unsafeEff_ . Q.newQSemN
 
--- | Lifted 'Q.waitQSemN'.
+-- | Lifted 'Control.Concurrent.QSemN.waitQSemN'.
 waitQSemN :: Concurrent :> es => QSemN -> Int -> Eff es ()
 waitQSemN x = unsafeEff_ . Q.waitQSemN x
 
--- | Lifted 'Q.signalQSemN'.
+-- | Lifted 'Control.Concurrent.QSemN.signalQSemN'.
 signalQSemN :: Concurrent :> es => QSemN -> Int -> Eff es ()
 signalQSemN x = unsafeEff_ . Q.signalQSemN x

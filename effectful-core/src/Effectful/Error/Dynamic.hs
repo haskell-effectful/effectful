@@ -68,7 +68,7 @@ runErrorWith handler m = runError m >>= \case
   Right a -> pure a
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static"). In case of an
--- error discard the 'E.CallStack'.
+-- error discard the t'Effectful.Error.Static.CallStack'.
 --
 -- @since 2.3.0.0
 runErrorNoCallStack
@@ -78,7 +78,8 @@ runErrorNoCallStack
 runErrorNoCallStack = fmap (either (Left . snd) Right) . runError
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static") with a specific
--- error handler. In case of an error discard the 'CallStack'.
+-- error handler. In case of an error discard the
+-- t'Effectful.Error.Static.CallStack'.
 runErrorNoCallStackWith
   :: HasCallStack
   => (e -> Eff es a)
@@ -120,12 +121,13 @@ throwError_
   -> Eff es a
 throwError_ = withFrozenCallStack throwErrorWith (const "<opaque>")
 
--- | Throw an error of type @e@ with the given 'E.CallStack' and specify a
--- display function in case a third-party code catches the internal exception
--- and 'show's it.
+-- | Throw an error of type @e@ with the given
+-- t'Effectful.Error.Static.CallStack' and specify a display function in case a
+-- third-party code catches the internal exception and 'show's it.
 --
 -- Useful e.g. when you want to catch an error and rethrow it converted to a
--- different type without losing the original 'E.CallStack'.
+-- different type without losing the original
+-- t'Effectful.Error.Static.CallStack'.
 --
 -- @since 2.7.0.0
 rethrowErrorWith
@@ -133,33 +135,33 @@ rethrowErrorWith
   => (e -> String)
   -- ^ The display function.
   -> E.CallStack
-  -- ^ The 'E.CallStack' to attach to the error.
+  -- ^ The t'Effectful.Error.Static.CallStack' to attach to the error.
   -> e
   -- ^ The error.
   -> Eff es a
 rethrowErrorWith display cs = send . RethrowErrorWith display cs
 
--- | Throw an error of type @e@ with the given 'E.CallStack' and 'show' as a
--- display function.
+-- | Throw an error of type @e@ with the given
+-- t'Effectful.Error.Static.CallStack' and 'show' as a display function.
 --
 -- @since 2.7.0.0
 rethrowError
   :: (Error e :> es, Show e)
   => E.CallStack
-  -- ^ The 'E.CallStack' to attach to the error.
+  -- ^ The t'Effectful.Error.Static.CallStack' to attach to the error.
   -> e
   -- ^ The error.
   -> Eff es a
 rethrowError = rethrowErrorWith show
 
--- | Throw an error of type @e@ with the given 'E.CallStack' and no display
--- function.
+-- | Throw an error of type @e@ with the given
+-- t'Effectful.Error.Static.CallStack' and no display function.
 --
 -- @since 2.7.0.0
 rethrowError_
   :: Error e :> es
   => E.CallStack
-  -- ^ The 'E.CallStack' to attach to the error.
+  -- ^ The t'Effectful.Error.Static.CallStack' to attach to the error.
   -> e
   -- ^ The error.
   -> Eff es a

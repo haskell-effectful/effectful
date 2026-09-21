@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
--- | Convenience functions for the 'Labeled' 'Error' effect.
+-- | Convenience functions for the t'Labeled' 'Error' effect.
 --
 -- @since 2.4.0.0
 module Effectful.Labeled.Error
@@ -59,7 +59,7 @@ runErrorWith
 runErrorWith = runLabeled @label . E.runErrorWith
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static"). In case of an
--- error discard the 'E.CallStack'.
+-- error discard the t'Effectful.Error.Dynamic.CallStack'.
 runErrorNoCallStack
   :: forall label e es a
    . HasCallStack
@@ -68,7 +68,8 @@ runErrorNoCallStack
 runErrorNoCallStack = runLabeled @label E.runErrorNoCallStack
 
 -- | Handle errors of type @e@ (via "Effectful.Error.Static") with a specific
--- error handler. In case of an error discard the 'CallStack'.
+-- error handler. In case of an error discard the
+-- t'Effectful.Error.Dynamic.CallStack'.
 runErrorNoCallStackWith
   :: forall label e es a
    . HasCallStack
@@ -109,12 +110,13 @@ throwError_
   -> Eff es a
 throwError_ = withFrozenCallStack (throwErrorWith @label) (const "<opaque>")
 
--- | Throw an error of type @e@ with the given 'E.CallStack' and specify a
--- display function in case a third-party code catches the internal exception
--- and 'show's it.
+-- | Throw an error of type @e@ with the given
+-- t'Effectful.Error.Dynamic.CallStack' and specify a display function in case a
+-- third-party code catches the internal exception and 'show's it.
 --
 -- Useful e.g. when you want to catch an error and rethrow it converted to a
--- different type without losing the original 'E.CallStack'.
+-- different type without losing the original
+-- t'Effectful.Error.Dynamic.CallStack'.
 --
 -- @since 2.7.0.0
 rethrowErrorWith
@@ -123,36 +125,36 @@ rethrowErrorWith
   => (e -> String)
   -- ^ The display function.
   -> E.CallStack
-  -- ^ The 'E.CallStack' to attach to the error.
+  -- ^ The t'Effectful.Error.Dynamic.CallStack' to attach to the error.
   -> e
   -- ^ The error.
   -> Eff es a
 rethrowErrorWith display cs =
   send . Labeled @label . RethrowErrorWith display cs
 
--- | Throw an error of type @e@ with the given 'E.CallStack' and 'show' as a
--- display function.
+-- | Throw an error of type @e@ with the given
+-- t'Effectful.Error.Dynamic.CallStack' and 'show' as a display function.
 --
 -- @since 2.7.0.0
 rethrowError
   :: forall label e es a
    . (Labeled label (Error e) :> es, Show e)
   => E.CallStack
-  -- ^ The 'E.CallStack' to attach to the error.
+  -- ^ The t'Effectful.Error.Dynamic.CallStack' to attach to the error.
   -> e
   -- ^ The error.
   -> Eff es a
 rethrowError = rethrowErrorWith @label show
 
--- | Throw an error of type @e@ with the given 'E.CallStack' and no display
--- function.
+-- | Throw an error of type @e@ with the given
+-- t'Effectful.Error.Dynamic.CallStack' and no display function.
 --
 -- @since 2.7.0.0
 rethrowError_
   :: forall label e es a
    . Labeled label (Error e) :> es
   => E.CallStack
-  -- ^ The 'E.CallStack' to attach to the error.
+  -- ^ The t'Effectful.Error.Dynamic.CallStack' to attach to the error.
   -> e
   -- ^ The error.
   -> Eff es a

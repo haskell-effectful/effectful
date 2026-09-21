@@ -2,7 +2,7 @@
 -- The deprecated stateM needs to use the deprecated StateM operation until
 -- they're removed.
 {-# OPTIONS_GHC -Wno-deprecations #-}
--- | Convenience functions for the 'Labeled' 'State' effect.
+-- | Convenience functions for the t'Labeled' t'State' effect.
 --
 -- @since 2.4.0.0
 module Effectful.Labeled.State
@@ -43,7 +43,7 @@ import Effectful.State.Dynamic qualified as S
 ----------------------------------------
 -- Local
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value along with the final state (via "Effectful.State.Static.Local").
 runStateLocal
   :: forall label s es a
@@ -54,7 +54,7 @@ runStateLocal
   -> Eff es (a, s)
 runStateLocal = runLabeled @label . S.runStateLocal
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value, discarding the final state (via "Effectful.State.Static.Local").
 evalStateLocal
   :: forall label s es a
@@ -65,7 +65,7 @@ evalStateLocal
   -> Eff es a
 evalStateLocal = runLabeled @label . S.evalStateLocal
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- state, discarding the final value (via "Effectful.State.Static.Local").
 execStateLocal
   :: forall label s es a
@@ -79,7 +79,7 @@ execStateLocal = runLabeled @label . S.execStateLocal
 ----------------------------------------
 -- Shared
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value along with the final state (via "Effectful.State.Static.Shared").
 runStateShared
   :: forall label s es a
@@ -90,7 +90,7 @@ runStateShared
   -> Eff es (a, s)
 runStateShared = runLabeled @label . S.runStateShared
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value, discarding the final state (via "Effectful.State.Static.Shared").
 evalStateShared
   :: forall label s es a
@@ -101,7 +101,7 @@ evalStateShared
   -> Eff es a
 evalStateShared = runLabeled @label . S.evalStateShared
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- state, discarding the final value (via "Effectful.State.Static.Shared").
 execStateShared
   :: forall label s es a

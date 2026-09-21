@@ -4,8 +4,10 @@
 -- This module supplies thin wrappers over functions from "Control.Exception" as
 -- well as several utility functions for convenience.
 --
--- /Note:/ the 'Eff' monad provides instances for 'C.MonadThrow', 'C.MonadCatch'
--- and 'C.MonadMask', so any existing code that uses them remains compatible.
+-- /Note:/ the 'Eff' monad provides instances for
+-- t'Control.Monad.Catch.MonadThrow', t'Control.Monad.Catch.MonadCatch' and
+-- t'Control.Monad.Catch.MonadMask', so any existing code that uses them remains
+-- compatible.
 module Effectful.Exception
   ( -- * Throwing
     throwIO
@@ -92,10 +94,10 @@ module Effectful.Exception
 
     -- * Re-exports from "Control.Exception"
 
-    -- ** The 'SomeException' type
+    -- ** The t'Control.Exception.SomeException' type
   , E.SomeException(..)
 
-    -- ** The 'Exception' class
+    -- ** The t'Control.Exception.Exception' class
   , E.Exception(..)
   , E.mapException
 
@@ -164,7 +166,7 @@ import Effectful.Dispatch.Static.Unsafe
 ----------------------------------------
 -- Throwing
 
--- | Lifted 'E.throwIO'.
+-- | Lifted 'Control.Exception.throwIO'.
 throwIO
   :: (HasCallStack, E.Exception e)
   => e
@@ -173,7 +175,7 @@ throwIO
 throwIO = unsafeEff_ . withFrozenCallStack E.throwIO
 
 #if MIN_VERSION_base(4,21,0)
--- | Lifted 'E.rethrowIO'.
+-- | Lifted 'Control.Exception.rethrowIO'.
 rethrowIO
   :: E.Exception e
   => E.ExceptionWithContext e
@@ -186,7 +188,7 @@ rethrowIO = unsafeEff_ . E.rethrowIO
 
 -- $catchAll
 --
--- /Note:/ __do not use 'catch', 'handle' or 'try' to catch 'E.SomeException'__
+-- /Note:/ __do not use 'catch', 'handle' or 'try' to catch t'Control.Exception.SomeException'__
 -- unless you're really sure you want to catch __all__ exceptions (including
 -- asynchronous ones). Instead:
 --
@@ -196,7 +198,7 @@ rethrowIO = unsafeEff_ . E.rethrowIO
 -- - If you want to catch all synchronous exceptions, use 'catchSync',
 --   'handleSync' or 'trySync'.
 
--- | Lifted 'E.catch'.
+-- | Lifted 'Control.Exception.catch'.
 catch
   :: E.Exception e
   => Eff es a
@@ -217,7 +219,7 @@ catchDeep
 catchDeep action = catch (evaluateDeep =<< action)
 
 #if MIN_VERSION_base(4,21,0)
--- | Lifted 'E.catchNoPropagate'.
+-- | Lifted 'Control.Exception.catchNoPropagate'.
 catchNoPropagate
   :: E.Exception e
   => Eff es a
@@ -228,7 +230,7 @@ catchNoPropagate action handler = reallyUnsafeUnliftIO $ \unlift -> do
   E.catchNoPropagate (unlift action) (unlift . handler)
 #endif
 
--- | Lifted 'E.catchJust'.
+-- | Lifted 'Control.Exception.catchJust'.
 catchJust
   :: E.Exception e
   => (e -> Maybe b)
@@ -251,7 +253,7 @@ catchIf
   -> Eff es a
 catchIf p = catchJust (\e -> if p e then Just e else Nothing)
 
--- | 'catch' specialized to catch 'IOException'.
+-- | 'catch' specialized to catch t'Control.Exception.IOException'.
 catchIO
   :: Eff es a
   -> (E.IOException -> Eff es a)
@@ -261,7 +263,7 @@ catchIO = catch
 
 -- | 'catch' specialized to catch all exceptions considered to be synchronous.
 --
--- @'catchSync' ≡ 'catchIf' \@'E.SomeException' 'isSyncException'@
+-- @'catchSync' ≡ 'catchIf' \@'Control.Exception.SomeException' 'isSyncException'@
 --
 -- See the [check exception type](#checkExceptionType) section for more
 -- information.
@@ -347,7 +349,7 @@ handleSyncDeep
   -> Eff es a
 handleSyncDeep = flip catchSyncDeep
 
--- | Lifted 'E.try'.
+-- | Lifted 'Control.Exception.try'.
 try
   :: E.Exception e
   => Eff es a
@@ -357,7 +359,7 @@ try action = reallyUnsafeUnliftIO $ \unlift -> do
   E.try (unlift action)
 
 #if MIN_VERSION_base(4,21,0)
--- | Lifted 'E.tryWithContext'.
+-- | Lifted 'Control.Exception.tryWithContext'.
 tryWithContext
   :: E.Exception e
   => Eff es a
@@ -375,7 +377,7 @@ tryDeep
   -> Eff es (Either e a)
 tryDeep action = try (evaluateDeep =<< action)
 
--- | Lifted 'E.tryJust'.
+-- | Lifted 'Control.Exception.tryJust'.
 tryJust
   :: E.Exception e
   => (e -> Maybe b)
@@ -394,7 +396,7 @@ tryIf
   -> Eff es (Either e a)
 tryIf p = tryJust (\e -> if p e then Just e else Nothing)
 
--- | 'try' specialized to catch 'IOException'.
+-- | 'try' specialized to catch t'Control.Exception.IOException'.
 tryIO
   :: Eff es a
   -- ^ The action.
@@ -403,7 +405,7 @@ tryIO = try
 
 -- | 'try' specialized to catch all exceptions considered to be synchronous.
 --
--- @'trySync' ≡ 'tryIf' \@'E.SomeException' 'isSyncException'@
+-- @'trySync' ≡ 'tryIf' \@'Control.Exception.SomeException' 'isSyncException'@
 --
 -- See the [check exception type](#checkExceptionType) section for more
 -- information.
@@ -422,7 +424,7 @@ trySyncDeep
   -> Eff es (Either E.SomeException a)
 trySyncDeep action = trySync (evaluateDeep =<< action)
 
--- | Lifted 'E.catches'.
+-- | Lifted 'Control.Exception.catches'.
 catches
   :: Eff es a
   -> [C.Handler (Eff es) a]
@@ -454,7 +456,7 @@ catchesDeep action = catches (evaluateDeep =<< action)
 -- 4.23 instead of discarding the original exception, see [CLC proposal
 -- #397](https://github.com/haskell/core-libraries-committee/issues/397).
 
--- | Lifted 'E.bracket'.
+-- | Lifted 'Control.Exception.bracket'.
 bracket
   :: Eff es a
   -- ^ Computation to run first.
@@ -469,7 +471,7 @@ bracket before after action = mask $ \restore -> do
   _ <- after a
   pure r
 
--- | Lifted 'E.bracket_'.
+-- | Lifted 'Control.Exception.bracket_'.
 bracket_
   :: Eff es a
   -- ^ Computation to run first.
@@ -480,7 +482,7 @@ bracket_
   -> Eff es c
 bracket_ before after action = bracket before (const after) (const action)
 
--- | Lifted 'E.bracketOnError'.
+-- | Lifted 'Control.Exception.bracketOnError'.
 bracketOnError
   :: Eff es a
   -- ^ Computation to run first.
@@ -496,7 +498,7 @@ bracketOnError before after action = mask $ \restore -> do
 
 -- | Generalization of 'bracket'.
 --
--- See 'C.generalBracket' for more information.
+-- See 'Control.Monad.Catch.generalBracket' for more information.
 generalBracket
   :: Eff es a
   -- ^ Computation to run first.
@@ -507,7 +509,7 @@ generalBracket
   -> Eff es (c, b)
 generalBracket = C.generalBracket
 
--- | Lifted 'E.finally'.
+-- | Lifted 'Control.Exception.finally'.
 finally
   :: Eff es a
   -> Eff es b
@@ -518,7 +520,7 @@ finally action handler = mask $ \restore -> do
   _ <- handler
   pure r
 
--- | Lifted 'E.onException'.
+-- | Lifted 'Control.Exception.onException'.
 onException
   :: Eff es a
   -> Eff es b
@@ -552,7 +554,7 @@ withException action cleanup = do
 ----------------------------------------
 -- Utils
 
--- | Lifted 'E.evaluate'.
+-- | Lifted 'Control.Exception.evaluate'.
 evaluate :: a -> Eff es a
 evaluate = unsafeEff_ . E.evaluate
 
@@ -561,7 +563,7 @@ evaluateDeep :: NFData a => a -> Eff es a
 evaluateDeep = unsafeEff_ . E.evaluate . force
 
 #if MIN_VERSION_base(4,20,0)
--- | Lifted 'E.annotateIO'.
+-- | Lifted 'Control.Exception.annotateIO'.
 annotateIO :: E.ExceptionAnnotation e => e -> Eff es a -> Eff es a
 annotateIO e action = reallyUnsafeUnliftIO $ \unlift -> do
   E.annotateIO e (unlift action)
@@ -574,11 +576,11 @@ annotateIO e action = reallyUnsafeUnliftIO $ \unlift -> do
 --
 -- /Note:/ there's no way to determine whether an exception was thrown
 -- synchronously or asynchronously, so these functions rely on a
--- heuristic. Namely, an exception type is determined by its 'E.Exception'
--- instance.
+-- heuristic. Namely, an exception type is determined by its
+-- t'Control.Exception.Exception' instance.
 --
--- Exception types with the default 'E.Exception' instance are considered
--- synchronous:
+-- Exception types with the default t'Control.Exception.Exception' instance are
+-- considered synchronous:
 --
 -- >>> data SyncEx = SyncEx deriving (Show)
 -- >>> instance Exception SyncEx
@@ -589,8 +591,8 @@ annotateIO e action = reallyUnsafeUnliftIO $ \unlift -> do
 -- >>> isAsyncException SyncEx
 -- False
 --
--- Whereas for asynchronous exceptions you need to define their 'E.Exception'
--- instance as follows:
+-- Whereas for asynchronous exceptions you need to define their
+-- t'Control.Exception.Exception' instance as follows:
 --
 -- >>> data AsyncEx = AsyncEx deriving (Show)
 -- >>> :{
@@ -620,36 +622,36 @@ isAsyncException e = case E.fromException (E.toException e) of
 ----------------------------------------
 -- Low-level API
 
--- | Lifted 'E.mask'.
+-- | Lifted 'Control.Exception.mask'.
 mask :: ((forall r. Eff es r -> Eff es r) -> Eff es a) -> Eff es a
 mask k = reallyUnsafeUnliftIO $ \unlift -> do
   E.mask $ \release -> unlift $ k (reallyUnsafeLiftMapIO release)
 
--- | Lifted 'E.mask_'.
+-- | Lifted 'Control.Exception.mask_'.
 mask_ :: Eff es a -> Eff es a
 mask_ action = reallyUnsafeUnliftIO $ \unlift -> do
   E.mask_ (unlift action)
 
--- | Lifted 'E.uninterruptibleMask'.
+-- | Lifted 'Control.Exception.uninterruptibleMask'.
 uninterruptibleMask :: ((forall r. Eff es r -> Eff es r) -> Eff es a) -> Eff es a
 uninterruptibleMask k = reallyUnsafeUnliftIO $ \unlift -> do
   E.uninterruptibleMask $ \release -> unlift $ k (reallyUnsafeLiftMapIO release)
 
--- | Lifted 'E.uninterruptibleMask_'.
+-- | Lifted 'Control.Exception.uninterruptibleMask_'.
 uninterruptibleMask_ :: Eff es a -> Eff es a
 uninterruptibleMask_ action = reallyUnsafeUnliftIO $ \unlift -> do
   E.uninterruptibleMask_ (unlift action)
 
--- | Lifted 'E.getMaskingState'.
+-- | Lifted 'Control.Exception.getMaskingState'.
 getMaskingState :: Eff es E.MaskingState
 getMaskingState = unsafeEff_ E.getMaskingState
 
--- | Lifted 'E.interruptible'.
+-- | Lifted 'Control.Exception.interruptible'.
 interruptible :: Eff es a -> Eff es a
 interruptible action = reallyUnsafeUnliftIO $ \unlift -> do
   E.interruptible (unlift action)
 
--- | Lifted 'E.allowInterrupt'.
+-- | Lifted 'Control.Exception.allowInterrupt'.
 allowInterrupt :: Eff es ()
 allowInterrupt = unsafeEff_ E.allowInterrupt
 

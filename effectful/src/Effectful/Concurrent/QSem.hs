@@ -20,14 +20,14 @@ import Effectful
 import Effectful.Concurrent.Effect
 import Effectful.Dispatch.Static
 
--- | Lifted 'Q.newQSem'.
+-- | Lifted 'Control.Concurrent.QSem.newQSem'.
 newQSem :: Concurrent :> es => Int -> Eff es QSem
 newQSem = unsafeEff_ . Q.newQSem
 
--- | Lifted 'Q.waitQSem'.
+-- | Lifted 'Control.Concurrent.QSem.waitQSem'.
 waitQSem :: Concurrent :> es => QSem -> Eff es ()
 waitQSem = unsafeEff_ . Q.waitQSem
 
--- | Lifted 'Q.signalQSem'.
+-- | Lifted 'Control.Concurrent.QSem.signalQSem'.
 signalQSem :: Concurrent :> es => QSem -> Eff es ()
 signalQSem = unsafeEff_ . Q.signalQSem

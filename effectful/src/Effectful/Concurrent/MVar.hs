@@ -37,83 +37,83 @@ import Effectful.Dispatch.Static
 import Effectful.Dispatch.Static.Primitive
 import Effectful.Dispatch.Static.Unsafe
 
--- | Lifted 'M.newEmptyMVar'.
+-- | Lifted 'Control.Concurrent.MVar.newEmptyMVar'.
 newEmptyMVar :: Concurrent :> es => Eff es (MVar a)
 newEmptyMVar = unsafeEff_ M.newEmptyMVar
 
--- | Lifted 'M.newMVar'.
+-- | Lifted 'Control.Concurrent.MVar.newMVar'.
 newMVar :: Concurrent :> es => a -> Eff es (MVar a)
 newMVar = unsafeEff_ . M.newMVar
 
--- | Lifted 'M.takeMVar'.
+-- | Lifted 'Control.Concurrent.MVar.takeMVar'.
 takeMVar :: Concurrent :> es => MVar a -> Eff es a
 takeMVar = unsafeEff_ . M.takeMVar
 
--- | Lifted 'M.putMVar'.
+-- | Lifted 'Control.Concurrent.MVar.putMVar'.
 putMVar :: Concurrent :> es => MVar a -> a -> Eff es ()
 putMVar var = unsafeEff_ . M.putMVar var
 
--- | Lifted 'M.readMVar'.
+-- | Lifted 'Control.Concurrent.MVar.readMVar'.
 readMVar :: Concurrent :> es => MVar a -> Eff es a
 readMVar = unsafeEff_ . M.readMVar
 
--- | Lifted 'M.swapMVar'.
+-- | Lifted 'Control.Concurrent.MVar.swapMVar'.
 swapMVar :: Concurrent :> es => MVar a -> a -> Eff es a
 swapMVar var = unsafeEff_ . M.swapMVar var
 
--- | Lifted 'M.tryTakeMVar'.
+-- | Lifted 'Control.Concurrent.MVar.tryTakeMVar'.
 tryTakeMVar :: Concurrent :> es => MVar a -> Eff es (Maybe a)
 tryTakeMVar = unsafeEff_ . M.tryTakeMVar
 
--- | Lifted 'M.tryPutMVar'.
+-- | Lifted 'Control.Concurrent.MVar.tryPutMVar'.
 tryPutMVar :: Concurrent :> es => MVar a -> a -> Eff es Bool
 tryPutMVar var = unsafeEff_ . M.tryPutMVar var
 
--- | Lifted 'M.isEmptyMVar'.
+-- | Lifted 'Control.Concurrent.MVar.isEmptyMVar'.
 isEmptyMVar :: Concurrent :> es => MVar a -> Eff es Bool
 isEmptyMVar = unsafeEff_ . M.isEmptyMVar
 
--- | Lifted 'M.tryReadMVar'.
+-- | Lifted 'Control.Concurrent.MVar.tryReadMVar'.
 tryReadMVar :: Concurrent :> es => MVar a -> Eff es (Maybe a)
 tryReadMVar = unsafeEff_ . M.tryReadMVar
 
--- | Lifted 'M.withMVar'.
+-- | Lifted 'Control.Concurrent.MVar.withMVar'.
 withMVar :: Concurrent :> es => MVar a -> (a -> Eff es b) -> Eff es b
 withMVar var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.withMVar var $ unlift . f
 {-# INLINE withMVar #-}
 
--- | Lifted 'M.withMVarMasked'.
+-- | Lifted 'Control.Concurrent.MVar.withMVarMasked'.
 withMVarMasked :: Concurrent :> es => MVar a -> (a -> Eff es b) -> Eff es b
 withMVarMasked var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.withMVarMasked var $ unlift . f
 {-# INLINE withMVarMasked #-}
 
--- | Lifted 'M.modifyMVar_'.
+-- | Lifted 'Control.Concurrent.MVar.modifyMVar_'.
 modifyMVar_ :: Concurrent :> es => MVar a -> (a -> Eff es a) -> Eff es ()
 modifyMVar_ var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.modifyMVar_ var $ unlift . f
 {-# INLINE modifyMVar_ #-}
 
--- | Lifted 'M.modifyMVar'.
+-- | Lifted 'Control.Concurrent.MVar.modifyMVar'.
 modifyMVar :: Concurrent :> es => MVar a -> (a -> Eff es (a, b)) -> Eff es b
 modifyMVar var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.modifyMVar var $ unlift . f
 {-# INLINE modifyMVar #-}
 
--- | Lifted 'M.modifyMVarMasked_'.
+-- | Lifted 'Control.Concurrent.MVar.modifyMVarMasked_'.
 modifyMVarMasked_ :: Concurrent :> es => MVar a -> (a -> Eff es a) -> Eff es ()
 modifyMVarMasked_ var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.modifyMVarMasked_ var $ unlift . f
 {-# INLINE modifyMVarMasked_ #-}
 
--- | Lifted 'M.modifyMVarMasked'.
+-- | Lifted 'Control.Concurrent.MVar.modifyMVarMasked'.
 modifyMVarMasked :: Concurrent :> es => MVar a -> (a -> Eff es (a, b)) -> Eff es b
 modifyMVarMasked var f = reallyUnsafeUnliftIO $ \unlift -> do
   M.modifyMVarMasked var $ unlift . f
 {-# INLINE modifyMVarMasked #-}
 
--- | Lifted 'M.mkWeakMVar'.
+-- | Lifted 'Control.Concurrent.MVar.mkWeakMVar'.
 --
 -- /Note:/ the finalizer will run a cloned environment, so any changes it makes
 -- to thread local data will not be visible outside of it.

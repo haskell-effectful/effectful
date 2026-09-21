@@ -3,14 +3,15 @@
 -- The value is thread local. If you want it to be shared between threads, use
 -- "Effectful.Writer.Static.Shared".
 --
--- /Warning:/ 'Writer'\'s state will be accumulated via __left-associated__ uses
--- of '<>', which makes it unsuitable for use with types for which such pattern
--- is inefficient. __This applies, in particular, to the standard list type__,
--- which makes the 'Writer' effect pretty niche.
+-- /Warning:/ t'Writer'\'s state will be accumulated via __left-associated__
+-- uses of '<>', which makes it unsuitable for use with types for which such
+-- pattern is inefficient.
+-- __This applies, in particular, to the standard list type__, which makes the
+-- t'Writer' effect pretty niche.
 --
 -- __If you just want to accumulate values, use "Effectful.Output.Static.Local.Array" or "Effectful.Output.Static.Local.List".__
 --
--- /Note:/ while the 'Control.Monad.Trans.Writer.Strict.Writer' from the
+-- /Note:/ while the t'Control.Monad.Trans.Writer.Strict.Writer' from the
 -- @transformers@ package includes additional operations
 -- 'Control.Monad.Trans.Writer.Strict.pass' and
 -- 'Control.Monad.Trans.Writer.Strict.censor', they don't cooperate with runtime
@@ -43,30 +44,30 @@ data Writer (w :: Type) :: Effect
 type instance DispatchOf (Writer w) = Static NoSideEffects
 newtype instance StaticRep (Writer w) = Writer w
 
--- | Run a 'Writer' effect and return the final value along with the final
+-- | Run a t'Writer' effect and return the final value along with the final
 -- output.
 runWriter :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es (a, w)
 runWriter m = do
   (a, Writer w) <- runStaticRep (Writer mempty) m
   pure (a, w)
 
--- | Run a 'Writer' effect and return the final output, discarding the final
+-- | Run a t'Writer' effect and return the final output, discarding the final
 -- value.
 execWriter :: (HasCallStack, Monoid w) => Eff (Writer w : es) a -> Eff es w
 execWriter m = do
   Writer w <- execStaticRep (Writer mempty) m
   pure w
 
--- | Append the given output to the overall output of the 'Writer'.
+-- | Append the given output to the overall output of the t'Writer'.
 tell :: (HasCallStack, Writer w :> es, Monoid w) => w -> Eff es ()
 tell w = stateStaticRep $ \(Writer w0) -> ((), Writer (w0 <> w))
 
 -- | Execute an action and append its output to the overall output of the
--- 'Writer'.
+-- t'Writer'.
 --
 -- /Note:/ if an exception is received while the action is executed, the partial
 -- output of the action will still be appended to the overall output of the
--- 'Writer':
+-- t'Writer':
 --
 -- >>> :{
 --   runEff . execWriter @String $ do
@@ -89,7 +90,7 @@ listen m = unsafeEff $ \es -> mask $ \unmask -> do
       stateEnv es $ \(Writer w1) -> (w1, Writer (w0 <> w1))
 
 -- | Execute an action and append its output to the overall output of the
--- 'Writer', then return the final value along with a function of the recorded
+-- t'Writer', then return the final value along with a function of the recorded
 -- output.
 --
 -- @'listens' f m ≡ 'Data.Bifunctor.second' f '<$>' 'listen' m@

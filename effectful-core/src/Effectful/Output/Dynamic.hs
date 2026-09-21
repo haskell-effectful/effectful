@@ -1,4 +1,4 @@
--- | The dynamically dispatched variant of the 'Output' effect.
+-- | The dynamically dispatched variant of the t'Output' effect.
 --
 -- /Note:/ unless you plan to change interpretations at runtime, it's
 -- recommended to use one of the statically dispatched variants,
@@ -40,7 +40,7 @@ type instance DispatchOf (Output o) = Dynamic
 ----------------------------------------
 -- Handlers
 
--- | Run the 'Output' effect with the given action for receiving values.
+-- | Run the t'Output' effect with the given action for receiving values.
 runOutputAction
   :: forall o es a
    . HasCallStack
@@ -51,25 +51,25 @@ runOutputAction
 runOutputAction outputAction = interpret_ $ \case
   Output o -> outputAction $! o
 
--- | Run the 'Output' effect and return the final value along with the
+-- | Run the t'Output' effect and return the final value along with the
 -- accumulated array (via "Effectful.Output.Static.Local.Array").
 runOutputLocalArray :: HasCallStack => Eff (Output o : es) a -> Eff es (a, Array o)
 runOutputLocalArray = reinterpret_ LA.runOutput $ \case
   Output o -> LA.output o
 
--- | Run the 'Output' effect and return the final value along with the
+-- | Run the t'Output' effect and return the final value along with the
 -- accumulated list (via "Effectful.Output.Static.Local.List").
 runOutputLocalList :: HasCallStack => Eff (Output o : es) a -> Eff es (a, [o])
 runOutputLocalList = reinterpret_ LL.runOutput $ \case
   Output o -> LL.output o
 
--- | Run the 'Output' effect and return the final value along with the
+-- | Run the t'Output' effect and return the final value along with the
 -- accumulated array (via "Effectful.Output.Static.Shared.Array").
 runOutputSharedArray :: HasCallStack => Eff (Output o : es) a -> Eff es (a, Array o)
 runOutputSharedArray = reinterpret_ SA.runOutput $ \case
   Output o -> SA.output o
 
--- | Run the 'Output' effect and return the final value along with the
+-- | Run the t'Output' effect and return the final value along with the
 -- accumulated list (via "Effectful.Output.Static.Shared.List").
 runOutputSharedList :: HasCallStack => Eff (Output o : es) a -> Eff es (a, [o])
 runOutputSharedList = reinterpret_ SL.runOutput $ \case

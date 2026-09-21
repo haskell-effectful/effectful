@@ -107,7 +107,7 @@ data UnliftStrategy
 --
 -- Different functions require different persistence strategies. Examples:
 --
--- - Lifting 'pooledMapConcurrentlyN' from the @unliftio@ library requires the
+-- - Lifting @pooledMapConcurrentlyN@ from the @unliftio@ library requires the
 --   'Ephemeral' strategy as we don't want jobs to share environment changes
 --   made by previous jobs run in the same worker thread.
 --

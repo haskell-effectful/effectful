@@ -4,7 +4,7 @@
 -- manage its own version of the value, use "Effectful.State.Static.Local".
 --
 -- /Note:/ unlike the 'Control.Monad.Trans.State.StateT' monad transformer from
--- the @transformers@ library, the 'State' effect doesn't discard state updates
+-- the @transformers@ library, the t'State' effect doesn't discard state updates
 -- when an exception is received:
 --
 -- >>> import Control.Exception (ErrorCall)
@@ -60,7 +60,7 @@ data State (s :: Type) :: Effect
 type instance DispatchOf (State s) = Static NoSideEffects
 newtype instance StaticRep (State s) = State (S.MVar s)
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value along with the final state.
 runState :: HasCallStack => s -> Eff (State s : es) a -> Eff es (a, s)
 runState s m = do
@@ -68,14 +68,14 @@ runState s m = do
   a <- evalStaticRep (State v) m
   (a, ) <$> unsafeEff_ (S.readMVar v)
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value, discarding the final state.
 evalState :: HasCallStack => s -> Eff (State s : es) a -> Eff es a
 evalState s m = do
   v <- unsafeEff_ $ S.newMVar s
   evalStaticRep (State v) m
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- state, discarding the final value.
 execState :: HasCallStack => s -> Eff (State s : es) a -> Eff es s
 execState s m = do
@@ -83,20 +83,23 @@ execState s m = do
   _ <- evalStaticRep (State v) m
   unsafeEff_ $ S.readMVar v
 
--- | Run the 'State' effect with the given initial state 'S.MVar' and return the
--- final value along with the final state.
+-- | Run the t'State' effect with the given initial state
+-- t'Control.Concurrent.MVar.Strict.MVar' and return the final value along with
+-- the final state.
 runStateMVar :: HasCallStack => S.MVar s -> Eff (State s : es) a -> Eff es (a, s)
 runStateMVar v m = do
   a <- evalStaticRep (State v) m
   (a, ) <$> unsafeEff_ (S.readMVar v)
 
--- | Run the 'State' effect with the given initial state 'S.MVar' and return the
--- final value, discarding the final state.
+-- | Run the t'State' effect with the given initial state
+-- t'Control.Concurrent.MVar.Strict.MVar' and return the final value, discarding
+-- the final state.
 evalStateMVar :: HasCallStack => S.MVar s -> Eff (State s : es) a -> Eff es a
 evalStateMVar v = evalStaticRep (State v)
 
--- | Run the 'State' effect with the given initial state 'S.MVar' and return the
--- final state, discarding the final value.
+-- | Run the t'State' effect with the given initial state
+-- t'Control.Concurrent.MVar.Strict.MVar' and return the final state, discarding
+-- the final value.
 execStateMVar :: HasCallStack => S.MVar s -> Eff (State s : es) a -> Eff es s
 execStateMVar v m = do
   _ <- evalStaticRep (State v) m

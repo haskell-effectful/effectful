@@ -51,7 +51,7 @@ type instance DispatchOf (Labeled label e) = DispatchOf e
 
 data instance StaticRep (Labeled label e)
 
--- | Run a 'Labeled' effect with a given effect handler.
+-- | Run a t'Labeled' effect with a given effect handler.
 runLabeled
   :: forall label e es a b
    . HasCallStack

@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
--- | Convenience functions for the 'Labeled' 'ProviderList' effect.
+-- | Convenience functions for the t'Labeled' 'ProviderList' effect.
 --
 -- @since 2.7.0.0
 module Effectful.Labeled.Provider.List

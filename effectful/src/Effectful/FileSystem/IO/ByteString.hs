@@ -52,11 +52,11 @@ import Data.ByteString qualified as BS
 -- Introducing and eliminating ByteStrings
 
 #if MIN_VERSION_bytestring(0,11,2)
--- | Lifted 'BS.fromFilePath'.
+-- | Lifted 'Data.ByteString.fromFilePath'.
 fromFilePath :: FileSystem :> es => FilePath -> Eff es ByteString
 fromFilePath = unsafeEff_ . BS.fromFilePath
 
--- | Lifted 'BS.toFilePath'.
+-- | Lifted 'Data.ByteString.toFilePath'.
 toFilePath :: FileSystem :> es => ByteString -> Eff es FilePath
 toFilePath = unsafeEff_ . BS.toFilePath
 #endif
@@ -64,53 +64,53 @@ toFilePath = unsafeEff_ . BS.toFilePath
 ----------------------------------------
 -- Files
 
--- | Lifted 'BS8.readFile'.
+-- | Lifted 'Data.ByteString.Char8.readFile'.
 readFile :: FileSystem :> es => FilePath -> Eff es ByteString
 readFile = unsafeEff_ . BS8.readFile
 
--- | Lifted 'BS8.writeFile'.
+-- | Lifted 'Data.ByteString.Char8.writeFile'.
 writeFile :: FileSystem :> es => FilePath -> ByteString -> Eff es ()
 writeFile fp = unsafeEff_ . BS8.writeFile fp
 
--- | Lifted 'BS8.appendFile'.
+-- | Lifted 'Data.ByteString.Char8.appendFile'.
 appendFile :: FileSystem :> es => FilePath -> ByteString -> Eff es ()
 appendFile fp = unsafeEff_ . BS8.appendFile fp
 
 ----------------------------------------
 -- I/O with Handles
 
--- | Lifted 'BS8.hGetLine'.
+-- | Lifted 'Data.ByteString.Char8.hGetLine'.
 hGetLine :: FileSystem :> es => Handle -> Eff es ByteString
 hGetLine = unsafeEff_ . BS8.hGetLine
 
--- | Lifted 'BS8.hGetContents'.
+-- | Lifted 'Data.ByteString.Char8.hGetContents'.
 hGetContents :: FileSystem :> es => Handle -> Eff es ByteString
 hGetContents = unsafeEff_ . BS8.hGetContents
 
--- | Lifted 'BS8.hGet'.
+-- | Lifted 'Data.ByteString.Char8.hGet'.
 hGet :: FileSystem :> es => Handle -> Int -> Eff es ByteString
 hGet h = unsafeEff_ . BS8.hGet h
 
--- | Lifted 'BS8.hGetSome'.
+-- | Lifted 'Data.ByteString.Char8.hGetSome'.
 hGetSome :: FileSystem :> es => Handle -> Int -> Eff es ByteString
 hGetSome h = unsafeEff_ . BS8.hGetSome h
 
--- | Lifted 'BS8.hGetNonBlocking'.
+-- | Lifted 'Data.ByteString.Char8.hGetNonBlocking'.
 hGetNonBlocking :: FileSystem :> es => Handle -> Int -> Eff es ByteString
 hGetNonBlocking h = unsafeEff_ . BS8.hGetNonBlocking h
 
--- | Lifted 'BS8.hPut'.
+-- | Lifted 'Data.ByteString.Char8.hPut'.
 hPut :: FileSystem :> es => Handle -> ByteString -> Eff es ()
 hPut h = unsafeEff_ . BS8.hPut h
 
--- | Lifted 'BS8.hPutNonBlocking'.
+-- | Lifted 'Data.ByteString.Char8.hPutNonBlocking'.
 hPutNonBlocking :: FileSystem :> es => Handle -> ByteString -> Eff es ByteString
 hPutNonBlocking h = unsafeEff_ . BS8.hPutNonBlocking h
 
--- | Lifted 'BS8.hPutStr'.
+-- | Lifted 'Data.ByteString.Char8.hPutStr'.
 hPutStr :: FileSystem :> es => Handle -> ByteString -> Eff es ()
 hPutStr h = unsafeEff_ . BS8.hPutStr h
 
--- | Lifted 'BS8.hPutStrLn'.
+-- | Lifted 'Data.ByteString.Char8.hPutStrLn'.
 hPutStrLn :: FileSystem :> es => Handle -> ByteString -> Eff es ()
 hPutStrLn h = unsafeEff_ . BS8.hPutStrLn h

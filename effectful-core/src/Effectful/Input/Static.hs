@@ -24,7 +24,7 @@ data Input (i :: Type) :: Effect
 type instance DispatchOf (Input i) = Static NoSideEffects
 newtype instance StaticRep (Input i) = Input i
 
--- | Run the 'Input' effect with the given value.
+-- | Run the t'Input' effect with the given value.
 runInput
   :: HasCallStack
   => i

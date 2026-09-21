@@ -38,22 +38,22 @@ import Effectful
 import Effectful.Console.Effect
 import Effectful.Dispatch.Static
 
--- | Lifted 'BS8.getLine'.
+-- | Lifted 'Data.ByteString.Char8.getLine'.
 getLine :: Console :> es => Eff es ByteString
 getLine = unsafeEff_ BS8.getLine
 
--- | Lifted 'BS8.getContents'.
+-- | Lifted 'Data.ByteString.Char8.getContents'.
 getContents :: Console :> es => Eff es ByteString
 getContents = unsafeEff_ BS8.getContents
 
--- | Lifted 'BS8.putStr'.
+-- | Lifted 'Data.ByteString.Char8.putStr'.
 putStr :: Console :> es => ByteString -> Eff es ()
 putStr = unsafeEff_ . BS8.putStr
 
--- | Lifted 'BS8.putStrLn'.
+-- | Lifted 'Data.ByteString.Char8.putStrLn'.
 putStrLn :: Console :> es => ByteString -> Eff es ()
 putStrLn = unsafeEff_ . BS8.putStrLn
 
--- | Lifted 'BS8.interact'.
+-- | Lifted 'Data.ByteString.Char8.interact'.
 interact :: Console :> es => (ByteString -> ByteString) -> Eff es ()
 interact = unsafeEff_ . BS8.interact

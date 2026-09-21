@@ -84,10 +84,10 @@ type instance DispatchOf (Writer w) = Dynamic
 
 -- | Instance included for compatibility with existing code.
 --
--- /Warning:/ 'MTL.pass' is not implemented due to ambiguous semantics in
--- presence of runtime exceptions, so calling it (also indirectly via
--- 'MTL.censor', which is defined in terms of 'MTL.pass') results in a runtime
--- error.
+-- /Warning:/ 'Control.Monad.Writer.pass' is not implemented due to ambiguous
+-- semantics in presence of runtime exceptions, so calling it (also indirectly
+-- via 'Control.Monad.Writer.censor', which is defined in terms of
+-- 'Control.Monad.Writer.pass') results in a runtime error.
 instance
   ( Monoid w
   , Writer w :> es

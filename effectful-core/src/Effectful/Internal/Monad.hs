@@ -1,12 +1,12 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_HADDOCK not-home #-}
--- | The 'Eff' monad.
+-- | The t'Eff' monad.
 --
 -- This module is intended for internal use only, and may change without warning
 -- in subsequent releases.
 module Effectful.Internal.Monad
-  ( -- * The 'Eff' monad
+  ( -- * The t'Eff' monad
     Eff
   , runPureEff
 
@@ -107,15 +107,15 @@ import Effectful.Internal.Utils
 
 type role Eff nominal representational
 
--- | The 'Eff' monad provides the implementation of a computation that performs
--- an arbitrary set of effects. In @'Eff' es a@, @es@ is a type-level list that
+-- | The t'Eff' monad provides the implementation of a computation that performs
+-- an arbitrary set of effects. In @t'Eff' es a@, @es@ is a type-level list that
 -- contains all the effects that the computation may perform. For example, a
 -- computation that produces an 'Integer' by consuming a 'String' from the
 -- global environment and acting upon a single mutable value of type 'Bool'
 -- would have the following type:
 --
 -- @
--- ('Effectful.Reader.Static.Reader' 'String' ':>' es, 'Effectful.State.Static.Local.State' 'Bool' ':>' es) => 'Eff' es 'Integer'
+-- ('Effectful.Reader.Static.Reader' 'String' ':>' es, 'Effectful.State.Static.Local.State' 'Bool' ':>' es) => t'Eff' es 'Integer'
 -- @
 --
 -- Abstracting over the list of effects with '(:>)':
@@ -127,7 +127,7 @@ type role Eff nominal representational
 newtype Eff (es :: [Effect]) a = Eff (Env es -> IO a)
   deriving newtype (Monoid, Semigroup)
 
--- | Run a pure 'Eff' computation.
+-- | Run a pure t'Eff' computation.
 --
 -- For running computations with side effects see 'runEff'.
 --
@@ -168,21 +168,21 @@ runPureEff (Eff m) = do
 ----------------------------------------
 -- Access to the internal representation
 
--- | Peel off the constructor of 'Eff'.
+-- | Peel off the constructor of t'Eff'.
 unEff :: Eff es a -> Env es -> IO a
 unEff (Eff m) = m
 
--- | Access the underlying 'IO' monad along with the environment.
+-- | Access the underlying t'IO' monad along with the environment.
 --
 -- This function is __unsafe__ because it can be used to introduce arbitrary
--- 'IO' actions into pure 'Eff' computations.
+-- t'IO' actions into pure t'Eff' computations.
 unsafeEff :: (Env es -> IO a) -> Eff es a
 unsafeEff m = Eff (oneShot m)
 
--- | Access the underlying 'IO' monad.
+-- | Access the underlying t'IO' monad.
 --
 -- This function is __unsafe__ because it can be used to introduce arbitrary
--- 'IO' actions into pure 'Eff' computations.
+-- t'IO' actions into pure t'Eff' computations.
 unsafeEff_ :: IO a -> Eff es a
 unsafeEff_ m = unsafeEff $ \_ -> m
 
@@ -192,7 +192,7 @@ unsafeEff_ m = unsafeEff $ \_ -> m
 -- | Get the current 'UnliftStrategy'.
 --
 -- /Note:/ this strategy is implicitly used by the 'MonadUnliftIO' and
--- 'MonadBaseControl' instance for 'Eff'.
+-- 'MonadBaseControl' instance for t'Eff'.
 unliftStrategy :: (HasCallStack, IOE :> es) => Eff es UnliftStrategy
 unliftStrategy = do
   IOE unlift <- getStaticRep
@@ -337,20 +337,20 @@ concUnliftsIO es les Persistent (Limited threads) k = do
 concUnliftsIO es les Persistent Unlimited k = do
   persistentConcUnlifts es les True maxBound k
 
--- | Utility for lifting 'IO' computations of type
+-- | Utility for lifting t'IO' computations of type
 --
--- @'IO' a -> 'IO' b@
+-- @t'IO' a -> t'IO' b@
 --
 -- to
 --
--- @'Eff' es a -> 'Eff' es b@
+-- @t'Eff' es a -> t'Eff' es b@
 --
 -- This function is __really unsafe__ because:
 --
--- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
+-- - It can be used to introduce arbitrary t'IO' actions into pure t'Eff'
 --   computations.
 --
--- - The 'IO' computation must run its argument in a way that's perceived as
+-- - The t'IO' computation must run its argument in a way that's perceived as
 --   sequential to the outside observer, e.g. in the same thread or in a worker
 --   thread that finishes before the argument is run again.
 --
@@ -367,10 +367,10 @@ reallyUnsafeLiftMapIO f m = unsafeEff $ \es -> f (unEff m es)
 --
 -- This function is __really unsafe__ because:
 --
--- - It can be used to introduce arbitrary 'IO' actions into pure 'Eff'
+-- - It can be used to introduce arbitrary t'IO' actions into pure t'Eff'
 --   computations.
 --
--- - Unlifted 'Eff' computations must be run in a way that's perceived as
+-- - Unlifted t'Eff' computations must be run in a way that's perceived as
 --   sequential to the outside observer, e.g. in the same thread as the caller
 --   of 'reallyUnsafeUnliftIO' or in a worker thread that finishes before
 --   another unlifted computation is run.
@@ -410,7 +410,7 @@ instance MonadFix (Eff es) where
 -- NonDet
 
 -- | Provide the ability to use the 'Alternative' and 'MonadPlus' instance for
--- 'Eff'.
+-- t'Eff'.
 --
 -- /Note:/ 'NonDet' does not backtrack. Formally, it obeys the "left-catch" law
 -- for 'MonadPlus', rather than the "left-distribution" law. This means that it
@@ -436,9 +436,9 @@ instance NonDet :> es => MonadPlus (Eff es)
 
 -- | Available without any effect requirements.
 --
--- Gating it behind an effect (such as 'IOE' or a more specialized effect) would
--- accomplish nothing, since any Haskell expression is free to throw an
--- exception with 'E.throw' at any point.
+-- Gating it behind an effect (such as t'IOE' or a more specialized effect)
+-- would accomplish nothing, since any Haskell expression is free to throw an
+-- exception with 'Control.Exception.throw' at any point.
 instance C.MonadThrow (Eff es) where
   throwM = unsafeEff_ . withFrozenCallStack E.throwIO
 
@@ -449,11 +449,12 @@ instance C.MonadThrow (Eff es) where
 -- | Available without any effect requirements.
 --
 -- This is the one instance of the three that would arguably benefit from
--- requiring 'IOE' (or a more specialized effect), as catching imprecise
+-- requiring t'IOE' (or a more specialized effect), as catching imprecise
 -- exceptions makes it possible to write non-deterministic pure functions with
--- 'runPureEff'. Unfortunately it can't, because t'C.MonadCatch' is a superclass
--- of t'C.MonadMask', which needs to be available unconditionally (see the note
--- there).
+-- 'runPureEff'. Unfortunately it can't, because
+-- t'Control.Monad.Catch.MonadCatch' is a superclass of
+-- t'Control.Monad.Catch.MonadMask', which needs to be available
+-- unconditionally (see the note there).
 --
 -- For the full discussion see
 -- [issue #76](https://github.com/haskell-effectful/effectful/issues/76).
@@ -473,15 +474,15 @@ instance C.MonadCatch (Eff es) where
 -- to restore a state on error:
 --
 -- @
--- transactionally :: forall s es a. 'Effectful.State.Static.Local.State' s ':>' es => 'Eff' es a -> 'Eff' es a
+-- transactionally :: forall s es a. 'Effectful.State.Static.Local.State' s ':>' es => t'Eff' es a -> t'Eff' es a
 -- transactionally = 'Effectful.Exception.bracketOnError' ('Effectful.State.Static.Local.get' \@s) ('Effectful.State.Static.Local.put' \@s) . const
 -- @
 --
--- Requiring 'IOE' would make functions like the above impossible to write and
--- force 'IOE' to show up in application code that otherwise only needs more
+-- Requiring t'IOE' would make functions like the above impossible to write and
+-- force t'IOE' to show up in application code that otherwise only needs more
 -- restricted effects, which would be a significant usability regression. On the
 -- other hand, requiring a more specialized effect would be annoying, since
--- functions making use of t'C.MonadMask' are ubiquitous.
+-- functions making use of t'Control.Monad.Catch.MonadMask' are ubiquitous.
 instance C.MonadMask (Eff es) where
   mask k = reallyUnsafeUnliftIO $ \unlift -> do
     E.mask $ \release -> unlift $ k (reallyUnsafeLiftMapIO release)
@@ -514,7 +515,7 @@ instance C.MonadMask (Eff es) where
 ----------------------------------------
 -- Fail
 
--- | Provide the ability to use the 'MonadFail' instance for 'Eff'.
+-- | Provide the ability to use the 'MonadFail' instance for t'Eff'.
 data Fail :: Effect where
   Fail :: String -> Fail m a
 
@@ -526,7 +527,7 @@ instance Fail :> es => MonadFail (Eff es) where
 ----------------------------------------
 -- IO
 
--- | Run arbitrary 'IO' computations via 'MonadIO' or 'MonadUnliftIO'.
+-- | Run arbitrary t'IO' computations via 'MonadIO' or 'MonadUnliftIO'.
 --
 -- /Note:/ it is not recommended to use this effect in application code as it is
 -- too liberal. Ideally, this is only used in handlers of more fine-grained
@@ -536,7 +537,7 @@ data IOE :: Effect
 type instance DispatchOf IOE = Static WithSideEffects
 newtype instance StaticRep IOE = IOE UnliftStrategy
 
--- | Run an 'Eff' computation with side effects.
+-- | Run an t'Eff' computation with side effects.
 --
 -- For running pure computations see 'runPureEff'.
 runEff :: HasCallStack => Eff '[IOE] a -> IO a
@@ -550,7 +551,7 @@ instance IOE :> es => MonadIO (Eff es) where
 -- Usage of 'withEffToIO' is preferrable as it allows specifying the
 -- 'UnliftStrategy' on a case-by-case basis and has better error reporting.
 --
--- /Note:/ the unlifting strategy for 'withRunInIO' is taken from the 'IOE'
+-- /Note:/ the unlifting strategy for 'withRunInIO' is taken from the t'IOE'
 -- context (see 'unliftStrategy').
 instance IOE :> es => MonadUnliftIO (Eff es) where
   withRunInIO k = unliftStrategy >>= (`withEffToIO` k)
@@ -566,7 +567,7 @@ instance IOE :> es => MonadBase IO (Eff es) where
 -- Usage of 'withEffToIO' is preferrable as it allows specifying the
 -- 'UnliftStrategy' on a case-by-case basis and has better error reporting.
 --
--- /Note:/ the unlifting strategy for 'liftBaseWith' is taken from the 'IOE'
+-- /Note:/ the unlifting strategy for 'liftBaseWith' is taken from the t'IOE'
 -- context (see 'unliftStrategy').
 instance IOE :> es => MonadBaseControl IO (Eff es) where
   type StM (Eff es) a = a
@@ -582,11 +583,11 @@ data Prim :: Effect
 type instance DispatchOf Prim = Static WithSideEffects
 data instance StaticRep Prim = Prim
 
--- | 'PrimState' token for 'Eff'. Used instead of 'RealWorld' to prevent the
--- 'Prim' effect from executing arbitrary 'IO' actions via 'ioToPrim'.
+-- | 'PrimState' token for t'Eff'. Used instead of 'RealWorld' to prevent the
+-- t'Prim' effect from executing arbitrary t'IO' actions via 'ioToPrim'.
 data PrimStateEff
 
--- | Run an 'Eff' computation with primitive state-transformer actions.
+-- | Run an t'Eff' computation with primitive state-transformer actions.
 runPrim :: (HasCallStack, IOE :> es) => Eff (Prim : es) a -> Eff es a
 runPrim = evalStaticRep Prim
 
@@ -597,11 +598,11 @@ instance Prim :> es => PrimMonad (Eff es) where
 ----------------------------------------
 -- Lifting
 
--- | Lift an 'Eff' computation into an effect stack with one more effect.
+-- | Lift an t'Eff' computation into an effect stack with one more effect.
 raise :: forall e es a. Eff es a -> Eff (e : es) a
 raise m = unsafeEff $ \es -> unEff m =<< tailEnv es
 
--- | Lift an 'Eff' computation into an effect stack with one more effect and
+-- | Lift an t'Eff' computation into an effect stack with one more effect and
 -- create an unlifting function with the given strategy.
 --
 -- @since 1.2.0.0
@@ -684,7 +685,7 @@ inject m = unsafeEff $ \es -> unEff m =<< injectEnv es
 
 type role LocalEnv nominal
 
--- | Opaque representation of the 'Eff' environment at the point of calling the
+-- | Opaque representation of the t'Eff' environment at the point of calling the
 -- 'send' function, i.e. right before the control is passed to the effect
 -- handler.
 --
@@ -692,13 +693,13 @@ type role LocalEnv nominal
 -- used within the scope of the effect handler it belongs to.
 newtype LocalEnv (localEs :: [Effect]) = LocalEnv (Env localEs)
 
--- | Unwrap the 'LocalEnv' via 'requireMatchingStorages'.
+-- | Unwrap the t'LocalEnv' via 'requireMatchingStorages'.
 unwrapLocalEnv :: HasCallStack => Env es -> LocalEnv localEs -> IO (Env localEs)
 unwrapLocalEnv es localEs@(LocalEnv les) = do
   requireMatchingStorages es localEs
   pure les
 
--- | Make sure that the 'LocalEnv' is used in the thread/context of the effect
+-- | Make sure that the t'LocalEnv' is used in the thread/context of the effect
 -- handler it belongs to.
 requireMatchingStorages :: HasCallStack => Env es -> LocalEnv localEs -> IO ()
 requireMatchingStorages es (LocalEnv les)
@@ -713,13 +714,13 @@ requireMatchingStorages es (LocalEnv les)
 type EffectHandler (e :: Effect) (es :: [Effect])
   = forall a localEs. (HasCallStack, e :> localEs)
   => LocalEnv localEs
-  -- ^ Capture of the local environment for handling local 'Eff' computations
+  -- ^ Capture of the local environment for handling local t'Eff' computations
   -- when @e@ is a higher order effect.
   -> e (Eff localEs) a
   -- ^ The operation.
   -> Eff es a
 
--- | Wrapper to prevent a space leak on reconstruction of 'Handler' in
+-- | Wrapper to prevent a space leak on reconstruction of t'Handler' in
 -- 'relinkHandler' (see https://gitlab.haskell.org/ghc/ghc/-/issues/25520).
 newtype HandlerImpl e es = HandlerImpl (EffectHandler e es)
 
@@ -766,7 +767,7 @@ send op = unsafeEff $ \es -> do
 ----------------------------------------
 -- Static dispatch
 
--- | Require the 'IOE' effect for running statically dispatched effects whose
+-- | Require the t'IOE' effect for running statically dispatched effects whose
 -- operations perform side effects.
 type family MaybeIOE (sideEffects :: SideEffects) (es :: [Effect]) :: Constraint where
   MaybeIOE NoSideEffects   _  = ()

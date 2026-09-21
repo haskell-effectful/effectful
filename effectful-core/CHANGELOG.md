@@ -1,6 +1,7 @@
 # effectful-core-2.7.1.3 (2026-09-??)
 * Kill the thread that runs a `runPureEff` computation when its result becomes
   unreachable.
+* Fix broken links in the documentation.
 
 # effectful-core-2.7.1.2 (2026-09-10)
 * Make the library work with the JavaScript backend.

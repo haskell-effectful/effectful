@@ -18,7 +18,7 @@
 --
 -- === Interaction with threads
 --
--- The 'ReturnWith' effect uses runtime exceptions underneath, so the usual
+-- The t'ReturnWith' effect uses runtime exceptions underneath, so the usual
 -- rules apply. In particular, in multi-threaded code a call to 'returnWith' in
 -- a child thread will not automatically propagate to the parent. If you need
 -- that, use functions such as @withAsync@ from the
@@ -83,7 +83,7 @@ returnWith r = do
 newtype ReturnWithId = ReturnWithId Unique
   deriving newtype Eq
 
--- | A unique is picked so that distinct 'ReturnWith' handlers for the same
+-- | A unique is picked so that distinct t'ReturnWith' handlers for the same
 -- type don't catch each other's values.
 newReturnWithId :: IO ReturnWithId
 newReturnWithId = ReturnWithId <$> newUnique

@@ -92,7 +92,7 @@ type role Env nominal
 --
 -- - Getting a tail: /@O(1)@/.
 --
--- - Cloning: /@O(N)@/, where @N@ is the size of the 'Storage'.
+-- - Cloning: /@O(N)@/, where @N@ is the size of the t'Storage'.
 --
 data Env (es :: [Effect]) = Env
   { offset  :: !Int
@@ -100,7 +100,7 @@ data Env (es :: [Effect]) = Env
   , storage :: !(S.IORef Storage)
   }
 
--- | Reference to the effect in 'Storage'.
+-- | Reference to the effect in t'Storage'.
 data Ref = Ref !Int !Version
 
 instance Prim Ref where
@@ -150,7 +150,7 @@ data Storage = Storage
 ----------------------------------------
 -- StorageData
 
--- | Effect in 'Storage'.
+-- | Effect in t'Storage'.
 newtype AnyEffect = AnyEffect Any
 
 toAnyEffect :: EffectRep (DispatchOf e) e -> AnyEffect
@@ -159,7 +159,7 @@ toAnyEffect = AnyEffect . toAny
 fromAnyEffect :: AnyEffect -> EffectRep (DispatchOf e) e
 fromAnyEffect (AnyEffect e) = fromAny e
 
--- | Relinker in 'Storage'.
+-- | Relinker in t'Storage'.
 newtype AnyRelinker = AnyRelinker Any
 
 toAnyRelinker :: Relinker (EffectRep (DispatchOf e)) e -> AnyRelinker
@@ -194,7 +194,7 @@ cloneStorage storage0 = do
 replaceStorage :: Env es -> S.IORef Storage -> IO (Env es)
 replaceStorage (Env offset refs _) storage = pure $ Env offset refs storage
 
--- | Make a shallow copy of the 'StorageData'.
+-- | Make a shallow copy of the t'StorageData'.
 --
 -- @since 2.5.0.0
 copyStorageData :: HasCallStack => StorageData -> IO StorageData
@@ -241,10 +241,10 @@ backupStorageData env = do
   relinkStorageData storageData env.storage
   pure storageData
 
--- | Restore a copy of the 'StorageData'.
+-- | Restore a copy of the t'StorageData'.
 --
--- The copy needs to be from the same 'Env' as the target. It's consumed by this
--- operation and must not be used afterwards.
+-- The copy needs to be from the same t'Env' as the target. It's consumed by
+-- this operation and must not be used afterwards.
 --
 -- @since 2.5.0.0
 restoreStorageData :: HasCallStack => StorageData -> Env es -> IO ()
@@ -290,14 +290,15 @@ restoreStorageData (StorageData newSize vs1 es1 fs1) env = do
 ----------------------------------------
 -- Relinker
 
--- | A function for relinking 'Env' objects stored in the handlers and/or making
--- a deep copy of the representation of the effect when cloning the environment.
+-- | A function for relinking t'Env' objects stored in the handlers and/or
+-- making a deep copy of the representation of the effect when cloning the
+-- environment.
 newtype Relinker :: (Effect -> Type) -> Effect -> Type where
   Relinker
     :: (HasCallStack => (forall es. Env es -> IO (Env es)) -> rep e -> IO (rep e))
     -> Relinker rep e
 
--- | A dummy 'Relinker'.
+-- | A dummy t'Relinker'.
 dummyRelinker :: Relinker rep e
 dummyRelinker = Relinker $ \_ -> pure
 

@@ -5,7 +5,7 @@
 module Effectful.Internal.Utils
   ( inlineBracket
 
-    -- * Utils for 'ThreadId'
+    -- * Utils for t'ThreadId'
   , weakThreadId
 
     -- * Utils for 'Any'
@@ -23,7 +23,7 @@ module Effectful.Internal.Utils
     -- * Array capacity
   , growCapacity
 
-    -- * Utils for 'MutablePrimArray'
+    -- * Utils for t'MutablePrimArray'
   , fillPrimArray
   ) where
 
@@ -106,9 +106,10 @@ newUnique = Unique <$> newByteArray 0
 
 ----------------------------------------
 
--- | Remove exactly one layer of freezing, i.e. the one added by 'send' and
--- friends via 'withFrozenCallStack'. Freezes applied by client code need to
--- stay intact, so this must not recurse.
+-- | Remove exactly one layer of freezing, i.e. the one added by
+-- 'Effectful.Dispatch.Dynamic.send' and friends via
+-- 'GHC.Stack.withFrozenCallStack'. Freezes applied by client code need to stay
+-- intact, so this must not recurse.
 thawCallStack :: CallStack -> CallStack
 thawCallStack = \case
   FreezeCallStack cs -> cs

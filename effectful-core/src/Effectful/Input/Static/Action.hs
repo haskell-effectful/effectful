@@ -27,7 +27,7 @@ data Input (i :: Type) :: Effect
 
 type instance DispatchOf (Input i) = Static NoSideEffects
 
--- | Wrapper to prevent a space leak on reconstruction of 'Input' in
+-- | Wrapper to prevent a space leak on reconstruction of t'Input' in
 -- 'relinkInput' (see https://gitlab.haskell.org/ghc/ghc/-/issues/25520).
 newtype InputImpl i es where
   InputImpl :: (HasCallStack => Eff es i) -> InputImpl i es
@@ -38,7 +38,7 @@ data instance StaticRep (Input i) where
     -> !(InputImpl i inputEs)
     -> StaticRep (Input i)
 
--- | Run the 'Input' effect with the given action that supplies values.
+-- | Run the t'Input' effect with the given action that supplies values.
 runInput
   :: forall i es a
    . HasCallStack

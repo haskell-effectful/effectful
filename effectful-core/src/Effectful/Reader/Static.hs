@@ -29,7 +29,7 @@ data Reader (r :: Type) :: Effect
 type instance DispatchOf (Reader r) = Static NoSideEffects
 newtype instance StaticRep (Reader r) = Reader r
 
--- | Run a 'Reader' effect with the given initial environment.
+-- | Run a t'Reader' effect with the given initial environment.
 runReader
   :: HasCallStack
   => r -- ^ The initial environment.

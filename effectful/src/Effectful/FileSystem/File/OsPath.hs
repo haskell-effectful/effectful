@@ -39,11 +39,11 @@ import Effectful
 import Effectful.Dispatch.Static
 import Effectful.FileSystem.Effect
 
--- | Lifted 'F.openBinaryFile'.
+-- | Lifted 'System.File.OsPath.openBinaryFile'.
 openBinaryFile :: FileSystem :> es => OsPath -> IOMode -> Eff es Handle
 openBinaryFile path = unsafeEff_ . F.openBinaryFile path
 
--- | Lifted 'F.withFile'.
+-- | Lifted 'System.File.OsPath.withFile'.
 withFile
   :: FileSystem :> es
   => OsPath
@@ -53,7 +53,7 @@ withFile
 withFile path mode inner = unsafeSeqUnliftIO $ \unlift -> do
   F.withFile path mode $ unlift . inner
 
--- | Lifted 'F.withBinaryFile'.
+-- | Lifted 'System.File.OsPath.withBinaryFile'.
 withBinaryFile
   :: FileSystem :> es
   => OsPath
@@ -63,7 +63,7 @@ withBinaryFile
 withBinaryFile path mode inner = unsafeSeqUnliftIO $ \unlift -> do
   F.withBinaryFile path mode $ unlift . inner
 
--- | Lifted 'F.withFile''.
+-- | Lifted 'System.File.OsPath.withFile''.
 withFile'
   :: FileSystem :> es
   => OsPath
@@ -73,7 +73,7 @@ withFile'
 withFile' path mode inner = unsafeSeqUnliftIO $ \unlift -> do
   F.withFile' path mode $ unlift . inner
 
--- | Lifted 'F.withBinaryFile''.
+-- | Lifted 'System.File.OsPath.withBinaryFile''.
 withBinaryFile'
   :: FileSystem :> es
   => OsPath
@@ -83,39 +83,39 @@ withBinaryFile'
 withBinaryFile' path mode inner = unsafeSeqUnliftIO $ \unlift -> do
   F.withBinaryFile' path mode $ unlift . inner
 
--- | Lifted 'F.readFile'.
+-- | Lifted 'System.File.OsPath.readFile'.
 readFile :: FileSystem :> es => OsPath -> Eff es BSL.ByteString
 readFile = unsafeEff_ . F.readFile
 
--- | Lifted 'F.readFile''.
+-- | Lifted 'System.File.OsPath.readFile''.
 readFile' :: FileSystem :> es => OsPath -> Eff es ByteString
 readFile' = unsafeEff_ . F.readFile'
 
--- | Lifted 'F.writeFile'.
+-- | Lifted 'System.File.OsPath.writeFile'.
 writeFile :: FileSystem :> es => OsPath -> BSL.ByteString -> Eff es ()
 writeFile path = unsafeEff_ . F.writeFile path
 
--- | Lifted 'F.writeFile''.
+-- | Lifted 'System.File.OsPath.writeFile''.
 writeFile' :: FileSystem :> es => OsPath -> ByteString -> Eff es ()
 writeFile' path = unsafeEff_ . F.writeFile' path
 
--- | Lifted 'F.appendFile'.
+-- | Lifted 'System.File.OsPath.appendFile'.
 appendFile :: FileSystem :> es => OsPath -> BSL.ByteString -> Eff es ()
 appendFile path = unsafeEff_ . F.appendFile path
 
--- | Lifted 'F.appendFile''.
+-- | Lifted 'System.File.OsPath.appendFile''.
 appendFile' :: FileSystem :> es => OsPath -> ByteString -> Eff es ()
 appendFile' path = unsafeEff_ . F.appendFile' path
 
--- | Lifted 'F.openFile'.
+-- | Lifted 'System.File.OsPath.openFile'.
 openFile :: FileSystem :> es => OsPath -> IOMode -> Eff es Handle
 openFile path = unsafeEff_ . F.openFile path
 
--- | Lifted 'F.openExistingFile'.
+-- | Lifted 'System.File.OsPath.openExistingFile'.
 openExistingFile :: FileSystem :> es => OsPath -> IOMode -> Eff es Handle
 openExistingFile path = unsafeEff_ . F.openExistingFile path
 
--- | Lifted 'F.openTempFile'.
+-- | Lifted 'System.File.OsPath.openTempFile'.
 openTempFile
   :: FileSystem :> es
   => OsPath
@@ -123,7 +123,7 @@ openTempFile
   -> Eff es (OsPath, Handle)
 openTempFile dir = unsafeEff_ . F.openTempFile dir
 
--- | Lifted 'F.openBinaryTempFile'.
+-- | Lifted 'System.File.OsPath.openBinaryTempFile'.
 openBinaryTempFile
   :: FileSystem :> es
   => OsPath
@@ -131,7 +131,7 @@ openBinaryTempFile
   -> Eff es (OsPath, Handle)
 openBinaryTempFile dir = unsafeEff_ . F.openBinaryTempFile dir
 
--- | Lifted 'F.openTempFileWithDefaultPermissions'.
+-- | Lifted 'System.File.OsPath.openTempFileWithDefaultPermissions'.
 openTempFileWithDefaultPermissions
   :: FileSystem :> es
   => OsPath
@@ -140,7 +140,7 @@ openTempFileWithDefaultPermissions
 openTempFileWithDefaultPermissions dir =
   unsafeEff_ . F.openTempFileWithDefaultPermissions dir
 
--- | Lifted 'F.openBinaryTempFileWithDefaultPermissions'.
+-- | Lifted 'System.File.OsPath.openBinaryTempFileWithDefaultPermissions'.
 openBinaryTempFileWithDefaultPermissions
   :: FileSystem :> es
   => OsPath

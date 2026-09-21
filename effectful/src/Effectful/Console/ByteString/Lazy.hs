@@ -36,18 +36,18 @@ import Effectful
 import Effectful.Console.Effect
 import Effectful.Dispatch.Static
 
--- | Lifted 'LBS8.getContents'.
+-- | Lifted 'Data.ByteString.Lazy.Char8.getContents'.
 getContents :: Console :> es => Eff es ByteString
 getContents = unsafeEff_ LBS8.getContents
 
--- | Lifted 'LBS8.putStr'.
+-- | Lifted 'Data.ByteString.Lazy.Char8.putStr'.
 putStr :: Console :> es => ByteString -> Eff es ()
 putStr = unsafeEff_ . LBS8.putStr
 
--- | Lifted 'LBS8.putStrLn'.
+-- | Lifted 'Data.ByteString.Lazy.Char8.putStrLn'.
 putStrLn :: Console :> es => ByteString -> Eff es ()
 putStrLn = unsafeEff_ . LBS8.putStrLn
 
--- | Lifted 'LBS8.interact'.
+-- | Lifted 'Data.ByteString.Lazy.Char8.interact'.
 interact :: Console :> es => (ByteString -> ByteString) -> Eff es ()
 interact = unsafeEff_ . LBS8.interact

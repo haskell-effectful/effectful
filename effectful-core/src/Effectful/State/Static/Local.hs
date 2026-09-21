@@ -4,7 +4,7 @@
 -- "Effectful.State.Static.Shared".
 --
 -- /Note:/ unlike the 'Control.Monad.Trans.State.StateT' monad transformer from
--- the @transformers@ library, the 'State' effect doesn't discard state updates
+-- the @transformers@ library, the t'State' effect doesn't discard state updates
 -- when an exception is received:
 --
 -- >>> import Control.Exception (ErrorCall)
@@ -54,7 +54,7 @@ data State (s :: Type) :: Effect
 type instance DispatchOf (State s) = Static NoSideEffects
 newtype instance StaticRep (State s) = State s
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value along with the final state.
 runState
   :: HasCallStack
@@ -65,7 +65,7 @@ runState s0 m = do
   (a, State s) <- runStaticRep (State s0) m
   pure (a, s)
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value, discarding the final state.
 evalState
   :: HasCallStack
@@ -74,7 +74,7 @@ evalState
   -> Eff es a
 evalState s = evalStaticRep (State s)
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- state, discarding the final value.
 execState
   :: HasCallStack

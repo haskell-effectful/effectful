@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
--- | Convenience functions for the 'Labeled' 'Input' effect.
+-- | Convenience functions for the t'Labeled' t'Input' effect.
 --
 -- @since 2.7.0.0
 module Effectful.Labeled.Input
@@ -24,7 +24,7 @@ import Effectful.Labeled
 import Effectful.Input.Dynamic (Input(..))
 import Effectful.Input.Dynamic qualified as I
 
--- | Run the 'Input' effect with the given value.
+-- | Run the t'Input' effect with the given value.
 runInput
   :: forall label i es a
    . HasCallStack
@@ -34,7 +34,7 @@ runInput
   -> Eff es a
 runInput = runLabeled @label . I.runInput
 
--- | Run the 'Input' effect with the given action that supplies values.
+-- | Run the t'Input' effect with the given action that supplies values.
 runInputAction
   :: forall label i es a
    . HasCallStack

@@ -1,7 +1,7 @@
 -- The handlers need to interpret the deprecated StateM operation until it's
 -- removed.
 {-# OPTIONS_GHC -Wno-deprecations #-}
--- | The dynamically dispatched variant of the 'State' effect.
+-- | The dynamically dispatched variant of the t'State' effect.
 --
 -- /Note:/ unless you plan to change interpretations at runtime or you need the
 -- t'Control.Monad.State.MonadState' instance for compatibility with existing
@@ -42,17 +42,17 @@ import Effectful.State.Static.Shared qualified as S
 ----------------------------------------
 -- Local
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value along with the final state (via "Effectful.State.Static.Local").
 runStateLocal :: HasCallStack => s -> Eff (State s : es) a -> Eff es (a, s)
 runStateLocal s0 = reinterpret (L.runState s0) localState
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value, discarding the final state (via "Effectful.State.Static.Local").
 evalStateLocal :: HasCallStack => s -> Eff (State s : es) a -> Eff es a
 evalStateLocal s0 = reinterpret (L.evalState s0) localState
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- state, discarding the final value (via "Effectful.State.Static.Local").
 execStateLocal :: HasCallStack => s -> Eff (State s : es) a -> Eff es s
 execStateLocal s0 = reinterpret (L.execState s0) localState
@@ -67,17 +67,17 @@ localState env = \case
 ----------------------------------------
 -- Shared
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value along with the final state (via "Effectful.State.Static.Shared").
 runStateShared :: HasCallStack => s -> Eff (State s : es) a -> Eff es (a, s)
 runStateShared s0 = reinterpret (S.runState s0) sharedState
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- value, discarding the final state (via "Effectful.State.Static.Shared").
 evalStateShared :: HasCallStack => s -> Eff (State s : es) a -> Eff es a
 evalStateShared s0 = reinterpret (S.evalState s0) sharedState
 
--- | Run the 'State' effect with the given initial state and return the final
+-- | Run the t'State' effect with the given initial state and return the final
 -- state, discarding the final value (via "Effectful.State.Static.Shared").
 execStateShared :: HasCallStack => s -> Eff (State s : es) a -> Eff es s
 execStateShared s0 = reinterpret (S.execState s0) sharedState

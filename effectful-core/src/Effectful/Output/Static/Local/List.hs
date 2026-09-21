@@ -24,7 +24,7 @@ data Output (o :: Type) :: Effect
 type instance DispatchOf (Output o) = Static NoSideEffects
 newtype instance StaticRep (Output o) = Output [o]
 
--- | Run the 'Output' effect and return the final value along with the
+-- | Run the t'Output' effect and return the final value along with the
 -- accumulated list.
 runOutput :: HasCallStack => Eff (Output o : es) a -> Eff es (a, [o])
 runOutput action = do

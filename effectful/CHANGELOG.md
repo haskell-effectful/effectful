@@ -1,3 +1,6 @@
+# effectful-2.7.1.1 (????-??-??)
+* Fix broken links in the documentation.
+
 # effectful-2.7.1.0 (2026-08-24)
 * Re-export `Effectful.Labeled.Provider` and `Effectful.Labeled.Provider.List`
   from `effectful-core`.

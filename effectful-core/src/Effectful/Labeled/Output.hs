@@ -1,5 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
--- | Convenience functions for the 'Labeled' 'Output' effect.
+-- | Convenience functions for the t'Labeled' t'Output' effect.
 --
 -- @since 2.7.0.0
 module Effectful.Labeled.Output
@@ -32,7 +32,7 @@ import Effectful.Output.Dynamic qualified as O
 ----------------------------------------
 -- Handlers
 
--- | Run the 'Output' effect with the given action for receiving values.
+-- | Run the t'Output' effect with the given action for receiving values.
 runOutputAction
   :: forall label o es a
    . HasCallStack
@@ -42,7 +42,7 @@ runOutputAction
   -> Eff es a
 runOutputAction = runLabeled @label . O.runOutputAction
 
--- | Run the 'Output' effect and return the final value along with the
+-- | Run the t'Output' effect and return the final value along with the
 -- accumulated array (via "Effectful.Output.Static.Local.Array").
 runOutputLocalArray
   :: forall label o es a
@@ -51,7 +51,7 @@ runOutputLocalArray
   -> Eff es (a, Array o)
 runOutputLocalArray = runLabeled @label O.runOutputLocalArray
 
--- | Run the 'Output' effect and return the final value along with the
+-- | Run the t'Output' effect and return the final value along with the
 -- accumulated list (via "Effectful.Output.Static.Local.List").
 runOutputLocalList
   :: forall label o es a
@@ -60,7 +60,7 @@ runOutputLocalList
   -> Eff es (a, [o])
 runOutputLocalList = runLabeled @label O.runOutputLocalList
 
--- | Run the 'Output' effect and return the final value along with the
+-- | Run the t'Output' effect and return the final value along with the
 -- accumulated array (via "Effectful.Output.Static.Shared.Array").
 runOutputSharedArray
   :: forall label o es a
@@ -69,7 +69,7 @@ runOutputSharedArray
   -> Eff es (a, Array o)
 runOutputSharedArray = runLabeled @label O.runOutputSharedArray
 
--- | Run the 'Output' effect and return the final value along with the
+-- | Run the t'Output' effect and return the final value along with the
 -- accumulated list (via "Effectful.Output.Static.Shared.List").
 runOutputSharedList
   :: forall label o es a

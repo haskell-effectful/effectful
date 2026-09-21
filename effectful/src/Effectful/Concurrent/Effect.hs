@@ -13,7 +13,7 @@ import Effectful.Dispatch.Static
 -- threads and communicate between them.
 --
 -- /Warning:/ unless you stick to high level functions from the
--- 'Effectful.Concurrent.Async.withAsync' family, the 'Concurrent' effect makes
+-- 'Effectful.Concurrent.Async.withAsync' family, the t'Concurrent' effect makes
 -- it possible to escape the scope of any scoped effect operation. Consider the
 -- following:
 --
@@ -77,7 +77,7 @@ data Concurrent :: Effect
 type instance DispatchOf Concurrent = Static WithSideEffects
 data instance StaticRep Concurrent = Concurrent
 
--- | Run the 'Concurrent' effect.
+-- | Run the t'Concurrent' effect.
 runConcurrent :: (HasCallStack, IOE :> es) => Eff (Concurrent : es) a -> Eff es a
 runConcurrent = evalStaticRep Concurrent
 

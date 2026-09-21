@@ -77,17 +77,17 @@ import Effectful.Dispatch.Static.Unsafe
 ----------------------------------------
 -- Basic concurrency operations
 
--- | Lifted 'C.myThreadId'.
+-- | Lifted 'Control.Concurrent.myThreadId'.
 myThreadId :: Concurrent :> es => Eff es C.ThreadId
 myThreadId = unsafeEff_ C.myThreadId
 
--- | Lifted 'C.forkIO'.
+-- | Lifted 'Control.Concurrent.forkIO'.
 forkIO :: (HasCallStack, Concurrent :> es) => Eff es () -> Eff es C.ThreadId
 forkIO k = unsafeEff $ \es -> do
   esF <- cloneEnv es
   C.forkIO $ unEff k esF
 
--- | Lifted 'C.forkFinally'.
+-- | Lifted 'Control.Concurrent.forkFinally'.
 forkFinally
   :: (HasCallStack, Concurrent :> es)
   => Eff es a
@@ -97,31 +97,31 @@ forkFinally k cleanup = unsafeEff $ \es -> do
   esF <- cloneEnv es
   C.forkFinally (unEff k esF) ((`unEff` esF) . cleanup)
 
--- | Lifted 'C.forkIOWithUnmask'.
+-- | Lifted 'Control.Concurrent.forkIOWithUnmask'.
 forkIOWithUnmask
   :: (HasCallStack, Concurrent :> es)
   => ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
 forkIOWithUnmask = liftForkWithUnmask C.forkIOWithUnmask
 
--- | Lifted 'C.killThread'.
+-- | Lifted 'Control.Concurrent.killThread'.
 killThread :: Concurrent :> es => C.ThreadId -> Eff es ()
 killThread = unsafeEff_ . C.killThread
 
--- | Lifted 'C.throwTo'.
+-- | Lifted 'Control.Concurrent.throwTo'.
 throwTo :: (Concurrent :> es, Exception e) => C.ThreadId -> e -> Eff es ()
 throwTo tid = unsafeEff_ . C.throwTo tid
 
 ----------------------------------------
 -- Threads with affinity
 
--- | Lifted 'C.forkOn'.
+-- | Lifted 'Control.Concurrent.forkOn'.
 forkOn :: (HasCallStack, Concurrent :> es) => Int -> Eff es () -> Eff es C.ThreadId
 forkOn n k = unsafeEff $ \es -> do
   esF <- cloneEnv es
   C.forkOn n (unEff k esF)
 
--- | Lifted 'C.forkOnWithUnmask'.
+-- | Lifted 'Control.Concurrent.forkOnWithUnmask'.
 forkOnWithUnmask
   :: (HasCallStack, Concurrent :> es)
   => Int
@@ -129,50 +129,50 @@ forkOnWithUnmask
   -> Eff es C.ThreadId
 forkOnWithUnmask n = liftForkWithUnmask (C.forkOnWithUnmask n)
 
--- | Lifted 'C.getNumCapabilities'.
+-- | Lifted 'Control.Concurrent.getNumCapabilities'.
 getNumCapabilities :: Concurrent :> es => Eff es Int
 getNumCapabilities = unsafeEff_ C.getNumCapabilities
 
--- | Lifted 'C.setNumCapabilities'.
+-- | Lifted 'Control.Concurrent.setNumCapabilities'.
 setNumCapabilities :: Concurrent :> es => Int -> Eff es ()
 setNumCapabilities = unsafeEff_ . C.setNumCapabilities
 
--- | Lifted 'GHC.getNumProcessors'.
+-- | Lifted 'GHC.Conc.getNumProcessors'.
 getNumProcessors :: Concurrent :> es => Eff es Int
 getNumProcessors = unsafeEff_ GHC.getNumProcessors
 
--- | Lifted 'C.threadCapability'.
+-- | Lifted 'Control.Concurrent.threadCapability'.
 threadCapability :: Concurrent :> es => C.ThreadId -> Eff es (Int, Bool)
 threadCapability = unsafeEff_ . C.threadCapability
 
 ----------------------------------------
 -- Scheduling
 
--- | Lifted 'C.yield'.
+-- | Lifted 'Control.Concurrent.yield'.
 yield :: Concurrent :> es => Eff es ()
 yield = unsafeEff_ C.yield
 
 ----------------------------------------
 -- Waiting
 
--- | Lifted 'C.threadDelay'.
+-- | Lifted 'Control.Concurrent.threadDelay'.
 threadDelay :: Concurrent :> es => Int -> Eff es ()
 threadDelay = unsafeEff_ . C.threadDelay
 
--- | Lifted 'C.threadWaitRead'.
+-- | Lifted 'Control.Concurrent.threadWaitRead'.
 threadWaitRead :: Concurrent :> es => Fd -> Eff es ()
 threadWaitRead = unsafeEff_ . C.threadWaitRead
 
--- | Lifted 'C.threadWaitWrite'.
+-- | Lifted 'Control.Concurrent.threadWaitWrite'.
 threadWaitWrite :: Concurrent :> es => Fd -> Eff es ()
 threadWaitWrite = unsafeEff_ . C.threadWaitWrite
 
--- | Lifted 'C.threadWaitReadSTM'.
+-- | Lifted 'Control.Concurrent.threadWaitReadSTM'.
 threadWaitReadSTM :: Concurrent :> es => Fd -> Eff es (STM (), Eff es ())
 threadWaitReadSTM fd = unsafeEff_ $ do
   second unsafeEff_ <$> C.threadWaitReadSTM fd
 
--- | Lifted 'C.threadWaitWriteSTM'.
+-- | Lifted 'Control.Concurrent.threadWaitWriteSTM'.
 threadWaitWriteSTM :: Concurrent :> es => Fd -> Eff es (STM (), Eff es ())
 threadWaitWriteSTM fd = unsafeEff_ $ do
   second unsafeEff_ <$> C.threadWaitWriteSTM fd
@@ -180,24 +180,24 @@ threadWaitWriteSTM fd = unsafeEff_ $ do
 ----------------------------------------
 -- Bound threads
 
--- | Lifted 'C.forkOS'.
+-- | Lifted 'Control.Concurrent.forkOS'.
 forkOS :: (HasCallStack, Concurrent :> es) => Eff es () -> Eff es C.ThreadId
 forkOS k = unsafeEff $ \es -> do
   esF <- cloneEnv es
   C.forkOS $ unEff k esF
 
--- | Lifted 'C.forkOSWithUnmask'.
+-- | Lifted 'Control.Concurrent.forkOSWithUnmask'.
 forkOSWithUnmask
   :: (HasCallStack, Concurrent :> es)
   => ((forall a. Eff es a -> Eff es a) -> Eff es ())
   -> Eff es C.ThreadId
 forkOSWithUnmask = liftForkWithUnmask C.forkOSWithUnmask
 
--- | Lifted 'C.isCurrentThreadBound'.
+-- | Lifted 'Control.Concurrent.isCurrentThreadBound'.
 isCurrentThreadBound :: Concurrent :> es => Eff es Bool
 isCurrentThreadBound = unsafeEff_ C.isCurrentThreadBound
 
--- | Lifted 'C.runInBoundThread'.
+-- | Lifted 'Control.Concurrent.runInBoundThread'.
 runInBoundThread :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es a
 runInBoundThread k = reallyUnsafeUnliftIO $ \unlift -> do
   -- The worker thread runs the computation while the calling thread blocks, so
@@ -205,7 +205,7 @@ runInBoundThread k = reallyUnsafeUnliftIO $ \unlift -> do
   -- strictly sequential and sharing it is fine.
   C.runInBoundThread $ unlift k
 
--- | Lifted 'C.runInUnboundThread'.
+-- | Lifted 'Control.Concurrent.runInUnboundThread'.
 runInUnboundThread :: (HasCallStack, Concurrent :> es) => Eff es a -> Eff es a
 runInUnboundThread k = reallyUnsafeUnliftIO $ \unlift -> do
   -- See the comment in runInBoundThread.
@@ -214,7 +214,7 @@ runInUnboundThread k = reallyUnsafeUnliftIO $ \unlift -> do
 ----------------------------------------
 -- Weak references to ThreadIds
 
--- | Lifted 'C.mkWeakThreadId'.
+-- | Lifted 'Control.Concurrent.mkWeakThreadId'.
 mkWeakThreadId :: Concurrent :> es => C.ThreadId -> Eff es (Weak C.ThreadId)
 mkWeakThreadId = unsafeEff_ . C.mkWeakThreadId
 

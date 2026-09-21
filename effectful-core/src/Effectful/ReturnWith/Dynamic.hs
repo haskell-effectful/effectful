@@ -1,4 +1,4 @@
--- | The dynamically dispatched variant of the 'ReturnWith' effect.
+-- | The dynamically dispatched variant of the t'ReturnWith' effect.
 --
 -- /Note:/ unless you plan to change interpretations at runtime, it's
 -- recommended to use the statically dispatched variant,

@@ -1,0 +1,7 @@
+doctest:
+  ghc: '<9.12 || >=9.14'
+  skip:
+  - 'effectful-plugin'
+cabal-project-local: |
+  package effectful
+    flags: +benchmark-foreign-libraries

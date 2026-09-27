@@ -1,4 +1,5 @@
 doctest:
+  enabled: true
   ghc: '<9.12 || >=9.14'
   skip:
   - 'effectful-plugin'

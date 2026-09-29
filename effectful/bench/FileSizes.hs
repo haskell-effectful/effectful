@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FieldSelectors #-}
 module FileSizes where
 
@@ -41,6 +42,16 @@ import Control.Algebra qualified as FE
 import Control.Effect.Sum qualified as FE
 import Control.Carrier.Reader qualified as FE
 import Control.Carrier.State.Strict qualified as FE
+#endif
+
+-- bluefin
+#ifdef VERSION_bluefin
+import Bluefin.Capability.Modify qualified as B
+import Bluefin.Compound qualified as B
+import Bluefin.DslBuilderEff qualified as B
+import Bluefin.Eff qualified as B
+import Bluefin.IO qualified as B
+import Bluefin.Reader qualified as B
 #endif
 
 -- mtl
@@ -522,6 +533,148 @@ mtl_calculateFileSizesEffectfulDeep = E.runEff
   . mtl_program
   where
     runR = E.runReader ()
+
+#endif
+
+----------
+
+#ifdef VERSION_bluefin
+
+newtype Bluefin_File e = Bluefin_File
+  { bluefin_tryFileSizeImpl :: FilePath -> B.Eff e (Maybe Int)
+  }
+  deriving stock B.Generic
+  deriving B.Handle via B.OneWayCoercibleHandle Bluefin_File
+
+instance e B.<: es => B.OneWayCoercible (Bluefin_File e) (Bluefin_File es) where
+  oneWayCoercibleImpl = B.gOneWayCoercible
+
+bluefin_tryFileSize :: e B.<: es => Bluefin_File e -> FilePath -> B.Eff es (Maybe Int)
+bluefin_tryFileSize h path =
+  B.makeOp $ bluefin_tryFileSizeImpl (B.mapHandle h) path
+
+bluefin_runFile
+  :: e1 B.<: es
+  => B.IOE e1
+  -> (forall e. Bluefin_File e -> B.Eff (e B.:& es) a)
+  -> B.Eff es a
+bluefin_runFile io k =
+  B.useImplIn k $
+    Bluefin_File {
+      bluefin_tryFileSizeImpl = \path -> B.effIO io (tryGetFileSize path)
+    }
+
+newtype Bluefin_Logging e = Bluefin_Logging
+  { bluefin_logMsgImpl :: Text -> B.Eff e ()
+  }
+  deriving stock B.Generic
+  deriving B.Handle via B.OneWayCoercibleHandle Bluefin_Logging
+
+instance e B.<: es => B.OneWayCoercible (Bluefin_Logging e) (Bluefin_Logging es) where
+  oneWayCoercibleImpl = B.gOneWayCoercible
+
+bluefin_logMsg :: e B.<: es => Bluefin_Logging e -> String -> B.Eff es ()
+bluefin_logMsg h msg =
+  let !msg' = T.pack msg
+  in B.makeOp $ bluefin_logMsgImpl (B.mapHandle h) msg'
+
+bluefin_runLogging
+  :: (forall e. Bluefin_Logging e -> B.Eff (e B.:& es) a)
+  -> B.Eff es (a, [Text])
+bluefin_runLogging k = B.runModify [] $ \logs ->
+  B.useImplIn k $ Bluefin_Logging $ \msg -> B.modify logs (msg :)
+
+-- Bundle the independently interpreted dynamic capabilities for DslBuilderEff.
+data Bluefin_Files e = Bluefin_Files (Bluefin_File e) (Bluefin_Logging e)
+  deriving stock B.Generic
+  deriving B.Handle via B.OneWayCoercibleHandle Bluefin_Files
+
+instance e B.<: es => B.OneWayCoercible (Bluefin_Files e) (Bluefin_Files es) where
+  oneWayCoercibleImpl = B.gOneWayCoercible
+
+instance MonadFile (B.DslBuilderEff Bluefin_Files es) where
+  mtl_tryFileSize path = B.dslBuilderEff $ \(Bluefin_Files file _) ->
+    bluefin_tryFileSize file path
+
+instance MonadLog (B.DslBuilderEff Bluefin_Files es) where
+  mtl_logMsg msg = B.dslBuilderEff $ \(Bluefin_Files _ logs) ->
+    bluefin_logMsg logs msg
+
+bluefin_runFiles
+  :: (e1 B.<: es, e2 B.<: es)
+  => Bluefin_File e1
+  -> Bluefin_Logging e2
+  -> [FilePath]
+  -> B.Eff es Int
+bluefin_runFiles file logs paths = B.runDslBuilderEff
+  (Bluefin_Files (B.mapHandle file) (B.mapHandle logs)) (mtl_program paths)
+
+mtl_calculateFileSizesBluefin :: [FilePath] -> IO (Int, [Text])
+mtl_calculateFileSizesBluefin paths = B.runEff $ \io ->
+  bluefin_runFile io $ \file -> bluefin_runLogging $ \logs ->
+    bluefin_runFiles file logs paths
+
+mtl_calculateFileSizesBluefinDeep :: [FilePath] -> IO (Int, [Text])
+mtl_calculateFileSizesBluefinDeep paths = B.runEff $ \io ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  bluefin_runFile io $ \file ->
+  bluefin_runLogging $ \logs ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  bluefin_runFiles file logs paths
+
+bluefin_calculateFileSize
+  :: (e1 B.<: es, e2 B.<: es)
+  => Bluefin_File e1
+  -> Bluefin_Logging e2
+  -> FilePath
+  -> B.Eff es Int
+bluefin_calculateFileSize file logs path = do
+  bluefin_logMsg logs $ "Calculating the size of " ++ path
+  bluefin_tryFileSize file path >>= \case
+    Nothing -> 0 <$ bluefin_logMsg logs ("Could not calculate the size of " ++ path)
+    Just size -> size <$ bluefin_logMsg logs (path ++ " is " ++ show size ++ " bytes")
+{-# NOINLINE bluefin_calculateFileSize #-}
+
+bluefin_program
+  :: (e1 B.<: es, e2 B.<: es)
+  => Bluefin_File e1
+  -> Bluefin_Logging e2
+  -> [FilePath]
+  -> B.Eff es Int
+bluefin_program file logs files = do
+  sizes <- traverse (bluefin_calculateFileSize file logs) files
+  pure $ sum sizes
+{-# NOINLINE bluefin_program #-}
+
+bluefin_calculateFileSizes :: [FilePath] -> IO (Int, [Text])
+bluefin_calculateFileSizes paths = B.runEff $ \io ->
+  bluefin_runFile io $ \file ->
+  bluefin_runLogging $ \logs ->
+  bluefin_program file logs paths
+
+bluefin_calculateFileSizesDeep :: [FilePath] -> IO (Int, [Text])
+bluefin_calculateFileSizesDeep paths = B.runEff $ \io ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  bluefin_runFile io $ \file ->
+  bluefin_runLogging $ \logs ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  bluefin_program file logs paths
 
 #endif
 

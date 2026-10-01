@@ -1,6 +1,8 @@
+branches:
+- master
 doctest:
   enabled: true
-  ghc: <9.12 || >=9.14
+  ghc: (<9.12 || >=9.14) && <10
   skip:
   - effectful-plugin
 cabal-project-local: |

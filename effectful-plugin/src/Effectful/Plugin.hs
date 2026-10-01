@@ -8,7 +8,6 @@ import Data.Foldable
 import Data.IORef
 import Data.Maybe
 import Data.Set qualified as S
-import GHC.Builtin.Types
 import GHC.Core.Class
 import GHC.Core.Predicate
 import GHC.Core.TyCo.Rep
@@ -31,6 +30,12 @@ import GHC.Types.Var.Set
 import GHC.Unit.Finder
 import GHC.Unit.Module
 import GHC.Utils.Outputable qualified as O
+
+#if __GLASGOW_HASKELL__ >= 1001
+import GHC.Builtin.WiredIn.Types (promotedConsDataCon)
+#else
+import GHC.Builtin.Types (promotedConsDataCon)
+#endif
 
 #if __GLASGOW_HASKELL__ >= 908
 import GHC.Driver.DynFlags (DynFlags)
@@ -103,7 +108,7 @@ plugin = defaultPlugin
     { tcPluginInit = initPlugin
     , tcPluginRewrite = \_ -> emptyUFM
     , tcPluginSolve = disambiguateEffects
-#if __GLASGOW_HASKELL__ >= 1001
+#if __GLASGOW_HASKELL__ >= 1000
     , tcPluginPostTc = \_ -> pure ()
     , tcPluginShutdown = pluginShutdownHook
 #else

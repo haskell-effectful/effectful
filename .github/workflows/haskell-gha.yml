@@ -14,7 +14,6 @@ on:
   push:
     branches:
     - master
-    - main
   pull_request:
   merge_group:
   workflow_dispatch:
@@ -44,6 +43,7 @@ jobs:
         - '9.10'
         - '9.12'
         - '9.14'
+        - '10.0'
     steps:
     - uses: actions/checkout@v7
 
@@ -88,16 +88,16 @@ jobs:
         write-ghc-environment-files: always
 
         package effectful-core
-          ghc-options: -Werror
+          ghc-options: -Werror -Wwarn=unrecognised-warning-flags -Wwarn=semaphore-open-failure
 
         package effectful-plugin
-          ghc-options: -Werror
+          ghc-options: -Werror -Wwarn=unrecognised-warning-flags -Wwarn=semaphore-open-failure
 
         package effectful-th
-          ghc-options: -Werror
+          ghc-options: -Werror -Wwarn=unrecognised-warning-flags -Wwarn=semaphore-open-failure
 
         package effectful
-          ghc-options: -Werror
+          ghc-options: -Werror -Wwarn=unrecognised-warning-flags -Wwarn=semaphore-open-failure
 
         package effectful
           flags: +benchmark-foreign-libraries
@@ -122,7 +122,7 @@ jobs:
         EOF
 
     - name: Enable the GHC job semaphore
-      if: contains(fromJSON('["9.8","9.10","9.12","9.14"]'), matrix.ghc)
+      if: contains(fromJSON('["9.8","9.10","9.12","9.14","10.0"]'), matrix.ghc)
       working-directory: ${{ runner.temp }}/haskell-gha
       run: |
         echo 'semaphore: True' >> cabal.project.local
@@ -229,4 +229,4 @@ jobs:
     - name: Build the documentation
       working-directory: ${{ runner.temp }}/haskell-gha
       run: |
-        cabal haddock all --disable-documentation --haddock-all --haddock-for-hackage
+        cabal haddock all --disable-documentation --haddock-for-hackage

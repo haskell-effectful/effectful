@@ -4,8 +4,6 @@
 # To regenerate it, run from the root of the repository:
 #   haskell-gha
 #
-# Version: 1.0
-#
 # For more information, see https://github.com/arybczak/haskell-gha
 
 name: CI
@@ -22,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow_ref }}
   cancel-in-progress: true
 
 defaults:
@@ -46,6 +44,8 @@ jobs:
         - '10.0'
     steps:
     - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
 
     - uses: haskell-actions/setup@v2
       id: setup
@@ -81,6 +81,10 @@ jobs:
     - name: Configure the project
       working-directory: ${{ runner.temp }}/haskell-gha
       run: |
+        if [ -f cabal.project.local ]; then
+          echo '::error::The repository contains cabal.project.local, which holds the settings of one developer. Move the settings to cabal.project or to the key cabal-project-local of the configuration of haskell-gha, and remove the file from the repository.'
+          exit 1
+        fi
         cat >> cabal.project.local <<'EOF'
         jobs: 4
         tests: True
@@ -121,25 +125,31 @@ jobs:
           ghc-options: -j4
         EOF
 
-    - name: Enable the GHC job semaphore
+    - name: Enable the GHC job semaphore or parallel module builds
       if: contains(fromJSON('["9.8","9.10","9.12","9.14","10.0"]'), matrix.ghc)
       working-directory: ${{ runner.temp }}/haskell-gha
       run: |
+        if ghc --info | grep -F '("Semaphore version","2")' > /dev/null; then
+        echo 'GHC uses version 2 of the semaphore protocol and cabal version 1, so GHC uses -j4.'
         cat >> cabal.project.local <<'EOF'
-        semaphore: True
-
         package effectful-core
-          ghc-options: -Wwarn=unrecognised-warning-flags -Wwarn=semaphore-open-failure
+          ghc-options: -j4
 
         package effectful-plugin
-          ghc-options: -Wwarn=unrecognised-warning-flags -Wwarn=semaphore-open-failure
+          ghc-options: -j4
 
         package effectful-th
-          ghc-options: -Wwarn=unrecognised-warning-flags -Wwarn=semaphore-open-failure
+          ghc-options: -j4
 
         package effectful
-          ghc-options: -Wwarn=unrecognised-warning-flags -Wwarn=semaphore-open-failure
+          ghc-options: -j4
         EOF
+        else
+        echo 'GHC and cabal use version 1 of the semaphore protocol, so GHC uses the semaphore.'
+        cat >> cabal.project.local <<'EOF'
+        semaphore: True
+        EOF
+        fi
 
     - name: Make the build plan
       id: plan
@@ -152,8 +162,8 @@ jobs:
       id: cache
       with:
         path: ${{ steps.setup.outputs.cabal-store }}
-        key: ${{ runner.os }}-${{ steps.versions.outputs.image }}-ghc-${{ steps.setup.outputs.ghc-version }}-${{ steps.plan.outputs.hash }}
-        restore-keys: ${{ runner.os }}-${{ steps.versions.outputs.image }}-ghc-${{ steps.setup.outputs.ghc-version }}-
+        key: haskell-gha.yaml-${{ runner.os }}-${{ runner.arch }}-${{ steps.versions.outputs.image }}-ghc-${{ steps.setup.outputs.ghc-version }}-newest-${{ steps.plan.outputs.hash }}
+        restore-keys: haskell-gha.yaml-${{ runner.os }}-${{ runner.arch }}-${{ steps.versions.outputs.image }}-ghc-${{ steps.setup.outputs.ghc-version }}-newest-
 
     - name: Build the dependencies
       working-directory: ${{ runner.temp }}/haskell-gha
@@ -182,7 +192,7 @@ jobs:
       if: contains(fromJSON('["9.6","9.8","9.10","9.14"]'), matrix.ghc)
       with:
         path: ~/.local/bin/doctest
-        key: ${{ runner.os }}-${{ steps.versions.outputs.image }}-doctest-${{ steps.doctest.outputs.version }}-ghc-${{ steps.setup.outputs.ghc-version }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.versions.outputs.image }}-doctest-${{ steps.doctest.outputs.version }}-ghc-${{ steps.setup.outputs.ghc-version }}
 
     - name: Install doctest
       if: contains(fromJSON('["9.6","9.8","9.10","9.14"]'), matrix.ghc) && steps.doctest-cache.outputs.cache-hit != 'true'

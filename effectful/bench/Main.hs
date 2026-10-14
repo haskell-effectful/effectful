@@ -26,7 +26,8 @@ main = defaultMain
 
 countdownExtra :: Integer -> Benchmark
 countdownExtra n = bgroup (show n)
-  [ bgroup "effectful (local/static/state)"
+  [
+    bgroup "effectful (local/static/state)"
     [ bench "shallow" $ nf countdownEffectfulLocalSt n
     , bench "deep"    $ nf countdownEffectfulLocalDeepSt n
     ]
@@ -50,6 +51,12 @@ countdownExtra n = bgroup (show n)
     [ bench "shallow" $ nf countdownEffectfulDoubleDynShared n
     , bench "deep"    $ nf countdownEffectfulDoubleDynSharedDeep n
     ]
+#ifdef VERSION_bluefin
+  , bgroup "bluefin (local/dynamic/double)"
+    [ bench "shallow" $ nf countdownBluefinDoubleDynLocal n
+    , bench "deep"    $ nf countdownBluefinDoubleDynLocalDeep n
+    ]
+#endif
   ]
 
 countdown :: Integer -> Benchmark
@@ -80,6 +87,16 @@ countdown n = bgroup (show n)
     [ bench "shallow" $ nf countdownEffectfulLabeledDynSendShared n
     , bench "deep"    $ nf countdownEffectfulLabeledDynSendSharedDeep n
     ]
+#ifdef VERSION_bluefin
+  , bgroup "bluefin (local/static)"
+    [ bench "shallow" $ nf countdownBluefinLocal n
+    , bench "deep"    $ nf countdownBluefinLocalDeep n
+    ]
+  , bgroup "bluefin (local/dynamic)"
+    [ bench "shallow" $ nf countdownBluefinDynLocal n
+    , bench "deep"    $ nf countdownBluefinDynLocalDeep n
+    ]
+#endif
 #ifdef VERSION_cleff
   , bgroup "cleff (local)"
     [ bench "shallow" $ nf countdownCleffLocal n
@@ -100,6 +117,12 @@ countdown n = bgroup (show n)
   , bgroup "eff"
     [ bench "shallow" $ nf countdownEff n
     , bench "deep"    $ nf countdownEffDeep n
+    ]
+#endif
+#ifdef VERSION_bluefin
+  , bgroup "mtl (bluefin)"
+    [ bench "shallow" $ nf countdownMtlBluefin n
+    , bench "deep"    $ nf countdownMtlBluefinDeep n
     ]
 #endif
 #ifdef VERSION_mtl
@@ -133,6 +156,12 @@ filesize n = bgroup (show n)
     [ bench "shallow" $ nfAppIO effectful_calculateFileSizes (take n files)
     , bench "deep"    $ nfAppIO effectful_calculateFileSizesDeep (take n files)
     ]
+#ifdef VERSION_bluefin
+  , bgroup "bluefin"
+    [ bench "shallow" $ nfAppIO bluefin_calculateFileSizes (take n files)
+    , bench "deep"    $ nfAppIO bluefin_calculateFileSizesDeep (take n files)
+    ]
+#endif
 #ifdef VERSION_cleff
   , bgroup "cleff"
     [ bench "shallow" $ nfAppIO cleff_calculateFileSizes (take n files)
@@ -149,6 +178,12 @@ filesize n = bgroup (show n)
   , bgroup "eff"
     [ bench "shallow" $ nfAppIO eff_calculateFileSizes (take n files)
     , bench "deep"    $ nfAppIO eff_calculateFileSizesDeep (take n files)
+    ]
+#endif
+#ifdef VERSION_bluefin
+  , bgroup "mtl (bluefin)"
+    [ bench "shallow" $ nfAppIO mtl_calculateFileSizesBluefin (take n files)
+    , bench "deep"    $ nfAppIO mtl_calculateFileSizesBluefinDeep (take n files)
     ]
 #endif
 #ifdef VERSION_mtl

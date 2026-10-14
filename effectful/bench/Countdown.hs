@@ -1,4 +1,6 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE FieldSelectors #-}
 -- The deprecated stateM and StateM need to be benchmarked until they're
 -- removed.
 {-# OPTIONS_GHC -Wno-deprecations #-}
@@ -40,6 +42,16 @@ import Control.Monad.Freer.State qualified as FS
 import Control.Algebra qualified as FE
 import Control.Carrier.Reader qualified as FE
 import Control.Carrier.State.Strict qualified as FE
+#endif
+
+-- bluefin
+#ifdef VERSION_bluefin
+import Bluefin.Capability.Modify qualified as B
+import Bluefin.Compound qualified as B
+import Bluefin.DslBuilderEff qualified as B
+import Bluefin.Eff qualified as B
+import Bluefin.Reader qualified as B
+import Bluefin.State qualified as B
 #endif
 
 -- mtl
@@ -121,6 +133,155 @@ countdownMtlEffectfulDeep n = E.runPureEff
   $ programMtl
   where
     runR = E.runReader ()
+
+#endif
+
+----------
+
+#ifdef VERSION_bluefin
+
+data Bluefin_DynamicState s e = Bluefin_DynamicState
+  { bluefinDynamicGetImpl :: B.Eff e s
+  , bluefinDynamicPutImpl :: s -> B.Eff e ()
+  }
+  deriving stock B.Generic
+  deriving B.Handle via B.OneWayCoercibleHandle (Bluefin_DynamicState s)
+
+instance
+  e B.<: es
+  => B.OneWayCoercible
+    (Bluefin_DynamicState s e)
+    (Bluefin_DynamicState s es)
+  where
+  oneWayCoercibleImpl = B.gOneWayCoercible
+
+bluefinDynamicGet :: e B.<: es => Bluefin_DynamicState s e -> B.Eff es s
+bluefinDynamicGet h = B.makeOp
+  $ bluefinDynamicGetImpl (B.mapHandle h)
+
+bluefinDynamicPut
+  :: e B.<: es
+  => Bluefin_DynamicState s e
+  -> s
+  -> B.Eff es ()
+bluefinDynamicPut h s = B.makeOp
+  $ bluefinDynamicPutImpl (B.mapHandle h) s
+
+bluefin_runState
+  :: s
+  -> (forall e. Bluefin_DynamicState s e -> B.Eff (e B.:& es) a)
+  -> B.Eff es (a, s)
+bluefin_runState n k = B.runModify n
+  $ \st ->
+  B.useImplIn k Bluefin_DynamicState
+    { bluefinDynamicGetImpl = B.get st
+    , bluefinDynamicPutImpl = B.put st
+    }
+
+instance M.MonadState s (B.DslBuilderEff (Bluefin_DynamicState s) es) where
+  get = B.dslBuilderEff bluefinDynamicGet
+  put s = B.dslBuilderEff $ \st -> bluefinDynamicPut st s
+
+countdownMtlBluefin :: Integer -> (Integer, Integer)
+countdownMtlBluefin n = B.runPureEff $ bluefin_runState n $ \st ->
+  B.runDslBuilderEff (B.mapHandle st) programMtl
+
+countdownMtlBluefinDeep :: Integer -> (Integer, Integer)
+countdownMtlBluefinDeep n = B.runPureEff $
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  bluefin_runState n $ \st ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runReader () $ \_ ->
+  B.runDslBuilderEff (B.mapHandle st) programMtl
+
+-- Bluefin direct-state analogues.
+programBluefinLocal :: e B.<: es => B.State Integer e -> B.Eff es Integer
+programBluefinLocal st = do
+  n <- B.get st
+  if n <= 0
+    then pure n
+    else do
+      B.put st (n - 1)
+      programBluefinLocal st
+{-# NOINLINE programBluefinLocal #-}
+
+programBluefinDynamic :: e B.<: es => Bluefin_DynamicState Integer e -> B.Eff es Integer
+programBluefinDynamic st = do
+  n <- bluefinDynamicGet st
+  if n <= 0
+    then pure n
+    else do
+      bluefinDynamicPut st (n - 1)
+      programBluefinDynamic st
+{-# NOINLINE programBluefinDynamic #-}
+
+bluefinDeep
+  :: (forall e1 e2 e3 e4 e5. B.Eff (e5 B.:& e4 B.:& e3 B.:& e2 B.:& e1 B.:& es) a)
+  -> B.Eff es a
+bluefinDeep m = B.runReader ()
+  $ \_ -> B.runReader ()
+  $ \_ -> B.runReader ()
+  $ \_ -> B.runReader ()
+  $ \_ -> B.runReader ()
+  $ \_ -> m
+
+countdownBluefinLocal :: Integer -> (Integer, Integer)
+countdownBluefinLocal n = B.runPureEff
+  $ B.runState n
+  $ \st -> programBluefinLocal st
+
+countdownBluefinLocalDeep :: Integer -> (Integer, Integer)
+countdownBluefinLocalDeep n = B.runPureEff
+  $ bluefinDeep
+  $ B.runState n
+  $ \st -> bluefinDeep (programBluefinLocal st)
+
+bluefinRunDynamicLocal
+  :: s
+  -> (forall e. Bluefin_DynamicState s e -> B.Eff (e B.:& es) a)
+  -> B.Eff es (a, s)
+bluefinRunDynamicLocal n k = B.runState n
+  $ \st -> B.useImplIn k Bluefin_DynamicState
+    { bluefinDynamicGetImpl = B.get st
+    , bluefinDynamicPutImpl = B.put st
+    }
+
+countdownBluefinDynLocal :: Integer -> (Integer, Integer)
+countdownBluefinDynLocal n = B.runPureEff
+  $ bluefinRunDynamicLocal n programBluefinDynamic
+
+countdownBluefinDynLocalDeep :: Integer -> (Integer, Integer)
+countdownBluefinDynLocalDeep n = B.runPureEff
+  $ bluefinDeep
+  $ bluefinRunDynamicLocal n (\st -> bluefinDeep (programBluefinDynamic st))
+
+bluefinRunDoubleStateLocal
+  :: s
+  -> (forall e. Bluefin_DynamicState s e -> B.Eff (e B.:& es) a)
+  -> B.Eff es (a, s)
+bluefinRunDoubleStateLocal n k = bluefinRunDynamicLocal n
+  $ \st ->
+  B.useImplIn k Bluefin_DynamicState
+    { bluefinDynamicGetImpl = bluefinDynamicGet st
+    , bluefinDynamicPutImpl = bluefinDynamicPut st
+    }
+
+countdownBluefinDoubleDynLocal :: Integer -> (Integer, Integer)
+countdownBluefinDoubleDynLocal n = B.runPureEff
+  $ bluefinRunDoubleStateLocal n programBluefinDynamic
+
+countdownBluefinDoubleDynLocalDeep :: Integer -> (Integer, Integer)
+countdownBluefinDoubleDynLocalDeep n = B.runPureEff
+  $ bluefinDeep
+  $ bluefinRunDoubleStateLocal n
+  $ \st -> bluefinDeep (programBluefinDynamic st)
 
 #endif
 
